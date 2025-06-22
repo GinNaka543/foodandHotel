@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'title_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,11 +14,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Happiness Game',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
         textTheme: GoogleFonts.notoSansJpTextTheme(),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: const TitleScreen(),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui'; // For BackdropFilter
+import 'memory_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,9 +23,11 @@ class _HomeScreenState extends State<HomeScreen> {
     const double maxWidth = 400.0;
     const double navBarHeight = 95.0; // Custom NavBar height
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
+    Widget body;
+    if (_selectedIndex == 1) {
+      body = const MemoryScreen();
+    } else {
+      body = Stack(
         children: [
           SafeArea(
             bottom: false,
@@ -33,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 constraints: const BoxConstraints(maxWidth: maxWidth),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, navBarHeight),
-                  child: ListView( // Use ListView for scrolling
+                  child: ListView(
                     children: [
                       const SizedBox(height: 32.0),
                       // 幸福度メーター
@@ -50,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         color: Colors.black,
                       ),
                       const SizedBox(height: 24),
-                      
                       // 今週のクエスト
                       _buildQuestCard(
                         title: '今週のクエスト',
@@ -63,7 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      
                       // 名言ガチャボタン
                       OutlinedButton(
                         onPressed: () {
@@ -101,14 +102,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildCustomBottomNavBar(),
-          ),
         ],
-      ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: body,
+      bottomNavigationBar: _buildCustomBottomNavBar(),
     );
   }
 

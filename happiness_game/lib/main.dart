@@ -13,8 +13,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Happiness Game',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        textTheme: GoogleFonts.notoSansJpTextTheme(),
+        textTheme: GoogleFonts.notoSansTextTheme(),
         useMaterial3: true,
       ),
       home: const TitleScreen(),

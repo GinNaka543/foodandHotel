@@ -131,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildNavItem(
-                    imagePath: 'assets/images/Clogo.png',
+                    imagePath: 'assets/images/clogo.png',
                     label: 'Home',
                     index: 0,
                   ),

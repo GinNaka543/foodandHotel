@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class Character {
   final String name;
   final ImageProvider image;
+  final String? subtitle;
 
-  Character({required this.name, required this.image});
+  Character({required this.name, required this.image, this.subtitle});
 }
 
 class MemoryScreen extends StatefulWidget {
@@ -19,8 +22,9 @@ class MemoryScreen extends StatefulWidget {
 class _MemoryScreenState extends State<MemoryScreen> {
   final List<Character> _characters = [
     Character(
-      name: 'サンプル2',
-      image: const AssetImage('assets/images/Clogo.png'),
+      name: 'エル',
+      image: const AssetImage('assets/images/sample.png'),
+      subtitle: 'サンプルの説明',
     ),
   ];
 
@@ -29,66 +33,148 @@ class _MemoryScreenState extends State<MemoryScreen> {
   void _addCharacter() async {
     String? name;
     XFile? pickedFile;
+    Uint8List? imageBytes;
     ImageProvider? imageProvider;
+    String? subtitle;
 
     await showDialog(
       context: context,
+      barrierColor: Colors.black.withOpacity(0.2),
       builder: (context) {
         final nameController = TextEditingController();
+        final subtitleController = TextEditingController();
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('キャラクター追加'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-                      setStateDialog(() {});
-                    },
-                    child: CircleAvatar(
-                      radius: 40,
-                      backgroundImage: pickedFile != null
-                          ? (pickedFile!.path.startsWith('http')
-                              ? NetworkImage(pickedFile!.path)
-                              : FileImage(File(pickedFile!.path)))
-                          : const AssetImage('assets/images/Clogo.png') as ImageProvider,
-                      child: pickedFile == null
-                          ? const Icon(Icons.add_a_photo, color: Colors.white, size: 32)
-                          : null,
-                    ),
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              backgroundColor: const Color(0xFFF7F3FF),
+              child: Container(
+                width: 320,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        children: const [
+                          Icon(Icons.emoji_symbols, color: Color(0xFF9B7BFF), size: 28),
+                          Text(
+                            'キャラクターを追加しよう！',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Color(0xFF2D254C),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      GestureDetector(
+                        onTap: () async {
+                          pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                          if (pickedFile != null) {
+                            imageBytes = await pickedFile!.readAsBytes();
+                          }
+                          setStateDialog(() {});
+                        },
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Color(0xFFBFAAFF), width: 2),
+                            color: const Color(0xFFEDE7F6),
+                          ),
+                          child: imageBytes == null
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.add, color: Color(0xFF9B7BFF), size: 36),
+                                    SizedBox(height: 4),
+                                    Text('画像\nアップロード',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Color(0xFF9B7BFF), fontWeight: FontWeight.bold, fontSize: 11)),
+                                  ],
+                                )
+                              : ClipOval(child: Image.memory(imageBytes!, fit: BoxFit.cover, width: 100, height: 100)),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: const Text('名前:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF2D254C))),
+                      ),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          hintText: '例：アスナ',
+                          hintStyle: TextStyle(color: Color(0xFFBFAAFF)),
+                          border: UnderlineInputBorder(),
+                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF9B7BFF))),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: subtitleController,
+                        decoration: const InputDecoration(
+                          hintText: 'メモや説明（任意）',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          border: UnderlineInputBorder(),
+                        ),
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 28),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF9B7BFF),
+                                side: const BorderSide(color: Color(0xFFBFAAFF)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              child: const Text('キャンセル', style: TextStyle(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                name = nameController.text.trim();
+                                subtitle = subtitleController.text.trim();
+                                if (name != null && name!.isNotEmpty) {
+                                  imageProvider = imageBytes != null
+                                      ? MemoryImage(imageBytes!)
+                                      : const AssetImage('assets/images/Clogo.png');
+                                  setState(() {
+                                    _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle));
+                                  });
+                                  Navigator.pop(context);
+                                }
+                              },
+                              icon: const Icon(Icons.emoji_symbols, color: Colors.white),
+                              label: const Text('キャラ登録', style: TextStyle(fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF9B7BFF),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: '名前'),
-                  ),
-                ],
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('キャンセル'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    name = nameController.text.trim();
-                    if (name != null && name!.isNotEmpty) {
-                      imageProvider = pickedFile != null
-                          ? (pickedFile!.path.startsWith('http')
-                              ? NetworkImage(pickedFile!.path)
-                              : FileImage(File(pickedFile!.path)))
-                          : const AssetImage('assets/images/Clogo.png');
-                      setState(() {
-                        _characters.insert(0, Character(name: name!, image: imageProvider!));
-                      });
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Text('追加'),
-                ),
-              ],
             );
           },
         );
@@ -111,9 +197,9 @@ class _MemoryScreenState extends State<MemoryScreen> {
               children: [
                 Text(
                   'Chats',
-                  style: TextStyle(
+                  style: GoogleFonts.changa(
                     fontSize: 32,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),
                 ),
@@ -147,13 +233,37 @@ class _MemoryScreenState extends State<MemoryScreen> {
         final character = _characters[index - 1];
         return Column(
           children: [
+            const SizedBox(height: 20),
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(vertical: 5, horizontal: 16),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              minVerticalPadding: 0,
               leading: CircleAvatar(
                 backgroundImage: character.image,
                 radius: 28,
               ),
-              title: Text(character.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      character.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
+                  if (character.subtitle != null && character.subtitle!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        character.subtitle!,
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
               onTap: () {},
             ),
             const SizedBox(height: 10),

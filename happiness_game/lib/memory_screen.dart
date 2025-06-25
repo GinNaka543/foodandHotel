@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
+import 'home_screen.dart';
 
 class Character {
   final String name;
@@ -35,8 +36,25 @@ class _MemoryScreenState extends State<MemoryScreen> {
   List<Character> _filteredCharacters = [];
 
   final ImagePicker _picker = ImagePicker();
-  bool _showSearchBar = false;
+  bool _showSearchBar = true;
   final TextEditingController _searchController = TextEditingController();
+
+  // ダミー画像・動画リストを追加
+  final List<ImageProvider> pictures = [
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+  ];
+  
+  final List<ImageProvider> videos = [
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+    const AssetImage('assets/images/sample.png'),
+  ];
 
   @override
   void initState() {
@@ -280,6 +298,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
                                     : const AssetImage('assets/images/Clogo.png');
                                 setState(() {
                                   _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle, birthday: birthday));
+                                  _filteredCharacters = List.from(_characters);
                                 });
                                 Navigator.pop(context);
                               },
@@ -313,62 +332,65 @@ class _MemoryScreenState extends State<MemoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(top: 48),
-      itemCount: (_showSearchBar ? _filteredCharacters.length : _characters.length) + 1 + (_showSearchBar ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          // ヘッダー部分
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'chara',
-                  style: GoogleFonts.changa(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
+    return Column(
+      children: [
+        // カスタムAppBar風ヘッダー
+        SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 32), // ヘッダー上の空白を少し減らす
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 7, 16, 8), // 左paddingを増やし、topを少し減らす
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Chara',
+                      style: GoogleFonts.notoSans(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 24,
+                        color: Colors.black,
+                        letterSpacing: -1.2,
+                      ),
+                    ),
+                    const Icon(Icons.arrow_drop_down, size: 32, color: Colors.black),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.format_list_bulleted),
+                      onPressed: () {},
+                      tooltip: 'リスト',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.image_outlined),
+                      onPressed: () {},
+                      tooltip: '画像',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      onPressed: () {
+                        setState(() {
+                          _showSearchBar = !_showSearchBar;
+                        });
+                      },
+                      tooltip: '検索',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: _addCharacter,
+                      tooltip: 'キャラクター追加',
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 4),
-                const Icon(Icons.arrow_drop_down, size: 32, color: Colors.black),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.format_list_bulleted, color: Colors.black),
-                  onPressed: () {},
-                  tooltip: 'リスト',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.image_outlined, color: Colors.black),
-                  onPressed: () {},
-                  tooltip: '画像',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.search, color: Colors.black),
-                  onPressed: () {
-                    setState(() {
-                      _showSearchBar = !_showSearchBar;
-                    });
-                  },
-                  tooltip: '検索',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline, color: Colors.black),
-                  onPressed: _addCharacter,
-                  tooltip: 'キャラクター追加',
-                ),
-              ],
-            ),
-          );
-        }
-        if (_showSearchBar && index == 1) {
-          // 検索バー表示
-          return Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 0, bottom: 16),
+              ),
+            ],
+          ),
+        ),
+        // 検索バー
+        if (_showSearchBar)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Container(
-              height: 32,
+              height: 36,
               decoration: BoxDecoration(
                 color: Color(0xFFF5F5F5),
                 borderRadius: BorderRadius.circular(16),
@@ -383,7 +405,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
                       controller: _searchController,
                       style: TextStyle(fontSize: 14, color: Colors.black),
                       decoration: InputDecoration(
-                        hintText: 'Search',
+                        hintText: 'キャラクター名・タグ・誕生日で検索',
                         hintStyle: TextStyle(color: Color(0xFFB0B0B0), fontSize: 14),
                         border: InputBorder.none,
                         isCollapsed: true,
@@ -394,62 +416,306 @@ class _MemoryScreenState extends State<MemoryScreen> {
                 ],
               ),
             ),
-          );
-        }
-        final characterIndex = index - 1 - (_showSearchBar ? 1 : 0);
-        if (characterIndex < 0 || characterIndex >= (_showSearchBar ? _filteredCharacters.length : _characters.length)) return SizedBox.shrink();
-        final character = _showSearchBar ? _filteredCharacters[characterIndex] : _characters[characterIndex];
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CircleAvatar(
-                    backgroundImage: character.image,
-                    radius: 28,
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
+          ),
+        // キャラリストの上に広告風テキスト＋画像を追加（枠なし・大きめ画像・中央揃え）
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          character.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
+                      Text(
+                        '【スタバ新作✨】',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black),
                       ),
-                      if (character.subtitle != null && character.subtitle!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            character.subtitle!,
-                            style: const TextStyle(fontSize: 11, color: Colors.grey),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            '飲んでみた正直な感想',
+                            style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12, color: Colors.black),
                           ),
-                        ),
+                          const SizedBox(width: 4),
+                          Text('😄', style: TextStyle(fontSize: 14)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Trending on LINE VOOM',
+                        style: TextStyle(fontSize: 10, color: Colors.grey),
+                      ),
                     ],
                   ),
-                  Spacer(),
-                  if (character.birthday != null && character.birthday!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 50, top: 6),
-                      child: Text(
-                        character.birthday!,
-                        style: const TextStyle(fontSize: 11, color: Color(0xFFB0B0B0), fontWeight: FontWeight.w500),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16), // 画像を右にずらす
+                child: SizedBox(
+                  width: 90,
+                  height: 90,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset(
+                      'assets/images/かのかり.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // キャラリスト
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(top: 8, bottom: 8),
+            itemCount: _filteredCharacters.length,
+            itemBuilder: (context, i) {
+              final character = _filteredCharacters[i];
+              // 誕生日やサブタイトル
+              final rightText = character.birthday ?? '';
+              final subtitle = character.subtitle ?? '';
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CharacterDetailScreen(character: character),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const SizedBox(width: 4),
+                      CircleAvatar(
+                        backgroundImage: character.image,
+                        radius: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              character.name,
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.6, color: Colors.black),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: TextStyle(fontSize: 11.2, color: Colors.grey[700]),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        rightText,
+                        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class CharacterDetailScreen extends StatelessWidget {
+  final Character character;
+  const CharacterDetailScreen({Key? key, required this.character}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // ダミー画像・動画リスト
+    final List<ImageProvider> pictures = List.generate(4, (_) => character.image);
+    final List<ImageProvider> videos = List.generate(6, (_) => character.image);
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // 背景画像
+          Positioned.fill(
+            child: Image(
+              image: character.image,
+              fit: BoxFit.cover,
+              color: Colors.white.withOpacity(0.7),
+              colorBlendMode: BlendMode.lighten,
+            ),
+          ),
+          // 内容
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ヘッダー
+                SizedBox(height: 48),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 26),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          character.name,
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.search, color: Colors.black, size: 26),
+                        onPressed: () {},
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.phone, color: Colors.black, size: 26),
+                        onPressed: () {},
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.menu, color: Colors.black, size: 26),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 0),
+                // PICTUREセクション
+                Center(
+                  child: Image.asset('assets/images/picture.png', width: 120, height: 120),
+                ),
+                const SizedBox(height: 8),
+                // 画像カードリスト
+                SizedBox(
+                  height: 140,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: pictures.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 16),
+                    itemBuilder: (context, i) => Container(
+                      width: 110,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0,2))],
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image(
+                          image: pictures[i],
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // VIDEOセクション
+                Center(
+                  child: Image.asset('assets/images/video.png', width: 120, height: 120),
+                ),
+                const SizedBox(height: 8),
+                // 動画カードリスト
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.2,
+                    ),
+                    itemCount: videos.length,
+                    itemBuilder: (context, i) => Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0,2))],
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image(
+                          image: videos[i],
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 下部ヘッダー
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 48),
+              child: Row(
+                children: [
+                  Icon(Icons.add, size: 32),
+                  const SizedBox(width: 8),
+                  Icon(Icons.camera_alt_outlined, size: 28),
+                  const SizedBox(width: 8),
+                  Icon(Icons.image_outlined, size: 28),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Container(
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              decoration: InputDecoration(
+                                hintText: 'Aa',
+                                border: InputBorder.none,
+                                hintStyle: TextStyle(color: Colors.grey, fontSize: 18),
+                                isCollapsed: true,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.emoji_emotions_outlined, color: Colors.grey, size: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.mic_none, size: 28),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 } 

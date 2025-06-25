@@ -32,7 +32,41 @@ class _MemoryScreenState extends State<MemoryScreen> {
     ),
   ];
 
+  List<Character> _filteredCharacters = [];
+
   final ImagePicker _picker = ImagePicker();
+  bool _showSearchBar = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredCharacters = List.from(_characters);
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.trim().toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredCharacters = List.from(_characters);
+      } else {
+        _filteredCharacters = _characters.where((c) {
+          final name = c.name.toLowerCase();
+          final subtitle = (c.subtitle ?? '').toLowerCase();
+          final birthday = (c.birthday ?? '').toLowerCase();
+          return name.contains(query) || subtitle.contains(query) || birthday.contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _addCharacter() async {
     String? name;
@@ -281,12 +315,12 @@ class _MemoryScreenState extends State<MemoryScreen> {
   Widget build(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 48),
-      itemCount: _characters.length + 1,
+      itemCount: (_showSearchBar ? _filteredCharacters.length : _characters.length) + 1 + (_showSearchBar ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == 0) {
           // ヘッダー部分
           return Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -312,9 +346,13 @@ class _MemoryScreenState extends State<MemoryScreen> {
                   tooltip: '画像',
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline, color: Colors.black),
-                  onPressed: () {},
-                  tooltip: '吹き出し',
+                  icon: const Icon(Icons.search, color: Colors.black),
+                  onPressed: () {
+                    setState(() {
+                      _showSearchBar = !_showSearchBar;
+                    });
+                  },
+                  tooltip: '検索',
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline, color: Colors.black),
@@ -325,7 +363,42 @@ class _MemoryScreenState extends State<MemoryScreen> {
             ),
           );
         }
-        final character = _characters[index - 1];
+        if (_showSearchBar && index == 1) {
+          // 検索バー表示
+          return Padding(
+            padding: const EdgeInsets.only(left: 16, right: 16, top: 0, bottom: 16),
+            child: Container(
+              height: 32,
+              decoration: BoxDecoration(
+                color: Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(Icons.search, color: Color(0xFFB0B0B0), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: TextStyle(fontSize: 14, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'Search',
+                        hintStyle: TextStyle(color: Color(0xFFB0B0B0), fontSize: 14),
+                        border: InputBorder.none,
+                        isCollapsed: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        final characterIndex = index - 1 - (_showSearchBar ? 1 : 0);
+        if (characterIndex < 0 || characterIndex >= (_showSearchBar ? _filteredCharacters.length : _characters.length)) return SizedBox.shrink();
+        final character = _showSearchBar ? _filteredCharacters[characterIndex] : _characters[characterIndex];
         return Column(
           children: [
             Padding(

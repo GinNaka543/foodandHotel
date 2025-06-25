@@ -3,13 +3,16 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:math' as math;
+import 'package:flutter/services.dart';
 
 class Character {
   final String name;
   final ImageProvider image;
   final String? subtitle;
+  final String? birthday;
 
-  Character({required this.name, required this.image, this.subtitle});
+  Character({required this.name, required this.image, this.subtitle, this.birthday});
 }
 
 class MemoryScreen extends StatefulWidget {
@@ -24,7 +27,8 @@ class _MemoryScreenState extends State<MemoryScreen> {
     Character(
       name: 'エル',
       image: const AssetImage('assets/images/sample.png'),
-      subtitle: 'サンプルの説明',
+      subtitle: '#エルの手紙 #Lさま',
+      birthday: '2/17',
     ),
   ];
 
@@ -36,43 +40,46 @@ class _MemoryScreenState extends State<MemoryScreen> {
     Uint8List? imageBytes;
     ImageProvider? imageProvider;
     String? subtitle;
+    String? birthday;
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.2),
+      barrierColor: Colors.black.withOpacity(0.25),
       builder: (context) {
         final nameController = TextEditingController();
         final subtitleController = TextEditingController();
+        final birthdayController = TextEditingController();
+        String? errorText;
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              backgroundColor: const Color(0xFFF7F3FF),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              backgroundColor: Colors.white,
+              elevation: 8,
               child: Container(
-                width: 320,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                width: 340,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        children: const [
-                          Icon(Icons.emoji_symbols, color: Color(0xFF9B7BFF), size: 28),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.style_outlined, color: Color(0xFF7C5CFC), size: 30),
+                          const SizedBox(width: 8),
                           Text(
-                            'キャラクターを追加しよう！',
-                            style: TextStyle(
+                            'キャラクター登録',
+                            style: GoogleFonts.notoSans(
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: 20,
                               color: Color(0xFF2D254C),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 22),
                       GestureDetector(
                         onTap: () async {
                           pickedFile = await _picker.pickImage(source: ImageSource.gallery);
@@ -82,62 +89,116 @@ class _MemoryScreenState extends State<MemoryScreen> {
                           setStateDialog(() {});
                         },
                         child: Container(
-                          width: 100,
-                          height: 100,
+                          width: 90,
+                          height: 90,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: Color(0xFFBFAAFF), width: 2),
-                            color: const Color(0xFFEDE7F6),
+                            border: Border.all(color: Color(0xFF7C5CFC), width: 2),
+                            color: const Color(0xFFF5F5FA),
+                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0,2))],
                           ),
                           child: imageBytes == null
                               ? Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(Icons.add, color: Color(0xFF9B7BFF), size: 36),
-                                    SizedBox(height: 4),
-                                    Text('画像\nアップロード',
+                                  children: [
+                                    Icon(Icons.add_a_photo_outlined, color: Color(0xFF7C5CFC), size: 32),
+                                    const SizedBox(height: 4),
+                                    Text('画像アップロード',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(color: Color(0xFF9B7BFF), fontWeight: FontWeight.bold, fontSize: 11)),
+                                      style: TextStyle(color: Color(0xFF7C5CFC), fontWeight: FontWeight.bold, fontSize: 11)),
                                   ],
                                 )
-                              : ClipOval(child: Image.memory(imageBytes!, fit: BoxFit.cover, width: 100, height: 100)),
+                              : ClipOval(child: Image.memory(imageBytes!, fit: BoxFit.cover, width: 90, height: 90)),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 22),
                       Align(
                         alignment: Alignment.centerLeft,
-                        child: const Text('名前:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF2D254C))),
+                        child: Text('名前', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D254C))),
                       ),
                       const SizedBox(height: 4),
                       TextField(
                         controller: nameController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: '例：アスナ',
                           hintStyle: TextStyle(color: Color(0xFFBFAAFF)),
                           border: UnderlineInputBorder(),
-                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF9B7BFF))),
+                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C5CFC))),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('タグ', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D254C))),
+                      ),
+                      const SizedBox(height: 4),
                       TextField(
                         controller: subtitleController,
-                        decoration: const InputDecoration(
-                          hintText: 'メモや説明（任意）',
-                          hintStyle: TextStyle(color: Colors.grey),
+                        decoration: InputDecoration(
+                          hintText: '#アニメ名 #ニックネーム',
+                          hintStyle: TextStyle(color: Color(0xFFBFAAFF)),
                           border: UnderlineInputBorder(),
+                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C5CFC))),
                         ),
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF2D254C)),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('誕生日', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D254C))),
+                      ),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: birthdayController,
+                        decoration: InputDecoration(
+                          hintText: '7/31',
+                          hintStyle: TextStyle(color: Color(0xFFBFAAFF)),
+                          border: UnderlineInputBorder(),
+                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C5CFC))),
+                        ),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF2D254C)),
+                        keyboardType: TextInputType.datetime,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'^[0-9/]*')),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ValueListenableBuilder(
+                        valueListenable: birthdayController,
+                        builder: (context, TextEditingValue value, _) {
+                          final text = value.text;
+                          bool valid = false;
+                          if (text.isNotEmpty) {
+                            final match = RegExp(r'^(1[0-2]|[1-9])\/(3[01]|[12][0-9]|[1-9])').firstMatch(text);
+                            if (match != null) {
+                              final month = int.tryParse(match.group(1)!);
+                              final day = int.tryParse(match.group(2)!);
+                              if (month != null && day != null) {
+                                final daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+                                if (month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month]) {
+                                  valid = true;
+                                }
+                              }
+                            }
+                          }
+                          return !valid && text.isNotEmpty
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text('実在する日付で 月/日 の形式で入力してください', style: TextStyle(color: Colors.red, fontSize: 10)),
+                                )
+                              : const SizedBox.shrink();
+                        },
+                      ),
+                      const SizedBox(height: 22),
                       Row(
                         children: [
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () => Navigator.pop(context),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF9B7BFF),
+                                foregroundColor: const Color(0xFF7C5CFC),
                                 side: const BorderSide(color: Color(0xFFBFAAFF)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                               child: const Text('キャンセル', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -149,28 +210,62 @@ class _MemoryScreenState extends State<MemoryScreen> {
                               onPressed: () {
                                 name = nameController.text.trim();
                                 subtitle = subtitleController.text.trim();
-                                if (name != null && name!.isNotEmpty) {
-                                  imageProvider = imageBytes != null
-                                      ? MemoryImage(imageBytes!)
-                                      : const AssetImage('assets/images/Clogo.png');
-                                  setState(() {
-                                    _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle));
-                                  });
-                                  Navigator.pop(context);
+                                birthday = birthdayController.text.trim();
+                                String? error;
+                                if (name == null || name?.isEmpty == true) {
+                                  error = '名前を入力してください';
+                                } else if (subtitle == null || subtitle?.isEmpty == true) {
+                                  error = 'タグを入力してください';
+                                } else if (birthday == null || birthday?.isEmpty == true) {
+                                  error = '誕生日を入力してください';
+                                } else {
+                                  final match = RegExp(r'^(1[0-2]|[1-9])\/(3[01]|[12][0-9]|[1-9])').firstMatch(birthday!);
+                                  bool valid = false;
+                                  if (match != null) {
+                                    final month = int.tryParse(match.group(1)!);
+                                    final day = int.tryParse(match.group(2)!);
+                                    if (month != null && day != null) {
+                                      final daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+                                      if (month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month]) {
+                                        valid = true;
+                                      }
+                                    }
+                                  }
+                                  if (!valid) {
+                                    error = '誕生日は実在する日付で 7/31 の形式で入力してください';
+                                  }
                                 }
+                                if (error != null) {
+                                  setStateDialog(() {
+                                    errorText = error;
+                                  });
+                                  return;
+                                }
+                                imageProvider = imageBytes != null
+                                    ? MemoryImage(imageBytes!)
+                                    : const AssetImage('assets/images/Clogo.png');
+                                setState(() {
+                                  _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle, birthday: birthday));
+                                });
+                                Navigator.pop(context);
                               },
-                              icon: const Icon(Icons.emoji_symbols, color: Colors.white),
+                              icon: const Icon(Icons.style_outlined, color: Colors.white),
                               label: const Text('キャラ登録', style: TextStyle(fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF9B7BFF),
+                                backgroundColor: const Color(0xFF7C5CFC),
                                 foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                               ),
                             ),
                           ),
                         ],
                       ),
+                      if (errorText != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(errorText!, style: TextStyle(color: Colors.red, fontSize: 12)),
+                        ),
                     ],
                   ),
                 ),
@@ -196,7 +291,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Chats',
+                  'chara',
                   style: GoogleFonts.changa(
                     fontSize: 32,
                     fontWeight: FontWeight.w600,
@@ -233,40 +328,52 @@ class _MemoryScreenState extends State<MemoryScreen> {
         final character = _characters[index - 1];
         return Column(
           children: [
-            const SizedBox(height: 20),
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-              minVerticalPadding: 0,
-              leading: CircleAvatar(
-                backgroundImage: character.image,
-                radius: 28,
-              ),
-              title: Column(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      character.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
+                  CircleAvatar(
+                    backgroundImage: character.image,
+                    radius: 28,
                   ),
-                  if (character.subtitle != null && character.subtitle!.isNotEmpty)
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          character.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                      if (character.subtitle != null && character.subtitle!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            character.subtitle!,
+                            style: const TextStyle(fontSize: 11, color: Colors.grey),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                  ),
+                  Spacer(),
+                  if (character.birthday != null && character.birthday!.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 2),
+                      padding: const EdgeInsets.only(left: 50, top: 6),
                       child: Text(
-                        character.subtitle!,
-                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        character.birthday!,
+                        style: const TextStyle(fontSize: 11, color: Color(0xFFB0B0B0), fontWeight: FontWeight.w500),
                       ),
                     ),
                 ],
               ),
-              onTap: () {},
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
           ],
         );
       },

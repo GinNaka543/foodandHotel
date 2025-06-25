@@ -105,222 +105,192 @@ class _MemoryScreenState extends State<MemoryScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
               backgroundColor: Colors.white,
               elevation: 8,
               child: Container(
-                width: 340,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.style_outlined, color: Color(0xFF7C5CFC), size: 30),
-                          const SizedBox(width: 8),
-                          Text(
-                            'キャラクター登録',
-                            style: GoogleFonts.notoSans(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              color: Color(0xFF2D254C),
+                width: 380,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 上部余白
+                    const SizedBox(height: 8),
+                    // 円形画像アップロード
+                    GestureDetector(
+                      onTap: () async {
+                        pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                        if (pickedFile != null) {
+                          imageBytes = await pickedFile!.readAsBytes();
+                        }
+                        setStateDialog(() {});
+                      },
+                      child: Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.grey[100],
+                          border: Border.all(color: Colors.grey[400]!, width: 2),
+                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0,4))],
+                        ),
+                        child: imageBytes == null
+                            ? Center(
+                                child: Icon(Icons.add_a_photo_outlined, color: Colors.grey[600], size: 44),
+                              )
+                            : ClipOval(child: Image.memory(imageBytes!, fit: BoxFit.cover, width: 110, height: 110)),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    // 名前
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: nameController,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              hintText: '名前',
+                              hintStyle: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(vertical: 0),
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 22),
-                      GestureDetector(
-                        onTap: () async {
-                          pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-                          if (pickedFile != null) {
-                            imageBytes = await pickedFile!.readAsBytes();
-                          }
-                          setStateDialog(() {});
-                        },
-                        child: Container(
-                          width: 90,
-                          height: 90,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Color(0xFF7C5CFC), width: 2),
-                            color: const Color(0xFFF5F5FA),
-                            boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0,2))],
+                        ),
+                        Icon(Icons.edit, color: Colors.grey[500], size: 22),
+                      ],
+                    ),
+                    Container(height: 1, color: Colors.grey[300]),
+                    const SizedBox(height: 8),
+                    // サブ情報
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cake, color: Colors.grey[700], size: 20),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: TextField(
+                            controller: birthdayController,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                            decoration: InputDecoration(
+                              hintText: '誕生日 (例: 7/31)',
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                              border: InputBorder.none,
+                            ),
+                            keyboardType: TextInputType.datetime,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'^[0-9/]*')),
+                            ],
                           ),
-                          child: imageBytes == null
-                              ? Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.add_a_photo_outlined, color: Color(0xFF7C5CFC), size: 32),
-                                    const SizedBox(height: 4),
-                                    Text('画像アップロード',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Color(0xFF7C5CFC), fontWeight: FontWeight.bold, fontSize: 11)),
-                                  ],
-                                )
-                              : ClipOval(child: Image.memory(imageBytes!, fit: BoxFit.cover, width: 90, height: 90)),
                         ),
-                      ),
-                      const SizedBox(height: 22),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('名前', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D254C))),
-                      ),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: nameController,
-                        decoration: InputDecoration(
-                          hintText: '例：アスナ',
-                          hintStyle: TextStyle(color: Color(0xFFBFAAFF)),
-                          border: UnderlineInputBorder(),
-                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C5CFC))),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('タグ', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D254C))),
-                      ),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: subtitleController,
-                        decoration: InputDecoration(
-                          hintText: '#アニメ名 #ニックネーム',
-                          hintStyle: TextStyle(color: Color(0xFFBFAAFF)),
-                          border: UnderlineInputBorder(),
-                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C5CFC))),
-                        ),
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF2D254C)),
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('誕生日', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF2D254C))),
-                      ),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: birthdayController,
-                        decoration: InputDecoration(
-                          hintText: '7/31',
-                          hintStyle: TextStyle(color: Color(0xFFBFAAFF)),
-                          border: UnderlineInputBorder(),
-                          focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF7C5CFC))),
-                        ),
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF2D254C)),
-                        keyboardType: TextInputType.datetime,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'^[0-9/]*')),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      ValueListenableBuilder(
-                        valueListenable: birthdayController,
-                        builder: (context, TextEditingValue value, _) {
-                          final text = value.text;
-                          bool valid = false;
-                          if (text.isNotEmpty) {
-                            final match = RegExp(r'^(1[0-2]|[1-9])\/(3[01]|[12][0-9]|[1-9])').firstMatch(text);
-                            if (match != null) {
-                              final month = int.tryParse(match.group(1)!);
-                              final day = int.tryParse(match.group(2)!);
-                              if (month != null && day != null) {
-                                final daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
-                                if (month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month]) {
-                                  valid = true;
-                                }
-                              }
-                            }
-                          }
-                          return !valid && text.isNotEmpty
-                              ? Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text('実在する日付で 月/日 の形式で入力してください', style: TextStyle(color: Colors.red, fontSize: 10)),
-                                )
-                              : const SizedBox.shrink();
-                        },
-                      ),
-                      const SizedBox(height: 22),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFF7C5CFC),
-                                side: const BorderSide(color: Color(0xFFBFAAFF)),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
-                              child: const Text('キャンセル', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Container(height: 1, color: Colors.grey[300]),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.tag, color: Colors.grey[700], size: 20),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: TextField(
+                            controller: subtitleController,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                            decoration: InputDecoration(
+                              hintText: 'タグ (例: #アニメ名 #ニックネーム)',
+                              hintStyle: TextStyle(color: Colors.grey[400]),
+                              border: InputBorder.none,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () {
-                                name = nameController.text.trim();
-                                subtitle = subtitleController.text.trim();
-                                birthday = birthdayController.text.trim();
-                                String? error;
-                                if (name == null || name?.isEmpty == true) {
-                                  error = '名前を入力してください';
-                                } else if (subtitle == null || subtitle?.isEmpty == true) {
-                                  error = 'タグを入力してください';
-                                } else if (birthday == null || birthday?.isEmpty == true) {
-                                  error = '誕生日を入力してください';
-                                } else {
-                                  final match = RegExp(r'^(1[0-2]|[1-9])\/(3[01]|[12][0-9]|[1-9])').firstMatch(birthday!);
-                                  bool valid = false;
-                                  if (match != null) {
-                                    final month = int.tryParse(match.group(1)!);
-                                    final day = int.tryParse(match.group(2)!);
-                                    if (month != null && day != null) {
-                                      final daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
-                                      if (month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month]) {
-                                        valid = true;
-                                      }
+                        ),
+                      ],
+                    ),
+                    Container(height: 1, color: Colors.grey[300]),
+                    const SizedBox(height: 32),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.grey[800],
+                              side: BorderSide(color: Colors.grey[400]!),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors.white,
+                            ),
+                            child: const Text('キャンセル', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              name = nameController.text.trim();
+                              subtitle = subtitleController.text.trim();
+                              birthday = birthdayController.text.trim();
+                              String? error;
+                              if (name == null || name?.isEmpty == true) {
+                                error = '名前を入力してください';
+                              } else if (subtitle == null || subtitle?.isEmpty == true) {
+                                error = 'タグを入力してください';
+                              } else if (birthday == null || birthday?.isEmpty == true) {
+                                error = '誕生日を入力してください';
+                              } else {
+                                final match = RegExp(r'^(1[0-2]|[1-9])\/(3[01]|[12][0-9]|[1-9])').firstMatch(birthday!);
+                                bool valid = false;
+                                if (match != null) {
+                                  final month = int.tryParse(match.group(1)!);
+                                  final day = int.tryParse(match.group(2)!);
+                                  if (month != null && day != null) {
+                                    final daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+                                    if (month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month]) {
+                                      valid = true;
                                     }
                                   }
-                                  if (!valid) {
-                                    error = '誕生日は実在する日付で 7/31 の形式で入力してください';
-                                  }
                                 }
-                                if (error != null) {
-                                  setStateDialog(() {
-                                    errorText = error;
-                                  });
-                                  return;
+                                if (!valid) {
+                                  error = '誕生日は実在する日付で 7/31 の形式で入力してください';
                                 }
-                                imageProvider = imageBytes != null
-                                    ? MemoryImage(imageBytes!)
-                                    : const AssetImage('assets/images/Clogo.png');
-                                setState(() {
-                                  _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle, birthday: birthday));
-                                  _filteredCharacters = List.from(_characters);
+                              }
+                              if (error != null) {
+                                setStateDialog(() {
+                                  errorText = error;
                                 });
-                                Navigator.pop(context);
-                              },
-                              icon: const Icon(Icons.style_outlined, color: Colors.white),
-                              label: const Text('キャラ登録', style: TextStyle(fontWeight: FontWeight.bold)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF7C5CFC),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                              ),
+                                return;
+                              }
+                              imageProvider = imageBytes != null
+                                  ? MemoryImage(imageBytes!)
+                                  : const AssetImage('assets/images/Clogo.png');
+                              setState(() {
+                                _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle, birthday: birthday));
+                                _filteredCharacters = List.from(_characters);
+                              });
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey[900],
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
+                            child: const Text('登録', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           ),
-                        ],
-                      ),
-                      if (errorText != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(errorText!, style: TextStyle(color: Colors.red, fontSize: 12)),
                         ),
-                    ],
-                  ),
+                      ],
+                    ),
+                    if (errorText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(errorText!, style: TextStyle(color: Colors.red, fontSize: 12)),
+                      ),
+                  ],
                 ),
               ),
             );

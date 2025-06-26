@@ -148,8 +148,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     index: 1,
                   ),
                   _buildNavItem(
-                    icon: Icons.list_alt_outlined,
-                    label: 'List',
+                    icon: Icons.smart_display,
+                    label: 'Anime',
                     index: 2,
                   ),
                   _buildNavItem(

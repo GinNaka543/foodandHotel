@@ -176,7 +176,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16, color: Colors.black),
                       decoration: InputDecoration(
-                        hintText: 'ハッシュタグ（例: #アニメ #思い出）',
+                        hintText: 'タグ（例: #アニメ #声優）',
                         hintStyle: TextStyle(color: Colors.grey[500]),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -800,7 +800,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16, color: Colors.black),
                       decoration: InputDecoration(
-                        hintText: 'ハッシュタグ（例: #アニメ #思い出）',
+                        hintText: 'タグ（例: #アニメ #声優）',
                         hintStyle: TextStyle(color: Colors.grey[500]),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

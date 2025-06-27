@@ -93,8 +93,6 @@ class _MemoryScreenState extends State<MemoryScreen> {
   void _addCharacter() async {
     String? name;
     XFile? pickedFile;
-    String? savedPath;
-    ImageProvider? imageProvider;
     String? subtitle;
     String? birthday;
 
@@ -106,6 +104,8 @@ class _MemoryScreenState extends State<MemoryScreen> {
         final subtitleController = TextEditingController();
         final birthdayController = TextEditingController();
         String? errorText;
+        String? savedPath;
+        ImageProvider? imageProvider;
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return Dialog(
@@ -122,15 +122,28 @@ class _MemoryScreenState extends State<MemoryScreen> {
                     SizedBox(height: 24),
                     GestureDetector(
                       onTap: () async {
-                        pickedFile = await _picker.pickImage(source: ImageSource.gallery);
-                        if (pickedFile != null) {
-                          final appDir = await getApplicationDocumentsDirectory();
-                          final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile!.name);
-                          final savePath = '${appDir.path}/$fileName';
-                          await File(pickedFile!.path).copy(savePath);
-                          savedPath = savePath;
+                        if (kIsWeb) {
+                          pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                          if (pickedFile != null) {
+                            final bytes = await pickedFile!.readAsBytes();
+                            setStateDialog(() {
+                              savedPath = null;
+                              imageProvider = MemoryImage(bytes);
+                            });
+                          }
+                        } else {
+                          pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+                          if (pickedFile != null) {
+                            final appDir = await getApplicationDocumentsDirectory();
+                            final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile!.name);
+                            final path = '${appDir.path}/$fileName';
+                            await File(pickedFile!.path).copy(path);
+                            setStateDialog(() {
+                              savedPath = path;
+                              imageProvider = FileImage(File(savedPath!));
+                            });
+                          }
                         }
-                        setStateDialog(() {});
                       },
                       child: Container(
                         width: 80,
@@ -140,10 +153,16 @@ class _MemoryScreenState extends State<MemoryScreen> {
                           color: Colors.grey[100],
                           border: Border.all(color: Colors.grey[300]!, width: 1),
                         ),
-                        child: savedPath == null
+                        child: imageProvider == null
                             ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
-                            : ClipOval(
-                                child: Image.file(File(savedPath!), fit: BoxFit.cover, width: 80, height: 80),
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image(
+                                  image: imageProvider!,
+                                  fit: BoxFit.cover,
+                                  width: 80,
+                                  height: 80,
+                                ),
                               ),
                       ),
                     ),
@@ -193,7 +212,30 @@ class _MemoryScreenState extends State<MemoryScreen> {
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
                     ),
-                    SizedBox(height: 24),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: birthdayController,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: '誕生日（例: 2/17）',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.black),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    SizedBox(height: 16),
                     if (errorText != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -220,10 +262,15 @@ class _MemoryScreenState extends State<MemoryScreen> {
                               subtitle = subtitleController.text.trim();
                               birthday = birthdayController.text.trim();
                               String? error;
-                              if (name == null || name?.isEmpty == true) {
-                                error = 'タイトルを入力してください';
-                              } else if (subtitle == null || subtitle?.isEmpty == true) {
-                                error = 'ハッシュタグを入力してください';
+                              final birthdayReg = RegExp(r'^(1[0-2]|0?[1-9])\/(3[01]|[12][0-9]|0?[1-9])$');
+                              if (name == null || name!.isEmpty) {
+                                error = '名前を入力してください';
+                              } else if (subtitle == null || subtitle!.isEmpty) {
+                                error = 'タグを入力してください';
+                              } else if (imageProvider == null) {
+                                error = '画像を選択してください';
+                              } else if ((birthday?.isEmpty ?? true) || !birthdayReg.hasMatch(birthday ?? '')) {
+                                error = '誕生日はMM/DD形式で入力してください';
                               }
                               if (error != null) {
                                 setStateDialog(() {
@@ -231,9 +278,6 @@ class _MemoryScreenState extends State<MemoryScreen> {
                                 });
                                 return;
                               }
-                              imageProvider = savedPath != null
-                                  ? FileImage(File(savedPath!))
-                                  : const AssetImage('assets/images/Clogo.png');
                               setState(() {
                                 _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle, birthday: birthday));
                                 _filteredCharacters = List.from(_characters);
@@ -426,40 +470,44 @@ class _MemoryScreenState extends State<MemoryScreen> {
                           ),
                         );
                       },
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                      child: Stack(
                         children: [
-                          const SizedBox(width: 4),
-                          Transform.translate(
-                            offset: const Offset(0, -2),
-                            child: CircleAvatar(
-                              backgroundImage: character.image,
-                              radius: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  character.name,
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.6, color: Colors.black),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const SizedBox(width: 4),
+                              Transform.translate(
+                                offset: const Offset(0, -2),
+                                child: CircleAvatar(
+                                  backgroundImage: character.image,
+                                  radius: 24,
                                 ),
-                                const SizedBox(height: 7),
-                                Text(
-                                  subtitle,
-                                  style: TextStyle(fontSize: 11.2, color: Colors.grey[700]),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      character.name,
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.6, color: Colors.black),
+                                    ),
+                                    const SizedBox(height: 7),
+                                    Text(
+                                      subtitle,
+                                      style: TextStyle(fontSize: 11.2, color: Colors.grey[700]),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            rightText,
-                            style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                rightText,
+                                style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -763,11 +811,13 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                         child: kIsWeb
                           ? (webBytes == null
                               ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
-                              : ClipOval(
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
                                   child: Image.memory(webBytes!, fit: BoxFit.cover, width: 80, height: 80)))
                           : (tempPath == null
                               ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
-                              : ClipOval(
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
                                   child: Image.file(File(tempPath!), fit: BoxFit.cover, width: 80, height: 80))),
                       ),
                     ),
@@ -993,65 +1043,69 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                                   return (aspect - longAspect).abs() < (aspect - shortAspect).abs() ? longFrame : shortFrame;
                                 })()
                               : shortFrame;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 32, left: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: photo.webBytes == null
-                                      ? Container(width: frameSize.width, height: frameSize.height)
-                                      : Image.memory(photo.webBytes!, width: frameSize.width, height: frameSize.height, fit: BoxFit.cover),
-                                ),
-                                const SizedBox(height: 7),
-                                Row(
+                          return Stack(
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 32, left: 8),
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 0, top: 9),
-                                      child: CircleAvatar(
-                                        backgroundImage: widget.character.image,
-                                        radius: 22,
-                                      ),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: photo.webBytes == null
+                                          ? Container(width: frameSize.width, height: frameSize.height)
+                                          : Image.memory(photo.webBytes!, width: frameSize.width, height: frameSize.height, fit: BoxFit.cover),
                                     ),
-                                    const SizedBox(width: 7),
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(top: 12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              photo.title,
-                                              style: const TextStyle(
-                                                fontFamily: 'NotoSansJP',
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 15,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                            if (photo.hashtag.isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 2.0),
-                                                child: Text(
-                                                  photo.hashtag,
+                                    const SizedBox(height: 7),
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 0, top: 9),
+                                          child: CircleAvatar(
+                                            backgroundImage: widget.character.image,
+                                            radius: 22,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 7),
+                                        Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 12),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  photo.title,
                                                   style: const TextStyle(
                                                     fontFamily: 'NotoSansJP',
-                                                    fontWeight: FontWeight.w400,
-                                                    fontSize: 12,
-                                                    color: Colors.grey,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 15,
+                                                    color: Colors.black,
                                                   ),
                                                 ),
-                                              ),
-                                          ],
+                                                if (photo.hashtag.isNotEmpty)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(top: 2.0),
+                                                    child: Text(
+                                                      photo.hashtag,
+                                                      style: const TextStyle(
+                                                        fontFamily: 'NotoSansJP',
+                                                        fontWeight: FontWeight.w400,
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           );
                         },
                       );
@@ -1072,79 +1126,83 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                           final bool useLong = (aspect - longAspect).abs() < (aspect - shortAspect).abs();
                           final frameAsset = useLong ? 'assets/images/long.png' : 'assets/images/short.png';
                           final frameSize = useLong ? longFrame : shortFrame;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 32, left: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(20),
-                                      child: Image.file(
-                                        File(photo.filePath!),
-                                        width: frameSize.width,
-                                        height: frameSize.height,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    Image.asset(
-                                      frameAsset,
-                                      width: frameSize.width,
-                                      height: frameSize.height,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 7),
-                                Row(
+                          return Stack(
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 32, left: 8),
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(left: 0, top: 9),
-                                      child: CircleAvatar(
-                                        backgroundImage: widget.character.image,
-                                        radius: 22,
-                                      ),
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(20),
+                                          child: Image.file(
+                                            File(photo.filePath!),
+                                            width: frameSize.width,
+                                            height: frameSize.height,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
+                                        Image.asset(
+                                          frameAsset,
+                                          width: frameSize.width,
+                                          height: frameSize.height,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 7),
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(top: 12),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              photo.title,
-                                              style: const TextStyle(
-                                                fontFamily: 'NotoSansJP',
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 15,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                            if (photo.hashtag.isNotEmpty)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 2.0),
-                                                child: Text(
-                                                  photo.hashtag,
+                                    const SizedBox(height: 7),
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(left: 0, top: 9),
+                                          child: CircleAvatar(
+                                            backgroundImage: widget.character.image,
+                                            radius: 22,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 7),
+                                        Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 12),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  photo.title,
                                                   style: const TextStyle(
                                                     fontFamily: 'NotoSansJP',
-                                                    fontWeight: FontWeight.w400,
-                                                    fontSize: 12,
-                                                    color: Colors.grey,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontSize: 15,
+                                                    color: Colors.black,
                                                   ),
                                                 ),
-                                              ),
-                                          ],
+                                                if (photo.hashtag.isNotEmpty)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(top: 2.0),
+                                                    child: Text(
+                                                      photo.hashtag,
+                                                      style: const TextStyle(
+                                                        fontFamily: 'NotoSansJP',
+                                                        fontWeight: FontWeight.w400,
+                                                        fontSize: 12,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           );
                         },
                       );
@@ -1163,29 +1221,33 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                   itemCount: photos.length,
                   itemBuilder: (context, i) {
                     final photo = photos[i];
-                    return GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => Dialog(
-                            backgroundColor: Colors.black,
-                            child: InteractiveViewer(
+                    return Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => Dialog(
+                                backgroundColor: Colors.black,
+                                child: InteractiveViewer(
+                                  child: photo.webBytes != null
+                                    ? Image.memory(photo.webBytes!, fit: BoxFit.contain)
+                                    : Image.file(File(photo.filePath!), fit: BoxFit.contain),
+                                ),
+                              ),
+                            );
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: AspectRatio(
+                              aspectRatio: 1,
                               child: photo.webBytes != null
-                                ? Image.memory(photo.webBytes!, fit: BoxFit.contain)
-                                : Image.file(File(photo.filePath!), fit: BoxFit.contain),
+                                ? Image.memory(photo.webBytes!, fit: BoxFit.cover)
+                                : Image.file(File(photo.filePath!), fit: BoxFit.cover),
                             ),
                           ),
-                        );
-                      },
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: photo.webBytes != null
-                            ? Image.memory(photo.webBytes!, fit: BoxFit.cover)
-                            : Image.file(File(photo.filePath!), fit: BoxFit.cover),
                         ),
-                      ),
+                      ],
                     );
                   },
                 ),

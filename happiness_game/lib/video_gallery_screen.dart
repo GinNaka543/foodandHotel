@@ -29,81 +29,182 @@ class _VideoGalleryScreenState extends State<VideoGalleryScreen> {
   List<_VideoItem> videos = [];
 
   void _addVideo() async {
-    String? filePath;
-    String? webUrl;
-    if (kIsWeb) {
-      final result = await FilePicker.platform.pickFiles(type: FileType.video);
-      if (result == null || result.files.isEmpty) return;
-      final bytes = result.files.first.bytes;
-      final name = result.files.first.name;
-      if (bytes == null) return;
-      final blob = html.Blob([bytes]);
-      webUrl = html.Url.createObjectUrlFromBlob(blob);
-    } else {
-      final picker = ImagePicker();
-      final pickedFile = await picker.pickVideo(source: ImageSource.gallery);
-      if (pickedFile == null) return;
-      final appDir = await getApplicationDocumentsDirectory();
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile.name);
-      final savePath = '${appDir.path}/$fileName';
-      await File(pickedFile.path).copy(savePath);
-      filePath = savePath;
-    }
-    String? title;
-    String? hashtag;
     await showDialog(
       context: context,
       builder: (context) {
         final titleController = TextEditingController();
         final hashtagController = TextEditingController();
-        return AlertDialog(
-          title: const Text('動画アップロード'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AspectRatio(
-                aspectRatio: 369/222,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22.64),
-                  child: kIsWeb
-                    ? VideoPlayerPreviewWeb(url: webUrl!)
-                    : VideoPlayerPreview(file: File(filePath!)),
+        String? errorText;
+        String? localFilePath;
+        String? localWebUrl;
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('動画アップロード', style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 24),
+                    GestureDetector(
+                      onTap: () async {
+                        if (kIsWeb) {
+                          final result = await FilePicker.platform.pickFiles(type: FileType.video);
+                          if (result == null || result.files.isEmpty) return;
+                          final bytes = result.files.first.bytes;
+                          final name = result.files.first.name;
+                          if (bytes == null) return;
+                          final blob = html.Blob([bytes]);
+                          setStateDialog(() {
+                            localWebUrl = html.Url.createObjectUrlFromBlob(blob);
+                            localFilePath = null;
+                          });
+                        } else {
+                          final picker = ImagePicker();
+                          final pickedFile = await picker.pickVideo(source: ImageSource.gallery);
+                          if (pickedFile == null) return;
+                          final appDir = await getApplicationDocumentsDirectory();
+                          final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile.name);
+                          final savePath = '${appDir.path}/$fileName';
+                          await File(pickedFile.path).copy(savePath);
+                          setStateDialog(() {
+                            localFilePath = savePath;
+                            localWebUrl = null;
+                          });
+                        }
+                      },
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!, width: 1),
+                        ),
+                        child: (kIsWeb
+                          ? (localWebUrl == null
+                            ? Icon(Icons.video_library, color: Colors.grey[600], size: 32)
+                            : VideoPlayerPreviewWeb(url: localWebUrl!))
+                          : (localFilePath == null
+                            ? Icon(Icons.video_library, color: Colors.grey[600], size: 32)
+                            : VideoPlayerPreview(file: File(localFilePath!)))),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    TextField(
+                      controller: titleController,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'タイトル',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.black),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: hashtagController,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'タグ（例: #アニメ #声優）',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.black),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    if (errorText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          errorText!,
+                          style: TextStyle(color: Colors.red[700], fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(foregroundColor: Colors.black),
+                            child: Text('キャンセル'),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final title = titleController.text.trim();
+                              final hashtag = hashtagController.text.trim();
+                              String? error;
+                              if (title.isEmpty) {
+                                error = 'タイトルを入力してください';
+                              } else if (hashtag.isEmpty) {
+                                error = 'タグを入力してください';
+                              } else if ((kIsWeb && (localWebUrl == null || (localWebUrl?.isEmpty ?? true))) || (!kIsWeb && (localFilePath == null || (localFilePath?.isEmpty ?? true)))) {
+                                error = '動画を選択してください';
+                              }
+                              if (error != null) {
+                                setStateDialog(() {
+                                  errorText = error;
+                                });
+                                return;
+                              }
+                              setState(() {
+                                videos.insert(0, _VideoItem(filePath: localFilePath, webUrl: localWebUrl, title: title, hashtag: hashtag));
+                              });
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              elevation: 0,
+                            ),
+                            child: Text('保存'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'タイトル'),
-              ),
-              TextField(
-                controller: hashtagController,
-                decoration: const InputDecoration(labelText: 'ハッシュタグ（例: #アニメ #感想）'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                title = titleController.text.trim();
-                hashtag = hashtagController.text.trim();
-                if (title == null || title!.isEmpty) return;
-                Navigator.pop(context);
-              },
-              child: const Text('保存'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
-    if (title != null && title!.isNotEmpty) {
-      setState(() {
-        videos.insert(0, _VideoItem(filePath: filePath, webUrl: webUrl, title: title!, hashtag: hashtag ?? ''));
-      });
-    }
   }
 
   @override
@@ -176,20 +277,30 @@ class _VideoGalleryScreenState extends State<VideoGalleryScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(22.64),
-                        child: SizedBox(
-                          width: 369,
-                          height: 222,
-                          child: kIsWeb
-                            ? VideoPlayerCardWeb(url: video.webUrl!)
-                            : VideoPlayerCard(file: File(video.filePath!)),
-                        ),
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(22.64),
+                            child: SizedBox(
+                              width: 369,
+                              height: 222,
+                              child: kIsWeb
+                                ? (video.webUrl != null
+                                    ? VideoPlayerCardWeb(url: video.webUrl!)
+                                    : Container(color: Colors.grey[200], width: 369, height: 222))
+                                : (video.filePath != null
+                                    ? VideoPlayerCard(file: File(video.filePath!))
+                                    : Container(color: Colors.grey[200], width: 369, height: 222)),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 7),
+                      // Row全体を横並び＋spaceBetweenで分割
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // 左側：アイコン＋名前＋テキスト
                           Padding(
                             padding: const EdgeInsets.only(left: 0, top: 9),
                             child: CircleAvatar(
@@ -228,6 +339,44 @@ class _VideoGalleryScreenState extends State<VideoGalleryScreen> {
                                     ),
                                 ],
                               ),
+                            ),
+                          ),
+                          // 右側：３点メニュー
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8, top: 6),
+                            child: PopupMenuButton<String>(
+                              icon: Icon(Icons.more_vert, color: Colors.black, size: 20),
+                              onSelected: (value) {
+                                if (value == 'delete') {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('この動画を消去しますか？'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: Text('キャンセル'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              videos.removeAt(i);
+                                            });
+                                            Navigator.pop(context);
+                                          },
+                                          child: Text('消去', style: TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text('消去'),
+                                ),
+                              ],
                             ),
                           ),
                         ],

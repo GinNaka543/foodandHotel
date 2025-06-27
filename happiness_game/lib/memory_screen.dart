@@ -155,15 +155,9 @@ class _MemoryScreenState extends State<MemoryScreen> {
                         ),
                         child: imageProvider == null
                             ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
-                            : ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image(
-                                  image: imageProvider!,
-                                  fit: BoxFit.cover,
-                                  width: 80,
-                                  height: 80,
-                                ),
-                              ),
+                            : (kIsWeb
+                                ? ClipOval(child: Image(image: imageProvider!, fit: BoxFit.cover, width: 80, height: 80))
+                                : ClipOval(child: Image.file(File(savedPath!), fit: BoxFit.cover, width: 80, height: 80))),
                       ),
                     ),
                     SizedBox(height: 24),
@@ -1154,6 +1148,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                                     ),
                                     const SizedBox(height: 7),
                                     Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Padding(
@@ -1194,6 +1189,44 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                                                   ),
                                               ],
                                             ),
+                                          ),
+                                        ),
+                                        // 右側：３点メニュー
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 8, top: 6),
+                                          child: PopupMenuButton<String>(
+                                            icon: Icon(Icons.more_vert, color: Colors.black, size: 20),
+                                            onSelected: (value) {
+                                              if (value == 'delete') {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: Text('この画像を消去しますか？'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: Text('キャンセル'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            photos.removeAt(i);
+                                                          });
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: Text('消去', style: TextStyle(color: Colors.red)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            itemBuilder: (context) => [
+                                              PopupMenuItem(
+                                                value: 'delete',
+                                                child: Text('消去'),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -1251,6 +1284,7 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                                     ),
                                     const SizedBox(height: 7),
                                     Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Padding(
@@ -1291,6 +1325,44 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                                                   ),
                                               ],
                                             ),
+                                          ),
+                                        ),
+                                        // 右側：３点メニュー
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 8, top: 6),
+                                          child: PopupMenuButton<String>(
+                                            icon: Icon(Icons.more_vert, color: Colors.black, size: 20),
+                                            onSelected: (value) {
+                                              if (value == 'delete') {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: Text('この画像を消去しますか？'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: Text('キャンセル'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          setState(() {
+                                                            photos.removeAt(i);
+                                                          });
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: Text('消去', style: TextStyle(color: Colors.red)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                            itemBuilder: (context) => [
+                                              PopupMenuItem(
+                                                value: 'delete',
+                                                child: Text('消去'),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],

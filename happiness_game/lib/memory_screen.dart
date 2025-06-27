@@ -577,10 +577,25 @@ class _MemoryScreenState extends State<MemoryScreen> {
   }
 }
 
-class CharacterDetailScreen extends StatelessWidget {
+class CharacterDetailScreen extends StatefulWidget {
   final Character character;
   final List<ImageProvider> pictures;
   const CharacterDetailScreen({Key? key, required this.character, required this.pictures}) : super(key: key);
+
+  @override
+  State<CharacterDetailScreen> createState() => _CharacterDetailScreenState();
+}
+
+class _CharacterDetailScreenState extends State<CharacterDetailScreen> {
+  late ImageProvider _iconImage;
+  late ImageProvider _backgroundImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _iconImage = widget.character.image;
+    _backgroundImage = widget.character.image;
+  }
 
   String _formatBirthday(String? birthday) {
     if (birthday == null || !birthday.contains('/')) return '';
@@ -597,14 +612,92 @@ class CharacterDetailScreen extends StatelessWidget {
     return '${months[month]}, $day';
   }
 
+  Future<void> _showImageDialog({required bool isIcon}) async {
+    await showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.7),
+      builder: (context) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Center(
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Image(
+                  image: isIcon ? _iconImage : _backgroundImage,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 150,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final ImagePicker picker = ImagePicker();
+                  XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                  if (pickedFile != null) {
+                    if (kIsWeb) {
+                      final bytes = await pickedFile.readAsBytes();
+                      setState(() {
+                        if (isIcon) {
+                          _iconImage = MemoryImage(bytes);
+                        } else {
+                          _backgroundImage = MemoryImage(bytes);
+                        }
+                      });
+                    } else {
+                      final appDir = await getApplicationDocumentsDirectory();
+                      final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile.name);
+                      final path = '${appDir.path}/$fileName';
+                      await File(pickedFile.path).copy(path);
+                      setState(() {
+                        if (isIcon) {
+                          _iconImage = FileImage(File(path));
+                        } else {
+                          _backgroundImage = FileImage(File(path));
+                        }
+                      });
+                    }
+                  }
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                  elevation: 0,
+                ),
+                child: const Text('写真を変更'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final String birthdayEn = _formatBirthday(character.birthday);
+    final String birthdayEn = _formatBirthday(widget.character.birthday);
     return Scaffold(
       backgroundColor: Color(0xFFB3E5FC),
       body: SafeArea(
         child: Stack(
           children: [
+            // 背景画像
+            GestureDetector(
+              onTap: () => _showImageDialog(isIcon: false),
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                child: Image(
+                  image: _backgroundImage,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            // 既存のUI（アイコンや名前など）は上に重ねる
             Column(
               children: [
                 // 戻るボタン
@@ -626,15 +719,18 @@ class CharacterDetailScreen extends StatelessWidget {
                     children: [
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
-                        child: CircleAvatar(
-                          backgroundImage: character.image,
-                          radius: 50,
-                          backgroundColor: Colors.white,
+                        child: GestureDetector(
+                          onTap: () => _showImageDialog(isIcon: true),
+                          child: CircleAvatar(
+                            backgroundImage: _iconImage,
+                            radius: 50,
+                            backgroundColor: Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        character.name,
+                        widget.character.name,
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -675,7 +771,7 @@ class CharacterDetailScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => MemoryGalleryScreen(character: character, pictures: pictures),
+                            builder: (context) => MemoryGalleryScreen(character: widget.character, pictures: widget.pictures),
                           ),
                         );
                       },
@@ -692,7 +788,7 @@ class CharacterDetailScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => VideoGalleryScreen(character: character),
+                            builder: (context) => VideoGalleryScreen(character: widget.character),
                           ),
                         );
                       },

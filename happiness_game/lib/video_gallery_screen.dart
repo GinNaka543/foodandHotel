@@ -155,9 +155,10 @@ class _VideoGalleryScreenState extends State<VideoGalleryScreen> {
                       child: _TabText('Video', true),
                     ),
                     const SizedBox(width: 32),
+                    SizedBox(width: 230),
                     GestureDetector(
                       onTap: _addVideo,
-                      child: _TabText('Upload', false),
+                      child: Icon(Icons.cloud_upload, size: 28, color: Colors.blue),
                     ),
                   ],
                 ),

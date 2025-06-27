@@ -142,7 +142,9 @@ class _MemoryScreenState extends State<MemoryScreen> {
                         ),
                         child: savedPath == null
                             ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
-                            : ClipOval(child: Image.file(File(savedPath!), fit: BoxFit.cover, width: 80, height: 80)),
+                            : ClipOval(
+                                child: Image.file(File(savedPath!), fit: BoxFit.cover, width: 80, height: 80),
+                              ),
                       ),
                     ),
                     SizedBox(height: 24),
@@ -151,7 +153,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16, color: Colors.black),
                       decoration: InputDecoration(
-                        hintText: 'タイトル',
+                        hintText: '名前',
                         hintStyle: TextStyle(color: Colors.grey[500]),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -708,105 +710,182 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
     String? tempPath;
     Uint8List? webBytes;
     XFile? pickedFile;
+    String? savedPath;
     await showDialog(
       context: context,
+      barrierColor: Colors.black.withOpacity(0.5),
       builder: (context) {
         final titleController = TextEditingController();
         final hashtagController = TextEditingController();
+        String? errorText;
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text('写真アップロード'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      final picker = ImagePicker();
-                      pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                      if (pickedFile != null) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              backgroundColor: Colors.white,
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('写真アップロード', style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 24),
+                    GestureDetector(
+                      onTap: () async {
                         if (kIsWeb) {
-                          final bytes = await pickedFile!.readAsBytes();
-                          setStateDialog(() {
-                            webBytes = bytes;
-                          });
+                          final picker = ImagePicker();
+                          pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                          if (pickedFile != null) {
+                            final bytes = await pickedFile!.readAsBytes();
+                            setStateDialog(() {
+                              webBytes = bytes;
+                            });
+                          }
                         } else {
-                          setStateDialog(() {
+                          final picker = ImagePicker();
+                          pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                          if (pickedFile != null) {
                             tempPath = pickedFile!.path;
-                          });
+                            setStateDialog(() {});
+                          }
                         }
-                      }
-                    },
-                    child: kIsWeb
-                        ? (webBytes == null
-                            ? Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Icon(Icons.add_a_photo, size: 44, color: Colors.grey),
-                              )
-                            : ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.memory(webBytes!, width: 120, height: 120, fit: BoxFit.cover),
-                              ))
-                        : (tempPath == null
-                            ? Container(
-                                width: 120,
-                                height: 120,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: const Icon(Icons.add_a_photo, size: 44, color: Colors.grey),
-                              )
-                            : ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Image.file(File(tempPath!), width: 120, height: 120, fit: BoxFit.cover),
-                              )),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: 'タイトル'),
-                  ),
-                  TextField(
-                    controller: hashtagController,
-                    decoration: const InputDecoration(labelText: 'ハッシュタグ（例: #アニメ #感想）'),
-                  ),
-                ],
+                      },
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!, width: 1),
+                        ),
+                        child: kIsWeb
+                          ? (webBytes == null
+                              ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
+                              : ClipOval(
+                                  child: Image.memory(webBytes!, fit: BoxFit.cover, width: 80, height: 80)))
+                          : (tempPath == null
+                              ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
+                              : ClipOval(
+                                  child: Image.file(File(tempPath!), fit: BoxFit.cover, width: 80, height: 80))),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    TextField(
+                      controller: titleController,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'タイトル',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.black),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: hashtagController,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'ハッシュタグ（例: #アニメ #思い出）',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.black),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    if (errorText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          errorText!,
+                          style: TextStyle(color: Colors.red[700], fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(foregroundColor: Colors.black),
+                            child: Text('キャンセル'),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final title = titleController.text.trim();
+                              final hashtag = hashtagController.text.trim();
+                              String? error;
+                              if (title.isEmpty) {
+                                error = 'タイトルを入力してください';
+                              } else if (hashtag.isEmpty) {
+                                error = 'ハッシュタグを入力してください';
+                              } else if ((kIsWeb && webBytes == null) || (!kIsWeb && tempPath == null)) {
+                                error = '画像を選択してください';
+                              }
+                              if (error != null) {
+                                setStateDialog(() {
+                                  errorText = error;
+                                });
+                                return;
+                              }
+                              if (kIsWeb) {
+                                setState(() {
+                                  photos.insert(0, _MemoryPhoto(filePath: null, webBytes: webBytes, title: title, hashtag: hashtag));
+                                });
+                              } else {
+                                final appDir = await getApplicationDocumentsDirectory();
+                                final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile?.name ?? 'image.png');
+                                savedPath = '${appDir.path}/$fileName';
+                                await File(tempPath!).copy(savedPath!);
+                                setState(() {
+                                  photos.insert(0, _MemoryPhoto(filePath: savedPath, webBytes: null, title: title, hashtag: hashtag));
+                                });
+                              }
+                              Navigator.pop(context);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              elevation: 0,
+                            ),
+                            child: Text('保存'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('キャンセル'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    final title = titleController.text.trim();
-                    final hashtag = hashtagController.text.trim();
-                    if (title.isEmpty || (kIsWeb ? webBytes == null : tempPath == null)) return;
-                    String? savePath;
-                    if (kIsWeb) {
-                      setState(() {
-                        photos.insert(0, _MemoryPhoto(filePath: null, webBytes: webBytes, title: title, hashtag: hashtag));
-                      });
-                    } else {
-                      final appDir = await getApplicationDocumentsDirectory();
-                      final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile?.name ?? 'image.png');
-                      savePath = '${appDir.path}/$fileName';
-                      await File(tempPath!).copy(savePath);
-                      setState(() {
-                        photos.insert(0, _MemoryPhoto(filePath: savePath, webBytes: null, title: title, hashtag: hashtag));
-                      });
-                    }
-                    Navigator.pop(context);
-                  },
-                  child: const Text('保存'),
-                ),
-              ],
             );
           },
         );

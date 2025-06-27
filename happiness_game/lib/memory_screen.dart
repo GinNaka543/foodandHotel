@@ -7,6 +7,9 @@ import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'home_screen.dart';
 import 'dart:async';
+import 'package:path_provider/path_provider.dart';
+import 'video_gallery_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class Character {
   final String name;
@@ -90,14 +93,14 @@ class _MemoryScreenState extends State<MemoryScreen> {
   void _addCharacter() async {
     String? name;
     XFile? pickedFile;
-    Uint8List? imageBytes;
+    String? savedPath;
     ImageProvider? imageProvider;
     String? subtitle;
     String? birthday;
 
     await showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.25),
+      barrierColor: Colors.black.withOpacity(0.5),
       builder: (context) {
         final nameController = TextEditingController();
         final subtitleController = TextEditingController();
@@ -106,131 +109,108 @@ class _MemoryScreenState extends State<MemoryScreen> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               backgroundColor: Colors.white,
-              elevation: 8,
-              child: Container(
-                width: 380,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // 上部余白
-                    const SizedBox(height: 8),
-                    // 円形画像アップロード
+                    Text('写真アップロード', style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
+                    SizedBox(height: 24),
                     GestureDetector(
                       onTap: () async {
                         pickedFile = await _picker.pickImage(source: ImageSource.gallery);
                         if (pickedFile != null) {
-                          imageBytes = await pickedFile!.readAsBytes();
+                          final appDir = await getApplicationDocumentsDirectory();
+                          final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile!.name);
+                          final savePath = '${appDir.path}/$fileName';
+                          await File(pickedFile!.path).copy(savePath);
+                          savedPath = savePath;
                         }
                         setStateDialog(() {});
                       },
                       child: Container(
-                        width: 110,
-                        height: 110,
+                        width: 80,
+                        height: 80,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.grey[100],
-                          border: Border.all(color: Colors.grey[400]!, width: 2),
-                          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 12, offset: Offset(0,4))],
+                          border: Border.all(color: Colors.grey[300]!, width: 1),
                         ),
-                        child: imageBytes == null
-                            ? Padding(
-                                padding: const EdgeInsets.only(top: 10),
-                                child: Icon(Icons.add_a_photo_outlined, color: Colors.grey[600], size: 44),
-                              )
-                            : ClipOval(child: Image.memory(imageBytes!, fit: BoxFit.cover, width: 110, height: 110)),
+                        child: savedPath == null
+                            ? Icon(Icons.add_a_photo, color: Colors.grey[600], size: 32)
+                            : ClipOval(child: Image.file(File(savedPath!), fit: BoxFit.cover, width: 80, height: 80)),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    // 名前
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: nameController,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.bold),
-                            decoration: InputDecoration(
-                              hintText: '名前',
-                              hintStyle: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(vertical: 0),
-                            ),
-                          ),
+                    SizedBox(height: 24),
+                    TextField(
+                      controller: nameController,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'タイトル',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
                         ),
-                        Icon(Icons.edit, color: Colors.grey[500], size: 22),
-                      ],
-                    ),
-                    Container(height: 1, color: Colors.grey[300]),
-                    const SizedBox(height: 8),
-                    // サブ情報
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.cake, color: Colors.grey[700], size: 20),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: TextField(
-                            controller: birthdayController,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                            decoration: InputDecoration(
-                              hintText: '誕生日 (例: 7/31)',
-                              hintStyle: TextStyle(color: Colors.grey[400]),
-                              border: InputBorder.none,
-                            ),
-                            keyboardType: TextInputType.datetime,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^[0-9/]*')),
-                            ],
-                          ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
                         ),
-                      ],
-                    ),
-                    Container(height: 1, color: Colors.grey[300]),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.tag, color: Colors.grey[700], size: 20),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: TextField(
-                            controller: subtitleController,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                            decoration: InputDecoration(
-                              hintText: 'タグ (例: #アニメ名 #ニックネーム)',
-                              hintStyle: TextStyle(color: Colors.grey[400]),
-                              border: InputBorder.none,
-                            ),
-                          ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.black),
                         ),
-                      ],
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
                     ),
-                    Container(height: 1, color: Colors.grey[300]),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: subtitleController,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      decoration: InputDecoration(
+                        hintText: 'ハッシュタグ（例: #アニメ #思い出）',
+                        hintStyle: TextStyle(color: Colors.grey[500]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.black),
+                        ),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    if (errorText != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          errorText!,
+                          style: TextStyle(color: Colors.red[700], fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton(
+                          child: TextButton(
                             onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.grey[800],
-                              side: BorderSide(color: Colors.grey[400]!),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.white,
-                            ),
-                            child: const Text('キャンセル', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            style: TextButton.styleFrom(foregroundColor: Colors.black),
+                            child: Text('キャンセル'),
                           ),
                         ),
-                        const SizedBox(width: 18),
+                        SizedBox(width: 16),
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
@@ -239,27 +219,9 @@ class _MemoryScreenState extends State<MemoryScreen> {
                               birthday = birthdayController.text.trim();
                               String? error;
                               if (name == null || name?.isEmpty == true) {
-                                error = '名前を入力してください';
+                                error = 'タイトルを入力してください';
                               } else if (subtitle == null || subtitle?.isEmpty == true) {
-                                error = 'タグを入力してください';
-                              } else if (birthday == null || birthday?.isEmpty == true) {
-                                error = '誕生日を入力してください';
-                              } else {
-                                final match = RegExp(r'^(1[0-2]|[1-9])\/(3[01]|[12][0-9]|[1-9])').firstMatch(birthday!);
-                                bool valid = false;
-                                if (match != null) {
-                                  final month = int.tryParse(match.group(1)!);
-                                  final day = int.tryParse(match.group(2)!);
-                                  if (month != null && day != null) {
-                                    final daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
-                                    if (month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month]) {
-                                      valid = true;
-                                    }
-                                  }
-                                }
-                                if (!valid) {
-                                  error = '誕生日は実在する日付で 7/31 の形式で入力してください';
-                                }
+                                error = 'ハッシュタグを入力してください';
                               }
                               if (error != null) {
                                 setStateDialog(() {
@@ -267,8 +229,8 @@ class _MemoryScreenState extends State<MemoryScreen> {
                                 });
                                 return;
                               }
-                              imageProvider = imageBytes != null
-                                  ? MemoryImage(imageBytes!)
+                              imageProvider = savedPath != null
+                                  ? FileImage(File(savedPath!))
                                   : const AssetImage('assets/images/Clogo.png');
                               setState(() {
                                 _characters.insert(0, Character(name: name!, image: imageProvider!, subtitle: subtitle, birthday: birthday));
@@ -277,21 +239,17 @@ class _MemoryScreenState extends State<MemoryScreen> {
                               Navigator.pop(context);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.grey[900],
+                              backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              elevation: 0,
                             ),
-                            child: const Text('登録', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            child: Text('保存'),
                           ),
                         ),
                       ],
                     ),
-                    if (errorText != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(errorText!, style: TextStyle(color: Colors.red, fontSize: 12)),
-                      ),
                   ],
                 ),
               ),
@@ -462,7 +420,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CharacterDetailScreen(character: character),
+                            builder: (context) => CharacterDetailScreen(character: character, pictures: pictures),
                           ),
                         );
                       },
@@ -571,7 +529,8 @@ class _MemoryScreenState extends State<MemoryScreen> {
 
 class CharacterDetailScreen extends StatelessWidget {
   final Character character;
-  const CharacterDetailScreen({Key? key, required this.character}) : super(key: key);
+  final List<ImageProvider> pictures;
+  const CharacterDetailScreen({Key? key, required this.character, required this.pictures}) : super(key: key);
 
   String _formatBirthday(String? birthday) {
     if (birthday == null || !birthday.contains('/')) return '';
@@ -666,7 +625,7 @@ class CharacterDetailScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => MemoryGalleryScreen(character: character),
+                            builder: (context) => MemoryGalleryScreen(character: character, pictures: pictures),
                           ),
                         );
                       },
@@ -678,12 +637,22 @@ class CharacterDetailScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Column(
-                      children: [
-                        Icon(Icons.play_circle_outline, color: Colors.white, size: 32),
-                        const SizedBox(height: 4),
-                        Text('Video', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                      ],
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => VideoGalleryScreen(character: character),
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          Icon(Icons.play_circle_outline, color: Colors.white, size: 32),
+                          const SizedBox(height: 4),
+                          Text('Video', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        ],
+                      ),
                     ),
                     Column(
                       children: [
@@ -724,7 +693,8 @@ class CharacterDetailScreen extends StatelessWidget {
 // --- ここからギャラリー画面を追加 ---
 class MemoryGalleryScreen extends StatefulWidget {
   final Character character;
-  const MemoryGalleryScreen({Key? key, required this.character}) : super(key: key);
+  final List<ImageProvider> pictures;
+  const MemoryGalleryScreen({Key? key, required this.character, required this.pictures}) : super(key: key);
 
   @override
   State<MemoryGalleryScreen> createState() => _MemoryGalleryScreenState();
@@ -732,59 +702,116 @@ class MemoryGalleryScreen extends StatefulWidget {
 
 class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
   List<_MemoryPhoto> photos = [];
+  int _selectedTab = 0;
 
   void _addPhoto() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile == null) return;
-    final imageBytes = await pickedFile.readAsBytes();
-    String? title;
-    String? hashtag;
+    String? tempPath;
+    Uint8List? webBytes;
+    XFile? pickedFile;
     await showDialog(
       context: context,
       builder: (context) {
         final titleController = TextEditingController();
         final hashtagController = TextEditingController();
-        return AlertDialog(
-          title: const Text('写真アップロード'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Image.memory(imageBytes, width: 120, height: 120, fit: BoxFit.cover),
-              const SizedBox(height: 12),
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'タイトル'),
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('写真アップロード'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        if (kIsWeb) {
+                          final bytes = await pickedFile!.readAsBytes();
+                          setStateDialog(() {
+                            webBytes = bytes;
+                          });
+                        } else {
+                          setStateDialog(() {
+                            tempPath = pickedFile!.path;
+                          });
+                        }
+                      }
+                    },
+                    child: kIsWeb
+                        ? (webBytes == null
+                            ? Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Icon(Icons.add_a_photo, size: 44, color: Colors.grey),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.memory(webBytes!, width: 120, height: 120, fit: BoxFit.cover),
+                              ))
+                        : (tempPath == null
+                            ? Container(
+                                width: 120,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: const Icon(Icons.add_a_photo, size: 44, color: Colors.grey),
+                              )
+                            : ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.file(File(tempPath!), width: 120, height: 120, fit: BoxFit.cover),
+                              )),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'タイトル'),
+                  ),
+                  TextField(
+                    controller: hashtagController,
+                    decoration: const InputDecoration(labelText: 'ハッシュタグ（例: #アニメ #感想）'),
+                  ),
+                ],
               ),
-              TextField(
-                controller: hashtagController,
-                decoration: const InputDecoration(labelText: 'ハッシュタグ（例: #アニメ #感想）'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                title = titleController.text.trim();
-                hashtag = hashtagController.text.trim();
-                if (title == null || title!.isEmpty) return;
-                Navigator.pop(context);
-              },
-              child: const Text('保存'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('キャンセル'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final title = titleController.text.trim();
+                    final hashtag = hashtagController.text.trim();
+                    if (title.isEmpty || (kIsWeb ? webBytes == null : tempPath == null)) return;
+                    String? savePath;
+                    if (kIsWeb) {
+                      setState(() {
+                        photos.insert(0, _MemoryPhoto(filePath: null, webBytes: webBytes, title: title, hashtag: hashtag));
+                      });
+                    } else {
+                      final appDir = await getApplicationDocumentsDirectory();
+                      final fileName = DateTime.now().millisecondsSinceEpoch.toString() + '_' + (pickedFile?.name ?? 'image.png');
+                      savePath = '${appDir.path}/$fileName';
+                      await File(tempPath!).copy(savePath);
+                      setState(() {
+                        photos.insert(0, _MemoryPhoto(filePath: savePath, webBytes: null, title: title, hashtag: hashtag));
+                      });
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text('保存'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
-    if (title != null && title!.isNotEmpty) {
-      setState(() {
-        photos.insert(0, _MemoryPhoto(imageBytes: imageBytes, title: title!, hashtag: hashtag ?? ''));
-      });
-    }
   }
 
   @override
@@ -838,9 +865,15 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _TabText('ArtWork', true),
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedTab = 0),
+                            child: _TabText('ArtWork', _selectedTab == 0),
+                          ),
                           const SizedBox(width: 32),
-                          _TabText('Almub', false),
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedTab = 1),
+                            child: _TabText('Almub', _selectedTab == 1),
+                          ),
                         ],
                       ),
                     ),
@@ -858,120 +891,234 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: photos.length,
-              itemBuilder: (context, i) {
-                final photo = photos[i];
-                // 画像の縦横比でフレームを選択
-                final image = Image.memory(photo.imageBytes);
-                return FutureBuilder<Size>(
-                  future: _getImageSize(photo.imageBytes),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const SizedBox(height: 200);
-                    }
-                    final size = snapshot.data!;
-                    // long: 333.97x472, short: 336x201
-                    final longFrame = const Size(333.97, 472);
-                    final shortFrame = const Size(336, 201);
-                    final double aspect = size.height / size.width;
-                    final double longAspect = longFrame.height / longFrame.width;
-                    final double shortAspect = shortFrame.height / shortFrame.width;
-                    final bool useLong = (aspect - longAspect).abs() < (aspect - shortAspect).abs();
-                    final frameAsset = useLong ? 'assets/images/long.png' : 'assets/images/short.png';
-                    final frameSize = useLong ? longFrame : shortFrame;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 32, left: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // 写真本体
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: Image.memory(
-                                  photo.imageBytes,
-                                  width: frameSize.width,
-                                  height: frameSize.height,
-                                  fit: BoxFit.cover,
+            child: _selectedTab == 0
+              ? // 従来のArtWorkリスト表示
+                ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: photos.length,
+                  itemBuilder: (context, i) {
+                    final photo = photos[i];
+                    if (kIsWeb) {
+                      // WebはImage.memoryのみ
+                      final longFrame = const Size(334, 472);
+                      final shortFrame = const Size(336, 201);
+                      return FutureBuilder<Size?>(
+                        future: photo.webBytes != null ? _getImageSizeFromBytes(photo.webBytes!) : Future.value(null),
+                        builder: (context, snapshot) {
+                          final imageSize = snapshot.data;
+                          final frameSize = (imageSize != null)
+                              ? (() {
+                                  final aspect = imageSize.height / imageSize.width;
+                                  final longAspect = longFrame.height / longFrame.width;
+                                  final shortAspect = shortFrame.height / shortFrame.width;
+                                  return (aspect - longAspect).abs() < (aspect - shortAspect).abs() ? longFrame : shortFrame;
+                                })()
+                              : shortFrame;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 32, left: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: photo.webBytes == null
+                                      ? Container(width: frameSize.width, height: frameSize.height)
+                                      : Image.memory(photo.webBytes!, width: frameSize.width, height: frameSize.height, fit: BoxFit.cover),
                                 ),
-                              ),
-                              // フレーム画像を重ねる
-                              Image.asset(
-                                frameAsset,
-                                width: frameSize.width,
-                                height: frameSize.height,
-                                fit: BoxFit.cover,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 7),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(left: 0, top: 9), // 5px左に寄せて3px下げる
-                                child: CircleAvatar(
-                                  backgroundImage: widget.character.image,
-                                  radius: 22,
-                                ),
-                              ),
-                              const SizedBox(width: 7),
-                              const SizedBox(height: 0),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 12), // アイコン中心に揃えるための調整
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        photo.title,
-                                        style: const TextStyle(
-                                          fontFamily: 'NotoSansJP',
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 15,
-                                          color: Colors.black,
+                                const SizedBox(height: 7),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 0, top: 9),
+                                      child: CircleAvatar(
+                                        backgroundImage: widget.character.image,
+                                        radius: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 7),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              photo.title,
+                                              style: const TextStyle(
+                                                fontFamily: 'NotoSansJP',
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 15,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            if (photo.hashtag.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 2.0),
+                                                child: Text(
+                                                  photo.hashtag,
+                                                  style: const TextStyle(
+                                                    fontFamily: 'NotoSansJP',
+                                                    fontWeight: FontWeight.w400,
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
                                         ),
                                       ),
-                                      if (photo.hashtag.isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 2.0),
-                                          child: Text(
-                                            photo.hashtag,
-                                            style: const TextStyle(
-                                              fontFamily: 'NotoSansJP',
-                                              fontWeight: FontWeight.w400,
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    } else {
+                      // モバイルはFutureBuilder＋Image.file
+                      return FutureBuilder<Size>(
+                        future: _getImageSizeFromFile(photo.filePath!),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const SizedBox(height: 200);
+                          }
+                          final size = snapshot.data!;
+                          final longFrame = const Size(334, 472);
+                          final shortFrame = const Size(336, 201);
+                          final double aspect = size.height / size.width;
+                          final double longAspect = longFrame.height / longFrame.width;
+                          final double shortAspect = shortFrame.height / shortFrame.width;
+                          final bool useLong = (aspect - longAspect).abs() < (aspect - shortAspect).abs();
+                          final frameAsset = useLong ? 'assets/images/long.png' : 'assets/images/short.png';
+                          final frameSize = useLong ? longFrame : shortFrame;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 32, left: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Image.file(
+                                        File(photo.filePath!),
+                                        width: frameSize.width,
+                                        height: frameSize.height,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                    Image.asset(
+                                      frameAsset,
+                                      width: frameSize.width,
+                                      height: frameSize.height,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 7),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 0, top: 9),
+                                      child: CircleAvatar(
+                                        backgroundImage: widget.character.image,
+                                        radius: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 7),
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              photo.title,
+                                              style: const TextStyle(
+                                                fontFamily: 'NotoSansJP',
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 15,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                            if (photo.hashtag.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 2.0),
+                                                child: Text(
+                                                  photo.hashtag,
+                                                  style: const TextStyle(
+                                                    fontFamily: 'NotoSansJP',
+                                                    fontWeight: FontWeight.w400,
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    }
+                  },
+                )
+              : // Almubタブ: artwork画像リスト（pictures）をGrid表示
+                GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: photos.length,
+                  itemBuilder: (context, i) {
+                    final photo = photos[i];
+                    return GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => Dialog(
+                            backgroundColor: Colors.black,
+                            child: InteractiveViewer(
+                              child: photo.webBytes != null
+                                ? Image.memory(photo.webBytes!, fit: BoxFit.contain)
+                                : Image.file(File(photo.filePath!), fit: BoxFit.contain),
+                            ),
                           ),
-                        ],
+                        );
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: photo.webBytes != null
+                            ? Image.memory(photo.webBytes!, fit: BoxFit.cover)
+                            : Image.file(File(photo.filePath!), fit: BoxFit.cover),
+                        ),
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
           ),
         ],
       ),
     );
   }
 
-  // 画像サイズを取得するFuture
-  Future<Size> _getImageSize(Uint8List bytes) async {
+  Future<Size> _getImageSizeFromFile(String filePath) async {
     final Completer<Size> completer = Completer();
-    final img = Image.memory(bytes);
+    final img = Image.file(File(filePath));
     img.image.resolve(const ImageConfiguration()).addListener(
       ImageStreamListener((ImageInfo info, bool _) {
         final mySize = Size(
@@ -983,13 +1130,25 @@ class _MemoryGalleryScreenState extends State<MemoryGalleryScreen> {
     );
     return completer.future;
   }
+
+  Future<Size?> _getImageSizeFromBytes(Uint8List bytes) async {
+    final completer = Completer<Size>();
+    final img = Image.memory(bytes);
+    img.image.resolve(const ImageConfiguration()).addListener(
+      ImageStreamListener((ImageInfo info, bool _) {
+        completer.complete(Size(info.image.width.toDouble(), info.image.height.toDouble()));
+      }),
+    );
+    return completer.future;
+  }
 }
 
 class _MemoryPhoto {
-  final Uint8List imageBytes;
+  final String? filePath;
+  final Uint8List? webBytes;
   final String title;
   final String hashtag;
-  _MemoryPhoto({required this.imageBytes, required this.title, required this.hashtag});
+  _MemoryPhoto({this.filePath, this.webBytes, required this.title, required this.hashtag});
 }
 
 class _TabText extends StatelessWidget {
@@ -1007,6 +1166,69 @@ class _TabText extends StatelessWidget {
         letterSpacing: 1.2,
         color: selected ? Colors.black : Colors.grey,
         decoration: selected ? TextDecoration.underline : null,
+      ),
+    );
+  }
+}
+
+class AlbumScreen extends StatelessWidget {
+  final Character character;
+  final List<ImageProvider> pictures;
+  const AlbumScreen({Key? key, required this.character, required this.pictures}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: Text(
+          '${character.name}のAlbum',
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+      ),
+      backgroundColor: Colors.white,
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1,
+        ),
+        itemCount: pictures.length,
+        itemBuilder: (context, i) {
+          return GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (_) => Dialog(
+                  backgroundColor: Colors.black,
+                  child: InteractiveViewer(
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Image(
+                        image: pictures[i],
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Image(
+                  image: pictures[i],
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

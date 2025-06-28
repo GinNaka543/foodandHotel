@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -19,19 +19,20 @@
 		5848E08C6C0A8FF16EC31660 /* title.png in Resources */ = {isa = PBXBuildFile; fileRef = 197F9E0A7B6E66D7B3598BC9 /* title.png */; };
 		58B0BEEC55B602A43A48470D /* AddVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C89171126C03EEF19913ED /* AddVideoView.swift */; };
 		5E89889A8F5DAA8827C52911 /* Clogo.png in Resources */ = {isa = PBXBuildFile; fileRef = 4D90A1DCC7BFCDA0272EBF74 /* Clogo.png */; };
+		7F38E956311047639DE33A7DFF83CFFA /* CharaScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F501FB9546A44911867F3946E924E139 /* CharaScreen.swift */; };
 		86306C4517312F565813E5D7 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BC3FCE306518206AAA0831 /* HomeScreen.swift */; };
 		93A03E18D939A7552014894F /* VideoGalleryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */; };
 		975B42E3441FFF35B4EBBEDC /* short.png in Resources */ = {isa = PBXBuildFile; fileRef = 8B7F3E4BC0E6BA3948BE03C2 /* short.png */; };
 		9F6F647F6DA1F9399F7A3A7A /* かのかり.png in Resources */ = {isa = PBXBuildFile; fileRef = 19452BD96E3EE28FD6DE7F94 /* かのかり.png */; };
 		C3C8E480920840E6B38DD715 /* MemoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6BD18F23F8A6F79B12B00E /* MemoryScreen.swift */; };
 		CBF056FA12F454254ECB78EC /* long.png in Resources */ = {isa = PBXBuildFile; fileRef = EE6AC7BB855D6E55D1650968 /* long.png */; };
+		CCE973FE2E10323E00032A3B /* ArtworkScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE973FD2E10323E00032A3B /* ArtworkScreen.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		DC57B81EE28D900EF50A81FF /* video.png in Resources */ = {isa = PBXBuildFile; fileRef = 408BC357F9906C958B248072 /* video.png */; };
 		DE2FA7D212728FDAEFA2F6D4 /* titlemusic.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = FF7FB2E870030A58E7956745 /* titlemusic.mp3 */; };
 		E2CE1BF33856FC8867E120FD /* picture.png in Resources */ = {isa = PBXBuildFile; fileRef = 1732CC9BA056AC4DF36E4C3E /* picture.png */; };
 		E541F3113FCB41B22350152B /* sample.png in Resources */ = {isa = PBXBuildFile; fileRef = A100D117EF0D523B0B82B2E2 /* sample.png */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
-		7F38E956311047639DE33A7DFF83CFFA /* CharaScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F501FB9546A44911867F3946E924E139 /* CharaScreen.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -41,9 +42,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				81FAE2A07ADF58C9A2BE75D2 /* AVFoundation.framework in Embed Frameworks */,
-				930D462922E78274C9672945 /* PhotosUI.framework in Embed Frameworks */,
-				7D55E378E0B2E22F34CF902C /* AVKit.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -71,12 +69,13 @@
 		ABD9731E0EB53C9F377C904C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGalleryScreen.swift; sourceTree = "<group>"; };
 		BF6BD18F23F8A6F79B12B00E /* MemoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryScreen.swift; sourceTree = "<group>"; };
+		CCE973FD2E10323E00032A3B /* ArtworkScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkScreen.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
 		EE6AC7BB855D6E55D1650968 /* long.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = long.png; sourceTree = "<group>"; };
 		F3BC3FCE306518206AAA0831 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		F501FB9546A44911867F3946E924E139 /* CharaScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharaScreen.swift; sourceTree = "<group>"; };
 		FAFB6F7C41707CA22E40FB09 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVKit.framework; sourceTree = "<group>"; };
 		FF7FB2E870030A58E7956745 /* titlemusic.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = titlemusic.mp3; sourceTree = "<group>"; };
-		F501FB9546A44911867F3946E924E139 /* CharaScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharaScreen.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +142,7 @@
 		8F7DBBC39F2D4E379E0D6B9A = {
 			isa = PBXGroup;
 			children = (
+				CCE973FD2E10323E00032A3B /* ArtworkScreen.swift */,
 				5FAAC8341B6B441AE4476A48 /* Audio */,
 				3181521879F3EBF6C743F9D8 /* HappinessGameSwift */,
 				B09124C7F033D3979C85F1E2 /* HappinessGameSwift */,
@@ -167,9 +167,6 @@
 				5A2163C710253B5523520C38 /* TitleScreen.swift */,
 				B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */,
 				F501FB9546A44911867F3946E924E139 /* CharaScreen.swift */,
-				5FAAC8341B6B441AE4476A48 /* Audio */,
-				5941F2822FED4CD589B8215E /* images */,
-				83BC10B077090A8D28F4B743 /* Preview Content */,
 			);
 			name = HappinessGameSwift;
 			path = .;
@@ -233,7 +230,6 @@
 			);
 			mainGroup = 8F7DBBC39F2D4E379E0D6B9A;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 54;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -276,6 +272,7 @@
 				86306C4517312F565813E5D7 /* HomeScreen.swift in Sources */,
 				C3C8E480920840E6B38DD715 /* MemoryScreen.swift in Sources */,
 				44E38804BC15161C44726B1C /* ProfileScreen.swift in Sources */,
+				CCE973FE2E10323E00032A3B /* ArtworkScreen.swift in Sources */,
 				116B9C0B56F15D176892A506 /* TitleScreen.swift in Sources */,
 				93A03E18D939A7552014894F /* VideoGalleryScreen.swift in Sources */,
 				7F38E956311047639DE33A7DFF83CFFA /* CharaScreen.swift in Sources */,

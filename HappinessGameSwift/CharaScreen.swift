@@ -1,12 +1,16 @@
 import SwiftUI
 import PhotosUI
 
-struct Character: Identifiable, Hashable {
-    let id = UUID()
+struct Character: Identifiable, Hashable, Equatable {
+    let id: UUID
     var image: UIImage?
     var name: String
     var tag: String
     var birthday: Date
+
+    static func == (lhs: Character, rhs: Character) -> Bool {
+        lhs.id == rhs.id
+    }
 }
 
 struct CharaScreen: View {
@@ -114,6 +118,11 @@ struct SearchBar: View {
         .background(Color(.systemGray6))
         .cornerRadius(10)
         .frame(height: 40)
+        .frame(width: UIScreen.main.bounds.width - 50)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.gray, lineWidth: 5)
+        )
     }
 }
 
@@ -146,8 +155,10 @@ struct CharacterRow: View {
             }
             Spacer()
             Text(birthdayString)
-                .font(.system(size: 13))
+                .font(.system(size: 9))
                 .foregroundColor(.gray)
+                .padding(.vertical, 5)
+                .offset(y: -5)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
@@ -217,7 +228,7 @@ struct AddCharacterSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("追加") {
-                        let newChar = Character(image: image, name: name, tag: tag, birthday: birthday)
+                        let newChar = Character(id: UUID(), image: image, name: name, tag: tag, birthday: birthday)
                         characters.append(newChar)
                         dismiss()
                     }.disabled(name.isEmpty || tag.isEmpty)
@@ -255,8 +266,12 @@ struct CharacterDetailView: View {
     let character: Character
     var onDismiss: (() -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
+    @State private var showArtwork = false
+
     var body: some View {
         GeometryReader { geometry in
+            let nameText = character.name
+            let birthdayText = DateFormatter.monthDayEnglish.string(from: character.birthday)
             ZStack(alignment: .topLeading) {
                 Color(.systemBackground).ignoresSafeArea()
                 Button(action: {
@@ -277,56 +292,92 @@ struct CharacterDetailView: View {
                 }
                 .padding(.top, 24)
                 .padding(.leading, 16)
-                // メイン内容
+                // アイコン
                 VStack {
-                    Spacer().frame(height: geometry.size.height * 0.18) // 上部余白
-                    // アイコン
+                    Spacer().frame(height: 180 + 50) // 50px下げる
                     if let image = character.image {
                         Image(uiImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 107, height: 107)
                             .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.white, lineWidth: 4))
                             .shadow(radius: 8)
                     } else {
                         Circle()
                             .fill(Color.gray.opacity(0.3))
                             .frame(width: 107, height: 107)
+                            .shadow(radius: 8)
                             .overlay(
                                 Image(systemName: "person")
-                                    .font(.system(size: 48))
+                                    .font(.system(size: 50))
                                     .foregroundColor(.gray)
                             )
                     }
-                    Spacer().frame(height: 16)
                     // 名前
-                    Text(character.name)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: geometry.size.width, alignment: .center)
-                    Spacer().frame(height: 8)
+                    Text(nameText)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                        .padding(.top, 20)
+                        .frame(maxWidth: .infinity, alignment: .center)
                     // 誕生日
-                    Text(birthdayString)
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundColor(.white)
-                        .frame(width: geometry.size.width, alignment: .center)
-                    Spacer().frame(height: 140)
-                    Divider()
-                        .background(Color.white)
-                        .frame(height: 2)
+                    Text(DateFormatter.monthDayEnglish.string(from: character.birthday).uppercased())
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.top, 8)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    // ナビゲーションバー（誕生日の直下、背景なし）
+                    HStack {
+                        Spacer()
+                        Button(action: { showArtwork = true }) {
+                            VStack {
+                                Image(systemName: "photo.on.rectangle")
+                                Text("ArtWork").font(.caption2)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        Spacer()
+                        VStack {
+                            Image(systemName: "video")
+                            Text("Video").font(.caption2)
+                        }
+                        Spacer()
+                        VStack {
+                            Image(systemName: "info.circle")
+                            Text("About").font(.caption2)
+                        }
+                        Spacer()
+                        VStack {
+                            Image(systemName: "link")
+                            Text("Visit").font(.caption2)
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 60)
+                    .fullScreenCover(isPresented: $showArtwork) {
+                        ArtworkScreen(character: character)
+                    }
                 }
                 .frame(width: geometry.size.width)
             }
         }
         .navigationBarHidden(true)
     }
-    private var birthdayString: String {
+}
+
+extension DateFormatter {
+    static let monthDayEnglish: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "MMM d"
-        return formatter.string(from: character.birthday).uppercased()
-    }
+        return formatter
+    }()
+    
+    static let monthDayJapanese: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateFormat = "M月d日"
+        return formatter
+    }()
 }
 
 #Preview {

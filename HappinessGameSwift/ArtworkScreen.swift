@@ -41,8 +41,17 @@ struct ArtworkScreen: View {
                         .frame(maxWidth: .infinity)
                         .offset(x: 9)
                     Spacer()
-                    // 空白でUploadボタン分のスペースを確保
-                    Color.clear.frame(width: 80, height: 1)
+                    // Uploadボタン（右端に揃える）
+                    Button(action: { showAddSheet = true }) {
+                        Text("Upload")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 6)
+                            .background(Color.black)
+                            .cornerRadius(8)
+                    }
+                    .padding(.trailing, 16)
                 }
                 .frame(height: 56)
                 .padding(.top, 8)
@@ -50,7 +59,7 @@ struct ArtworkScreen: View {
 
                 // タブバー
                 HStack(spacing: 0) {
-                    Spacer()
+                    Spacer(minLength: 70) // 40+30=70pt 右にずらす
                     Button(action: { showAlbum = false }) {
                         VStack(spacing: 2) {
                             Text("ArtWork")
@@ -72,20 +81,9 @@ struct ArtworkScreen: View {
                                 .foregroundColor(showAlbum == true ? .black : .clear)
                         }
                     }
-                    Spacer()
-                    Button(action: { showAddSheet = true }) {
-                        Text("Upload")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 4)
-                            .background(Color.black)
-                            .cornerRadius(4)
-                    }
-                    Spacer()
+                    Spacer(minLength: 80) // 右端Uploadボタンとの間隔を広げる
                 }
                 .frame(height: 40)
-                .padding(.bottom, 8)
                 // 画像リスト or Album
                 ZStack {
                     if showAlbum {
@@ -178,7 +176,6 @@ struct AlbumRowView: View {
                         .frame(width: 160, height: 120)
                         .clipped()
                         .cornerRadius(20)
-                        .shadow(radius: 6)
                 }
             }
             .padding(.horizontal, 16)

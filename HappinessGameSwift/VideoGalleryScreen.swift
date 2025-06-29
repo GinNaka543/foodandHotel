@@ -31,6 +31,8 @@ struct VideoGalleryScreen: View {
     @State private var showDeleteAlert = false
     @State private var deletingVideoID: UUID? = nil
     @State private var selectedThumbnailData: Data? = nil
+    @State private var expandedVideo: MemoryVideo? = nil
+    @State private var playingVideo: MemoryVideo? = nil
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -102,7 +104,7 @@ struct VideoGalleryScreen: View {
                     if showAlbum {
                         ScrollView {
                             VideoAlbumGridView(videos: videos, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, onVideoTap: { video in
-                                selectedVideo = video
+                                playVideoDirectly(video: video)
                             })
                         }
                     } else {
@@ -110,12 +112,11 @@ struct VideoGalleryScreen: View {
                             VStack(spacing: 32) {
                                 ForEach(videos) { video in
                                     VStack(alignment: .leading, spacing: 8) {
-                                        VideoThumbnailPlayer(video: video)
+                                        VideoThumbnailPlayer(video: video, isInModal: false, onTap: {
+                                            playingVideo = video
+                                        })
                                             .frame(width: 403, height: 242)
                                             .cornerRadius(20)
-                                            .onTapGesture {
-                                                selectedVideo = video
-                                            }
                                         HStack(alignment: .center, spacing: 12) {
                                             if let icon = character.image {
                                                 Image(uiImage: icon)
@@ -210,7 +211,10 @@ struct VideoGalleryScreen: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 24) {
                     Spacer()
-                    VideoThumbnailPlayer(video: video)
+                    VideoThumbnailPlayer(video: video, isInModal: true, onTap: {
+                        // モーダル内では再生
+                        playVideoDirectly(video: video)
+                    })
                         .frame(maxWidth: .infinity, maxHeight: 400)
                         .cornerRadius(24)
                     VStack(spacing: 16) {
@@ -358,19 +362,29 @@ struct VideoGalleryScreen: View {
                 // --- END カスタムダイアログ ---
             }
         }
+        .fullScreenCover(item: $playingVideo) { video in
+            VideoPlayerViewControllerWrapper(video: video)
+        }
+    }
+    
+    // Videoタブ用の直接再生関数
+    private func playVideoDirectly(video: MemoryVideo) {
+        print("playVideoDirectly called for video: \(video.title)") // デバッグ用
+        playingVideo = video
     }
     
     private func saveVideo() {
-        guard let videoURL = selectedVideoURL, let videoData = try? Data(contentsOf: videoURL) else { return }
-        let tags = videoTags.isEmpty ? [] : videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        guard let videoURL = selectedVideoURL,
+              let videoData = try? Data(contentsOf: videoURL) else { return }
         
-        // 選択されたサムネイルを使用、なければ1秒目のフレームを生成
+        let tags = videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        
+        // サムネイル生成
         var thumbnailData: Data? = selectedThumbnailData
         if thumbnailData == nil {
             let asset = AVAsset(url: videoURL)
             let imageGenerator = AVAssetImageGenerator(asset: asset)
             imageGenerator.appliesPreferredTrackTransform = true
-            imageGenerator.maximumSize = CGSize(width: 300, height: 300)
             
             do {
                 let cgImage = try imageGenerator.copyCGImage(at: CMTime(seconds: 1.0, preferredTimescale: 1), actualTime: nil)
@@ -409,13 +423,15 @@ struct VideoGalleryScreen: View {
 
 struct VideoThumbnailPlayer: View {
     let video: MemoryVideo
+    var isInModal: Bool = false // モーダル内かどうか
     @State private var player: AVPlayer? = nil
     @State private var tempURL: URL? = nil
     @State private var isPlaying = false
+    var onTap: (() -> Void)? = nil // タップ時のコールバック
     
     var body: some View {
         ZStack {
-            if let player = player, isPlaying {
+            if isInModal, let player = player, isPlaying {
                 VideoPlayer(player: player)
                     .onTapGesture {
                         player.pause()
@@ -430,25 +446,22 @@ struct VideoThumbnailPlayer: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipped()
-                        .overlay(
-                            Image(systemName: "play.circle.fill")
-                                .font(.largeTitle)
-                                .foregroundColor(.white)
-                                .shadow(radius: 4)
-                        )
                         .onTapGesture {
-                            playVideo()
+                            if isInModal {
+                                playVideo()
+                            } else {
+                                onTap?()
+                            }
                         }
                 } else {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.black)
-                        .overlay(
-                            Image(systemName: "play.circle.fill")
-                                .font(.largeTitle)
-                                .foregroundColor(.white)
-                        )
                         .onTapGesture {
-                            playVideo()
+                            if isInModal {
+                                playVideo()
+                            } else {
+                                onTap?()
+                            }
                         }
                 }
             }
@@ -490,6 +503,7 @@ struct VideoAlbumGridView: View {
     let highlightFirstRow: Bool
     let filteredTags: [String]?
     var onVideoTap: ((MemoryVideo) -> Void)? = nil
+    @State private var expandedVideo: MemoryVideo? = nil // 拡大用
 
     var body: some View {
         VStack(alignment: .leading, spacing: 32) {
@@ -499,12 +513,11 @@ struct VideoAlbumGridView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 24) {
                             ForEach(videos) { video in
-                                VideoThumbnailPlayer(video: video)
+                                VideoThumbnailPlayer(video: video, isInModal: false, onTap: {
+                                    expandedVideo = video
+                                })
                                     .frame(width: 234, height: 140)
                                     .cornerRadius(20)
-                                    .onTapGesture {
-                                        onVideoTap?(video)
-                                    }
                             }
                         }
                         .padding(.horizontal, 16)
@@ -524,12 +537,11 @@ struct VideoAlbumGridView: View {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 24) {
                                     ForEach(tagVideos) { video in
-                                        VideoThumbnailPlayer(video: video)
+                                        VideoThumbnailPlayer(video: video, isInModal: false, onTap: {
+                                            expandedVideo = video
+                                        })
                                             .frame(width: 187, height: 112)
                                             .cornerRadius(20)
-                                            .onTapGesture {
-                                                onVideoTap?(video)
-                                            }
                                     }
                                 }
                                 .padding(.horizontal, 16)
@@ -537,6 +549,94 @@ struct VideoAlbumGridView: View {
                         }
                     }
                 }
+            }
+        }
+        .sheet(item: $expandedVideo) { video in
+            VStack(spacing: 24) {
+                VideoThumbnailPlayer(video: video, isInModal: true, onTap: {
+                    // モーダル内では再生
+                    onVideoTap?(video)
+                })
+                    .frame(width: 403, height: 242)
+                    .cornerRadius(24)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(video.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    if !video.tags.isEmpty {
+                        Text("#" + video.tags.joined(separator: " #"))
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                }
+                Button(action: {
+                    // 削除処理は親Viewで行う必要があるため、ここでは閉じるだけ
+                    expandedVideo = nil
+                }) {
+                    HStack {
+                        Image(systemName: "trash")
+                        Text("削除")
+                    }
+                    .foregroundColor(.red)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+                }
+                Button("閉じる") {
+                    expandedVideo = nil
+                }
+                .padding(.top, 8)
+            }
+            .padding(32)
+        }
+    }
+}
+
+// AVPlayerViewControllerラッパー
+struct VideoPlayerViewControllerWrapper: UIViewControllerRepresentable {
+    let video: MemoryVideo
+    @Environment(\.dismiss) private var dismiss
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(dismiss: dismiss)
+    }
+    
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mov")
+        do {
+            try video.videoData.write(to: url)
+            let player = AVPlayer(url: url)
+            let controller = AVPlayerViewController()
+            controller.player = player
+            controller.modalPresentationStyle = .fullScreen
+            controller.delegate = context.coordinator
+            player.play()
+            context.coordinator.observeDismissNotification(for: controller)
+            return controller
+        } catch {
+            print("動画の一時ファイル作成に失敗: \(error)")
+            return AVPlayerViewController()
+        }
+    }
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+    
+    class Coordinator: NSObject, AVPlayerViewControllerDelegate {
+        let dismiss: DismissAction
+        private var notificationObserver: NSObjectProtocol?
+        init(dismiss: DismissAction) {
+            self.dismiss = dismiss
+        }
+        func playerViewControllerWillEndDismissalTransition(_ playerViewController: AVPlayerViewController) {
+            dismiss()
+        }
+        func observeDismissNotification(for controller: AVPlayerViewController) {
+            notificationObserver = NotificationCenter.default.addObserver(forName: Notification.Name("AVPlayerViewControllerWillEndFullScreenPresentation"), object: controller, queue: .main) { [weak self] _ in
+                self?.dismiss()
+            }
+        }
+        deinit {
+            if let observer = notificationObserver {
+                NotificationCenter.default.removeObserver(observer)
             }
         }
     }

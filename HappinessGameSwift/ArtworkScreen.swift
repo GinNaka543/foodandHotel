@@ -28,6 +28,7 @@ struct ArtworkScreen: View {
     @State private var showEditTags = false
     @State private var editText = ""
     @State private var showDeleteAlert = false
+    @State private var deletingArtworkID: UUID? = nil
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -43,13 +44,14 @@ struct ArtworkScreen: View {
                     }
                     Spacer()
                     // キャラ名
-                    Text(character.name)
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .shadow(radius: 2)
-                        .frame(maxWidth: .infinity)
-                        .offset(x: 9)
-                    Spacer()
+                    HStack {
+                        Spacer().frame(width: 0)
+                        Text(character.name)
+                            .font(.system(size: 25, weight: .bold))
+                            .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
+                            .offset(x: -15)
+                        Spacer()
+                    }
                     // Uploadボタン（右端に揃える）
                     Button(action: { showAddSheet = true }) {
                         Text("Upload")
@@ -156,7 +158,7 @@ struct ArtworkScreen: View {
             // Albumタブ時のみ右下に＋ボタン
             if showAlbum {
                 Button(action: { showTagInput = true }) {
-                    Image(systemName: "plus")
+                    Image(systemName: "number")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 56, height: 56)
@@ -195,6 +197,9 @@ struct ArtworkScreen: View {
                     .padding(32)
                 }
             }
+        }
+        .onAppear {
+            loadArtworks()
         }
         .sheet(isPresented: $showAddSheet) {
             AddPhotoView(selectedImage: $selectedImage, photoTitle: $photoTitle, photoTags: $photoTags) {
@@ -246,6 +251,10 @@ struct ArtworkScreen: View {
                             .foregroundColor(.gray)
                     }
                     Spacer()
+                }
+                // 右下に閉じるボタンとゴミ箱ボタンを横並びで配置
+                HStack(spacing: 24) {
+                    Spacer()
                     Button(action: {
                         selectedArtwork = nil
                     }) {
@@ -257,14 +266,15 @@ struct ArtworkScreen: View {
                             .background(Color.black)
                             .cornerRadius(10)
                     }
-                }
-                // 右下に黒いゴミ箱アイコン（背景なし）
-                Button(action: {
-                    showDeleteAlert = true
-                }) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.black)
+                    .padding(.trailing, 79)
+                    Button(action: {
+                        deletingArtworkID = selectedArtwork?.id
+                        showDeleteAlert = true
+                    }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.black)
+                    }
                 }
                 .padding([.bottom, .trailing], 24)
             }
@@ -275,6 +285,7 @@ struct ArtworkScreen: View {
             Button("保存") {
                 if let idx = artworks.firstIndex(where: { $0.id == selectedArtwork?.id }) {
                     artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imageData: artworks[idx].imageData, title: editText, tags: artworks[idx].tags, date: artworks[idx].date)
+                    saveArtworksToUserDefaults()
                 }
                 showEditTitle = false
             }
@@ -287,6 +298,7 @@ struct ArtworkScreen: View {
                 let tags = editText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 if let idx = artworks.firstIndex(where: { $0.id == selectedArtwork?.id }) {
                     artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imageData: artworks[idx].imageData, title: artworks[idx].title, tags: tags, date: artworks[idx].date)
+                    saveArtworksToUserDefaults()
                 }
                 showEditTags = false
             }
@@ -295,13 +307,34 @@ struct ArtworkScreen: View {
         // 削除確認Alert
         .alert("本当に削除しますか？", isPresented: $showDeleteAlert, actions: {
             Button("削除", role: .destructive) {
-                if let idx = artworks.firstIndex(where: { $0.id == selectedArtwork?.id }) {
-                    artworks.remove(at: idx)
+                print("削除ボタンが押されました")
+                print("deletingArtworkID: \(deletingArtworkID?.uuidString ?? "nil")")
+                print("現在のartworks数: \(artworks.count)")
+                print("artworks内のID一覧:")
+                for (i, art) in artworks.enumerated() {
+                    print("[\(i)] \(art.id.uuidString)")
                 }
+                if let delID = deletingArtworkID,
+                   let idx = artworks.firstIndex(where: { $0.id == delID }) {
+                    print("削除対象のインデックス: \(idx)")
+                    artworks.remove(at: idx)
+                    print("削除後のartworks数: \(artworks.count)")
+                    saveArtworksToUserDefaults()
+                    print("UserDefaultsに保存完了")
+                } else {
+                    print("削除対象が見つかりませんでした")
+                }
+                selectedArtwork = nil
+                deletingArtworkID = nil
                 showDeleteAlert = false
+                print("モーダルを閉じました")
             }
-            Button("キャンセル", role: .cancel) { showDeleteAlert = false }
-        }, message: { Text("") })
+            Button("キャンセル", role: .cancel) {
+                showDeleteAlert = false
+                deletingArtworkID = nil
+                print("削除をキャンセルしました")
+            }
+        }, message: { Text("この写真を削除しますか？") })
     }
     
     private func saveArtwork() {
@@ -309,10 +342,26 @@ struct ArtworkScreen: View {
         let tags = photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         let newArtwork = Artwork(id: UUID(), characterId: character.id, imageData: imageData, title: photoTitle, tags: tags, date: Date())
         artworks.insert(newArtwork, at: 0)
+        saveArtworksToUserDefaults()
         selectedImage = nil
         photoTitle = ""
         photoTags = ""
         showAddSheet = false
+    }
+    
+    private func loadArtworks() {
+        let key = "artworks_\(character.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
+            artworks = decodedArtworks
+        }
+    }
+    
+    private func saveArtworksToUserDefaults() {
+        let key = "artworks_\(character.id.uuidString)"
+        if let encodedData = try? JSONEncoder().encode(artworks) {
+            UserDefaults.standard.set(encodedData, forKey: key)
+        }
     }
 }
 

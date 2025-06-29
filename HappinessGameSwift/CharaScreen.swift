@@ -156,26 +156,27 @@ struct HeaderView: View {
 struct SearchBar: View {
     @Binding var text: String
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.gray)
-                .font(.system(size: 14))
+                .foregroundColor(Color(.systemGray3))
+                .font(.system(size: 18))
             TextField("Search", text: $text)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
-                .font(.system(size: 14))
-            Spacer()
+                .font(.system(size: 16))
+                .foregroundColor(.black)
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 10)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
-        .frame(height: 40)
-        .frame(width: UIScreen.main.bounds.width - 50)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .background(Color.white)
+        .cornerRadius(12)
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(Color.gray, lineWidth: 5)
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray4), lineWidth: 1)
         )
+        .frame(height: 44)
+        .padding(.horizontal, 16)
     }
 }
 
@@ -303,6 +304,7 @@ struct AdBannerView: View {
                     .font(.system(size: 13))
                     .foregroundColor(.gray)
             }
+            .padding(.leading, 9)
             Spacer()
             Image("かのかり")
                 .resizable()

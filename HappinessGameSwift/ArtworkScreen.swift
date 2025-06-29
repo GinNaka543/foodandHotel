@@ -277,64 +277,97 @@ struct ArtworkScreen: View {
                     }
                 }
                 .padding([.bottom, .trailing], 24)
+                // --- カスタムダイアログ ---
+                if showEditTitle {
+                    Color.black.opacity(0.25)
+                        .edgesIgnoringSafeArea(.all)
+                    VStack(spacing: 20) {
+                        Text("タイトル名を編集")
+                            .font(.headline)
+                            .padding(.top, 12)
+                        TextField("タイトル", text: $editText)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.system(size: 18))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                        HStack(spacing: 24) {
+                            Button(action: { showEditTitle = false }) {
+                                Text("キャンセル")
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                            Button(action: {
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imageData: artworks[idx].imageData, title: editText, tags: artworks[idx].tags, date: artworks[idx].date)
+                                    saveArtworksToUserDefaults()
+                                }
+                                showEditTitle = false
+                            }) {
+                                Text("保存")
+                                    .foregroundColor(.blue)
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
+                    }
+                    .background(Color.white)
+                    .cornerRadius(18)
+                    .shadow(radius: 16)
+                    .frame(maxWidth: 340)
+                    .padding(.horizontal, 32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                if showDeleteAlert {
+                    Color.black.opacity(0.25)
+                        .edgesIgnoringSafeArea(.all)
+                    VStack(spacing: 20) {
+                        Text("本当に削除しますか？")
+                            .font(.headline)
+                            .padding(.top, 12)
+                        HStack(spacing: 24) {
+                            Button(action: {
+                                showDeleteAlert = false
+                                deletingArtworkID = nil
+                            }) {
+                                Text("キャンセル")
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                            Button(action: {
+                                if let delID = deletingArtworkID,
+                                   let idx = artworks.firstIndex(where: { $0.id == delID }) {
+                                    artworks.remove(at: idx)
+                                    saveArtworksToUserDefaults()
+                                }
+                                showDeleteAlert = false
+                                deletingArtworkID = nil
+                                selectedArtwork = nil
+                            }) {
+                                Text("削除")
+                                    .foregroundColor(.red)
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
+                    }
+                    .background(Color.white)
+                    .cornerRadius(18)
+                    .shadow(radius: 16)
+                    .frame(maxWidth: 340)
+                    .padding(.horizontal, 32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                // --- END カスタムダイアログ ---
             }
         }
-        // タイトル編集Alert
-        .alert("タイトル名を編集", isPresented: $showEditTitle, actions: {
-            TextField("タイトル", text: $editText)
-            Button("保存") {
-                if let idx = artworks.firstIndex(where: { $0.id == selectedArtwork?.id }) {
-                    artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imageData: artworks[idx].imageData, title: editText, tags: artworks[idx].tags, date: artworks[idx].date)
-                    saveArtworksToUserDefaults()
-                }
-                showEditTitle = false
-            }
-            Button("キャンセル", role: .cancel) { showEditTitle = false }
-        }, message: { Text("") })
-        // タグ編集Alert
-        .alert("タグを編集（カンマ区切り）", isPresented: $showEditTags, actions: {
-            TextField("タグ", text: $editText)
-            Button("保存") {
-                let tags = editText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                if let idx = artworks.firstIndex(where: { $0.id == selectedArtwork?.id }) {
-                    artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imageData: artworks[idx].imageData, title: artworks[idx].title, tags: tags, date: artworks[idx].date)
-                    saveArtworksToUserDefaults()
-                }
-                showEditTags = false
-            }
-            Button("キャンセル", role: .cancel) { showEditTags = false }
-        }, message: { Text("") })
-        // 削除確認Alert
-        .alert("本当に削除しますか？", isPresented: $showDeleteAlert, actions: {
-            Button("削除", role: .destructive) {
-                print("削除ボタンが押されました")
-                print("deletingArtworkID: \(deletingArtworkID?.uuidString ?? "nil")")
-                print("現在のartworks数: \(artworks.count)")
-                print("artworks内のID一覧:")
-                for (i, art) in artworks.enumerated() {
-                    print("[\(i)] \(art.id.uuidString)")
-                }
-                if let delID = deletingArtworkID,
-                   let idx = artworks.firstIndex(where: { $0.id == delID }) {
-                    print("削除対象のインデックス: \(idx)")
-                    artworks.remove(at: idx)
-                    print("削除後のartworks数: \(artworks.count)")
-                    saveArtworksToUserDefaults()
-                    print("UserDefaultsに保存完了")
-                } else {
-                    print("削除対象が見つかりませんでした")
-                }
-                selectedArtwork = nil
-                deletingArtworkID = nil
-                showDeleteAlert = false
-                print("モーダルを閉じました")
-            }
-            Button("キャンセル", role: .cancel) {
-                showDeleteAlert = false
-                deletingArtworkID = nil
-                print("削除をキャンセルしました")
-            }
-        }, message: { Text("この写真を削除しますか？") })
     }
     
     private func saveArtwork() {

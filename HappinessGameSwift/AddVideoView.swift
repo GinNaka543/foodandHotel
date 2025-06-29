@@ -1,75 +1,111 @@
 import SwiftUI
 import PhotosUI
 import AVKit
+import AVFoundation
 
 struct AddVideoView: View {
     @Binding var selectedVideoURL: URL?
     @Binding var videoTitle: String
     @Binding var videoTags: String
+    @Binding var selectedThumbnailData: Data?
     let onSave: () -> Void
     
     @Environment(\.dismiss) private var dismiss
     @State private var showingVideoPicker = false
     @State private var selectedItem: PhotosPickerItem?
     @State private var player: AVPlayer?
+    @State private var thumbnailImages: [UIImage] = []
+    @State private var selectedThumbnailIndex: Int = 0
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
-                // 動画プレビュー
-                if let player = player {
-                    VideoPlayer(player: player)
-                        .frame(height: 300)
-                        .cornerRadius(12)
-                } else {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(height: 200)
-                        .overlay(
-                            VStack {
-                                Image(systemName: "video")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.gray)
-                                Text("動画を選択")
-                                    .foregroundColor(.gray)
-                            }
-                        )
-                }
-                
-                // 動画選択ボタン
-                PhotosPicker(selection: $selectedItem, matching: .videos) {
-                    HStack {
-                        Image(systemName: "video.on.rectangle")
-                        Text("動画を選択")
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 動画プレビュー
+                    if let player = player {
+                        VideoPlayer(player: player)
+                            .frame(height: 300)
+                            .cornerRadius(12)
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 200)
+                            .overlay(
+                                VStack {
+                                    Image(systemName: "video")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.gray)
+                                    Text("動画を選択")
+                                        .foregroundColor(.gray)
+                                }
+                            )
                     }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.blue)
-                    .cornerRadius(12)
-                }
-                
-                // タイトル入力
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("タイトル")
-                        .font(.headline)
                     
-                    TextField("タイトルを入力", text: $videoTitle)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                }
-                
-                // タグ入力
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("タグ（カンマ区切り）")
-                        .font(.headline)
+                    // 動画選択ボタン
+                    PhotosPicker(selection: $selectedItem, matching: .videos) {
+                        HStack {
+                            Image(systemName: "video.on.rectangle")
+                            Text("動画を選択")
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.blue)
+                        .cornerRadius(12)
+                    }
                     
-                    TextField("タグを入力", text: $videoTags)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    // サムネイル選択セクション
+                    if !thumbnailImages.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("サムネイルを選択")
+                                .font(.headline)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(0..<thumbnailImages.count, id: \.self) { index in
+                                        Image(uiImage: thumbnailImages[index])
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 80, height: 80)
+                                            .clipped()
+                                            .cornerRadius(8)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .stroke(selectedThumbnailIndex == index ? Color.blue : Color.clear, lineWidth: 3)
+                                            )
+                                            .onTapGesture {
+                                                selectedThumbnailIndex = index
+                                                selectedThumbnailData = thumbnailImages[index].jpegData(compressionQuality: 0.8)
+                                            }
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
+                        }
+                    }
+                    
+                    // タイトル入力
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("タイトル")
+                            .font(.headline)
+                        
+                        TextField("タイトルを入力", text: $videoTitle)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
+                    // タグ入力
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("タグ（カンマ区切り）")
+                            .font(.headline)
+                        
+                        TextField("タグを入力", text: $videoTags)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
+                    Spacer(minLength: 100)
                 }
-                
-                Spacer()
+                .padding()
             }
-            .padding()
             .navigationTitle("動画を追加")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -95,6 +131,8 @@ struct AddVideoView: View {
                         try data.write(to: tempURL)
                         selectedVideoURL = tempURL
                         player = AVPlayer(url: tempURL)
+                        
+                        await generateThumbnails(from: tempURL)
                     } catch {
                         print("動画の保存に失敗しました")
                     }
@@ -106,6 +144,32 @@ struct AddVideoView: View {
             player = nil
         }
     }
+    
+    private func generateThumbnails(from url: URL) async {
+        let asset = AVAsset(url: url)
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+        imageGenerator.appliesPreferredTrackTransform = true
+        imageGenerator.maximumSize = CGSize(width: 300, height: 300)
+        
+        thumbnailImages.removeAll()
+        
+        let timePoints = [0.0, 1.0, 2.0, 3.0, 4.0]
+        
+        for timePoint in timePoints {
+            do {
+                let cgImage = try imageGenerator.copyCGImage(at: CMTime(seconds: timePoint, preferredTimescale: 1), actualTime: nil)
+                let uiImage = UIImage(cgImage: cgImage)
+                thumbnailImages.append(uiImage)
+            } catch {
+                print("サムネイル生成に失敗: \(error)")
+            }
+        }
+        
+        if !thumbnailImages.isEmpty {
+            selectedThumbnailIndex = 1
+            selectedThumbnailData = thumbnailImages[1].jpegData(compressionQuality: 0.8)
+        }
+    }
 }
 
 #Preview {
@@ -113,6 +177,7 @@ struct AddVideoView: View {
         selectedVideoURL: .constant(nil),
         videoTitle: .constant(""),
         videoTags: .constant(""),
+        selectedThumbnailData: .constant(nil),
         onSave: {}
     )
 } 

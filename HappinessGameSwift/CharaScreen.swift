@@ -1,7 +1,7 @@
 import SwiftUI
 import PhotosUI
 
-struct Character: Identifiable, Hashable, Equatable {
+struct Character: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var image: UIImage?
     var name: String
@@ -10,6 +10,41 @@ struct Character: Identifiable, Hashable, Equatable {
 
     static func == (lhs: Character, rhs: Character) -> Bool {
         lhs.id == rhs.id
+    }
+    // Codable対応
+    enum CodingKeys: String, CodingKey {
+        case id, imageData, name, tag, birthday
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(tag, forKey: .tag)
+        try container.encode(birthday, forKey: .birthday)
+        if let image = image, let data = image.pngData() {
+            try container.encode(data, forKey: .imageData)
+        } else {
+            try container.encodeNil(forKey: .imageData)
+        }
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        tag = try container.decode(String.self, forKey: .tag)
+        birthday = try container.decode(Date.self, forKey: .birthday)
+        if let data = try? container.decodeIfPresent(Data.self, forKey: .imageData) {
+            image = UIImage(data: data)
+        } else {
+            image = nil
+        }
+    }
+    init(id: UUID, image: UIImage?, name: String, tag: String, birthday: Date) {
+        self.id = id
+        self.image = image
+        self.name = name
+        self.tag = tag
+        self.birthday = birthday
     }
 }
 
@@ -54,8 +89,26 @@ struct CharaScreen: View {
                 selectedCharacter = nil
             }
         }
-        .sheet(isPresented: $showAddSheet) {
+        .sheet(isPresented: $showAddSheet, onDismiss: saveCharacters) {
             AddCharacterSheet(characters: $characters)
+        }
+        .onAppear {
+            loadCharacters()
+        }
+        .onChange(of: characters) { _ in
+            saveCharacters()
+        }
+    }
+    // UserDefaults保存・読込
+    private func saveCharacters() {
+        if let data = try? JSONEncoder().encode(characters) {
+            UserDefaults.standard.set(data, forKey: "characters")
+        }
+    }
+    private func loadCharacters() {
+        if let data = UserDefaults.standard.data(forKey: "characters"),
+           let decoded = try? JSONDecoder().decode([Character].self, from: data) {
+            characters = decoded
         }
     }
 }
@@ -267,6 +320,7 @@ struct CharacterDetailView: View {
     var onDismiss: (() -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
     @State private var showArtwork = false
+    @State private var showVideo = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -336,10 +390,13 @@ struct CharacterDetailView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
-                        VStack {
-                            Image(systemName: "video")
-                            Text("Video").font(.caption2)
+                        Button(action: { showVideo = true }) {
+                            VStack {
+                                Image(systemName: "video")
+                                Text("Video").font(.caption2)
+                            }
                         }
+                        .buttonStyle(PlainButtonStyle())
                         Spacer()
                         VStack {
                             Image(systemName: "info.circle")
@@ -355,6 +412,9 @@ struct CharacterDetailView: View {
                     .padding(.top, 60)
                     .fullScreenCover(isPresented: $showArtwork) {
                         ArtworkScreen(character: character)
+                    }
+                    .fullScreenCover(isPresented: $showVideo) {
+                        VideoGalleryScreen(character: character)
                     }
                 }
                 .frame(width: geometry.size.width)

@@ -266,13 +266,15 @@ struct ArtworkScreen: View {
                             .background(Color.black)
                             .cornerRadius(10)
                     }
-                    .padding(.trailing, 79)
+                    .padding(.trailing, 120)
                     Button(action: {
                         deletingArtworkID = selectedArtwork?.id
                         showDeleteAlert = true
                     }) {
                         Image(systemName: "trash")
-                            .font(.system(size: 28, weight: .bold))
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
                             .foregroundColor(.black)
                     }
                 }

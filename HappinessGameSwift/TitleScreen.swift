@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TitleScreen: View {
-    @State private var showingHome = false
+    @State private var showingChara = false
     
     var body: some View {
         ZStack {
@@ -22,7 +22,7 @@ struct TitleScreen: View {
                 
                 // スタートボタン
                 Button(action: {
-                    showingHome = true
+                    showingChara = true
                 }) {
                     Text("START")
                         .font(.title)
@@ -36,8 +36,8 @@ struct TitleScreen: View {
                 Spacer()
             }
         }
-        .fullScreenCover(isPresented: $showingHome) {
-            HomeScreen()
+        .fullScreenCover(isPresented: $showingChara) {
+            CharaScreen()
         }
     }
 }

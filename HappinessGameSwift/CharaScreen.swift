@@ -1,10 +1,49 @@
 import SwiftUI
 import PhotosUI
 import UIKit
+import Foundation
+
+// キャラクターデータ管理用のObservableObject
+class CharacterManager: ObservableObject {
+    @Published var characters: [Character] = []
+    
+    init() {
+        loadCharacters()
+    }
+    
+    func loadCharacters() {
+        if let data = UserDefaults.standard.data(forKey: "characters"),
+           let decoded = try? JSONDecoder().decode([Character].self, from: data) {
+            characters = decoded
+        }
+    }
+    
+    func saveCharacters() {
+        if let data = try? JSONEncoder().encode(characters) {
+            UserDefaults.standard.set(data, forKey: "characters")
+        }
+    }
+    
+    func updateCharacter(_ updatedCharacter: Character) {
+        if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
+            characters[idx] = updatedCharacter
+            saveCharacters()
+        }
+    }
+    
+    func addCharacter(_ character: Character) {
+        // 重複チェックを追加
+        let exists = characters.contains { $0.id == character.id }
+        if !exists {
+            characters.append(character)
+            saveCharacters()
+        }
+    }
+}
 
 struct Character: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
-    var image: UIImage?
+    var imagePath: String? // 画像ファイルのパス
     var name: String
     var tag: String
     var birthday: Date
@@ -20,7 +59,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     }
     // Codable対応
     enum CodingKeys: String, CodingKey {
-        case id, imageData, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height
+        case id, imagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -34,11 +73,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         try container.encode(cupSize, forKey: .cupSize)
         try container.encode(seichi, forKey: .seichi)
         try container.encode(height, forKey: .height)
-        if let image = image, let data = image.pngData() {
-            try container.encode(data, forKey: .imageData)
-        } else {
-            try container.encodeNil(forKey: .imageData)
-        }
+        try container.encodeIfPresent(imagePath, forKey: .imagePath)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -52,15 +87,11 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         cupSize = (try? container.decode(String.self, forKey: .cupSize)) ?? ""
         seichi = (try? container.decode(String.self, forKey: .seichi)) ?? ""
         height = (try? container.decode(String.self, forKey: .height)) ?? ""
-        if let data = try? container.decodeIfPresent(Data.self, forKey: .imageData) {
-            image = UIImage(data: data)
-        } else {
-            image = nil
-        }
+        imagePath = try? container.decodeIfPresent(String.self, forKey: .imagePath)
     }
-    init(id: UUID, image: UIImage?, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String) {
+    init(id: UUID, imagePath: String?, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String) {
         self.id = id
-        self.image = image
+        self.imagePath = imagePath
         self.name = name
         self.tag = tag
         self.birthday = birthday
@@ -74,31 +105,15 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
 }
 
 struct CharaScreen: View {
-    @State private var characters: [Character] = []
+    @StateObject private var characterManager = CharacterManager()
     @State private var showAddSheet = false
     @State private var searchText = ""
     @State private var selectedCharacter: Character? = nil
-    @State private var showDetail = false
-    @State private var showSearchBar = true
-    @State private var customFields: [(name: String, value: String)] = []
-    @State private var showAddFieldPopup = false
-    @State private var newFieldName = ""
-    @State private var newFieldValue = ""
-    @State private var showEditFieldPopup = false
-    @State private var editFieldIndex: Int? = nil // デフォルト列: 0,1,2 カスタム列: 3以降
-    @State private var editFieldName = ""
-    @State private var editFieldValue = ""
-    @State private var showEditNameModal = false
-    @State private var showEditBirthdayModal = false
-    @State private var showEditIconModal = false
-    @State private var showBackgroundModal = false
-    @State private var backgroundPickerItem: PhotosPickerItem? = nil
-    @State private var newName: String = ""
-    @State private var editBirthday: Date = Date()
-
+    @State private var showMenu = false
+    
     var filteredCharacters: [Character] {
-        if searchText.isEmpty { return characters }
-        return characters.filter {
+        if searchText.isEmpty { return characterManager.characters }
+        return characterManager.characters.filter {
             $0.name.localizedCaseInsensitiveContains(searchText) ||
             $0.tag.localizedCaseInsensitiveContains(searchText) ||
             $0.birthday.formatted(.dateTime.year().month().day()).contains(searchText)
@@ -107,50 +122,90 @@ struct CharaScreen: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HeaderView(showAddSheet: $showAddSheet, showSearchBar: $showSearchBar)
-            if showSearchBar {
-                SearchBar(text: $searchText)
+            HStack {
+                // 左上メニューボタン
+                Button(action: {
+                    showMenu.toggle()
+                }) {
+                    Image(systemName: "line.horizontal.3")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.black)
+                }
+                Spacer()
+                // 右上＋ボタン
+                Button(action: { showAddSheet = true }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            // 検索バー
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(Color(.systemGray3))
+                    .font(.system(size: 18))
+                TextField("Search", text: $searchText)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .font(.system(size: 16))
+                    .foregroundColor(.black)
+            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .background(Color.white)
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+            )
+            .frame(height: 38)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            // 広告バナー
             AdBannerView()
+                .padding(.vertical, 2)
+            // キャラリストのみスクロール
             ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(filteredCharacters) { character in
+                VStack(spacing: 0) {
+                    ForEach(filteredCharacters, id: \ .id) { character in
                         Button(action: {
                             selectedCharacter = character
-                            showDetail = true
                         }) {
                             CharacterRow(character: character)
                                 .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        Divider()
                     }
                 }
             }
         }
+        .sheet(isPresented: $showAddSheet, onDismiss: {
+            // キャラクター追加後にリストを更新
+            characterManager.loadCharacters()
+        }) {
+            AddCharacterSheet(characters: $characterManager.characters)
+                .environmentObject(characterManager)
+        }
         .fullScreenCover(item: $selectedCharacter) { character in
-            CharacterDetailView(character: character, characters: $characters, onDismiss: { selectedCharacter = nil })
-        }
-        .sheet(isPresented: $showAddSheet, onDismiss: saveCharacters) {
-            AddCharacterSheet(characters: $characters)
-        }
-        .onAppear {
-            loadCharacters()
-        }
-        .onChange(of: characters) { _ in
-            saveCharacters()
+            CharacterDetailView(character: Binding(
+                get: { character },
+                set: { newCharacter in
+                    if let idx = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                        characterManager.characters[idx] = newCharacter
+                    }
+                    selectedCharacter = newCharacter
+                }
+            ), characters: $characterManager.characters, onDismiss: { selectedCharacter = nil })
+            .environmentObject(characterManager)
         }
     }
     // UserDefaults保存・読込
     private func saveCharacters() {
-        if let data = try? JSONEncoder().encode(characters) {
-            UserDefaults.standard.set(data, forKey: "characters")
-        }
-    }
-    private func loadCharacters() {
-        if let data = UserDefaults.standard.data(forKey: "characters"),
-           let decoded = try? JSONDecoder().decode([Character].self, from: data) {
-            characters = decoded
-        }
+        characterManager.saveCharacters()
     }
 }
 
@@ -216,7 +271,7 @@ struct CharacterRow: View {
     let character: Character
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            if let image = character.image {
+            if let imagePath = character.imagePath, let image = loadImageFromPath(imagePath) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -248,7 +303,7 @@ struct CharacterRow: View {
                 .multilineTextAlignment(.trailing)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 6)
+        .padding(.vertical, 0)
         .background(Color.clear)
         .contentShape(Rectangle())
     }
@@ -257,6 +312,7 @@ struct CharacterRow: View {
 struct AddCharacterSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var characters: [Character]
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var name = ""
     @State private var tag = ""
     @State private var birthday = Date()
@@ -291,7 +347,7 @@ struct AddCharacterSheet: View {
                             .foregroundColor(.blue)
                     }
                 }
-                .onChange(of: selectedItem) { newItem in
+                .onChange(of: selectedItem) { _, newItem in
                     if let newItem = newItem {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self),
@@ -332,8 +388,14 @@ struct AddCharacterSheet: View {
                         let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
                         let calendar = Calendar.current
                         let date = calendar.date(from: components) ?? Date()
-                        let newChar = Character(id: UUID(), image: image, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: "")
-                        characters.append(newChar)
+                        var imagePath: String? = nil
+                        if let image = image {
+                            let fileName = "icon_\(UUID().uuidString).png"
+                            imagePath = saveImageToDocuments(image, fileName: fileName)
+                        }
+                        let newChar = Character(id: UUID(), imagePath: imagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: "")
+                        // CharacterManagerのみを使用して追加（重複を防ぐ）
+                        characterManager.addCharacter(newChar)
                         dismiss()
                     }.disabled(name.isEmpty || tag.isEmpty)
                 }
@@ -375,10 +437,11 @@ struct AdBannerView: View {
 }
 
 struct CharacterDetailView: View {
-    let character: Character
+    @Binding var character: Character
     @Binding var characters: [Character]
     var onDismiss: (() -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var showArtwork = false
     @State private var showVideo = false
     @State private var showAbout = false
@@ -410,17 +473,17 @@ struct CharacterDetailView: View {
                 // アイコン
                 VStack {
                     Spacer().frame(height: 180 + 50) // 50px下げる
-                    if let image = character.image {
+                    if let imagePath = character.imagePath, let image = loadImageFromPath(imagePath) {
                         Image(uiImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .frame(width: 107, height: 107)
+                            .frame(width: 120, height: 120)
                             .clipShape(Circle())
                             .shadow(radius: 8)
                     } else {
                         Circle()
                             .fill(Color.gray.opacity(0.3))
-                            .frame(width: 107, height: 107)
+                            .frame(width: 120, height: 120)
                             .shadow(radius: 8)
                             .overlay(
                                 Image(systemName: "person")
@@ -481,7 +544,8 @@ struct CharacterDetailView: View {
                         VideoGalleryScreen(character: character)
                     }
                     .fullScreenCover(isPresented: $showAbout) {
-                        AboutView(character: character, characters: $characters, onClose: { showAbout = false })
+                        AboutView(character: $character, characters: $characters, onClose: { showAbout = false })
+                            .environmentObject(characterManager)
                     }
                 }
                 .frame(width: geometry.size.width)
@@ -508,7 +572,7 @@ extension DateFormatter {
 }
 
 struct AboutView: View {
-    @State var character: Character
+    @Binding var character: Character
     @Binding var characters: [Character]
     var onClose: () -> Void
     @State private var newName: String
@@ -533,16 +597,18 @@ struct AboutView: View {
     @State private var showEditIconModal = false
     @State private var showBackgroundModal = false
     @State private var editBirthday: Date = Date()
+    @State private var iconPickerItem: PhotosPickerItem? = nil
+    @State private var iconImage: UIImage? = nil
     @Environment(\.presentationMode) var presentationMode
-    // キャラ情報保存用
-    @AppStorage("characters") var charactersData: Data = Data()
-    init(character: Character, characters: Binding<[Character]>, onClose: @escaping () -> Void) {
+    @EnvironmentObject private var characterManager: CharacterManager
+    
+    init(character: Binding<Character>, characters: Binding<[Character]>, onClose: @escaping () -> Void) {
+        self._character = character
         self._characters = characters
-        self.character = character
         self.onClose = onClose
-        _newName = State(initialValue: character.name)
-        _favoriteFood = State(initialValue: character.favoriteFood)
-        _animeName = State(initialValue: character.tag)
+        _newName = State(initialValue: character.wrappedValue.name)
+        _favoriteFood = State(initialValue: character.wrappedValue.favoriteFood)
+        _animeName = State(initialValue: character.wrappedValue.tag)
     }
     var body: some View {
         NavigationView {
@@ -552,7 +618,7 @@ struct AboutView: View {
                     VStack(spacing: 0) {
                         Spacer().frame(height: 48)
                         ZStack {
-                            if let image = character.image {
+                            if let imagePath = character.imagePath, let image = loadImageFromPath(imagePath) {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
@@ -571,6 +637,8 @@ struct AboutView: View {
                                     )
                             }
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture { showEditIconModal = true }
                         HStack {
                             Spacer()
                             Text(newName)
@@ -615,6 +683,12 @@ struct AboutView: View {
                                     .frame(maxWidth: 140, alignment: .trailing)
                                     .lineLimit(nil)
                                     .fixedSize(horizontal: false, vertical: true)
+                                    .onTapGesture {
+                                        editFieldIndex = 0
+                                        editFieldName = "出演作品"
+                                        editFieldValue = animeName
+                                        showEditFieldPopup = true
+                                    }
                             }
                             HStack {
                                 Text("年齢")
@@ -633,6 +707,12 @@ struct AboutView: View {
                                     .frame(maxWidth: 200, alignment: .trailing)
                                     .lineLimit(nil)
                                     .fixedSize(horizontal: false, vertical: true)
+                                    .onTapGesture {
+                                        editFieldIndex = 1
+                                        editFieldName = "年齢"
+                                        editFieldValue = newFieldName
+                                        showEditFieldPopup = true
+                                    }
                             }
                             HStack {
                                 Text("聖地")
@@ -651,6 +731,12 @@ struct AboutView: View {
                                     .frame(maxWidth: 200, alignment: .trailing)
                                     .lineLimit(nil)
                                     .fixedSize(horizontal: false, vertical: true)
+                                    .onTapGesture {
+                                        editFieldIndex = 2
+                                        editFieldName = "聖地"
+                                        editFieldValue = newFieldValue
+                                        showEditFieldPopup = true
+                                    }
                             }
                             ForEach(Array(customFields.enumerated()), id: \.offset) { idx, field in
                                 HStack {
@@ -680,14 +766,6 @@ struct AboutView: View {
             .navigationBarItems(leading: Button("閉じる") { onClose() }, trailing: Button("保存") {
                 // 保存処理
                 saveCharacter()
-                // characters配列も更新
-                if let idx = characters.firstIndex(where: { $0.id == character.id }) {
-                    var updatedCharacter = character
-                    updatedCharacter.name = newName
-                    updatedCharacter.favoriteFood = favoriteFood
-                    updatedCharacter.tag = animeName
-                    characters[idx] = updatedCharacter
-                }
                 onClose()
             })
             .sheet(isPresented: $showAddFieldPopup) {
@@ -711,6 +789,10 @@ struct AboutView: View {
                                 showAddFieldPopup = false
                                 newFieldName = ""
                                 newFieldValue = ""
+                                // UIを強制的に更新
+                                DispatchQueue.main.async {
+                                    characterManager.objectWillChange.send()
+                                }
                             }
                         }
                     }
@@ -737,6 +819,10 @@ struct AboutView: View {
                             Button("削除") {
                                 customFields.remove(at: idx - 3)
                                 showEditFieldPopup = false
+                                // UIを強制的に更新
+                                DispatchQueue.main.async {
+                                    characterManager.objectWillChange.send()
+                                }
                             }
                         }
                         Button("保存") {
@@ -753,6 +839,10 @@ struct AboutView: View {
                                 }
                             }
                             showEditFieldPopup = false
+                            // UIを強制的に更新
+                            DispatchQueue.main.async {
+                                characterManager.objectWillChange.send()
+                            }
                         }
                     }
                 }
@@ -775,7 +865,13 @@ struct AboutView: View {
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                             Spacer()
                         }
-                        Button("保存") { showEditNameModal = false }
+                        Button("保存") { 
+                            showEditNameModal = false 
+                            // UIを強制的に更新
+                            DispatchQueue.main.async {
+                                characterManager.objectWillChange.send()
+                            }
+                        }
                         Spacer()
                     }
                     Button(action: { showEditNameModal = false }) {
@@ -823,6 +919,10 @@ struct AboutView: View {
                         Button("保存") {
                             character.birthday = editBirthday
                             showEditBirthdayModal = false
+                            // UIを強制的に更新
+                            DispatchQueue.main.async {
+                                characterManager.objectWillChange.send()
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -838,33 +938,115 @@ struct AboutView: View {
             }
             // --- アイコン画像編集モーダル ---
             .sheet(isPresented: $showEditIconModal) {
-                VStack(spacing: 20) {
-                    Text("アイコン画像を変更")
-                        .font(.headline)
-                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
-                        Text("画像を選択")
+                ZStack(alignment: .topTrailing) {
+                    VStack(spacing: 20) {
+                        Text("アイコン画像を変更")
+                            .font(.headline)
+                        if let iconImage = iconImage {
+                            Image(uiImage: iconImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 120, height: 120)
+                                .clipShape(Circle())
+                                .shadow(radius: 8)
+                        }
+                        PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                            Text("画像を選択")
+                                .foregroundColor(.blue)
+                        }
                     }
-                    Button("保存") { showEditIconModal = false }
+                    .padding()
+                    .background(Color(.systemBackground))
+                    .cornerRadius(16)
+                    .padding(40)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .onAppear {
+                        if iconImage == nil, let imagePath = character.imagePath, let current = UIImage(contentsOfFile: imagePath) {
+                            iconImage = current
+                        }
+                    }
+                    .onChange(of: iconPickerItem) { _, newItem in
+                        if let newItem = newItem {
+                            Task {
+                                if let data = try? await newItem.loadTransferable(type: Data.self),
+                                   let uiImage = UIImage(data: data) {
+                                    iconImage = uiImage
+                                    // 画像を保存し、パスをセット
+                                    let fileName = "icon_\(character.id.uuidString).png"
+                                    let path = saveImageToDocuments(uiImage, fileName: fileName)
+                                    // キャラクターを更新
+                                    var updatedCharacter = character
+                                    updatedCharacter.imagePath = path
+                                    character = updatedCharacter
+                                    // CharacterManagerを使用して保存
+                                    characterManager.updateCharacter(updatedCharacter)
+                                    // characters配列も更新
+                                    if let idx = characters.firstIndex(where: { $0.id == character.id }) {
+                                        characters[idx] = updatedCharacter
+                                    }
+                                    // UIを強制的に更新
+                                    DispatchQueue.main.async {
+                                        characterManager.objectWillChange.send()
+                                    }
+                                    // デバッグ用：保存確認
+                                    print("アイコンが更新されました: \(character.name)")
+                                    print("CharacterManagerのキャラクター数: \(characterManager.characters.count)")
+                                }
+                            }
+                        }
+                    }
+                    Button(action: { showEditIconModal = false }) {
+                        Text("閉じる")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(.blue)
+                            .padding(.trailing, 16)
+                            .padding(.top, 16)
+                    }
                 }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .padding(40)
+                .ignoresSafeArea(.container, edges: .top)
             }
             // --- 背景画像選択モーダル ---
             .sheet(isPresented: $showBackgroundModal) {
-                VStack(spacing: 20) {
-                    Text("背景画像を選択")
-                        .font(.headline)
-                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
-                        Text("写真を選択")
+                ZStack(alignment: .topTrailing) {
+                    VStack(spacing: 24) {
+                        Text("背景画像を選択")
+                            .font(.headline)
+                        if let bgImage = backgroundImage {
+                            Image(uiImage: bgImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 180)
+                                .clipped()
+                        } else {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.18))
+                                .frame(height: 180)
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 48))
+                                        .foregroundColor(.gray.opacity(0.5))
+                                )
+                        }
+                        PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
+                            Text("写真を選択")
+                                .foregroundColor(.blue)
+                        }
+                        Button("保存") {
+                            // 画像保存処理（必要ならここでbackgroundImageを更新）
+                            showBackgroundModal = false
+                        }
                     }
-                    Button("保存") { showBackgroundModal = false }
+                    .padding(.top, 32)
+                    .padding(.horizontal, 24)
+                    Button(action: { showBackgroundModal = false }) {
+                        Text("閉じる")
+                            .font(.system(size: 18, weight: .regular))
+                            .foregroundColor(.blue)
+                            .padding(.trailing, 16)
+                            .padding(.top, 16)
+                    }
                 }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .padding(40)
+                .ignoresSafeArea(.container, edges: .top)
             }
         }
     }
@@ -875,18 +1057,19 @@ struct AboutView: View {
         updatedCharacter.name = newName
         updatedCharacter.favoriteFood = favoriteFood
         updatedCharacter.tag = animeName
-        // charactersDataから配列をデコード
-        var characters: [Character] = []
-        if let decoded = try? JSONDecoder().decode([Character].self, from: charactersData) {
-            characters = decoded
-        }
-        // id一致で置き換え
+        updatedCharacter.imagePath = character.imagePath // 画像パスも含めて更新
+        
+        // CharacterManagerを使用して保存
+        characterManager.updateCharacter(updatedCharacter)
+        
+        // characters配列も更新
         if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
             characters[idx] = updatedCharacter
         }
-        // エンコードして保存
-        if let encoded = try? JSONEncoder().encode(characters) {
-            charactersData = encoded
+        
+        // UIを強制的に更新
+        DispatchQueue.main.async {
+            characterManager.objectWillChange.send()
         }
     }
 }
@@ -955,6 +1138,21 @@ extension String {
             start = end
         }
         return result
+    }
+}
+
+func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
+    guard let data = image.pngData() else { return nil }
+    let fileManager = FileManager.default
+    let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+    guard let documentsURL = urls.first else { return nil }
+    let fileURL = documentsURL.appendingPathComponent(fileName)
+    do {
+        try data.write(to: fileURL)
+        return fileURL.path
+    } catch {
+        print("画像保存エラー: \(error)")
+        return nil
     }
 }
 

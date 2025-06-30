@@ -1,6 +1,13 @@
 import SwiftUI
 import AVKit
 import PhotosUI
+import Foundation
+import UIKit
+
+func loadImageFromPath(_ path: String?) -> UIImage? {
+    guard let path = path else { return nil }
+    return UIImage(contentsOfFile: path)
+}
 
 struct MemoryVideo: Identifiable, Codable {
     let id: UUID
@@ -129,22 +136,7 @@ struct VideoGalleryScreen: View {
                                                 .cornerRadius(20)
                                         }
                                         HStack(alignment: .center, spacing: 12) {
-                                            if let icon = character.image {
-                                                Image(uiImage: icon)
-                                                    .resizable()
-                                                    .aspectRatio(contentMode: .fill)
-                                                    .frame(width: 40, height: 40)
-                                                    .clipShape(Circle())
-                                            } else {
-                                                Circle()
-                                                    .fill(Color.gray.opacity(0.3))
-                                                    .frame(width: 40, height: 40)
-                                                    .overlay(
-                                                        Image(systemName: "person")
-                                                            .font(.system(size: 20))
-                                                            .foregroundColor(.gray)
-                                                    )
-                                            }
+                                            CharacterIconView(imagePath: character.imagePath, size: 40)
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(video.title)
                                                     .font(.headline)
@@ -905,6 +897,30 @@ struct VideoInlinePlayer: View {
     }
 }
 
+// キャラアイコン表示用のView
+struct CharacterIconView: View {
+    let imagePath: String?
+    var size: CGFloat = 40
+    var body: some View {
+        if let imagePath = imagePath, let image = loadImageFromPath(imagePath) {
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+        } else {
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: size, height: size)
+                .overlay(
+                    Image(systemName: "person")
+                        .font(.system(size: size / 2))
+                        .foregroundColor(.gray)
+                )
+        }
+    }
+}
+
 #Preview {
-    VideoGalleryScreen(character: Character(id: UUID(), image: nil, name: "キャラクター名", tag: "タグ", birthday: Date(), favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: ""))
+    VideoGalleryScreen(character: Character(id: UUID(), imagePath: nil, name: "キャラクター名", tag: "タグ", birthday: Date(), favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: ""))
 } 

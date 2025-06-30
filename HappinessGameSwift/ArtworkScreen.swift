@@ -1,13 +1,45 @@
 import SwiftUI
 import PhotosUI
+import Foundation
+import UIKit
 
 struct Artwork: Identifiable, Codable {
     let id: UUID
     let characterId: UUID
-    let imageData: Data
-    let title: String
-    let tags: [String]
+    var imagePath: String?
+    var title: String
+    var tags: [String]
     let date: Date
+    
+    enum CodingKeys: String, CodingKey {
+        case id, characterId, imagePath, title, tags, date
+    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(characterId, forKey: .characterId)
+        try container.encodeIfPresent(imagePath, forKey: .imagePath)
+        try container.encode(title, forKey: .title)
+        try container.encode(tags, forKey: .tags)
+        try container.encode(date, forKey: .date)
+    }
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        characterId = try container.decode(UUID.self, forKey: .characterId)
+        imagePath = try? container.decodeIfPresent(String.self, forKey: .imagePath)
+        title = try container.decode(String.self, forKey: .title)
+        tags = try container.decode([String].self, forKey: .tags)
+        date = try container.decode(Date.self, forKey: .date)
+    }
+    init(id: UUID, characterId: UUID, imagePath: String?, title: String, tags: [String], date: Date) {
+        self.id = id
+        self.characterId = characterId
+        self.imagePath = imagePath
+        self.title = title
+        self.tags = tags
+        self.date = date
+    }
 }
 
 struct ArtworkScreen: View {
@@ -99,28 +131,26 @@ struct ArtworkScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, onPhotoTap: { artwork in
-                                print("タップされたartwork: \(artwork.id), タイトル: \(artwork.title)")
-                                selectedArtwork = artwork
-                            })
+                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags)
                         }
                     } else {
                         ScrollView {
                             VStack(spacing: 32) {
-                                ForEach(artworks) { artwork in
+                                ForEach(artworks, id: \.id) { artwork in
                                     VStack(alignment: .leading, spacing: 8) {
-                                        if let uiImage = UIImage(data: artwork.imageData) {
+                                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                             Image(uiImage: uiImage)
                                                 .resizable()
-                                                .aspectRatio(contentMode: .fill)
-                                                .frame(maxWidth: .infinity, minHeight: 300, maxHeight: 400)
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(maxWidth: .infinity, maxHeight: 400)
                                                 .clipped()
                                                 .cornerRadius(24)
-                                                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color(.systemGray5), lineWidth: 4))
-                                                .padding(.horizontal, 16)
+                                        } else {
+                                            Text("画像データがありません")
+                                                .foregroundColor(.gray)
                                         }
                                         HStack(alignment: .center, spacing: 12) {
-                                            if let icon = character.image {
+                                            if let iconPath = character.imagePath, let icon = UIImage(contentsOfFile: iconPath) {
                                                 Image(uiImage: icon)
                                                     .resizable()
                                                     .aspectRatio(contentMode: .fill)
@@ -212,7 +242,7 @@ struct ArtworkScreen: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 24) {
                     Spacer()
-                    if let uiImage = UIImage(data: artwork.imageData) {
+                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                         Image(uiImage: uiImage)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -301,7 +331,7 @@ struct ArtworkScreen: View {
                             }
                             Button(action: {
                                 if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                    artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imageData: artworks[idx].imageData, title: editText, tags: artworks[idx].tags, date: artworks[idx].date)
+                                    artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imagePath: artworks[idx].imagePath, title: editText, tags: artworks[idx].tags, date: artworks[idx].date)
                                     saveArtworksToUserDefaults()
                                 }
                                 showEditTitle = false
@@ -375,7 +405,10 @@ struct ArtworkScreen: View {
     private func saveArtwork() {
         guard let image = selectedImage, let imageData = image.jpegData(compressionQuality: 0.8) else { return }
         let tags = photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-        let newArtwork = Artwork(id: UUID(), characterId: character.id, imageData: imageData, title: photoTitle, tags: tags, date: Date())
+        // 画像を保存
+        let fileName = "artwork_\(UUID().uuidString).png"
+        let path = saveImageToDocuments(image, fileName: fileName)
+        let newArtwork = Artwork(id: UUID(), characterId: character.id, imagePath: path, title: photoTitle, tags: tags, date: Date())
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         selectedImage = nil
@@ -396,6 +429,21 @@ struct ArtworkScreen: View {
         let key = "artworks_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(artworks) {
             UserDefaults.standard.set(encodedData, forKey: key)
+        }
+    }
+    
+    func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
+        guard let data = image.pngData() else { return nil }
+        let fileManager = FileManager.default
+        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+        guard let documentsURL = urls.first else { return nil }
+        let fileURL = documentsURL.appendingPathComponent(fileName)
+        do {
+            try data.write(to: fileURL)
+            return fileURL.path
+        } catch {
+            print("画像保存エラー: \(error)")
+            return nil
         }
     }
 }
@@ -423,7 +471,6 @@ struct AlbumGridView: View {
     let artworks: [Artwork]
     let highlightFirstRow: Bool
     let filteredTags: [String]?
-    var onPhotoTap: ((Artwork) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 32) {
@@ -432,17 +479,14 @@ struct AlbumGridView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 24) {
-                            ForEach(artworks) { artwork in
-                                if let uiImage = UIImage(data: artwork.imageData) {
+                            ForEach(artworks, id: \.id) { artwork in
+                                if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
                                         .frame(width: 208, height: 156)
                                         .clipped()
                                         .cornerRadius(20)
-                                        .onTapGesture {
-                                            onPhotoTap?(artwork)
-                                        }
                                 }
                             }
                         }
@@ -462,17 +506,14 @@ struct AlbumGridView: View {
                                 .padding(.leading, 16)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 24) {
-                                    ForEach(tagArts) { artwork in
-                                        if let uiImage = UIImage(data: artwork.imageData) {
+                                    ForEach(tagArts, id: \.id) { artwork in
+                                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                             Image(uiImage: uiImage)
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
                                                 .frame(width: 160, height: 120)
                                                 .clipped()
                                                 .cornerRadius(20)
-                                                .onTapGesture {
-                                                    onPhotoTap?(artwork)
-                                                }
                                         }
                                     }
                                 }

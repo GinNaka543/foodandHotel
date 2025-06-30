@@ -906,5 +906,5 @@ struct VideoInlinePlayer: View {
 }
 
 #Preview {
-    VideoGalleryScreen(character: Character(id: UUID(), image: nil, name: "キャラクター名", tag: "タグ", birthday: Date()))
+    VideoGalleryScreen(character: Character(id: UUID(), image: nil, name: "キャラクター名", tag: "タグ", birthday: Date(), favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: ""))
 } 

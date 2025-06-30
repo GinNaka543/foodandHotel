@@ -136,66 +136,89 @@ struct CharaScreen: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                // 左上メニューボタン
-                Button(action: {
-                    showMenu.toggle()
-                }) {
-                    Image(systemName: "line.horizontal.3")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.black)
-                }
-                Spacer()
-                // 右上＋ボタン
-                Button(action: { showAddSheet = true }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.black)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            // 検索バー
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(Color(.systemGray3))
-                    .font(.system(size: 18))
-                TextField("Search", text: $searchText)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                    .font(.system(size: 16))
-                    .foregroundColor(.black)
-            }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 10)
-            .background(Color.white)
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-            )
-            .frame(height: 38)
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            // 広告バナー
-            AdBannerView()
-                .padding(.vertical, 2)
-            // キャラリストのみスクロール
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(filteredCharacters, id: \ .id) { character in
-                        Button(action: {
-                            selectedCharacter = character
-                        }) {
-                            CharacterRow(character: character, characterManager: characterManager)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        Divider()
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                HStack {
+                    // 左上メニューボタン
+                    Button(action: {
+                        showMenu.toggle()
+                    }) {
+                        Image(systemName: "line.horizontal.3")
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.black)
+                    }
+                    Spacer()
+                    // 右上＋ボタン
+                    Button(action: { showAddSheet = true }) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                // 検索バー
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(Color(.systemGray3))
+                        .font(.system(size: 18))
+                    TextField("Search", text: $searchText)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .font(.system(size: 16))
+                        .foregroundColor(.black)
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 10)
+                .background(Color.white)
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+                .frame(height: 38)
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                // 広告バナー
+                AdBannerView()
+                    .padding(.vertical, 2)
+                // キャラリストのみスクロール
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(filteredCharacters, id: \ .id) { character in
+                            Button(action: {
+                                selectedCharacter = character
+                            }) {
+                                CharacterRow(character: character, characterManager: characterManager)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            Divider()
+                        }
+                    }
+                    .padding(.bottom, 75) // ナビゲーションバーの高さ分のパディング
+                }
+            }
+            
+            // 下部ナビゲーションバー
+            VStack(spacing: 0) {
+                Spacer()
+                HStack(spacing: 0) {
+                    NavigationBarItem(icon: "house", title: "Home", isSelected: true)
+                    NavigationBarItem(icon: "person.2", title: "Chara", isSelected: false)
+                    NavigationBarItem(icon: "tv", title: "Anime", isSelected: false)
+                    NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
+                    NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
+                }
+                .frame(height: 75)
+                .background(Color.white)
+                .overlay(
+                    Rectangle()
+                        .frame(height: 1)
+                        .foregroundColor(Color(.systemGray4)),
+                    alignment: .top
+                )
             }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: {
@@ -1392,6 +1415,25 @@ func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
     } catch {
         print("画像保存エラー: \(error)")
         return nil
+    }
+}
+
+struct NavigationBarItem: View {
+    let icon: String
+    let title: String
+    let isSelected: Bool
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(isSelected ? .blue : .gray)
+            Text(title)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(isSelected ? .blue : .gray)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 75)
     }
 }
 

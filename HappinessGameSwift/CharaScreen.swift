@@ -28,6 +28,10 @@ class CharacterManager: ObservableObject {
         if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
             characters[idx] = updatedCharacter
             saveCharacters()
+            // UIを強制的に更新
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
         }
     }
     
@@ -37,6 +41,17 @@ class CharacterManager: ObservableObject {
         if !exists {
             characters.append(character)
             saveCharacters()
+            // UIを強制的に更新
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+        }
+    }
+    
+    // UI更新用のメソッド
+    func refreshUI() {
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
         }
     }
 }
@@ -173,7 +188,7 @@ struct CharaScreen: View {
                         Button(action: {
                             selectedCharacter = character
                         }) {
-                            CharacterRow(character: character)
+                            CharacterRow(character: character, characterManager: characterManager)
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
                         }
@@ -196,10 +211,15 @@ struct CharaScreen: View {
                 set: { newCharacter in
                     if let idx = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
                         characterManager.characters[idx] = newCharacter
+                        characterManager.updateCharacter(newCharacter)
                     }
                     selectedCharacter = newCharacter
                 }
-            ), characters: $characterManager.characters, onDismiss: { selectedCharacter = nil })
+            ), characters: $characterManager.characters, onDismiss: { 
+                selectedCharacter = nil
+                // 詳細画面を閉じた後にUIを更新
+                characterManager.refreshUI()
+            })
             .environmentObject(characterManager)
         }
     }
@@ -269,6 +289,8 @@ struct SearchBar: View {
 
 struct CharacterRow: View {
     let character: Character
+    @ObservedObject var characterManager: CharacterManager
+    
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
             if let imagePath = character.imagePath, let image = loadImageFromPath(imagePath) {
@@ -445,11 +467,21 @@ struct CharacterDetailView: View {
     @State private var showArtwork = false
     @State private var showVideo = false
     @State private var showAbout = false
+    // 編集用の状態変数
+    @State private var showEditNameModal = false
+    @State private var showEditBirthdayModal = false
+    @State private var showEditIconModal = false
+    @State private var editName: String = ""
+    @State private var editBirthday: Date = Date()
+    @State private var iconPickerItem: PhotosPickerItem? = nil
+    @State private var iconImage: UIImage? = nil
 
     var body: some View {
         GeometryReader { geometry in
-            let nameText = character.name
-            let birthdayText = DateFormatter.monthDayEnglish.string(from: character.birthday)
+            // characterManagerから最新のキャラクター情報を取得
+            let currentCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
+            let nameText = currentCharacter.name
+            let birthdayText = DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday)
             ZStack(alignment: .topLeading) {
                 Color(.systemBackground).ignoresSafeArea()
                 Button(action: {
@@ -473,13 +505,20 @@ struct CharacterDetailView: View {
                 // アイコン
                 VStack {
                     Spacer().frame(height: 180 + 50) // 50px下げる
-                    if let imagePath = character.imagePath, let image = loadImageFromPath(imagePath) {
+                    if let imagePath = currentCharacter.imagePath, let image = loadImageFromPath(imagePath) {
                         Image(uiImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 120, height: 120)
                             .clipShape(Circle())
                             .shadow(radius: 8)
+                            .contentShape(Rectangle())
+                            .onTapGesture { 
+                                showEditIconModal = true 
+                                if iconImage == nil, let imagePath = currentCharacter.imagePath, let current = UIImage(contentsOfFile: imagePath) {
+                                    iconImage = current
+                                }
+                            }
                     } else {
                         Circle()
                             .fill(Color.gray.opacity(0.3))
@@ -490,6 +529,13 @@ struct CharacterDetailView: View {
                                     .font(.system(size: 50))
                                     .foregroundColor(.gray)
                             )
+                            .contentShape(Rectangle())
+                            .onTapGesture { 
+                                showEditIconModal = true 
+                                if iconImage == nil, let imagePath = currentCharacter.imagePath, let current = UIImage(contentsOfFile: imagePath) {
+                                    iconImage = current
+                                }
+                            }
                     }
                     // 名前
                     Text(nameText)
@@ -497,12 +543,20 @@ struct CharacterDetailView: View {
                         .foregroundColor(.black)
                         .padding(.top, 20)
                         .frame(maxWidth: .infinity, alignment: .center)
+                        .onTapGesture { 
+                            editName = currentCharacter.name
+                            showEditNameModal = true 
+                        }
                     // 誕生日
                     Text(birthdayText.uppercased())
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.gray)
                         .padding(.top, 8)
                         .frame(maxWidth: .infinity, alignment: .center)
+                        .onTapGesture { 
+                            editBirthday = currentCharacter.birthday
+                            showEditBirthdayModal = true 
+                        }
                     // ナビゲーションバー（誕生日の直下、背景なし）
                     HStack {
                         Spacer()
@@ -552,6 +606,176 @@ struct CharacterDetailView: View {
             }
         }
         .navigationBarHidden(true)
+        // 名前編集モーダル
+        .sheet(isPresented: $showEditNameModal) {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 20) {
+                    Spacer()
+                    Text("名前を編集")
+                        .font(.headline)
+                    HStack {
+                        Spacer()
+                        TextField("名前", text: $editName)
+                            .frame(width: 250)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                        Spacer()
+                    }
+                    Button("保存") { 
+                        var updatedCharacter = character
+                        updatedCharacter.name = editName
+                        character = updatedCharacter
+                        characterManager.updateCharacter(updatedCharacter)
+                        if let idx = characters.firstIndex(where: { $0.id == character.id }) {
+                            characters[idx] = updatedCharacter
+                        }
+                        // 親のselectedCharacterも更新
+                        if let parentIdx = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                            characterManager.characters[parentIdx] = updatedCharacter
+                        }
+                        characterManager.refreshUI()
+                        showEditNameModal = false 
+                    }
+                    Spacer()
+                }
+                Button(action: { showEditNameModal = false }) {
+                    Text("閉じる")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.blue)
+                        .padding(.top, 16)
+                        .padding(.trailing, 16)
+                }
+            }
+            .ignoresSafeArea(.container, edges: .top)
+            .onAppear {
+                editName = character.name
+            }
+        }
+        // 誕生日編集モーダル
+        .sheet(isPresented: $showEditBirthdayModal) {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 20) {
+                    Text("誕生日を編集")
+                        .font(.headline)
+                    HStack(spacing: 16) {
+                        Picker("月", selection: Binding(get: {
+                            Calendar.current.component(.month, from: editBirthday)
+                        }, set: { newMonth in
+                            let day = Calendar.current.component(.day, from: editBirthday)
+                            let year = 2000 // 年は固定
+                            let newDate = Calendar.current.date(from: DateComponents(year: year, month: newMonth, day: day)) ?? editBirthday
+                            editBirthday = newDate
+                        })) {
+                            ForEach(1...12, id: \.self) { month in
+                                Text("\(month)月").tag(month)
+                            }
+                        }
+                        Picker("日", selection: Binding(get: {
+                            Calendar.current.component(.day, from: editBirthday)
+                        }, set: { newDay in
+                            let month = Calendar.current.component(.month, from: editBirthday)
+                            let year = 2000 // 年は固定
+                            let newDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: newDay)) ?? editBirthday
+                            editBirthday = newDate
+                        })) {
+                            ForEach(1...31, id: \.self) { day in
+                                Text("\(day)日").tag(day)
+                            }
+                        }
+                    }
+                    Button("保存") {
+                        var updatedCharacter = character
+                        updatedCharacter.birthday = editBirthday
+                        character = updatedCharacter
+                        characterManager.updateCharacter(updatedCharacter)
+                        if let idx = characters.firstIndex(where: { $0.id == character.id }) {
+                            characters[idx] = updatedCharacter
+                        }
+                        // 親のselectedCharacterも更新
+                        if let parentIdx = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                            characterManager.characters[parentIdx] = updatedCharacter
+                        }
+                        characterManager.refreshUI()
+                        showEditBirthdayModal = false
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Button(action: { showEditBirthdayModal = false }) {
+                    Text("閉じる")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.blue)
+                        .padding(.trailing, 16)
+                        .padding(.top, 16)
+                }
+            }
+            .ignoresSafeArea(.container, edges: .top)
+        }
+        // アイコン画像編集モーダル
+        .sheet(isPresented: $showEditIconModal) {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 20) {
+                    Text("アイコン画像を変更")
+                        .font(.headline)
+                    if let iconImage = iconImage {
+                        Image(uiImage: iconImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 120, height: 120)
+                            .clipShape(Circle())
+                            .shadow(radius: 8)
+                    }
+                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                        Text("画像を選択")
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .padding(40)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onAppear {
+                    if iconImage == nil, let imagePath = character.imagePath, let current = UIImage(contentsOfFile: imagePath) {
+                        iconImage = current
+                    }
+                }
+                .onChange(of: iconPickerItem) { _, newItem in
+                    if let newItem = newItem {
+                        Task {
+                            if let data = try? await newItem.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: data) {
+                                iconImage = uiImage
+                                // 画像を保存し、パスをセット
+                                let fileName = "icon_\(character.id.uuidString).png"
+                                let path = saveImageToDocuments(uiImage, fileName: fileName)
+                                // キャラクターを更新
+                                var updatedCharacter = character
+                                updatedCharacter.imagePath = path
+                                character = updatedCharacter
+                                // CharacterManagerを使用して保存
+                                characterManager.updateCharacter(updatedCharacter)
+                                // characters配列も更新
+                                if let idx = characters.firstIndex(where: { $0.id == character.id }) {
+                                    characters[idx] = updatedCharacter
+                                }
+                                // UIを強制的に更新
+                                characterManager.refreshUI()
+                                // デバッグ用：保存確認
+                                print("アイコンが更新されました: \(character.name)")
+                                print("CharacterManagerのキャラクター数: \(characterManager.characters.count)")
+                            }
+                        }
+                    }
+                }
+                Button(action: { showEditIconModal = false }) {
+                    Text("閉じる")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.blue)
+                        .padding(.trailing, 16)
+                        .padding(.top, 16)
+                }
+            }
+            .ignoresSafeArea(.container, edges: .top)
+        }
     }
 }
 
@@ -575,7 +799,6 @@ struct AboutView: View {
     @Binding var character: Character
     @Binding var characters: [Character]
     var onClose: () -> Void
-    @State private var newName: String
     @State private var favoriteFood: String = ""
     @State private var animeName: String = ""
     @State private var keyVisual: UIImage? = nil
@@ -596,6 +819,7 @@ struct AboutView: View {
     @State private var showEditBirthdayModal = false
     @State private var showEditIconModal = false
     @State private var showBackgroundModal = false
+    @State private var editName: String = ""
     @State private var editBirthday: Date = Date()
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
@@ -606,7 +830,6 @@ struct AboutView: View {
         self._character = character
         self._characters = characters
         self.onClose = onClose
-        _newName = State(initialValue: character.wrappedValue.name)
         _favoriteFood = State(initialValue: character.wrappedValue.favoriteFood)
         _animeName = State(initialValue: character.wrappedValue.tag)
     }
@@ -641,7 +864,7 @@ struct AboutView: View {
                         .onTapGesture { showEditIconModal = true }
                         HStack {
                             Spacer()
-                            Text(newName)
+                            Text(character.name)
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
                                 .padding(.top, 20)
@@ -860,17 +1083,25 @@ struct AboutView: View {
                             .font(.headline)
                         HStack {
                             Spacer()
-                            TextField("名前", text: $newName)
+                            TextField("名前", text: $editName)
                                 .frame(width: 250)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                             Spacer()
                         }
                         Button("保存") { 
-                            showEditNameModal = false 
-                            // UIを強制的に更新
-                            DispatchQueue.main.async {
-                                characterManager.objectWillChange.send()
+                            var updatedCharacter = character
+                            updatedCharacter.name = editName
+                            character = updatedCharacter
+                            characterManager.updateCharacter(updatedCharacter)
+                            if let idx = characters.firstIndex(where: { $0.id == character.id }) {
+                                characters[idx] = updatedCharacter
                             }
+                            // 親のselectedCharacterも更新
+                            if let parentIdx = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                characterManager.characters[parentIdx] = updatedCharacter
+                            }
+                            characterManager.refreshUI()
+                            showEditNameModal = false 
                         }
                         Spacer()
                     }
@@ -883,6 +1114,9 @@ struct AboutView: View {
                     }
                 }
                 .ignoresSafeArea(.container, edges: .top)
+                .onAppear {
+                    editName = character.name
+                }
             }
             // --- 誕生日編集モーダル ---
             .sheet(isPresented: $showEditBirthdayModal) {
@@ -899,7 +1133,7 @@ struct AboutView: View {
                                 let newDate = Calendar.current.date(from: DateComponents(year: year, month: newMonth, day: day)) ?? editBirthday
                                 editBirthday = newDate
                             })) {
-                                ForEach(1...12, id: \ .self) { month in
+                                ForEach(1...12, id: \.self) { month in
                                     Text("\(month)月").tag(month)
                                 }
                             }
@@ -911,18 +1145,25 @@ struct AboutView: View {
                                 let newDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: newDay)) ?? editBirthday
                                 editBirthday = newDate
                             })) {
-                                ForEach(1...31, id: \ .self) { day in
+                                ForEach(1...31, id: \.self) { day in
                                     Text("\(day)日").tag(day)
                                 }
                             }
                         }
                         Button("保存") {
-                            character.birthday = editBirthday
-                            showEditBirthdayModal = false
-                            // UIを強制的に更新
-                            DispatchQueue.main.async {
-                                characterManager.objectWillChange.send()
+                            var updatedCharacter = character
+                            updatedCharacter.birthday = editBirthday
+                            character = updatedCharacter
+                            characterManager.updateCharacter(updatedCharacter)
+                            if let idx = characters.firstIndex(where: { $0.id == character.id }) {
+                                characters[idx] = updatedCharacter
                             }
+                            // 親のselectedCharacterも更新
+                            if let parentIdx = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                characterManager.characters[parentIdx] = updatedCharacter
+                            }
+                            characterManager.refreshUI()
+                            showEditBirthdayModal = false
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -985,9 +1226,7 @@ struct AboutView: View {
                                         characters[idx] = updatedCharacter
                                     }
                                     // UIを強制的に更新
-                                    DispatchQueue.main.async {
-                                        characterManager.objectWillChange.send()
-                                    }
+                                    characterManager.refreshUI()
                                     // デバッグ用：保存確認
                                     print("アイコンが更新されました: \(character.name)")
                                     print("CharacterManagerのキャラクター数: \(characterManager.characters.count)")
@@ -1054,7 +1293,7 @@ struct AboutView: View {
     func saveCharacter() {
         // キャラ情報を更新
         var updatedCharacter = character
-        updatedCharacter.name = newName
+        updatedCharacter.name = character.name
         updatedCharacter.favoriteFood = favoriteFood
         updatedCharacter.tag = animeName
         updatedCharacter.imagePath = character.imagePath // 画像パスも含めて更新

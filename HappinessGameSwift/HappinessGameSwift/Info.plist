@@ -41,7 +41,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>MinimumOSVersion</key>
-	<string>18.5</string>
 </dict>
 </plist>

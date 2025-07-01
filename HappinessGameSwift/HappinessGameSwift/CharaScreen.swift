@@ -146,6 +146,7 @@ struct CharaScreen: View {
     @State private var searchText = ""
     @State private var selectedCharacter: Character? = nil
     @State private var showMenu = false
+    @State private var showAnimeScreen = false
     
     var filteredCharacters: [Character] {
         if searchText.isEmpty { return characterManager.characters }
@@ -226,10 +227,25 @@ struct CharaScreen: View {
                 Spacer()
                 HStack(spacing: 0) {
                     NavigationBarItem(icon: "house", title: "Home", isSelected: false)
+                        .onTapGesture {
+                            // Home画面への遷移
+                        }
                     NavigationBarItem(icon: "person.2", title: "Chara", isSelected: true)
+                        .onTapGesture {
+                            // 現在の画面なので何もしない
+                        }
                     NavigationBarItem(icon: "tv", title: "Anime", isSelected: false)
+                        .onTapGesture {
+                            showAnimeScreen = true
+                        }
                     NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
+                        .onTapGesture {
+                            // Visit画面への遷移
+                        }
                     NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
+                        .onTapGesture {
+                            // Card画面への遷移
+                        }
                 }
                 .frame(height: 75)
                 .background(Color.white)
@@ -264,6 +280,9 @@ struct CharaScreen: View {
                 characterManager.refreshUI()
             })
             .environmentObject(characterManager)
+        }
+        .fullScreenCover(isPresented: $showAnimeScreen) {
+            AnimeScreen()
         }
     }
     // UserDefaults保存・読込
@@ -1324,21 +1343,6 @@ extension String {
             start = end
         }
         return result
-    }
-}
-
-func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
-    guard let data = image.pngData() else { return nil }
-    let fileManager = FileManager.default
-    let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-    guard let documentsURL = urls.first else { return nil }
-    let fileURL = documentsURL.appendingPathComponent(fileName)
-    do {
-        try data.write(to: fileURL)
-        return fileURL.path
-    } catch {
-        print("画像保存エラー: \(error)")
-        return nil
     }
 }
 

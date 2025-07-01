@@ -4,11 +4,6 @@ import PhotosUI
 import Foundation
 import UIKit
 
-func loadImageFromPath(_ path: String?) -> UIImage? {
-    guard let path = path else { return nil }
-    return UIImage(contentsOfFile: path)
-}
-
 struct MemoryVideo: Identifiable, Codable {
     let id: UUID
     let characterId: UUID
@@ -917,7 +912,7 @@ struct CharacterIconView: View {
     let imagePath: String?
     var size: CGFloat = 40
     var body: some View {
-        if let imagePath = imagePath, let image = loadImageFromPath(imagePath) {
+        if let imagePath = imagePath, let image = UIImage(contentsOfFile: imagePath) {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fill)

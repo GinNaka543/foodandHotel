@@ -30,14 +30,6 @@ targets:
       - path: HappinessGameSwift
         excludes:
           - "*.plist"
-      - path: .
-        excludes:
-          - "HappinessGameSwift"
-          - "*.yml"
-          - "*.md"
-          - "Podfile"
-          - "*.xcodeproj"
-          - "*.xcworkspace"
     resources:
       - path: HappinessGameSwift/Assets.xcassets
       - path: images
@@ -49,10 +41,6 @@ targets:
       CURRENT_PROJECT_VERSION: "1"
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-    dependencies:
-      - framework: AVFoundation.framework
-      - framework: PhotosUI.framework
-      - framework: AVKit.framework
     info:
       path: HappinessGameSwift/Info.plist
       properties:

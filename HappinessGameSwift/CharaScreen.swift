@@ -225,8 +225,8 @@ struct CharaScreen: View {
             VStack(spacing: 0) {
                 Spacer()
                 HStack(spacing: 0) {
-                    NavigationBarItem(icon: "house", title: "Home", isSelected: true)
-                    NavigationBarItem(icon: "person.2", title: "Chara", isSelected: false)
+                    NavigationBarItem(icon: "house", title: "Home", isSelected: false)
+                    NavigationBarItem(icon: "person.2", title: "Chara", isSelected: true)
                     NavigationBarItem(icon: "tv", title: "Anime", isSelected: false)
                     NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
                     NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
@@ -358,6 +358,8 @@ struct CharacterRow: View {
                 Text("#" + character.tag)
                     .font(.system(size: 14))
                     .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .frame(maxWidth: 200, alignment: .leading)
             }
             Spacer()
             Text(DateFormatter.monthDayEnglish.string(from: character.birthday))
@@ -525,6 +527,7 @@ struct CharacterDetailView: View {
     @State private var showEditBirthdayModal = false
     @State private var showEditIconModal = false
     @State private var editName: String = ""
+    @State private var editTag: String = ""
     @State private var editBirthday: Date = Date()
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
@@ -589,6 +592,7 @@ struct CharacterDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .onTapGesture { 
                             editName = currentCharacter.name
+                            editTag = currentCharacter.tag
                             showEditNameModal = true 
                         }
                     // 誕生日
@@ -652,40 +656,35 @@ struct CharacterDetailView: View {
         .navigationBarHidden(true)
         // 名前編集モーダル
         .sheet(isPresented: $showEditNameModal) {
-            ZStack(alignment: .topTrailing) {
-                VStack(spacing: 20) {
-                    Spacer()
-                    Text("名前を編集")
-                        .font(.headline)
-                    HStack {
-                        Spacer()
-                        TextField("名前", text: $editName)
-                            .frame(width: 250)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                        Spacer()
+            VStack(spacing: 20) {
+                Text("名前とタグを編集")
+                    .font(.headline)
+                VStack(spacing: 12) {
+                    TextField("名前", text: $editName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    TextField("タグ", text: $editTag)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                HStack {
+                    Button("キャンセル") {
+                        showEditNameModal = false
                     }
-                    Button("保存") { 
+                    Spacer()
+                    Button("保存") {
                         guard let idx = characters.firstIndex(where: { $0.id == character.id }) else { return }
                         var updatedCharacter = characters[idx]
                         updatedCharacter.name = editName
+                        updatedCharacter.tag = editTag
                         characters[idx] = updatedCharacter
                         characterManager.updateCharacter(updatedCharacter)
                         showEditNameModal = false
                     }
-                    Spacer()
-                }
-                Button(action: { showEditNameModal = false }) {
-                    Text("閉じる")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.blue)
-                        .padding(.top, 16)
-                        .padding(.trailing, 16)
                 }
             }
-            .ignoresSafeArea(.container, edges: .top)
-            .onAppear {
-                editName = character.name
-            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
         }
         // 誕生日編集モーダル
         .sheet(isPresented: $showEditBirthdayModal) {
@@ -857,6 +856,7 @@ struct AboutView: View {
     @State private var showEditIconModal = false
     @State private var showBackgroundModal = false
     @State private var editName: String = ""
+    @State private var editTag: String = ""
     @State private var editBirthday: Date = Date()
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
@@ -902,6 +902,8 @@ struct AboutView: View {
         }
         .onAppear {
             print("[DEBUG] AboutView onAppear: character.customFields=\(String(describing: character?.customFields))")
+            editName = character?.name ?? ""
+            editTag = character?.tag ?? ""
         }
         .onDisappear {
             saveCharacter()
@@ -1074,8 +1076,12 @@ struct AboutView: View {
         VStack(spacing: 20) {
             Text("名前を編集")
                 .font(.headline)
-            TextField("名前", text: $editName)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+            VStack(spacing: 12) {
+                TextField("名前", text: $editName)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                TextField("タグ", text: $editTag)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+            }
             HStack {
                 Button("キャンセル") {
                     showEditNameModal = false
@@ -1085,6 +1091,7 @@ struct AboutView: View {
                     guard let idx = characters.firstIndex(where: { $0.id == characterId }) else { return }
                     var updatedCharacter = characters[idx]
                     updatedCharacter.name = editName
+                    updatedCharacter.tag = editTag
                     characters[idx] = updatedCharacter
                     characterManager.updateCharacter(updatedCharacter)
                     showEditNameModal = false

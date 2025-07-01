@@ -136,7 +136,22 @@ struct VideoGalleryScreen: View {
                                                 .cornerRadius(20)
                                         }
                                         HStack(alignment: .center, spacing: 12) {
-                                            CharacterIconView(imagePath: character.imagePath, size: 40)
+                                            if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                Image(uiImage: image)
+                                                    .resizable()
+                                                    .aspectRatio(contentMode: .fill)
+                                                    .frame(width: 40, height: 40)
+                                                    .clipShape(Circle())
+                                            } else {
+                                                Circle()
+                                                    .fill(Color.gray.opacity(0.3))
+                                                    .frame(width: 40, height: 40)
+                                                    .overlay(
+                                                        Image(systemName: "person")
+                                                            .font(.system(size: 20))
+                                                            .foregroundColor(.gray)
+                                                    )
+                                            }
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(video.title)
                                                     .font(.headline)
@@ -922,5 +937,5 @@ struct CharacterIconView: View {
 }
 
 #Preview {
-    VideoGalleryScreen(character: Character(id: UUID(), imagePath: nil, name: "キャラクター名", tag: "タグ", birthday: Date(), favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: ""))
+    VideoGalleryScreen(character: Character(id: UUID(), imageIdentifier: nil, name: "キャラクター名", tag: "タグ", birthday: Date(), favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: ""))
 } 

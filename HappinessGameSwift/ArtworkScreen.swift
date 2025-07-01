@@ -137,46 +137,63 @@ struct ArtworkScreen: View {
                         ScrollView {
                             VStack(spacing: 32) {
                                 ForEach(artworks, id: \.id) { artwork in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                                            Image(uiImage: uiImage)
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fit)
-                                                .frame(maxWidth: .infinity, maxHeight: 400)
-                                                .clipped()
-                                                .cornerRadius(24)
-                                        } else {
-                                            Text("画像データがありません")
-                                                .foregroundColor(.gray)
-                                        }
-                                        HStack(alignment: .center, spacing: 12) {
-                                            if let iconPath = character.imagePath, let icon = UIImage(contentsOfFile: iconPath) {
-                                                Image(uiImage: icon)
+                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                        // 画像のアスペクト比を判定
+                                        let imageAspect = uiImage.size.width / uiImage.size.height
+                                        let aspect1 = 370.0 / 588.0 // 縦長
+                                        let aspect2 = 370.0 / 233.0 // 横長
+                                        let diff1 = abs(imageAspect - aspect1)
+                                        let diff2 = abs(imageAspect - aspect2)
+                                        let selectedAspect = diff1 < diff2 ? aspect1 : aspect2
+                                        let selectedHeight = diff1 < diff2 ? 588.0 : 233.0
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 24)
+                                                    .fill(Color.white)
+                                                    .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+                                                Image(uiImage: uiImage)
                                                     .resizable()
-                                                    .aspectRatio(contentMode: .fill)
-                                                    .frame(width: 40, height: 40)
-                                                    .clipShape(Circle())
-                                            } else {
-                                                Circle()
-                                                    .fill(Color.gray.opacity(0.3))
-                                                    .frame(width: 40, height: 40)
-                                                    .overlay(
-                                                        Image(systemName: "person")
-                                                            .font(.system(size: 20))
-                                                            .foregroundColor(.gray)
-                                                    )
+                                                    .aspectRatio(selectedAspect, contentMode: .fill)
+                                                    .frame(width: 370, height: selectedHeight)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 24))
                                             }
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(artwork.title)
-                                                    .font(.headline)
-                                                if !artwork.tags.isEmpty {
-                                                    Text("#" + artwork.tags.joined(separator: " #"))
-                                                        .font(.caption)
-                                                        .foregroundColor(.gray)
+                                            .frame(width: 370, height: selectedHeight)
+                                            .clipped()
+                                            .padding(.bottom, 0)
+                                            // 画像の下にアイコン・タイトル・タグ
+                                            HStack(alignment: .center, spacing: 12) {
+                                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                    Image(uiImage: image)
+                                                        .resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(width: 40, height: 40)
+                                                        .clipShape(Circle())
+                                                } else {
+                                                    Circle()
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: 40, height: 40)
+                                                        .overlay(
+                                                            Image(systemName: "person")
+                                                                .font(.system(size: 20))
+                                                                .foregroundColor(.gray)
+                                                        )
+                                                }
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(artwork.title)
+                                                        .font(.headline)
+                                                        .foregroundColor(.black)
+                                                    if !artwork.tags.isEmpty {
+                                                        Text("#" + artwork.tags.joined(separator: " #"))
+                                                            .font(.caption)
+                                                            .foregroundColor(.gray)
+                                                    }
                                                 }
                                             }
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
                                         }
-                                        .padding(.horizontal, 24)
+                                        .frame(width: 370)
+                                        .padding(.vertical, 8)
                                     }
                                 }
                             }

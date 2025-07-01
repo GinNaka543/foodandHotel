@@ -181,6 +181,9 @@ struct AnimeScreen: View {
                 .frame(height: 38)
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
+                // 広告バナー
+                AdBannerView()
+                    .padding(.vertical, 2)
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredAnimes, id: \.id) { anime in
@@ -1477,4 +1480,5 @@ struct AddAnimeSheet: View {
             return nil
         }
     }
-} 
+}
+

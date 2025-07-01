@@ -966,7 +966,7 @@ struct AboutView: View {
                         .font(.system(size: 20, weight: .bold))
                 }
             }
-            ForEach(character?.customFields ?? [], id: \.name) { field in
+            ForEach(Array((character?.customFields ?? []).enumerated()), id: \.element.name) { index, field in
                 HStack {
                     Text(field.name)
                         .font(.system(size: 16, weight: .medium))
@@ -977,6 +977,12 @@ struct AboutView: View {
                         .frame(maxWidth: 200, alignment: .trailing)
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                .onTapGesture {
+                    editFieldIndex = index + 3 // カスタムフィールドは3から始まる
+                    editFieldName = field.name
+                    editFieldValue = field.value
+                    showEditFieldPopup = true
                 }
             }
         }
@@ -1039,13 +1045,7 @@ struct AboutView: View {
                     guard let idx = characters.firstIndex(where: { $0.id == characterId }) else { return }
                     var updatedCharacter = characters[idx]
                     if let index = editFieldIndex {
-                        if index == 0 {
-                            updatedCharacter.tag = editFieldValue
-                        } else if index == 1 {
-                            // 年齢など他フィールドも同様に
-                        } else if index == 2 {
-                            // 聖地など他フィールドも同様に
-                        } else if index >= 3 {
+                        if index >= 3 {
                             let fieldIndex = index - 3
                             if let fields = updatedCharacter.customFields, fieldIndex < fields.count {
                                 var newFields = fields

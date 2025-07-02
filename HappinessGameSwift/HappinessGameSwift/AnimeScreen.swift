@@ -130,8 +130,7 @@ struct AnimeScreen: View {
     @State private var searchText = ""
     @State private var selectedAnime: Anime? = nil
     @State private var showMenu = false
-    @State private var showCharaScreen = false
-    @State private var showHomeScreen = false
+    @EnvironmentObject var mainTab: MainTabSelection
     
     var filteredAnimes: [Anime] {
         if searchText.isEmpty { return animeManager.animes }
@@ -202,39 +201,6 @@ struct AnimeScreen: View {
                     .padding(.bottom, 75)
                 }
             }
-            VStack(spacing: 0) {
-                Spacer()
-                HStack(spacing: 0) {
-                    NavigationBarItem(icon: "house", title: "Home", isSelected: false)
-                        .onTapGesture {
-                            showHomeScreen = true
-                        }
-                    NavigationBarItem(icon: "person.2", title: "Chara", isSelected: false)
-                        .onTapGesture {
-                            showCharaScreen = true
-                        }
-                    NavigationBarItem(icon: "tv", title: "Anime", isSelected: true)
-                        .onTapGesture {
-                            // 現在の画面なので何もしない
-                        }
-                    NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
-                        .onTapGesture {
-                            // Visit画面への遷移
-                        }
-                    NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
-                        .onTapGesture {
-                            // Card画面への遷移
-                        }
-                }
-                .frame(height: 75)
-                .background(Color.white)
-                .overlay(
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(Color(.systemGray4)),
-                    alignment: .top
-                )
-            }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: {
             animeManager.loadAnimes()
@@ -257,12 +223,6 @@ struct AnimeScreen: View {
                 animeManager.refreshUI()
             })
             .environmentObject(animeManager)
-        }
-        .fullScreenCover(isPresented: $showCharaScreen) {
-            CharaScreen()
-        }
-        .fullScreenCover(isPresented: $showHomeScreen) {
-            HomeScreen()
         }
     }
 }

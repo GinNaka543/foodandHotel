@@ -1,8 +1,94 @@
 import SwiftUI
+import Foundation
+import HappinessGameSwift
+
+enum ListTab: Int {
+    case chara, anime, birthday
+}
 
 struct HomeScreen: View {
-    @State private var showCharaScreen = false
-    @State private var showAnimeScreen = false
+    @EnvironmentObject var mainTab: MainTabSelection
+    @State private var showListPage = false
+    @State private var initialTab: ListTab = .chara
+    @StateObject private var characterManager = CharacterManager()
+    @StateObject private var animeManager = AnimeManager()
+    
+    // キャラクター名を30文字以内で表示する関数
+    private func getCharacterNamesText() -> String {
+        let names = characterManager.characters.map { $0.name }
+        let joinedNames = names.joined(separator: ", ")
+        if joinedNames.count <= 30 {
+            return joinedNames.isEmpty ? "キャラクターが登録されていません" : joinedNames
+        } else {
+            let truncated = String(joinedNames.prefix(30))
+            return truncated + "..."
+        }
+    }
+    
+    // アニメ名を30文字以内で表示する関数
+    private func getAnimeNamesText() -> String {
+        let names = animeManager.animes.map { $0.title }
+        let joinedNames = names.joined(separator: ", ")
+        if joinedNames.count <= 30 {
+            return joinedNames.isEmpty ? "アニメが登録されていません" : joinedNames
+        } else {
+            let truncated = String(joinedNames.prefix(30))
+            return truncated + "..."
+        }
+    }
+    
+    // バースデーリマインダー用のキャラクターを取得する関数
+    private func getBirthdayReminderCharacters() -> [Character] {
+        let calendar = Calendar.current
+        let today = Date()
+        
+        // 5日前から3日後までの範囲を計算
+        let fiveDaysAgo = calendar.date(byAdding: .day, value: -5, to: today) ?? today
+        let threeDaysLater = calendar.date(byAdding: .day, value: 3, to: today) ?? today
+        
+        return characterManager.characters.filter { character in
+            // 誕生日の月日を取得
+            let birthdayMonth = calendar.component(.month, from: character.birthday)
+            let birthdayDay = calendar.component(.day, from: character.birthday)
+            
+            // 今日の月日を取得
+            let todayMonth = calendar.component(.month, from: today)
+            let todayDay = calendar.component(.day, from: today)
+            
+            // 5日前の月日を取得
+            let fiveDaysAgoMonth = calendar.component(.month, from: fiveDaysAgo)
+            let fiveDaysAgoDay = calendar.component(.day, from: fiveDaysAgo)
+            
+            // 3日後の月日を取得
+            let threeDaysLaterMonth = calendar.component(.month, from: threeDaysLater)
+            let threeDaysLaterDay = calendar.component(.day, from: threeDaysLater)
+            
+            // 誕生日が範囲内かチェック（年を考慮せず月日のみで比較）
+            let birthdayDate = calendar.date(from: DateComponents(year: 2000, month: birthdayMonth, day: birthdayDay)) ?? Date()
+            let rangeStart = calendar.date(from: DateComponents(year: 2000, month: fiveDaysAgoMonth, day: fiveDaysAgoDay)) ?? Date()
+            let rangeEnd = calendar.date(from: DateComponents(year: 2000, month: threeDaysLaterMonth, day: threeDaysLaterDay)) ?? Date()
+            
+            return birthdayDate >= rangeStart && birthdayDate <= rangeEnd
+        }
+    }
+    
+    // バースデーリマインダーの説明文を生成する関数
+    private func getBirthdayReminderText() -> String {
+        let reminderCharacters = getBirthdayReminderCharacters()
+        if reminderCharacters.isEmpty {
+            return ""
+        }
+        
+        let names = reminderCharacters.map { $0.name }
+        let joinedNames = names.joined(separator: ", ")
+        if joinedNames.count <= 30 {
+            return joinedNames
+        } else {
+            let truncated = String(joinedNames.prefix(30))
+            return truncated + "..."
+        }
+    }
+    
     var body: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
@@ -61,22 +147,73 @@ struct HomeScreen: View {
                         .font(.system(size: 18, weight: .bold))
                         .padding(.top, 16)
                         .padding(.bottom, 4)
-                    ForEach(["Birthday reminders", "Friends", "Groups"], id: \.self) { name in
+                    
+                    // バースデーリマインダー（該当するキャラクターがいる場合のみ表示）
+                    if !getBirthdayReminderCharacters().isEmpty {
                         HStack {
                             Circle().fill(Color.gray).frame(width: 40, height: 40)
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(name)
+                                Text("Birthday reminders")
                                     .font(.system(size: 16, weight: .semibold))
-                                Text("サンプル説明")
+                                Text(getBirthdayReminderText())
                                     .font(.system(size: 13))
                                     .foregroundColor(.gray)
                             }
                             Spacer()
-                            Text("2")
+                            Text("\(getBirthdayReminderCharacters().count)")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
                         .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            initialTab = .birthday
+                            showListPage = true
+                        }
+                    }
+                    
+                    // Characters
+                    HStack {
+                        Circle().fill(Color.gray).frame(width: 40, height: 40)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Characters")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text(getCharacterNamesText())
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                        Text("\(characterManager.characters.count)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        initialTab = .chara
+                        showListPage = true
+                    }
+                    
+                    // Animes
+                    HStack {
+                        Circle().fill(Color.gray).frame(width: 40, height: 40)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Animes")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text(getAnimeNamesText())
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                        Text("\(animeManager.animes.count)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.vertical, 6)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        initialTab = .anime
+                        showListPage = true
                     }
                 }
                 .padding(.horizontal, 20)
@@ -108,48 +245,19 @@ struct HomeScreen: View {
                 .padding(.horizontal, 20)
                 Spacer(minLength: 0)
             }
-            // 下部ナビゲーションバー
-            VStack(spacing: 0) {
-                Divider()
-                HStack(spacing: 0) {
-                    NavigationBarItem(icon: "house.fill", title: "Home", isSelected: true)
-                        .onTapGesture {
-                            // 何もしない（現在の画面）
-                        }
-                    NavigationBarItem(icon: "person.2", title: "Chara", isSelected: false)
-                        .onTapGesture {
-                            showCharaScreen = true
-                        }
-                    NavigationBarItem(icon: "tv", title: "Anime", isSelected: false)
-                        .onTapGesture {
-                            showAnimeScreen = true
-                        }
-                    NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
-                        .onTapGesture {
-                            // Visit画面への遷移（未実装）
-                        }
-                    NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
-                        .onTapGesture {
-                            // Card画面への遷移（未実装）
-                        }
-                }
-                .frame(height: 75)
-                .background(Color.white)
-                .overlay(
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(Color(.systemGray4)),
-                    alignment: .top
-                )
-            }
-            .edgesIgnoringSafeArea(.bottom)
         }
         .background(Color.white)
-        .fullScreenCover(isPresented: $showCharaScreen) {
-            CharaScreen()
+        .fullScreenCover(isPresented: $showListPage) {
+            ListPageScreen(
+                selectedTab: initialTab,
+                characters: characterManager.characters,
+                animes: animeManager.animes,
+                birthdays: getBirthdayReminderCharacters()
+            )
         }
-        .fullScreenCover(isPresented: $showAnimeScreen) {
-            AnimeScreen()
+        .onAppear {
+            characterManager.loadCharacters()
+            animeManager.loadAnimes()
         }
     }
 }

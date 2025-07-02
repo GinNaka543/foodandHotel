@@ -146,8 +146,7 @@ struct CharaScreen: View {
     @State private var searchText = ""
     @State private var selectedCharacter: Character? = nil
     @State private var showMenu = false
-    @State private var showAnimeScreen = false
-    @State private var showHomeScreen = false
+    @EnvironmentObject var mainTab: MainTabSelection
     
     var filteredCharacters: [Character] {
         if searchText.isEmpty { return characterManager.characters }
@@ -222,44 +221,8 @@ struct CharaScreen: View {
                     .padding(.bottom, 75) // ナビゲーションバーの高さ分のパディング
                 }
             }
-            
-            // 下部ナビゲーションバー
-            VStack(spacing: 0) {
-                Spacer()
-                HStack(spacing: 0) {
-                    NavigationBarItem(icon: "house", title: "Home", isSelected: false)
-                        .onTapGesture {
-                            showHomeScreen = true
-                        }
-                    NavigationBarItem(icon: "person.2", title: "Chara", isSelected: true)
-                        .onTapGesture {
-                            // 現在の画面なので何もしない
-                        }
-                    NavigationBarItem(icon: "tv", title: "Anime", isSelected: false)
-                        .onTapGesture {
-                            showAnimeScreen = true
-                        }
-                    NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
-                        .onTapGesture {
-                            // Visit画面への遷移
-                        }
-                    NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
-                        .onTapGesture {
-                            // Card画面への遷移
-                        }
-                }
-                .frame(height: 75)
-                .background(Color.white)
-                .overlay(
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(Color(.systemGray4)),
-                    alignment: .top
-                )
-            }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: {
-            // キャラクター追加後にリストを更新
             characterManager.loadCharacters()
         }) {
             AddCharacterSheet(characters: $characterManager.characters)
@@ -281,12 +244,6 @@ struct CharaScreen: View {
                 characterManager.refreshUI()
             })
             .environmentObject(characterManager)
-        }
-        .fullScreenCover(isPresented: $showAnimeScreen) {
-            AnimeScreen()
-        }
-        .fullScreenCover(isPresented: $showHomeScreen) {
-            HomeScreen()
         }
     }
     // UserDefaults保存・読込

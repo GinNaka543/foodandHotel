@@ -1,7 +1,12 @@
 import SwiftUI
 
+class MainTabSelection: ObservableObject {
+    @Published var selectedTab: MainContainerView.Tab = .home
+}
+
 @main
 struct HappinessGameSwiftApp: App {
+    @StateObject private var mainTab = MainTabSelection()
     
     init() {
         cleanupLargeUserDefaultsEntries()
@@ -10,6 +15,7 @@ struct HappinessGameSwiftApp: App {
     var body: some Scene {
         WindowGroup {
             MainContainerView()
+                .environmentObject(mainTab)
         }
     }
     
@@ -29,7 +35,7 @@ struct HappinessGameSwiftApp: App {
 
 // メインコンテナビュー - ナビゲーションバーを固定し、上部コンテンツのみを切り替え
 struct MainContainerView: View {
-    @State private var selectedTab: Tab = .home
+    @EnvironmentObject var mainTab: MainTabSelection
     
     enum Tab: Int, CaseIterable {
         case home = 0
@@ -65,17 +71,17 @@ struct MainContainerView: View {
             VStack(spacing: 0) {
                 // 選択されたタブに応じてコンテンツを表示
                 Group {
-                    switch selectedTab {
+                    switch mainTab.selectedTab {
                     case .home:
-                        HomeContentView(selectedTab: $selectedTab)
+                        HomeScreen().environmentObject(mainTab)
                     case .chara:
-                        CharaContentView(selectedTab: $selectedTab)
+                        CharaScreen().environmentObject(mainTab)
                     case .anime:
-                        AnimeContentView(selectedTab: $selectedTab)
+                        AnimeScreen().environmentObject(mainTab)
                     case .visit:
-                        VisitContentView(selectedTab: $selectedTab)
+                        VisitContentView(selectedTab: .constant(.visit))
                     case .card:
-                        CardContentView(selectedTab: $selectedTab)
+                        CardContentView(selectedTab: .constant(.card))
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -92,11 +98,11 @@ struct MainContainerView: View {
                         NavigationBarItem(
                             icon: tab.icon,
                             title: tab.title,
-                            isSelected: selectedTab == tab
+                            isSelected: mainTab.selectedTab == tab
                         )
                         .onTapGesture {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                selectedTab = tab
+                                mainTab.selectedTab = tab
                             }
                         }
                     }

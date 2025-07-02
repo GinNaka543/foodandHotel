@@ -1,118 +1,162 @@
 import SwiftUI
 
 struct HomeScreen: View {
-    @State private var happinessLevel: Double = 0.6
-    @State private var showingQuote = false
-    @State private var currentQuote = ""
-    
-    private let quotes = [
-        "幸せはいつも自分の心が決める",
-        "今日一日を大切に生きよう",
-        "小さな幸せを積み重ねることが大きな幸せになる",
-        "笑顔は幸せの第一歩",
-        "感謝の気持ちが幸せを呼び込む"
-    ]
-    
+    @State private var showCharaScreen = false
+    @State private var showAnimeScreen = false
     var body: some View {
-        ZStack {
-            // 背景色
-            Color.white
-                .ignoresSafeArea()
-            
-            // メインコンテンツ
+        ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // 幸福度メーター
-                        VStack(spacing: 8) {
-                            Text("今日の幸福度")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                            
-                            ProgressView(value: happinessLevel)
-                                .progressViewStyle(LinearProgressViewStyle(tint: .black))
-                                .scaleEffect(y: 2)
-                                .padding(.horizontal)
-                        }
-                        .padding()
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .shadow(radius: 2)
-                        
-                        // 今日の幸せTips
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("今日の幸せTips")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                            
-                            Text("・朝日を浴びて深呼吸しよう")
-                                .foregroundColor(.black)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .shadow(radius: 2)
-                        
-                        // 今週のクエスト
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("今週のクエスト")
-                                .font(.headline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("・旅に出かけよう")
-                                Text("・美味しいもの探し")
-                                Text("・運動しよう")
-                                Text("・SNSやめよう")
-                                Text("・健康になろう")
-                            }
-                            .foregroundColor(.black)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .shadow(radius: 2)
-                        
-                        // 名言ガチャボタン
-                        Button(action: {
-                            showRandomQuote()
-                        }) {
-                            Text("名言ガチャを引く")
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 60)
-                                .background(Color.white)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 0)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                        }
-                        .shadow(radius: 2)
+                // ヘッダー
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("中島 銀星")
+                            .font(.system(size: 28, weight: .bold))
+                        Text("Enter a status message")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
                     }
-                    .padding()
+                    Spacer()
+                    Image("sample") // 仮のアイコン画像
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 60, height: 60)
+                        .clipShape(Circle())
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 24)
+                // ステータスボタン
+                HStack {
+                    Button(action: {}) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "music.note")
+                                .foregroundColor(.green)
+                            Text("Select music")
+                                .font(.system(size: 14))
+                                .foregroundColor(.green)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(16)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                // 検索バー
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    TextField("Search", text: .constant(""))
+                        .font(.system(size: 16))
+                }
+                .padding(10)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                // リスト
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Friend lists")
+                        .font(.system(size: 18, weight: .bold))
+                        .padding(.top, 16)
+                        .padding(.bottom, 4)
+                    ForEach(["Birthday reminders", "Friends", "Groups"], id: \.self) { name in
+                        HStack {
+                            Circle().fill(Color.gray).frame(width: 40, height: 40)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(name)
+                                    .font(.system(size: 16, weight: .semibold))
+                                Text("サンプル説明")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.gray)
+                            }
+                            Spacer()
+                            Text("2")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.vertical, 6)
+                    }
+                }
+                .padding(.horizontal, 20)
+                // サービス
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Text("Services")
+                            .font(.system(size: 18, weight: .bold))
+                        Spacer()
+                        Text("See all")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.top, 16)
+                    .padding(.bottom, 4)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 24) {
+                            ForEach(["LINE AI", "Stickers", "Themes", "LINE GIFT", "LINE POINT C", "LINE GAME"], id: \.self) { service in
+                                VStack(spacing: 6) {
+                                    Circle().stroke(Color.gray, lineWidth: 2).frame(width: 36, height: 36)
+                                    Text(service)
+                                        .font(.system(size: 12))
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                    }
+                }
+                .padding(.horizontal, 20)
+                Spacer(minLength: 0)
             }
+            // 下部ナビゲーションバー
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 0) {
+                    NavigationBarItem(icon: "house.fill", title: "Home", isSelected: true)
+                        .onTapGesture {
+                            // 何もしない（現在の画面）
+                        }
+                    NavigationBarItem(icon: "person.2", title: "Chara", isSelected: false)
+                        .onTapGesture {
+                            showCharaScreen = true
+                        }
+                    NavigationBarItem(icon: "tv", title: "Anime", isSelected: false)
+                        .onTapGesture {
+                            showAnimeScreen = true
+                        }
+                    NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
+                        .onTapGesture {
+                            // Visit画面への遷移（未実装）
+                        }
+                    NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
+                        .onTapGesture {
+                            // Card画面への遷移（未実装）
+                        }
+                }
+                .frame(height: 75)
+                .background(Color.white)
+                .overlay(
+                    Rectangle()
+                        .frame(height: 1)
+                        .foregroundColor(Color(.systemGray4)),
+                    alignment: .top
+                )
+            }
+            .edgesIgnoringSafeArea(.bottom)
         }
-        .alert("今日の名言", isPresented: $showingQuote) {
-            Button("閉じる") { }
-        } message: {
-            Text(currentQuote)
+        .background(Color.white)
+        .fullScreenCover(isPresented: $showCharaScreen) {
+            CharaScreen()
         }
-    }
-    
-    private func showRandomQuote() {
-        currentQuote = quotes.randomElement() ?? "幸せはいつも自分の心が決める"
-        showingQuote = true
+        .fullScreenCover(isPresented: $showAnimeScreen) {
+            AnimeScreen()
+        }
     }
 }
 
-#Preview {
-    HomeScreen()
+// プレビュー用
+struct HomeScreen_Previews: PreviewProvider {
+    static var previews: some View {
+        HomeScreen()
+    }
 } 

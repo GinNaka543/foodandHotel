@@ -147,6 +147,7 @@ struct CharaScreen: View {
     @State private var selectedCharacter: Character? = nil
     @State private var showMenu = false
     @State private var showAnimeScreen = false
+    @State private var showHomeScreen = false
     
     var filteredCharacters: [Character] {
         if searchText.isEmpty { return characterManager.characters }
@@ -228,7 +229,7 @@ struct CharaScreen: View {
                 HStack(spacing: 0) {
                     NavigationBarItem(icon: "house", title: "Home", isSelected: false)
                         .onTapGesture {
-                            // Home画面への遷移
+                            showHomeScreen = true
                         }
                     NavigationBarItem(icon: "person.2", title: "Chara", isSelected: true)
                         .onTapGesture {
@@ -283,6 +284,9 @@ struct CharaScreen: View {
         }
         .fullScreenCover(isPresented: $showAnimeScreen) {
             AnimeScreen()
+        }
+        .fullScreenCover(isPresented: $showHomeScreen) {
+            HomeScreen()
         }
     }
     // UserDefaults保存・読込
@@ -602,28 +606,24 @@ struct CharacterDetailView: View {
                         }
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture { showEditIconModal = true }
                     // 名前
-                    Text(nameText)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.black)
-                        .padding(.top, 20)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .onTapGesture { 
-                            editName = currentCharacter.name
-                            editTag = currentCharacter.tag
-                            showEditNameModal = true 
-                        }
+                    HStack {
+                        Spacer()
+                        Text(nameText)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
+                            .padding(.top, 20)
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                        Spacer()
+                    }
                     // 誕生日
                     Text(birthdayText.uppercased())
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.gray)
-                        .padding(.top, 8)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .onTapGesture { 
-                            editBirthday = currentCharacter.birthday
-                            showEditBirthdayModal = true 
-                        }
+                        .padding(.top, 4)
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
                     // ナビゲーションバー（誕生日の直下、背景なし）
                     HStack {
                         Spacer()
@@ -653,7 +653,7 @@ struct CharacterDetailView: View {
                         Spacer()
                         VStack {
                             Image(systemName: "link")
-                            Text("Visit").font(.caption2)
+                            Text("Event").font(.caption2)
                         }
                         Spacer()
                     }
@@ -707,36 +707,42 @@ struct CharacterDetailView: View {
         }
         // 誕生日編集モーダル
         .sheet(isPresented: $showEditBirthdayModal) {
-            ZStack(alignment: .topTrailing) {
-                VStack(spacing: 20) {
-                    Text("誕生日を編集")
-                        .font(.headline)
-                    HStack(spacing: 16) {
-                        Picker("月", selection: Binding(get: {
-                            Calendar.current.component(.month, from: editBirthday)
-                        }, set: { newMonth in
+            VStack(spacing: 20) {
+                Text("誕生日を編集")
+                    .font(.headline)
+                HStack(spacing: 16) {
+                    Picker("月", selection: Binding(
+                        get: { Calendar.current.component(.month, from: editBirthday) },
+                        set: { newMonth in
                             let day = Calendar.current.component(.day, from: editBirthday)
-                            let year = 2000 // 年は固定
+                            let year = Calendar.current.component(.year, from: editBirthday)
                             let newDate = Calendar.current.date(from: DateComponents(year: year, month: newMonth, day: day)) ?? editBirthday
                             editBirthday = newDate
                         })) {
-                            ForEach(1...12, id: \.self) { month in
-                                Text("\(month)月").tag(month)
-                            }
+                        ForEach(1...12, id: \.self) { month in
+                            Text("\(month)月").tag(month)
                         }
-                        Picker("日", selection: Binding(get: {
-                            Calendar.current.component(.day, from: editBirthday)
-                        }, set: { newDay in
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                    Picker("日", selection: Binding(
+                        get: { Calendar.current.component(.day, from: editBirthday) },
+                        set: { newDay in
                             let month = Calendar.current.component(.month, from: editBirthday)
-                            let year = 2000 // 年は固定
+                            let year = Calendar.current.component(.year, from: editBirthday)
                             let newDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: newDay)) ?? editBirthday
                             editBirthday = newDate
                         })) {
-                            ForEach(1...31, id: \.self) { day in
-                                Text("\(day)日").tag(day)
-                            }
+                        ForEach(1...31, id: \.self) { day in
+                            Text("\(day)日").tag(day)
                         }
                     }
+                    .pickerStyle(WheelPickerStyle())
+                }
+                HStack {
+                    Button("キャンセル") {
+                        showEditBirthdayModal = false
+                    }
+                    Spacer()
                     Button("保存") {
                         guard let idx = characters.firstIndex(where: { $0.id == character.id }) else { return }
                         var updatedCharacter = characters[idx]
@@ -746,16 +752,11 @@ struct CharacterDetailView: View {
                         showEditBirthdayModal = false
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                Button(action: { showEditBirthdayModal = false }) {
-                    Text("閉じる")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.blue)
-                        .padding(.trailing, 16)
-                        .padding(.top, 16)
-                }
             }
-            .ignoresSafeArea(.container, edges: .top)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
         }
         // アイコン画像編集モーダル
         .sheet(isPresented: $showEditIconModal) {
@@ -1127,8 +1128,34 @@ struct AboutView: View {
         VStack(spacing: 20) {
             Text("誕生日を編集")
                 .font(.headline)
-            DatePicker("誕生日", selection: $editBirthday, displayedComponents: .date)
-                .datePickerStyle(WheelDatePickerStyle())
+            HStack(spacing: 16) {
+                Picker("月", selection: Binding(
+                    get: { Calendar.current.component(.month, from: editBirthday) },
+                    set: { newMonth in
+                        let day = Calendar.current.component(.day, from: editBirthday)
+                        let year = Calendar.current.component(.year, from: editBirthday)
+                        let newDate = Calendar.current.date(from: DateComponents(year: year, month: newMonth, day: day)) ?? editBirthday
+                        editBirthday = newDate
+                    })) {
+                    ForEach(1...12, id: \.self) { month in
+                        Text("\(month)月").tag(month)
+                    }
+                }
+                .pickerStyle(WheelPickerStyle())
+                Picker("日", selection: Binding(
+                    get: { Calendar.current.component(.day, from: editBirthday) },
+                    set: { newDay in
+                        let month = Calendar.current.component(.month, from: editBirthday)
+                        let year = Calendar.current.component(.year, from: editBirthday)
+                        let newDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: newDay)) ?? editBirthday
+                        editBirthday = newDate
+                    })) {
+                    ForEach(1...31, id: \.self) { day in
+                        Text("\(day)日").tag(day)
+                    }
+                }
+                .pickerStyle(WheelPickerStyle())
+            }
             HStack {
                 Button("キャンセル") {
                     showEditBirthdayModal = false

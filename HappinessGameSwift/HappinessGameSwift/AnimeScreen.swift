@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import SwiftUI
 import PhotosUI
 import UIKit
@@ -130,6 +131,7 @@ struct AnimeScreen: View {
     @State private var selectedAnime: Anime? = nil
     @State private var showMenu = false
     @State private var showCharaScreen = false
+    @State private var showHomeScreen = false
     
     var filteredAnimes: [Anime] {
         if searchText.isEmpty { return animeManager.animes }
@@ -205,7 +207,7 @@ struct AnimeScreen: View {
                 HStack(spacing: 0) {
                     NavigationBarItem(icon: "house", title: "Home", isSelected: false)
                         .onTapGesture {
-                            // Home画面への遷移
+                            showHomeScreen = true
                         }
                     NavigationBarItem(icon: "person.2", title: "Chara", isSelected: false)
                         .onTapGesture {
@@ -259,6 +261,9 @@ struct AnimeScreen: View {
         .fullScreenCover(isPresented: $showCharaScreen) {
             CharaScreen()
         }
+        .fullScreenCover(isPresented: $showHomeScreen) {
+            HomeScreen()
+        }
     }
 }
 
@@ -274,9 +279,9 @@ struct AnimeRow: View {
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 48, height: 48)
-                    .clipShape(Circle())
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
-                Circle()
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color.gray.opacity(0.3))
                     .frame(width: 48, height: 48)
                     .overlay(
@@ -306,31 +311,6 @@ struct AnimeRow: View {
         .padding(.vertical, 0)
         .background(Color.clear)
         .contentShape(Rectangle())
-    }
-}
-
-struct AnimeDetailView: View {
-    @Binding var anime: Anime
-    @Binding var animes: [Anime]
-    let onDismiss: () -> Void
-    @State private var selectedTab: Int = 0
-    var body: some View {
-        VStack(spacing: 0) {
-            Picker("", selection: $selectedTab) {
-                Text("Artwork").tag(0)
-                Text("Video").tag(1)
-                Text("About").tag(2)
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding()
-            if selectedTab == 0 {
-                AnimeArtworkScreen(anime: $anime, animes: $animes)
-            } else if selectedTab == 1 {
-                AnimeVideoScreen(anime: $anime, animes: $animes)
-            } else {
-                AnimeAboutView(anime: $anime, animes: $animes, onClose: onDismiss)
-            }
-        }
     }
 }
 
@@ -1062,15 +1042,15 @@ struct AnimeAboutView: View {
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: 120, height: 120)
-                                .clipShape(Circle())
+                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                 .shadow(radius: 8)
                         } else {
-                            Circle()
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
                                 .fill(Color.gray.opacity(0.3))
                                 .frame(width: 120, height: 120)
                                 .shadow(radius: 8)
                                 .overlay(
-                                    Image(systemName: "film")
+                                    Image(systemName: "person")
                                         .font(.system(size: 50))
                                         .foregroundColor(.gray)
                                 )
@@ -1085,10 +1065,10 @@ struct AnimeAboutView: View {
                         .foregroundColor(.black)
                         .padding(.top, 20)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .onTapGesture { 
+                        .onTapGesture {
                             editName = currentAnime.title
                             editHashtag = currentAnime.hashtag
-                            showEditNameModal = true 
+                            showEditNameModal = true
                         }
                     
                     // 公開日
@@ -1097,9 +1077,9 @@ struct AnimeAboutView: View {
                         .foregroundColor(.gray)
                         .padding(.top, 8)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .onTapGesture { 
+                        .onTapGesture {
                             editReleaseDate = currentAnime.releaseDate
-                            showEditReleaseDateModal = true 
+                            showEditReleaseDateModal = true
                         }
                     
                     // カスタムフィールド
@@ -1174,36 +1154,42 @@ struct AnimeAboutView: View {
         }
         // 公開日編集モーダル
         .sheet(isPresented: $showEditReleaseDateModal) {
-            ZStack(alignment: .topTrailing) {
-                VStack(spacing: 20) {
-                    Text("公開日を編集")
-                        .font(.headline)
-                    HStack(spacing: 16) {
-                        Picker("月", selection: Binding(get: {
-                            Calendar.current.component(.month, from: editReleaseDate)
-                        }, set: { newMonth in
+            VStack(spacing: 20) {
+                Text("公開日を編集")
+                    .font(.headline)
+                HStack(spacing: 16) {
+                    Picker("月", selection: Binding(
+                        get: { Calendar.current.component(.month, from: editReleaseDate) },
+                        set: { newMonth in
                             let day = Calendar.current.component(.day, from: editReleaseDate)
-                            let year = Calendar.current.component(.year, from: editReleaseDate)
+                            let year = 2000 // 年は固定
                             let newDate = Calendar.current.date(from: DateComponents(year: year, month: newMonth, day: day)) ?? editReleaseDate
                             editReleaseDate = newDate
                         })) {
-                            ForEach(1...12, id: \.self) { month in
-                                Text("\(month)月").tag(month)
-                            }
+                        ForEach(1...12, id: \.self) { month in
+                            Text("\(month)月").tag(month)
                         }
-                        Picker("日", selection: Binding(get: {
-                            Calendar.current.component(.day, from: editReleaseDate)
-                        }, set: { newDay in
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                    Picker("日", selection: Binding(
+                        get: { Calendar.current.component(.day, from: editReleaseDate) },
+                        set: { newDay in
                             let month = Calendar.current.component(.month, from: editReleaseDate)
-                            let year = Calendar.current.component(.year, from: editReleaseDate)
+                            let year = 2000 // 年は固定
                             let newDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: newDay)) ?? editReleaseDate
                             editReleaseDate = newDate
                         })) {
-                            ForEach(1...31, id: \.self) { day in
-                                Text("\(day)日").tag(day)
-                            }
+                        ForEach(1...31, id: \.self) { day in
+                            Text("\(day)日").tag(day)
                         }
                     }
+                    .pickerStyle(WheelPickerStyle())
+                }
+                HStack {
+                    Button("キャンセル") {
+                        showEditReleaseDateModal = false
+                    }
+                    Spacer()
                     Button("保存") {
                         guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
                         var updatedAnime = animes[idx]
@@ -1213,16 +1199,11 @@ struct AnimeAboutView: View {
                         showEditReleaseDateModal = false
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                Button(action: { showEditReleaseDateModal = false }) {
-                    Text("閉じる")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.blue)
-                        .padding(.trailing, 16)
-                        .padding(.top, 16)
-                }
             }
-            .ignoresSafeArea(.container, edges: .top)
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
         }
         // アイコン画像編集モーダル
         .sheet(isPresented: $showEditIconModal) {
@@ -1235,17 +1216,15 @@ struct AnimeAboutView: View {
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 120, height: 120)
-                            .clipShape(Circle())
-                            .shadow(radius: 8)
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     } else if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                         Image(uiImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .frame(width: 120, height: 120)
-                            .clipShape(Circle())
-                            .shadow(radius: 8)
+                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     } else {
-                        Circle()
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .fill(Color.gray.opacity(0.3))
                             .frame(width: 120, height: 120)
                             .shadow(radius: 8)
@@ -1479,6 +1458,238 @@ struct AddAnimeSheet: View {
             print("画像保存エラー: \(error)")
             return nil
         }
+    }
+}
+
+// AnimeDetailViewの定義を追加
+struct AnimeDetailView: View {
+    @Binding var anime: Anime
+    @Binding var animes: [Anime]
+    var onDismiss: (() -> Void)? = nil
+    @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var animeManager: AnimeManager
+    
+    @State private var showArtwork = false
+    @State private var showVideo = false
+    @State private var showAbout = false
+    // 編集用の状態変数
+    @State private var showEditTitleModal = false
+    @State private var showEditReleaseDateModal = false
+    @State private var showEditIconModal = false
+    @State private var editTitle: String = ""
+    @State private var editHashtag: String = ""
+    @State private var editReleaseDate: Date = Date()
+    @State private var iconPickerItem: PhotosPickerItem? = nil
+    @State private var iconImage: UIImage? = nil
+    @State private var tempIconImage: UIImage? = nil
+
+    var body: some View {
+        GeometryReader { geometry in
+            let currentAnime = animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+            let titleText = currentAnime.title
+            let dateText = DateFormatter.monthDayEnglish.string(from: currentAnime.releaseDate)
+            ZStack(alignment: .topLeading) {
+                Color(.systemBackground).ignoresSafeArea()
+                Button(action: {
+                    if let onDismiss = onDismiss {
+                        onDismiss()
+                    } else {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.black)
+                            .font(.system(size: 18, weight: .medium))
+                        Text("Back")
+                            .foregroundColor(.black)
+                            .font(.system(size: 17, weight: .medium))
+                    }
+                }
+                .padding(.top, 24)
+                .padding(.leading, 16)
+                VStack {
+                    Spacer().frame(height: 180 + 50)
+                    ZStack {
+                        if let imageIdentifier = currentAnime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 120, height: 120)
+                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                .shadow(radius: 8)
+                        } else {
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 120, height: 120)
+                                .shadow(radius: 8)
+                                .overlay(
+                                    Image(systemName: "person")
+                                        .font(.system(size: 50))
+                                        .foregroundColor(.gray)
+                                )
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { showEditIconModal = true }
+                    // タイトル
+                    Text(titleText)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                        .padding(.top, 20)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .onTapGesture {
+                            editTitle = currentAnime.title
+                            editHashtag = currentAnime.hashtag
+                            showEditTitleModal = true
+                        }
+                    
+                    // 日付
+                    Text(dateText.uppercased())
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.top, 8)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .onTapGesture {
+                            editReleaseDate = currentAnime.releaseDate
+                            showEditReleaseDateModal = true
+                        }
+                    
+                    // ナビゲーションバー（下部メニュー）
+                    HStack {
+                        Spacer()
+                        Button(action: { showArtwork = true }) {
+                            VStack {
+                                Image(systemName: "photo.on.rectangle")
+                                Text("ArtWork").font(.caption2)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        Spacer()
+                        Button(action: { showVideo = true }) {
+                            VStack {
+                                Image(systemName: "video")
+                                Text("Video").font(.caption2)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        Spacer()
+                        Button(action: { showAbout = true }) {
+                            VStack {
+                                Image(systemName: "info.circle")
+                                Text("About").font(.caption2)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        Spacer()
+                        VStack {
+                            Image(systemName: "link")
+                            Text("Visit").font(.caption2)
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 60)
+                    .fullScreenCover(isPresented: $showArtwork) {
+                        AnimeArtworkScreen(anime: $anime, animes: $animes)
+                    }
+                    .fullScreenCover(isPresented: $showVideo) {
+                        AnimeVideoScreen(anime: $anime, animes: $animes)
+                    }
+                    .fullScreenCover(isPresented: $showAbout) {
+                        AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
+                            .environmentObject(animeManager)
+                    }
+                }
+                .frame(width: geometry.size.width)
+            }
+        }
+        .navigationBarHidden(true)
+        // タイトル編集モーダル
+        .sheet(isPresented: $showEditTitleModal) {
+            VStack(spacing: 20) {
+                Text("タイトルとハッシュタグを編集")
+                    .font(.headline)
+                VStack(spacing: 12) {
+                    TextField("タイトル", text: $editTitle)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    TextField("ハッシュタグ", text: $editHashtag)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                HStack {
+                    Button("キャンセル") {
+                        showEditTitleModal = false
+                    }
+                    Spacer()
+                    Button("保存") {
+                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                        var updatedAnime = animes[idx]
+                        updatedAnime.title = editTitle
+                        updatedAnime.hashtag = editHashtag
+                        animes[idx] = updatedAnime
+                        animeManager.updateAnime(updatedAnime)
+                        showEditTitleModal = false
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
+        }
+        // 公開日編集モーダル
+        .sheet(isPresented: $showEditReleaseDateModal) {
+            VStack(spacing: 20) {
+                Text("公開日を編集")
+                    .font(.headline)
+                HStack(spacing: 16) {
+                    Picker("月", selection: Binding(
+                        get: { Calendar.current.component(.month, from: editReleaseDate) },
+                        set: { newMonth in
+                            let day = Calendar.current.component(.day, from: editReleaseDate)
+                            let year = 2000 // 年は固定
+                            let newDate = Calendar.current.date(from: DateComponents(year: year, month: newMonth, day: day)) ?? editReleaseDate
+                            editReleaseDate = newDate
+                        })) {
+                        ForEach(1...12, id: \.self) { month in
+                            Text("\(month)月").tag(month)
+                        }
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                    Picker("日", selection: Binding(
+                        get: { Calendar.current.component(.day, from: editReleaseDate) },
+                        set: { newDay in
+                            let month = Calendar.current.component(.month, from: editReleaseDate)
+                            let year = 2000 // 年は固定
+                            let newDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: newDay)) ?? editReleaseDate
+                            editReleaseDate = newDate
+                        })) {
+                        ForEach(1...31, id: \.self) { day in
+                            Text("\(day)日").tag(day)
+                        }
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                }
+                HStack {
+                    Button("キャンセル") {
+                        showEditReleaseDateModal = false
+                    }
+                    Spacer()
+                    Button("保存") {
+                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                        var updatedAnime = animes[idx]
+                        updatedAnime.releaseDate = editReleaseDate
+                        animes[idx] = updatedAnime
+                        animeManager.updateAnime(updatedAnime)
+                        showEditReleaseDateModal = false
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
+        }
+        // アイコン編集モーダル（省略）
     }
 }
 

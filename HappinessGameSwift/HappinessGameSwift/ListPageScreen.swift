@@ -4,6 +4,8 @@ public struct ListPageScreen: View {
     @Environment(\.presentationMode) var presentationMode
     @State var selectedTab: ListTab
     @State private var searchText = ""
+    @State private var selectedCharacter: Character? = nil
+    @State private var selectedAnime: Anime? = nil
 
     let characters: [Character]
     let animes: [Anime]
@@ -73,29 +75,32 @@ public struct ListPageScreen: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredCharacters, id: \ .id) { character in
-                            HStack(spacing: 16) {
-                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 48, height: 48)
-                                        .clipShape(Circle())
-                                } else {
-                                    Circle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 48, height: 48)
-                                        .overlay(
-                                            Image(systemName: "person")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(.gray)
-                                        )
+                            Button(action: { selectedCharacter = character }) {
+                                HStack(spacing: 16) {
+                                    if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 48, height: 48)
+                                            .clipShape(Circle())
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 48, height: 48)
+                                            .overlay(
+                                                Image(systemName: "person")
+                                                    .font(.system(size: 24))
+                                                    .foregroundColor(.gray)
+                                            )
+                                    }
+                                    Text(character.name)
+                                        .font(.system(size: 18, weight: .regular))
+                                    Spacer()
                                 }
-                                Text(character.name)
-                                    .font(.system(size: 18, weight: .regular))
-                                Spacer()
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 16)
                             }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 16)
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                 }
@@ -103,29 +108,32 @@ public struct ListPageScreen: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredAnimes, id: \ .id) { anime in
-                            HStack(spacing: 16) {
-                                if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 48, height: 48)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                } else {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 48, height: 48)
-                                        .overlay(
-                                            Image(systemName: "film")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(.gray)
-                                        )
+                            Button(action: { selectedAnime = anime }) {
+                                HStack(spacing: 16) {
+                                    if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 48, height: 48)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 48, height: 48)
+                                            .overlay(
+                                                Image(systemName: "film")
+                                                    .font(.system(size: 24))
+                                                    .foregroundColor(.gray)
+                                            )
+                                    }
+                                    Text(anime.title)
+                                        .font(.system(size: 18, weight: .regular))
+                                    Spacer()
                                 }
-                                Text(anime.title)
-                                    .font(.system(size: 18, weight: .regular))
-                                Spacer()
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 16)
                             }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 16)
+                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                 }
@@ -165,6 +173,20 @@ public struct ListPageScreen: View {
                     }
                 }
             }
+        }
+        .fullScreenCover(item: $selectedCharacter) { character in
+            CharacterDetailView(character: Binding(
+                get: { character },
+                set: { _ in }
+            ), characters: .constant(characters))
+            .environmentObject(CharacterManager())
+        }
+        .fullScreenCover(item: $selectedAnime) { anime in
+            AnimeDetailView(anime: Binding(
+                get: { anime },
+                set: { _ in }
+            ), animes: .constant(animes))
+            .environmentObject(AnimeManager())
         }
     }
 

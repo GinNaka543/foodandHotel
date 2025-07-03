@@ -79,7 +79,7 @@ struct MainContainerView: View {
                     case .anime:
                         AnimeScreen().environmentObject(mainTab)
                     case .visit:
-                        VisitContentView(selectedTab: .constant(.visit))
+                        VisitScreen()
                     case .card:
                         CardContentView(selectedTab: .constant(.card))
                     }

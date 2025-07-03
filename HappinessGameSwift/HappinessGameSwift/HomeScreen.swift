@@ -238,7 +238,7 @@ struct HomeScreen: View {
                 // サービス
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
-                        Text("Services")
+                        Text("Recommend")
                             .font(.system(size: 18, weight: .bold))
                         Spacer()
                         Text("See all")
@@ -261,7 +261,15 @@ struct HomeScreen: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                Spacer(minLength: 0)
+                // インフォメーションタイトル
+                HStack {
+                    Text("Information")
+                        .font(.system(size: 18, weight: .bold))
+                    Spacer()
+                }
+                .padding(.top, 16)
+                .padding(.horizontal, 20)
+
                 // 広告バナー
                 VStack(spacing: 0) {
                     if let bannerImage = UIImage(named: "青豚") {
@@ -271,7 +279,7 @@ struct HomeScreen: View {
                             .frame(width: 360, height: 189)
                             .cornerRadius(10)
                             .clipped()
-                            .padding(.top, 20) // 20ピクセル下げる
+                            .padding(.top, 20)
                     }
                     if let kagImage = UIImage(named: "かぐや") {
                         Image(uiImage: kagImage)

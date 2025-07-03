@@ -211,10 +211,28 @@
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
 		</dict>
+		<key>1A2B3C4D5E6F7G8H9I0J1K2L</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>image.jpg</string>
+			<key>path</key>
+			<string>青豚.jpg</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
 		<key>1D9C1123B229F61A882853B9</key>
 		<dict>
 			<key>fileRef</key>
 			<string>E359E895A1128E20519BC48B</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>2A3B4C5D6F7G8H9I0J1K2L3M</key>
+		<dict>
+			<key>fileRef</key>
+			<string>1A2B3C4D5E6F7G8H9I0J1K2L</string>
 			<key>isa</key>
 			<string>PBXBuildFile</string>
 		</dict>
@@ -387,6 +405,7 @@
 				<string>197F9E0A7B6E66D7B3598BC9</string>
 				<string>408BC357F9906C958B248072</string>
 				<string>19452BD96E3EE28FD6DE7F94</string>
+				<string>1A2B3C4D5E6F7G8H9I0J1K2L</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -504,6 +523,8 @@
 				<string>44E38804BC15161C44726B1C</string>
 				<string>116B9C0B56F15D176892A506</string>
 				<string>93A03E18D939A7552014894F</string>
+				<string>VISITSCREEN_BUILD_REF</string>
+				<string>LISTPAGESCREEN_BUILD_REF</string>
 			</array>
 			<key>isa</key>
 			<string>PBXSourcesBuildPhase</string>
@@ -850,7 +871,7 @@
 			<key>isa</key>
 			<string>PBXFileReference</string>
 			<key>lastKnownFileType</key>
-			<string>sourcecode.swift</string>
+			<string>image.png</string>
 			<key>path</key>
 			<string>AddPhotoView.swift</string>
 			<key>sourceTree</key>
@@ -875,6 +896,7 @@
 				<string>DE2FA7D212728FDAEFA2F6D4</string>
 				<string>DC57B81EE28D900EF50A81FF</string>
 				<string>9F6F647F6DA1F9399F7A3A7A</string>
+				<string>2A3B4C5D6F7G8H9I0J1K2L3M</string>
 			</array>
 			<key>isa</key>
 			<string>PBXResourcesBuildPhase</string>
@@ -909,6 +931,8 @@
 				<string>5FAAC8341B6B441AE4476A48</string>
 				<string>5941F2822FED4CD589B8215E</string>
 				<string>83BC10B077090A8D28F4B743</string>
+				<string>VISITSCREEN_FILE_REF</string>
+				<string>LISTPAGESCREEN_FILE_REF</string>
 			</array>
 			<key>isa</key>
 			<string>PBXGroup</string>
@@ -1134,6 +1158,42 @@
 			<string>titlemusic.mp3</string>
 			<key>sourceTree</key>
 			<string>&lt;group&gt;</string>
+		</dict>
+		<key>VISITSCREEN_FILE_REF</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>VisitScreen.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>VISITSCREEN_BUILD_REF</key>
+		<dict>
+			<key>fileRef</key>
+			<string>VISITSCREEN_FILE_REF</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
+		</dict>
+		<key>LISTPAGESCREEN_FILE_REF</key>
+		<dict>
+			<key>isa</key>
+			<string>PBXFileReference</string>
+			<key>lastKnownFileType</key>
+			<string>sourcecode.swift</string>
+			<key>path</key>
+			<string>ListPageScreen.swift</string>
+			<key>sourceTree</key>
+			<string>&lt;group&gt;</string>
+		</dict>
+		<key>LISTPAGESCREEN_BUILD_REF</key>
+		<dict>
+			<key>fileRef</key>
+			<string>LISTPAGESCREEN_FILE_REF</string>
+			<key>isa</key>
+			<string>PBXBuildFile</string>
 		</dict>
 	</dict>
 	<key>rootObject</key>

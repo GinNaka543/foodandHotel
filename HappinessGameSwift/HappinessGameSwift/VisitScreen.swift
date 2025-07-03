@@ -53,28 +53,27 @@ public struct VisitScreen: View {
             .frame(height: 38)
             .padding(.horizontal, 12)
             .padding(.top, 8)
-            // インフォメーションタイトル
-            HStack {
-                Text("Information")
-                    .font(.system(size: 18, weight: .bold))
-                Spacer()
-            }
-            .padding(.top, 16)
-            .padding(.horizontal, 20)
+            // 広告バナー追加
+            AdBannerView()
+                .padding(.vertical, 2)
             // ビジットプラン欄
             ScrollView {
                 VStack(spacing: 24) {
                     ForEach(visitPlans) { plan in
-                        VStack(spacing: 0) {
-                            if let image = UIImage(named: plan.imageName) {
-                                Image(uiImage: image)
+                        VStack(alignment: .leading, spacing: 0) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 24)
+                                    .fill(Color.white)
+                                    .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+                                Image(plan.imageName)
                                     .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 360, height: 189)
-                                    .cornerRadius(10)
-                                    .clipped()
-                                    .padding(.top, 20)
+                                    .aspectRatio(370.0/233.0, contentMode: .fill)
+                                    .frame(width: 370, height: 233)
+                                    .clipShape(RoundedRectangle(cornerRadius: 24))
                             }
+                            .frame(width: 370, height: 233)
+                            .clipped()
+                            .padding(.bottom, 0)
                             HStack(alignment: .center, spacing: 12) {
                                 Circle()
                                     .fill(Color.gray.opacity(0.3))
@@ -91,6 +90,8 @@ public struct VisitScreen: View {
                             .padding(.top, 8)
                             .padding(.leading, 8)
                         }
+                        .frame(width: 370)
+                        .padding(.vertical, 8)
                     }
                 }
                 .padding(.top, 8)

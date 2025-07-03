@@ -1,96 +1,112 @@
-# Happiness Game Swift
+# Happiness Game - キャラクター管理アプリ
 
-Flutterアプリから移行したiOSネイティブアプリ（Swift + SwiftUI）
+## 概要
+キャラクター情報を管理するWebアプリケーションです。SwiftUI版からJavaScript版に書き直され、以下の問題が修正されました：
+
+- ✅ キャラクター追加時の重複問題を解決
+- ✅ 画像変更の即座反映機能を実装
+- ✅ リアルタイムUI更新機能を追加
 
 ## 機能
 
-- **タイトル画面**: BGM付きのスタート画面
-- **ホーム画面**: 幸福度メーター、名言ガチャ、クエスト表示
-- **メモリー画面**: 画像のアップロード・管理機能
-- **ビデオ画面**: 動画のアップロード・再生機能
-- **プロフィール画面**: ユーザー情報と設定
+### メイン機能
+- **キャラクター一覧表示**: 登録されたキャラクターの一覧を表示
+- **キャラクター追加**: 名前、タグ、誕生日、画像を設定してキャラクターを追加
+- **キャラクター詳細**: 各キャラクターの詳細情報を表示・編集
+- **検索機能**: 名前、タグ、誕生日でキャラクターを検索
 
-## 技術スタック
+### 詳細画面機能
+- **ArtWork**: アートワーク表示（開発中）
+- **Video**: 動画表示（開発中）
+- **About**: キャラクター詳細情報の編集
+- **Visit**: 外部リンク（開発中）
 
-- **SwiftUI**: モダンなUIフレームワーク
-- **Firebase**: 認証、データベース、ストレージ
-- **AVFoundation**: 音声・動画処理
-- **PhotosUI**: 画像・動画選択
-- **Core Data**: ローカルデータ管理
+### About画面機能
+- **基本情報編集**: 出演作品、年齢、聖地の編集
+- **カスタムフィールド**: 自由な項目の追加・編集・削除
+- **画像編集**: アイコン画像の変更（即座に反映）
 
-## セットアップ手順
+## 技術仕様
 
-### 1. Xcodeプロジェクトの作成
+### フロントエンド
+- **HTML5**: セマンティックなマークアップ
+- **CSS3**: モダンなスタイリング、レスポンシブデザイン
+- **JavaScript (ES6+)**: クラスベースのアーキテクチャ
 
-1. Xcodeを開く
-2. "Create a new Xcode project"を選択
-3. "App"テンプレートを選択
-4. プロジェクト名: `HappinessGameSwift`
-5. Interface: `SwiftUI`
-6. Language: `Swift`
-7. 保存場所: このディレクトリを選択
+### データ管理
+- **ローカルストレージ**: ブラウザ内でのデータ永続化
+- **Base64画像**: 画像データの内部保存
+- **リアルタイム更新**: UIの即座反映
 
-### 2. ファイルの配置
-
-作成したSwiftファイルをXcodeプロジェクトに追加：
-
-- `HappinessGameSwiftApp.swift` → 既存のAppファイルを置き換え
-- `TitleScreen.swift` → 新規追加
-- `HomeScreen.swift` → 新規追加
-- `MemoryScreen.swift` → 新規追加
-- `VideoGalleryScreen.swift` → 新規追加
-- `AddPhotoView.swift` → 新規追加
-- `AddVideoView.swift` → 新規追加
-- `ProfileScreen.swift` → 新規追加
-
-### 3. Firebase設定
-
-1. Firebase Consoleでプロジェクトを作成
-2. iOSアプリを追加
-3. `GoogleService-Info.plist`をダウンロード
-4. Xcodeプロジェクトに追加
-
-### 4. CocoaPods設定
-
-1. ターミナルでプロジェクトディレクトリに移動
-2. `pod init`を実行
-3. `Podfile`の内容を更新
-4. `pod install`を実行
-5. `.xcworkspace`ファイルを開く
-
-### 5. 権限設定
-
-`Info.plist`に以下を追加：
-
-```xml
-<key>NSPhotoLibraryUsageDescription</key>
-<string>写真と動画をアップロードするために使用します</string>
-<key>NSCameraUsageDescription</key>
-<string>写真と動画を撮影するために使用します</string>
-<key>NSMicrophoneUsageDescription</key>
-<string>動画撮影時に音声を録音するために使用します</string>
+### アーキテクチャ
+```
+CharacterApp (メインアプリケーション)
+├── CharacterManager (キャラクター管理)
+├── ImageManager (画像処理)
+└── UI Components (画面・モーダル)
 ```
 
-### 6. アセット追加
+## 使用方法
 
-`Assets.xcassets`に以下を追加：
-- `title.png` - タイトル画面の画像
-- `titlemusic.mp3` - BGMファイル
+### セットアップ
+1. ファイルをWebサーバーに配置
+2. `index.html`をブラウザで開く
+3. ローカルストレージを使用するため、HTTPSまたはlocalhost環境を推奨
 
-## ビルドと実行
+### 基本操作
+1. **キャラクター追加**: 「+」ボタン → 情報入力 → 「追加」
+2. **詳細表示**: キャラクターをタップ
+3. **情報編集**: Aboutタブ → 項目をタップ → 編集
+4. **画像変更**: About画面のアイコンをタップ → 画像選択
 
-1. Xcodeで`.xcworkspace`ファイルを開く
-2. シミュレータまたは実機を選択
-3. `Cmd + R`でビルド・実行
+## 修正された問題
 
-## 移行完了
+### 1. 重複追加問題
+**問題**: キャラクター追加時に同じ行が2行できる
+**解決**: `CharacterManager.addCharacter()`で重複チェックを実装
 
-これでFlutterアプリからSwiftUIアプリへの移行が完了しました。Xcode 16.4との互換性問題も解決され、ネイティブパフォーマンスでアプリが動作します。
+```javascript
+addCharacter(character) {
+    const exists = this.characters.find(c => c.id === character.id);
+    if (!exists) {
+        this.characters.push(character);
+        this.saveCharacters();
+        return true;
+    }
+    return false;
+}
+```
 
-## 今後の拡張
+### 2. 画像反映遅延問題
+**問題**: Aboutページで画像を変更してもすぐに反映されない
+**解決**: 画像選択時に即座に更新処理を実行
 
-- Core Dataによるローカルデータ管理の実装
-- Firebase連携の完全実装
-- プッシュ通知機能
-- アニメーションの追加
-- ダークモード対応 
+```javascript
+async handleModalImageSelect(event) {
+    // 画像処理
+    await this.updateCharacterImage(); // 即座に更新
+}
+```
+
+## ファイル構成
+```
+/
+├── index.html          # メインHTMLファイル
+├── styles.css          # スタイルシート
+├── app.js             # メインJavaScriptファイル
+├── assets/            # 画像ファイル
+│   └── kakanokari.png # 広告用画像
+└── README.md          # このファイル
+```
+
+## 開発環境
+- モダンブラウザ対応（Chrome, Firefox, Safari, Edge）
+- レスポンシブデザイン対応
+- タッチデバイス対応
+
+## 今後の開発予定
+- [ ] ArtWork機能の実装
+- [ ] Video機能の実装
+- [ ] データエクスポート機能
+- [ ] テーマカスタマイズ機能
+- [ ] バックアップ・復元機能 

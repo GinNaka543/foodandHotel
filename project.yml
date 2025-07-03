@@ -28,6 +28,7 @@ targets:
     type: application
     platform: iOS
     sources:
+      - path: HappinessGameSwift/HappinessGameSwift
       - path: HappinessGameSwift
         excludes:
           - "*.plist"
@@ -53,10 +54,6 @@ targets:
       CURRENT_PROJECT_VERSION: "1"
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
       ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-    dependencies:
-      - framework: AVFoundation.framework
-      - framework: PhotosUI.framework
-      - framework: AVKit.framework
 
 schemes:
   HappinessGameSwift:

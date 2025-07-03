@@ -127,17 +127,29 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
 struct AnimeScreen: View {
     @StateObject private var animeManager = AnimeManager()
     @State private var showAddSheet = false
-    @State private var searchText = ""
+    @State private var selectedTab: AnimeTab = .all
     @State private var selectedAnime: Anime? = nil
     @State private var showMenu = false
     @EnvironmentObject var mainTab: MainTabSelection
     
+    enum AnimeTab: String, CaseIterable {
+        case all = "ALL"
+        case willWatch = "Will watch"
+        case watchAgain = "Watch Again"
+        case thisTerm = "This term"
+    }
+    
     var filteredAnimes: [Anime] {
-        if searchText.isEmpty { return animeManager.animes }
-        return animeManager.animes.filter {
-            $0.title.localizedCaseInsensitiveContains(searchText) ||
-            $0.hashtag.localizedCaseInsensitiveContains(searchText) ||
-            $0.releaseDate.formatted(.dateTime.year().month().day()).contains(searchText)
+        switch selectedTab {
+        case .all:
+            return animeManager.animes
+        case .willWatch:
+            return animeManager.animes.filter { $0.hashtag.contains("will watch") }
+        case .watchAgain:
+            return animeManager.animes.filter { $0.hashtag.contains("watch again") }
+        case .thisTerm:
+            // Implementation needed
+            return []
         }
     }
 
@@ -161,30 +173,26 @@ struct AnimeScreen: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(Color(.systemGray3))
-                        .font(.system(size: 18))
-                    TextField("Search", text: $searchText)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .font(.system(size: 16))
-                        .foregroundColor(.black)
+                // タブUI
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(AnimeTab.allCases, id: \ .self) { tab in
+                            Button(action: { selectedTab = tab }) {
+                                Text(tab.rawValue)
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(selectedTab == tab ? .white : .black)
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        Capsule()
+                                            .fill(selectedTab == tab ? Color(.darkGray) : Color(.systemGray5))
+                                    )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 10)
-                .background(Color.white)
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color(.systemGray4), lineWidth: 1)
-                )
-                .frame(height: 38)
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                // 広告バナー
-                AdBannerView()
-                    .padding(.vertical, 2)
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredAnimes, id: \.id) { anime in
@@ -233,42 +241,36 @@ struct AnimeRow: View {
     @ObservedObject var animeManager: AnimeManager
     
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: 16) {
             if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .scaledToFill()
+                    .frame(width: 183, height: 99)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .clipped()
+                    .offset(x: -10)
             } else {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.gray.opacity(0.3))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: "film")
-                            .font(.system(size: 24))
-                            .foregroundColor(.gray)
-                    )
+                    .frame(width: 183, height: 99)
+                    .offset(x: -10)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(anime.title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundColor(.black)
+                    .frame(height: 20)
                 Text("#" + anime.hashtag)
-                    .font(.system(size: 14))
+                    .font(.system(size: 12.8, weight: .regular))
                     .foregroundColor(.gray)
-                    .lineLimit(1)
-                    .frame(maxWidth: 200, alignment: .leading)
+                    .frame(height: 20)
             }
+            .offset(x: -10, y: -15)
             Spacer()
-            Text(DateFormatter.monthDayEnglish.string(from: anime.releaseDate))
-                .font(.system(size: 14))
-                .foregroundColor(.gray)
-                .padding(.top, 4)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .multilineTextAlignment(.trailing)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 0)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
         .background(Color.clear)
         .contentShape(Rectangle())
     }
@@ -277,6 +279,7 @@ struct AnimeRow: View {
 struct AnimeArtworkScreen: View {
     @Binding var anime: Anime
     @Binding var animes: [Anime]
+    @Environment(\.presentationMode) var presentationMode
     @State private var artworks: [Artwork] = []
     @State private var showAddSheet = false
     @State private var selectedImage: UIImage? = nil
@@ -298,6 +301,14 @@ struct AnimeArtworkScreen: View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 0) {
+                    // 戻るボタン
+                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.black)
+                            .font(.system(size: 24, weight: .bold))
+                            .padding(.leading, 8)
+                            .offset(x: -19)
+                    }
                     Spacer()
                     // アニメ名
                     HStack {
@@ -356,36 +367,28 @@ struct AnimeArtworkScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags)
+                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, selectedArtwork: $selectedArtwork)
                         }
                     } else {
                         ScrollView {
                             VStack(spacing: 32) {
-                                ForEach(artworks, id: \.id) { artwork in
+                                ForEach(artworks, id: \ .id) { artwork in
                                     if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                                        // 画像のアスペクト比を判定
-                                        let imageAspect = uiImage.size.width / uiImage.size.height
-                                        let aspect1 = 370.0 / 588.0 // 縦長
-                                        let aspect2 = 370.0 / 233.0 // 横長
-                                        let diff1 = abs(imageAspect - aspect1)
-                                        let diff2 = abs(imageAspect - aspect2)
-                                        let selectedAspect = diff1 < diff2 ? aspect1 : aspect2
-                                        let selectedHeight = diff1 < diff2 ? 588.0 : 233.0
                                         VStack(alignment: .leading, spacing: 0) {
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 24)
-                                                    .fill(Color.white)
-                                                    .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
-                                                Image(uiImage: uiImage)
-                                                    .resizable()
-                                                    .aspectRatio(selectedAspect, contentMode: .fill)
-                                                    .frame(width: 370, height: selectedHeight)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                                            GeometryReader { geometry in
+                                                ZStack {
+                                                    Color.white
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(width: geometry.size.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
                                             }
-                                            .frame(width: 370, height: selectedHeight)
-                                            .clipped()
-                                            .padding(.bottom, 0)
-                                            // 画像の下にアイコン・タイトル・タグ
+                                            .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
                                                 if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                                                     Image(uiImage: image)
@@ -407,21 +410,15 @@ struct AnimeArtworkScreen: View {
                                                     Text(artwork.title)
                                                         .font(.headline)
                                                         .foregroundColor(.black)
-                                                    if !artwork.tags.isEmpty {
-                                                        Text("#" + artwork.tags.joined(separator: " #"))
-                                                            .font(.caption)
-                                                            .foregroundColor(.gray)
-                                                    }
+                                                    Text("#nakajimaginsei")
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
                                                 }
                                             }
                                             .padding(.top, 8)
                                             .padding(.leading, 8)
                                         }
-                                        .frame(width: 370)
                                         .padding(.vertical, 8)
-                                        .onTapGesture {
-                                            selectedArtwork = artwork
-                                        }
                                     }
                                 }
                             }
@@ -541,7 +538,7 @@ struct AnimeArtworkScreen: View {
                             .background(Color.black)
                             .cornerRadius(10)
                     }
-                    .padding(.trailing, 120)
+                    .padding(.trailing, 78)
                     Button(action: {
                         deletingArtworkID = selectedArtwork?.id
                         showDeleteAlert = true
@@ -731,6 +728,7 @@ struct AnimeVideoRowView: View {
 struct AnimeVideoScreen: View {
     @Binding var anime: Anime
     @Binding var animes: [Anime]
+    @Environment(\.presentationMode) var presentationMode
     @State private var videos: [MemoryVideo] = []
     @State private var showAddSheet = false
     @State private var selectedVideoURL: URL? = nil
@@ -754,6 +752,14 @@ struct AnimeVideoScreen: View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 0) {
+                    // 戻るボタン
+                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.black)
+                            .font(.system(size: 24, weight: .bold))
+                            .padding(.leading, 8)
+                            .offset(x: -19)
+                    }
                     Spacer()
                     // アニメ名
                     HStack {
@@ -823,13 +829,57 @@ struct AnimeVideoScreen: View {
                         ScrollView {
                             VStack(spacing: 32) {
                                 ForEach(videos) { video in
-                                    AnimeVideoRowView(
-                                        video: video,
-                                        anime: anime,
-                                        playingVideoId: playingVideoId,
-                                        onPlay: { playingVideoId = video.id },
-                                        onClose: { playingVideoId = nil }
-                                    )
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        GeometryReader { geometry in
+                                            ZStack {
+                                                Color.white
+                                                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                } else {
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                }
+                                            }
+                                            .frame(width: geometry.size.width, height: 233)
+                                            .clipped()
+                                            .padding(.bottom, 0)
+                                        }
+                                        .frame(height: 233)
+                                        HStack(alignment: .center, spacing: 12) {
+                                            if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                Image(uiImage: image)
+                                                    .resizable()
+                                                    .aspectRatio(contentMode: .fill)
+                                                    .frame(width: 40, height: 40)
+                                                    .clipShape(Circle())
+                                            } else {
+                                                Circle()
+                                                    .fill(Color.gray.opacity(0.3))
+                                                    .frame(width: 40, height: 40)
+                                                    .overlay(
+                                                        Image(systemName: "film")
+                                                            .font(.system(size: 20))
+                                                            .foregroundColor(.gray)
+                                                    )
+                                            }
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(video.title)
+                                                    .font(.headline)
+                                                    .foregroundColor(.black)
+                                                Text("#nakajimaginsei")
+                                                    .font(.caption)
+                                                    .foregroundColor(.gray)
+                                            }
+                                        }
+                                        .padding(.top, 8)
+                                        .padding(.leading, 8)
+                                    }
+                                    .padding(.vertical, 8)
                                 }
                             }
                             .padding(.top, 8)

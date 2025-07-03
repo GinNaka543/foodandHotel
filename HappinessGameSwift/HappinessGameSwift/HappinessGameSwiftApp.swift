@@ -49,8 +49,8 @@ struct MainContainerView: View {
             case .home: return "house"
             case .chara: return "person.2"
             case .anime: return "tv"
-            case .visit: return "map"
-            case .card: return "creditcard"
+            case .visit: return "link"
+            case .card: return "shippingbox"
             }
         }
         
@@ -60,7 +60,7 @@ struct MainContainerView: View {
             case .chara: return "Chara"
             case .anime: return "Anime"
             case .visit: return "Visit"
-            case .card: return "Card"
+            case .card: return "Product"
             }
         }
     }

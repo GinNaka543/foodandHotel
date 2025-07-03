@@ -131,36 +131,28 @@ struct ArtworkScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags)
+                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, selectedArtwork: $selectedArtwork)
                         }
                     } else {
                         ScrollView {
                             VStack(spacing: 32) {
                                 ForEach(artworks, id: \.id) { artwork in
                                     if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                                        // 画像のアスペクト比を判定
-                                        let imageAspect = uiImage.size.width / uiImage.size.height
-                                        let aspect1 = 370.0 / 588.0 // 縦長
-                                        let aspect2 = 370.0 / 233.0 // 横長
-                                        let diff1 = abs(imageAspect - aspect1)
-                                        let diff2 = abs(imageAspect - aspect2)
-                                        let selectedAspect = diff1 < diff2 ? aspect1 : aspect2
-                                        let selectedHeight = diff1 < diff2 ? 588.0 : 233.0
                                         VStack(alignment: .leading, spacing: 0) {
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 24)
-                                                    .fill(Color.white)
-                                                    .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
-                                                Image(uiImage: uiImage)
-                                                    .resizable()
-                                                    .aspectRatio(selectedAspect, contentMode: .fill)
-                                                    .frame(width: 370, height: selectedHeight)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                                            GeometryReader { geometry in
+                                                ZStack {
+                                                    Color.white
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(width: geometry.size.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
                                             }
-                                            .frame(width: 370, height: selectedHeight)
-                                            .clipped()
-                                            .padding(.bottom, 0)
-                                            // 画像の下にアイコン・タイトル・タグ
+                                            .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
                                                 if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                                                     Image(uiImage: image)
@@ -182,17 +174,14 @@ struct ArtworkScreen: View {
                                                     Text(artwork.title)
                                                         .font(.headline)
                                                         .foregroundColor(.black)
-                                                    if !artwork.tags.isEmpty {
-                                                        Text("#" + artwork.tags.joined(separator: " #"))
-                                                            .font(.caption)
-                                                            .foregroundColor(.gray)
-                                                    }
+                                                    Text("#nakajimaginsei")
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
                                                 }
                                             }
                                             .padding(.top, 8)
                                             .padding(.leading, 8)
                                         }
-                                        .frame(width: 370)
                                         .padding(.vertical, 8)
                                     }
                                 }
@@ -313,7 +302,7 @@ struct ArtworkScreen: View {
                             .background(Color.black)
                             .cornerRadius(10)
                     }
-                    .padding(.trailing, 120)
+                    .padding(.trailing, 78)
                     Button(action: {
                         deletingArtworkID = selectedArtwork?.id
                         showDeleteAlert = true
@@ -488,26 +477,53 @@ struct AlbumGridView: View {
     let artworks: [Artwork]
     let highlightFirstRow: Bool
     let filteredTags: [String]?
+    @Binding var selectedArtwork: Artwork?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 32) {
             // 1行目: 全画像
             if !artworks.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 24) {
-                            ForEach(artworks, id: \.id) { artwork in
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(artworks, id: \.id) { artwork in
+                        Button(action: {
+                            if selectedArtwork?.id != artwork.id {
+                                selectedArtwork = artwork
+                            }
+                        }) {
+                            HStack(alignment: .center, spacing: 16) {
                                 if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                     Image(uiImage: uiImage)
                                         .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 208, height: 156)
+                                        .scaledToFill()
+                                        .frame(width: 183, height: 99)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
-                                        .cornerRadius(20)
+                                        .offset(x: 10)
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 183, height: 99)
+                                        .offset(x: 10)
                                 }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(artwork.title)
+                                        .font(.system(size: 15.5, weight: .semibold))
+                                        .foregroundColor(.black)
+                                        .frame(height: 20)
+                                    Text("#" + (artwork.tags.first ?? ""))
+                                        .font(.system(size: 12.8, weight: .regular))
+                                        .foregroundColor(.gray)
+                                        .frame(height: 20)
+                                }
+                                .offset(x: 10, y: -15)
+                                Spacer()
                             }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
+                            .background(Color.clear)
+                            .contentShape(Rectangle())
                         }
-                        .padding(.horizontal, 16)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.top, 24)

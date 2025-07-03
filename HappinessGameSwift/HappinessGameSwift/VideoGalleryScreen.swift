@@ -114,22 +114,29 @@ struct VideoGalleryScreen: View {
                         }
                     } else {
                         ScrollView {
-                            VStack(spacing: 32) {
+                            VStack(spacing: 16) {
                                 ForEach(videos) { video in
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        if playingVideoId == video.id {
-                                            VideoInlinePlayer(video: video, onClose: {
-                                                playingVideoId = nil
-                                            })
-                                                .frame(width: UIScreen.main.bounds.width * 0.9, height: (UIScreen.main.bounds.width * 0.9) * 9 / 16)
-                                                .cornerRadius(20)
-                                        } else {
-                                            VideoThumbnailPlayer(video: video, isInModal: false, onTap: {
-                                                playingVideoId = video.id
-                                            })
-                                                .frame(width: UIScreen.main.bounds.width * 0.9, height: (UIScreen.main.bounds.width * 0.9) * 9 / 16)
-                                                .cornerRadius(20)
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        GeometryReader { geometry in
+                                            ZStack {
+                                                Color.white
+                                                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                } else {
+                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                }
+                                            }
+                                            .frame(width: geometry.size.width, height: 233)
+                                            .clipped()
+                                            .padding(.bottom, 0)
                                         }
+                                        .frame(height: 233)
                                         HStack(alignment: .center, spacing: 12) {
                                             if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                                                 Image(uiImage: image)
@@ -150,16 +157,16 @@ struct VideoGalleryScreen: View {
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(video.title)
                                                     .font(.headline)
-                                                if !video.tags.isEmpty {
-                                                    Text("#" + video.tags.joined(separator: " #"))
-                                                        .font(.caption)
-                                                        .foregroundColor(.gray)
-                                                }
+                                                    .foregroundColor(.black)
+                                                Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
+                                                    .font(.caption)
+                                                    .foregroundColor(.gray)
                                             }
                                         }
-                                        .padding(.top, 4)
+                                        .padding(.top, 8)
+                                        .padding(.leading, 8)
                                     }
-                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 8)
                                 }
                             }
                             .padding(.top, 8)
@@ -278,6 +285,7 @@ struct VideoGalleryScreen: View {
                         Spacer()
                     }
                     .padding(.bottom, 24)
+                    .padding(.leading, 42)
                 }
                 Button(action: {
                     deletingVideoID = video.id
@@ -611,24 +619,36 @@ struct VideoAlbumGridView: View {
     @State private var editText: String = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 32) {
+        VStack(alignment: .leading, spacing: 16) {
             // 1行目: 全動画
             if !videos.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 24) {
-                            ForEach(videos) { video in
-                                VideoThumbnailPlayer(video: video, isInModal: false, onTap: {
-                                    expandedVideo = video
-                                })
-                                    .frame(width: 234, height: 140)
-                                    .cornerRadius(20)
-                            }
+                ForEach(videos) { video in
+                    HStack(alignment: .center, spacing: 16) {
+                        if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 176, height: 106)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .clipped()
+                        } else {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 176, height: 106)
                         }
-                        .padding(.horizontal, 16)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(video.title)
+                                .font(.system(size: 13.5, weight: .semibold))
+                                .foregroundColor(.black)
+                            Text("#nakajimaginsei")
+                                .font(.system(size: 10.8, weight: .regular))
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
                     }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
                 }
-                .padding(.top, 24)
             }
             // 2行目以降: タグごとのグループ
             if let tags = filteredTags {
@@ -717,6 +737,7 @@ struct VideoAlbumGridView: View {
                         Spacer()
                     }
                     .padding(.bottom, 24)
+                    .padding(.leading, 42)
                 }
                 Button(action: {
                     deletingVideoID = video.id

@@ -13,90 +13,147 @@ public struct VisitScreen: View {
         VisitPlan(imageName: "青豚", title: "アートウォーク", iconName: "paintbrush")
     ]
     
+    // タブ用
+    enum VisitTab: String, CaseIterable {
+        case all = "ALL"
+        case original = "Original"
+        case date = "Date"
+        case animePilgrimage = "Anime pilgrimage"
+        case city = "City"
+        case onsen = "Onsen"
+    }
+    @State private var selectedTab: VisitTab = .all
+    @State private var showSearchBar = false
+    @State private var searchText = ""
+    
     public var body: some View {
-        VStack(spacing: 0) {
-            // ヘッダー
-            HStack {
-                Button(action: { /* メニュー表示など */ }) {
-                    Image(systemName: "line.horizontal.3")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.black)
-                }
-                Spacer()
-                Button(action: { /* 追加処理 */ }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.black)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            // 検索バー
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(Color(.systemGray3))
-                    .font(.system(size: 18))
-                TextField("Search", text: .constant(""))
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                    .font(.system(size: 16))
-                    .foregroundColor(.black)
-            }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 10)
-            .background(Color.white)
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-            )
-            .frame(height: 38)
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            // 広告バナー追加
-            AdBannerView()
-                .padding(.vertical, 2)
-            // ビジットプラン欄
-            ScrollView {
-                VStack(spacing: 24) {
-                    ForEach(visitPlans) { plan in
-                        VStack(alignment: .leading, spacing: 0) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 24)
-                                    .fill(Color.white)
-                                    .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
-                                Image(plan.imageName)
-                                    .resizable()
-                                    .aspectRatio(370.0/233.0, contentMode: .fill)
-                                    .frame(width: 370, height: 233)
-                                    .clipShape(RoundedRectangle(cornerRadius: 24))
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 0) {
+                // ヘッダー
+                HStack {
+                    Button(action: { /* メニュー表示など */ }) {
+                        Image(systemName: "line.horizontal.3")
+                            .font(.system(size: 28, weight: .regular))
+                            .foregroundColor(.black)
+                    }
+                    Spacer()
+                    // 虫眼鏡
+                    if showSearchBar {
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 22, weight: .regular))
+                                .foregroundColor(.gray)
+                            TextField("Search", text: $searchText)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(.black)
+                            Button(action: { withAnimation { showSearchBar = false; searchText = "" } }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 22, weight: .regular))
+                                    .foregroundColor(.gray)
                             }
-                            .frame(width: 370, height: 233)
-                            .clipped()
-                            .padding(.bottom, 0)
-                            HStack(alignment: .center, spacing: 12) {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 40, height: 40)
-                                    .overlay(
-                                        Image(systemName: plan.iconName)
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.gray)
-                                    )
-                                Text(plan.title)
-                                    .font(.headline)
-                                    .foregroundColor(.black)
-                            }
-                            .padding(.top, 8)
-                            .padding(.leading, 8)
                         }
-                        .frame(width: 370)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .frame(height: 38)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    } else {
+                        Button(action: { withAnimation { showSearchBar.toggle() } }) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 24, weight: .regular))
+                                .foregroundColor(.black)
+                        }
                     }
                 }
-                .padding(.top, 8)
+                .padding(.horizontal, 16)
+                .padding(.top, 28) // さらに10px上げる
+                .offset(y: -10) // さらに10px上にずらす
+                // タブUI
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(VisitTab.allCases, id: \ .self) { tab in
+                            Button(action: { selectedTab = tab }) {
+                                Text(tab.rawValue)
+                                    .font(.system(size: 16, weight: .regular))
+                                    .foregroundColor(selectedTab == tab ? .white : .black)
+                                    .padding(.horizontal, 18)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        Capsule()
+                                            .fill(selectedTab == tab ? Color(.darkGray) : Color(.systemGray5))
+                                    )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+                // ビジットプラン欄
+                ScrollView {
+                    VStack(spacing: 24) {
+                        ForEach(visitPlans) { plan in
+                            VStack(alignment: .leading, spacing: 0) {
+                                GeometryReader { geometry in
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 0)
+                                            .fill(Color.white)
+                                            .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+                                        Image(plan.imageName)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: geometry.size.width, height: 233)
+                                            .clipped()
+                                    }
+                                    .frame(width: geometry.size.width, height: 233)
+                                    .clipped()
+                                    .padding(.bottom, 0)
+                                }
+                                .frame(height: 233)
+                                HStack(alignment: .center, spacing: 12) {
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 40, height: 40)
+                                        .overlay(
+                                            Image(systemName: plan.iconName)
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.gray)
+                                        )
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(plan.title)
+                                            .font(.headline)
+                                            .foregroundColor(.black)
+                                        Text("#nakajimaginsei")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                .padding(.top, 8)
+                                .padding(.leading, 8)
+                            }
+                            .padding(.vertical, 8)
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                Spacer()
             }
-            Spacer()
+            // Createボタン（右下固定）
+            Button(action: { /* 追加処理 */ }) {
+                Text("Create")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(.systemBlue))
+                    )
+            }
+            .padding(.bottom, 24)
+            .padding(.trailing, 20)
         }
     }
 } 

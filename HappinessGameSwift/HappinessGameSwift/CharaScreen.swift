@@ -1337,9 +1337,17 @@ struct NavigationBarItem: View {
     
     var body: some View {
         VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .medium))
-                .foregroundColor(isSelected ? .blue : .gray)
+            if icon == "visit_event_icon" {
+                Image(icon)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 22, height: 22)
+                    .foregroundColor(isSelected ? .blue : .gray)
+            } else {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(isSelected ? .blue : .gray)
+            }
             Text(title)
                 .font(.system(size: 10, weight: .medium))
                 .foregroundColor(isSelected ? .blue : .gray)

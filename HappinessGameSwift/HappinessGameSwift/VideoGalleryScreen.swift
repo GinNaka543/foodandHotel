@@ -7,7 +7,7 @@ import UIKit
 struct MemoryVideo: Identifiable, Codable {
     let id: UUID
     let characterId: UUID
-    let videoData: Data
+    let videoPath: String // 動画ファイルのパス
     let thumbnailData: Data?
     var title: String
     var tags: [String]
@@ -223,7 +223,9 @@ struct VideoGalleryScreen: View {
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData) {
                 if selectedVideoURL != nil && !videoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !videoTags.trimmingCharacters(in: .whitespaces).isEmpty {
-                    saveVideo()
+                    Task {
+                        await saveVideo()
+                    }
                 }
             }
         }
@@ -470,29 +472,31 @@ struct VideoGalleryScreen: View {
         playingVideoId = video.id
     }
     
-    private func saveVideo() {
-        guard let videoURL = selectedVideoURL,
-              let videoData = try? Data(contentsOf: videoURL) else { return }
-        
+    private func saveVideo() async {
+        guard let videoURL = selectedVideoURL else { return }
         let tags = videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        
+        // 動画ファイルをDocumentsディレクトリに保存
+        let fileName = "video_\(UUID().uuidString).mov"
+        let documentsPath = saveVideoToDocuments(from: videoURL, fileName: fileName)
         
         // サムネイル生成
         var thumbnailData: Data? = selectedThumbnailData
         if thumbnailData == nil {
-            let asset = AVAsset(url: videoURL)
+            let asset = AVURLAsset(url: videoURL)
             let imageGenerator = AVAssetImageGenerator(asset: asset)
             imageGenerator.appliesPreferredTrackTransform = true
             
             do {
-                let cgImage = try imageGenerator.copyCGImage(at: CMTime(seconds: 1.0, preferredTimescale: 1), actualTime: nil)
-                let uiImage = UIImage(cgImage: cgImage)
+                let cgImage = try await imageGenerator.image(at: CMTime(seconds: 1.0, preferredTimescale: 1))
+                let uiImage = UIImage(cgImage: cgImage.image)
                 thumbnailData = uiImage.jpegData(compressionQuality: 0.8)
             } catch {
                 print("サムネイル生成に失敗: \(error)")
             }
         }
         
-        let newVideo = MemoryVideo(id: UUID(), characterId: character.id, videoData: videoData, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date())
+        let newVideo = MemoryVideo(id: UUID(), characterId: character.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date())
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
         selectedVideoURL = nil
@@ -500,6 +504,24 @@ struct VideoGalleryScreen: View {
         videoTags = ""
         selectedThumbnailData = nil
         showAddSheet = false
+    }
+    
+    private func saveVideoToDocuments(from url: URL, fileName: String) -> String {
+        let fileManager = FileManager.default
+        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+        guard let documentsURL = urls.first else { return "" }
+        let fileURL = documentsURL.appendingPathComponent(fileName)
+        
+        do {
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
+            }
+            try fileManager.copyItem(at: url, to: fileURL)
+            return fileURL.path
+        } catch {
+            print("動画保存エラー: \(error)")
+            return ""
+        }
     }
     
     private func loadVideos() {
@@ -575,15 +597,9 @@ struct VideoThumbnailPlayer: View {
         }
         .onAppear {
             if player == nil {
-                // Dataから一時ファイルを作成し、そのURLでAVPlayerを生成
-                let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mov")
-                do {
-                    try video.videoData.write(to: url)
-                    tempURL = url
-                    player = AVPlayer(url: url)
-                } catch {
-                    print("動画の一時ファイル作成に失敗: \(error)")
-                }
+                // videoPathから動画ファイルを読み込む
+                let videoURL = URL(fileURLWithPath: video.videoPath)
+                player = AVPlayer(url: videoURL)
             }
         }
         .onDisappear {
@@ -891,9 +907,6 @@ struct VideoInlinePlayer: View {
         ZStack(alignment: .topTrailing) {
             if let player = player {
                 VideoPlayer(player: player)
-                    .onAppear {
-                        player.play()
-                    }
                     .onDisappear {
                         player.pause()
                     }
@@ -913,13 +926,8 @@ struct VideoInlinePlayer: View {
             }
         }
         .onAppear {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mov")
-            do {
-                try video.videoData.write(to: url)
-                player = AVPlayer(url: url)
-            } catch {
-                print("動画の一時ファイル作成に失敗: \(error)")
-            }
+            let videoURL = URL(fileURLWithPath: video.videoPath)
+            player = AVPlayer(url: videoURL)
         }
         .onDisappear {
             player?.pause()

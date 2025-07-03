@@ -7,6 +7,8 @@ class MainTabSelection: ObservableObject {
 @main
 struct HappinessGameSwiftApp: App {
     @StateObject private var mainTab = MainTabSelection()
+    @StateObject private var characterManager = CharacterManager()
+    @StateObject private var animeManager = AnimeManager()
     
     init() {
         cleanupLargeUserDefaultsEntries()
@@ -14,8 +16,14 @@ struct HappinessGameSwiftApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainContainerView()
+            ContentView()
                 .environmentObject(mainTab)
+                .environmentObject(characterManager)
+                .environmentObject(animeManager)
+                .onAppear {
+                    // 開発用: サンプル画像を自動生成
+                    createSampleImagesIfNeeded()
+                }
         }
     }
     

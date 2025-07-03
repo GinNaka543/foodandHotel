@@ -3,7 +3,7 @@ import PhotosUI
 import AVKit
 
 struct MemoryPhoto: Identifiable, Codable {
-    let id = UUID()
+    let id: UUID
     let title: String
     let tags: [String]
     let imageData: Data
@@ -65,6 +65,7 @@ struct MemoryScreen: View {
               let imageData = image.jpegData(compressionQuality: 0.8) else { return }
         
         let photo = MemoryPhoto(
+            id: UUID(),
             title: photoTitle.isEmpty ? "無題" : photoTitle,
             tags: photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) },
             imageData: imageData,

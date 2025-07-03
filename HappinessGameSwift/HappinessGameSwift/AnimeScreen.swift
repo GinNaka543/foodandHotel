@@ -946,13 +946,14 @@ struct AnimeVideoScreen: View {
         guard let videoURL = selectedVideoURL else { return }
         let tags = videoTags.isEmpty ? [] : videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         
-        // 動画データを読み込み
-        guard let videoData = try? Data(contentsOf: videoURL) else { return }
+        // 動画ファイルをDocumentsディレクトリに保存
+        let fileName = "anime_video_\(UUID().uuidString).mov"
+        let documentsPath = saveVideoToDocuments(from: videoURL, fileName: fileName)
         
         // サムネイル生成
         let thumbnailData = generateThumbnail(from: videoURL)
         
-        let newVideo = MemoryVideo(id: UUID(), characterId: anime.id, videoData: videoData, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date())
+        let newVideo = MemoryVideo(id: UUID(), characterId: anime.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date())
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
         
@@ -960,6 +961,24 @@ struct AnimeVideoScreen: View {
         videoTitle = ""
         videoTags = ""
         showAddSheet = false
+    }
+    
+    private func saveVideoToDocuments(from url: URL, fileName: String) -> String {
+        let fileManager = FileManager.default
+        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+        guard let documentsURL = urls.first else { return "" }
+        let fileURL = documentsURL.appendingPathComponent(fileName)
+        
+        do {
+            if fileManager.fileExists(atPath: fileURL.path) {
+                try fileManager.removeItem(at: fileURL)
+            }
+            try fileManager.copyItem(at: url, to: fileURL)
+            return fileURL.path
+        } catch {
+            print("動画保存エラー: \(error)")
+            return ""
+        }
     }
     
     private func loadVideos() {
@@ -1254,8 +1273,8 @@ struct AnimeAboutView: View {
                 .cornerRadius(16)
                 .padding(40)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onChange(of: iconPickerItem) {
-                    if let newItem = iconPickerItem {
+                .onChange(of: iconPickerItem) { oldValue, newValue in
+                    if let newItem = newValue {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                 tempIconImage = uiImage
@@ -1354,21 +1373,6 @@ struct AnimeAboutView: View {
             .padding(40)
         }
     }
-    
-    func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
-        guard let data = image.pngData() else { return nil }
-        let fileManager = FileManager.default
-        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-        guard let documentsURL = urls.first else { return nil }
-        let fileURL = documentsURL.appendingPathComponent(fileName)
-        do {
-            try data.write(to: fileURL)
-            return fileURL.path
-        } catch {
-            print("画像保存エラー: \(error)")
-            return nil
-        }
-    }
 }
 
 struct AddAnimeSheet: View {
@@ -1408,8 +1412,8 @@ struct AddAnimeSheet: View {
                                 .foregroundColor(.blue)
                         }
                     }
-                    .onChange(of: selectedItem) {
-                        if let newItem = selectedItem {
+                    .onChange(of: selectedItem) { oldValue, newValue in
+                        if let newItem = newValue {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                     image = uiImage
@@ -1452,21 +1456,6 @@ struct AddAnimeSheet: View {
                     dismiss()
                 }
             }
-        }
-    }
-    
-    func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
-        guard let data = image.pngData() else { return nil }
-        let fileManager = FileManager.default
-        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-        guard let documentsURL = urls.first else { return nil }
-        let fileURL = documentsURL.appendingPathComponent(fileName)
-        do {
-            try data.write(to: fileURL)
-            return fileURL.path
-        } catch {
-            print("画像保存エラー: \(error)")
-            return nil
         }
     }
 }
@@ -1702,4 +1691,6 @@ struct AnimeDetailView: View {
         // アイコン編集モーダル（省略）
     }
 }
+
+
 

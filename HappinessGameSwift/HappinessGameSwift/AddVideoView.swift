@@ -123,9 +123,9 @@ struct AddVideoView: View {
                 }
             }
         }
-        .onChange(of: selectedItem) { newItem in
+        .onChange(of: selectedItem) { oldValue, newValue in
             Task {
-                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                if let data = try? await newValue?.loadTransferable(type: Data.self) {
                     let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mov")
                     do {
                         try data.write(to: tempURL)
@@ -146,7 +146,7 @@ struct AddVideoView: View {
     }
     
     private func generateThumbnails(from url: URL) async {
-        let asset = AVAsset(url: url)
+        let asset = AVURLAsset(url: url)
         let imageGenerator = AVAssetImageGenerator(asset: asset)
         imageGenerator.appliesPreferredTrackTransform = true
         imageGenerator.maximumSize = CGSize(width: 300, height: 300)
@@ -157,8 +157,8 @@ struct AddVideoView: View {
         
         for timePoint in timePoints {
             do {
-                let cgImage = try imageGenerator.copyCGImage(at: CMTime(seconds: timePoint, preferredTimescale: 1), actualTime: nil)
-                let uiImage = UIImage(cgImage: cgImage)
+                let cgImage = try await imageGenerator.image(at: CMTime(seconds: timePoint, preferredTimescale: 1))
+                let uiImage = UIImage(cgImage: cgImage.image)
                 thumbnailImages.append(uiImage)
             } catch {
                 print("サムネイル生成に失敗: \(error)")

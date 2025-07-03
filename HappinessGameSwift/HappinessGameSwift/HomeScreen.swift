@@ -1,6 +1,5 @@
 import SwiftUI
 import Foundation
-import HappinessGameSwift
 
 enum ListTab: Int {
     case chara, anime, birthday
@@ -51,9 +50,9 @@ struct HomeScreen: View {
             let birthdayMonth = calendar.component(.month, from: character.birthday)
             let birthdayDay = calendar.component(.day, from: character.birthday)
             
-            // 今日の月日を取得
-            let todayMonth = calendar.component(.month, from: today)
-            let todayDay = calendar.component(.day, from: today)
+            // 今日の月日を取得（未使用のため削除）
+            _ = calendar.component(.month, from: today)
+            _ = calendar.component(.day, from: today)
             
             // 5日前の月日を取得
             let fiveDaysAgoMonth = calendar.component(.month, from: fiveDaysAgo)

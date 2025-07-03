@@ -395,8 +395,8 @@ struct AddCharacterSheet: View {
                                 .foregroundColor(.blue)
                         }
                     }
-                    .onChange(of: selectedItem) {
-                        if let newItem = selectedItem {
+                    .onChange(of: selectedItem) { oldValue, newValue in
+                        if let newItem = newValue {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                     image = uiImage
@@ -756,8 +756,8 @@ struct CharacterDetailView: View {
                 .cornerRadius(16)
                 .padding(40)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onChange(of: iconPickerItem) {
-                    if let newItem = iconPickerItem {
+                .onChange(of: iconPickerItem) { oldValue, newValue in
+                    if let newItem = newValue {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                 // 即座にモーダル内の画像を更新
@@ -1174,8 +1174,8 @@ struct AboutView: View {
             .cornerRadius(16)
             .padding(40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onChange(of: iconPickerItem) {
-                if let newItem = iconPickerItem {
+            .onChange(of: iconPickerItem) { oldValue, newValue in
+                if let newItem = newValue {
                     Task {
                         if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                             // 即座にモーダル内の画像を更新

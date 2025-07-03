@@ -151,7 +151,13 @@ struct HomeScreen: View {
                     // バースデーリマインダー（該当するキャラクターがいる場合のみ表示）
                     if !getBirthdayReminderCharacters().isEmpty {
                         HStack {
-                            Circle().fill(Color.gray).frame(width: 40, height: 40)
+                            FriendListIconView(
+                                images: getBirthdayReminderCharacters().prefix(4).map { char in
+                                    if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                                },
+                                fallbackSystemName: "person",
+                                color: Color.gray.opacity(0.3)
+                            )
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Birthday reminders")
                                     .font(.system(size: 16, weight: .semibold))
@@ -174,7 +180,13 @@ struct HomeScreen: View {
                     
                     // Characters
                     HStack {
-                        Circle().fill(Color.gray).frame(width: 40, height: 40)
+                        FriendListIconView(
+                            images: characterManager.characters.prefix(4).map { char in
+                                if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                            },
+                            fallbackSystemName: "person",
+                            color: Color.gray.opacity(0.3)
+                        )
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Characters")
                                 .font(.system(size: 16, weight: .semibold))
@@ -196,7 +208,13 @@ struct HomeScreen: View {
                     
                     // Animes
                     HStack {
-                        Circle().fill(Color.gray).frame(width: 40, height: 40)
+                        FriendListIconView(
+                            images: animeManager.animes.prefix(4).map { anime in
+                                if let path = anime.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                            },
+                            fallbackSystemName: "film",
+                            color: Color.gray.opacity(0.3)
+                        )
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Animes")
                                 .font(.system(size: 16, weight: .semibold))
@@ -259,6 +277,146 @@ struct HomeScreen: View {
             characterManager.loadCharacters()
             animeManager.loadAnimes()
         }
+    }
+}
+
+// フレンドリスト用アイコン分割View
+struct FriendListIconView: View {
+    let images: [UIImage?] // 最大4つまで
+    let fallbackSystemName: String
+    let color: Color
+    var body: some View {
+        ZStack {
+            if images.count == 1 {
+                iconImage(images[0], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+            } else if images.count == 2 {
+                iconImage(images[0], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(HalfCircleShape(left: true))
+                iconImage(images[1], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(HalfCircleShape(left: false))
+                // 中央に白線
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 2, height: 40)
+            } else if images.count == 3 {
+                iconImage(images[0], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(HalfCircleShape(left: true))
+                iconImage(images[1], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(QuarterCircleShape(position: .topRight))
+                iconImage(images[2], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(QuarterCircleShape(position: .bottomRight))
+                // 中央に白線
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 2, height: 40)
+                // 右半分の中央に水平白線
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 20, height: 2)
+                    .position(x: 30, y: 20)
+            } else if images.count >= 4 {
+                iconImage(images[0], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(QuarterCircleShape(position: .topLeft))
+                iconImage(images[1], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(QuarterCircleShape(position: .topRight))
+                iconImage(images[2], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(QuarterCircleShape(position: .bottomLeft))
+                iconImage(images[3], fallback: fallbackSystemName, color: color)
+                    .frame(width: 40, height: 40)
+                    .clipShape(QuarterCircleShape(position: .bottomRight))
+                // 十字に白線
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 2, height: 40)
+                Rectangle()
+                    .fill(Color.white)
+                    .frame(width: 40, height: 2)
+            } else {
+                Circle().fill(color)
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Image(systemName: fallbackSystemName)
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray)
+                    )
+            }
+        }
+        .frame(width: 40, height: 40)
+    }
+    func iconImage(_ image: UIImage?, fallback: String, color: Color) -> some View {
+        Group {
+            if let img = image {
+                Image(uiImage: img)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                Circle().fill(color)
+                    .overlay(
+                        Image(systemName: fallback)
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray)
+                    )
+            }
+        }
+    }
+}
+
+// 半円ClipShape
+struct HalfCircleShape: Shape {
+    let left: Bool
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        if left {
+            path.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width/2, startAngle: .degrees(90), endAngle: .degrees(270), clockwise: false)
+            path.addLine(to: CGPoint(x: rect.midX, y: rect.midY))
+            path.closeSubpath()
+        } else {
+            path.addArc(center: CGPoint(x: rect.midX, y: rect.midY), radius: rect.width/2, startAngle: .degrees(-90), endAngle: .degrees(90), clockwise: false)
+            path.addLine(to: CGPoint(x: rect.midX, y: rect.midY))
+            path.closeSubpath()
+        }
+        return path
+    }
+}
+
+// 1/4円ClipShape
+struct QuarterCircleShape: Shape {
+    enum Position { case topLeft, topRight, bottomLeft, bottomRight }
+    let position: Position
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let r = rect.width/2
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        switch position {
+        case .topLeft:
+            path.move(to: center)
+            path.addArc(center: center, radius: r, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+            path.addLine(to: center)
+        case .topRight:
+            path.move(to: center)
+            path.addArc(center: center, radius: r, startAngle: .degrees(270), endAngle: .degrees(0), clockwise: false)
+            path.addLine(to: center)
+        case .bottomLeft:
+            path.move(to: center)
+            path.addArc(center: center, radius: r, startAngle: .degrees(90), endAngle: .degrees(180), clockwise: false)
+            path.addLine(to: center)
+        case .bottomRight:
+            path.move(to: center)
+            path.addArc(center: center, radius: r, startAngle: .degrees(0), endAngle: .degrees(90), clockwise: false)
+            path.addLine(to: center)
+        }
+        path.closeSubpath()
+        return path
     }
 }
 

@@ -90,7 +90,7 @@ struct HomeScreen: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ScrollView {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack(alignment: .center) {
@@ -262,6 +262,28 @@ struct HomeScreen: View {
                 }
                 .padding(.horizontal, 20)
                 Spacer(minLength: 0)
+                // 広告バナー
+                VStack(spacing: 0) {
+                    if let bannerImage = UIImage(named: "青豚") {
+                        Image(uiImage: bannerImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 360, height: 189)
+                            .cornerRadius(10)
+                            .clipped()
+                            .padding(.top, 20) // 20ピクセル下げる
+                    }
+                    if let kagImage = UIImage(named: "かぐや") {
+                        Image(uiImage: kagImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 360, height: 189)
+                            .cornerRadius(10)
+                            .clipped()
+                            .padding(.top, 16)
+                    }
+                }
+                // ここに空行を追加しておくことで、Xcodeのキャッシュ対策になる場合があります。
             }
         }
         .background(Color.white)

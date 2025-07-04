@@ -5,7 +5,7 @@ import Foundation
 import UIKit
 import AVFoundation
 
-struct MemoryVideo: Identifiable, Codable {
+struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
     let id: UUID
     let characterId: UUID
     let videoPath: String // 動画ファイルのパス
@@ -13,6 +13,20 @@ struct MemoryVideo: Identifiable, Codable {
     var title: String
     var tags: [String]
     let date: Date
+}
+
+struct Album: Identifiable, Hashable, Equatable {
+    let id = UUID()
+    let tag: String
+    let videos: [MemoryVideo]
+    static func == (lhs: Album, rhs: Album) -> Bool {
+        lhs.id == rhs.id && lhs.tag == rhs.tag && lhs.videos == rhs.videos
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(tag)
+        hasher.combine(videos)
+    }
 }
 
 struct VideoGalleryScreen: View {
@@ -36,6 +50,8 @@ struct VideoGalleryScreen: View {
     @State private var selectedThumbnailData: Data? = nil
     @State private var expandedVideo: MemoryVideo? = nil
     @State private var playingVideoId: UUID? = nil
+    @State private var albums: [Album] = []
+    @State private var selectedAlbum: Album? = nil
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -106,92 +122,119 @@ struct VideoGalleryScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            VideoAlbumGridView(videos: $videos, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, onVideoTap: { video in
-                                selectedVideo = video
-                            }, onVideosChanged: {
-                                print("VideoGalleryScreen: onVideosChanged呼び出し")
-                                saveVideosToUserDefaults()
-                            })
-                        }
-                        .fullScreenCover(item: $selectedVideo) { (video: MemoryVideo) in
-                            VideoPlayerScreen(
-                                video: video,
-                                character: character as Character?,
-                                anime: nil as Anime?,
-                                allVideos: videos
-                            )
-                        }
-                    } else {
-                        ScrollView {
-                            VStack(spacing: 16) {
-                                ForEach(videos) { video in
+                            VStack(spacing: 4) {
+                                Spacer().frame(height: 5)
+                                // --- アルバムリスト ---
+                                ForEach(albums) { album in
                                     Button(action: {
-                                        selectedVideo = video
+                                        selectedAlbum = album
                                     }) {
                                         VStack(alignment: .leading, spacing: 0) {
-                                            GeometryReader { geometry in
-                                                ZStack {
-                                                    Color.white
-                                                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                        Image(uiImage: uiImage)
-                                                            .resizable()
-                                                            .scaledToFill()
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
-                                                    } else {
-                                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                    }
-                                                }
-                                                .frame(width: geometry.size.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
-                                            }
-                                            .frame(height: 233)
-                                            HStack(alignment: .center, spacing: 12) {
-                                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                                                    Image(uiImage: image)
+                                            if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                GeometryReader { geometry in
+                                                    Image(uiImage: uiImage)
                                                         .resizable()
-                                                        .aspectRatio(contentMode: .fill)
-                                                        .frame(width: 40, height: 40)
-                                                        .clipShape(Circle())
-                                                } else {
-                                                    Circle()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(height: 233)
+                                            } else {
+                                                GeometryReader { geometry in
+                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
                                                         .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: 40, height: 40)
-                                                        .overlay(
-                                                            Image(systemName: "person")
-                                                                .font(.system(size: 20))
-                                                                .foregroundColor(.gray)
-                                                        )
+                                                        .frame(width: geometry.size.width, height: 233)
                                                 }
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    Text(video.title)
-                                                        .font(.headline)
-                                                        .foregroundColor(.black)
-                                                    Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
-                                                        .font(.caption)
-                                                        .foregroundColor(.gray)
-                                                }
-                                                .offset(x: 10, y: -5)
+                                                .frame(height: 233)
+                                            }
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("#" + album.tag)
+                                                    .font(.system(size: 15.5, weight: .semibold))
+                                                    .foregroundColor(.black)
                                             }
                                             .padding(.top, 8)
                                             .padding(.leading, 8)
                                         }
-                                        .padding(.vertical, 8)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             }
-                            .padding(.top, 8)
                         }
-                        .fullScreenCover(item: $selectedVideo) { (video: MemoryVideo) in
+                        .fullScreenCover(item: $selectedAlbum) { album in
+                            AlbumVideoListScreen(videos: album.videos, tag: album.tag)
+                        }
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                Spacer().frame(height: 5)
+                                ForEach(Array(videos.enumerated()), id: \ .element.id) { idx, video in
+                                    if idx > 0 {
+                                        Spacer().frame(height: 35)
+                                    }
+                                    Button(action: {
+                                        selectedVideo = video
+                                    }) {
+                                        HStack(alignment: .top, spacing: 16) {
+                                            if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                Image(uiImage: uiImage)
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 183, height: 109)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                                    .clipped()
+                                            } else {
+                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                    .fill(Color.gray.opacity(0.3))
+                                                    .frame(width: 183, height: 109)
+                                            }
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(video.title)
+                                                    .font(.system(size: 16.5, weight: .semibold))
+                                                    .foregroundColor(.black)
+                                                    .padding(.vertical, 8)
+                                                Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
+                                                    .font(.system(size: 13.8, weight: .regular))
+                                                    .foregroundColor(.gray)
+                                                    .padding(.vertical, 2)
+                                            }
+                                            .frame(height: 50, alignment: .leading)
+                                            .padding(.top, 3)
+                                            .padding(.leading, 8)
+                                            Spacer()
+                                            Button(action: {
+                                                selectedVideo = video
+                                                showEditTitle = true // 必要に応じてActionSheetや編集処理
+                                            }) {
+                                                Image(systemName: "ellipsis.vertical")
+                                                    .font(.system(size: 23))
+                                                    .foregroundColor(.black)
+                                                    .padding(.trailing, 8)
+                                            }
+                                        }
+                                        .padding(.leading, 8)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                        }
+                        .fullScreenCover(item: $selectedVideo) { video in
                             VideoPlayerScreen(
                                 video: video,
                                 character: character as Character?,
                                 anime: nil as Anime?,
-                                allVideos: videos
+                                allVideos: videos,
+                                onSave: { newTitle, newTags in
+                                    // 編集処理（必要ならここも拡張）
+                                },
+                                onDelete: {
+                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                        videos.remove(at: idx)
+                                        saveVideosToUserDefaults()
+                                        print("[DEBUG] VideoGalleryScreen: 動画削除 - ID: \(video.id)")
+                                    } else {
+                                        print("[DEBUG] VideoGalleryScreen: 削除対象が見つかりませんでした - ID: \(video.id)")
+                                    }
+                                }
                             )
                         }
                     }
@@ -217,10 +260,13 @@ struct VideoGalleryScreen: View {
                         TextField("#タグ名", text: $newTag)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal, 24)
-                        Button("追加") {
+                        Button("保存") {
                             let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !tag.isEmpty && !filteredTags.contains(tag) {
-                                filteredTags.append(tag)
+                            if !tag.isEmpty {
+                                let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
+                                if !tagVideos.isEmpty {
+                                    albums.append(Album(tag: tag, videos: tagVideos))
+                                }
                             }
                             newTag = ""
                             showTagInput = false
@@ -588,29 +634,35 @@ struct VideoThumbnailPlayer: View {
                 // サムネイル表示
                 if let thumbnailData = video.thumbnailData,
                    let uiImage = UIImage(data: thumbnailData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipped()
-                        .cornerRadius(0)
-                        .onTapGesture {
-                            if isInModal {
-                                playVideo()
-                            } else {
-                                onTap?()
-                            }
+                    GeometryReader { geometry in
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: 233)
+                            .clipped()
+                    }
+                    .frame(height: 233)
+                    .onTapGesture {
+                        if isInModal {
+                            playVideo()
+                        } else {
+                            onTap?()
                         }
+                    }
                 } else {
-                    RoundedRectangle(cornerRadius: 0)
-                        .fill(Color.black)
-                        .onTapGesture {
-                            if isInModal {
-                                playVideo()
-                            } else {
-                                onTap?()
-                            }
+                    GeometryReader { geometry in
+                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: geometry.size.width, height: 233)
+                    }
+                    .frame(height: 233)
+                    .onTapGesture {
+                        if isInModal {
+                            playVideo()
+                        } else {
+                            onTap?()
                         }
+                    }
                 }
             }
         }
@@ -673,13 +725,15 @@ struct VideoAlbumGridView: View {
                         }
                         VStack(alignment: .leading, spacing: 4) {
                             Text(video.title)
-                                .font(.system(size: 13.5, weight: .semibold))
+                                .font(.system(size: 16.5, weight: .semibold))
                                 .foregroundColor(.black)
-                            Text("#nakajimaginsei")
-                                .font(.system(size: 10.8, weight: .regular))
+                            Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
+                                .font(.system(size: 13.8, weight: .regular))
                                 .foregroundColor(.gray)
                         }
-                        .offset(x: 10, y: -5)
+                        .frame(height: 50, alignment: .leading)
+                        .padding(.top, 3)
+                        .padding(.leading, 8)
                         Spacer()
                     }
                     .padding(.horizontal, 8)
@@ -791,6 +845,81 @@ struct CharacterIconView: View {
                         .font(.system(size: size / 2))
                         .foregroundColor(.gray)
                 )
+        }
+    }
+}
+
+// --- アルバムの動画一覧ページ ---
+struct AlbumVideoListScreen: View {
+    let videos: [MemoryVideo]
+    let tag: String
+    @Environment(\.presentationMode) var presentationMode
+    @State private var selectedVideo: MemoryVideo? = nil
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(.black)
+                }
+                Text("#" + tag)
+                    .font(.system(size: 20, weight: .bold))
+                    .padding(.leading, 8)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 24)
+            Spacer().frame(height: 15)
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(videos.enumerated()), id: \ .element.id) { idx, video in
+                        if idx > 0 {
+                            Spacer().frame(height: 35)
+                        }
+                        Button(action: {
+                            selectedVideo = video
+                        }) {
+                            HStack(alignment: .top, spacing: 16) {
+                                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 183, height: 109)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                        .clipped()
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 183, height: 109)
+                                }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(video.title)
+                                        .font(.system(size: 16.5, weight: .semibold))
+                                        .foregroundColor(.black)
+                                    Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
+                                        .font(.system(size: 13.8, weight: .regular))
+                                        .foregroundColor(.gray)
+                                }
+                                .frame(height: 50, alignment: .leading)
+                                .padding(.top, 3)
+                                .padding(.leading, 8)
+                                Spacer()
+                            }
+                            .padding(.leading, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+            }
+        }
+        .fullScreenCover(item: $selectedVideo) { video in
+            VideoPlayerScreen(
+                video: video,
+                character: nil,
+                anime: nil,
+                allVideos: videos
+            )
         }
     }
 }

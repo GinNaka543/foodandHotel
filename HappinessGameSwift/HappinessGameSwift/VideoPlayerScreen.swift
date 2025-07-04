@@ -55,8 +55,19 @@ struct VideoPlayerScreen: View {
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                             }
-                            Spacer()
-                            // 拡大ボタンをタイトルの右端に表示
+                            Spacer(minLength: 8)
+                            Button(action: {
+                                showMenuSheet = true
+                            }) {
+                                Text("編集")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.vertical, 6)
+                                    .padding(.horizontal, 16)
+                                    .background(Color.blue)
+                                    .cornerRadius(8)
+                            }
+                            .padding(.trailing, 4)
                             Button(action: {
                                 showFullscreen = true
                             }) {
@@ -174,6 +185,7 @@ struct VideoPlayerScreen: View {
                 .foregroundColor(.white)
                 .cornerRadius(10)
                 Button("動画を削除") {
+                    print("[DEBUG] 動画を削除ボタンが押されました")
                     showDeleteAlert = true
                 }
                 .foregroundColor(.red)
@@ -187,9 +199,13 @@ struct VideoPlayerScreen: View {
                     title: Text("本当に削除しますか？"),
                     message: Text("この動画は完全に削除されます。"),
                     primaryButton: .destructive(Text("削除")) {
+                        print("[DEBUG] Alertの削除ボタンが押されました")
                         onDelete?()
+                        print("[DEBUG] onDeleteクロージャ呼び出し完了")
                         showMenuSheet = false
+                        print("[DEBUG] showMenuSheet = \(showMenuSheet)")
                         presentationMode.wrappedValue.dismiss()
+                        print("[DEBUG] presentationModeで画面を閉じました")
                     },
                     secondaryButton: .cancel(Text("キャンセル"))
                 )

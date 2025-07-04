@@ -819,9 +819,52 @@ struct AnimeVideoScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            VStack(spacing: 32) {
-                                ForEach(videos) { video in
-                                    HStack(alignment: .top, spacing: 0) {
+                            if videos.isEmpty {
+                                Spacer().frame(minHeight: 100)
+                            } else {
+                                VStack(spacing: 16) {
+                                    ForEach(videos) { video in
+                                        HStack(alignment: .center, spacing: 16) {
+                                            if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                Image(uiImage: uiImage)
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: 176, height: 106)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                                    .clipped()
+                                            } else {
+                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                    .fill(Color.gray.opacity(0.3))
+                                                    .frame(width: 176, height: 106)
+                                            }
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(video.title)
+                                                    .font(.system(size: 13.5, weight: .semibold))
+                                                    .foregroundColor(.black)
+                                                Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
+                                                    .font(.system(size: 10.8, weight: .regular))
+                                                    .foregroundColor(.gray)
+                                            }
+                                            Spacer()
+                                        }
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 6)
+                                        .background(Color.clear)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            selectedVideo = video
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        ScrollView {
+                            if videos.isEmpty {
+                                Spacer().frame(minHeight: 100)
+                            } else {
+                                VStack(spacing: 16) {
+                                    ForEach(videos) { video in
                                         Button(action: {
                                             selectedVideo = video
                                         }) {
@@ -836,7 +879,7 @@ struct AnimeVideoScreen: View {
                                                                 .frame(width: geometry.size.width, height: 233)
                                                                 .clipped()
                                                         } else {
-                                                            RoundedRectangle(cornerRadius: 8)
+                                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                                 .fill(Color.gray.opacity(0.3))
                                                                 .frame(width: geometry.size.width, height: 233)
                                                         }
@@ -867,9 +910,21 @@ struct AnimeVideoScreen: View {
                                                         Text(video.title)
                                                             .font(.headline)
                                                             .foregroundColor(.black)
-                                                        Text("#nakajimaginsei")
+                                                        Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
                                                             .font(.caption)
                                                             .foregroundColor(.gray)
+                                                    }
+                                                    .offset(x: 10, y: -5)
+                                                    Spacer()
+                                                    // 3点リーダーボタン
+                                                    Button(action: {
+                                                        selectedVideo = video
+                                                        showMenuSheet = true
+                                                    }) {
+                                                        Image(systemName: "ellipsis.vertical")
+                                                            .font(.system(size: 23))
+                                                            .foregroundColor(.gray)
+                                                            .padding(.trailing, 20)
                                                     }
                                                 }
                                                 .padding(.top, 8)
@@ -878,108 +933,9 @@ struct AnimeVideoScreen: View {
                                             .padding(.vertical, 8)
                                         }
                                         .buttonStyle(PlainButtonStyle())
-                                        Spacer()
-                                        // 3点リーダー
-                                        Button(action: {
-                                            selectedVideo = video
-                                            showMenuSheet = true
-                                        }) {
-                                            Image(systemName: "ellipsis.vertical")
-                                                .font(.system(size: 23))
-                                                .foregroundColor(.gray)
-                                                .padding(.trailing, 20)
-                                        }
                                     }
-                                    .frame(maxWidth: .infinity)
                                 }
                             }
-                            .padding(.top, 8)
-                        }
-                        .sheet(item: $selectedVideo) { video in
-                            VideoPlayerScreen(
-                                video: video,
-                                character: nil as Character?,
-                                anime: anime as Anime?,
-                                allVideos: videos
-                            )
-                        }
-                        .actionSheet(isPresented: $showMenuSheet) {
-                            ActionSheet(title: Text("動画の編集/削除"), buttons: [
-                                .default(Text("タイトル編集")) {
-                                    showEditTitle = true
-                                },
-                                .destructive(Text("削除")) {
-                                    if let video = selectedVideo, let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                                        videos.remove(at: idx)
-                                        saveVideosToUserDefaults()
-                                    }
-                                },
-                                .cancel()
-                            ])
-                        }
-                    } else {
-                        ScrollView {
-                            VStack(spacing: 32) {
-                                ForEach(videos) { video in
-                                    Button(action: {
-                                        selectedVideo = video
-                                    }) {
-                                        VStack(alignment: .leading, spacing: 0) {
-                                            GeometryReader { geometry in
-                                                ZStack {
-                                                    Color.white
-                                                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                        Image(uiImage: uiImage)
-                                                            .resizable()
-                                                            .scaledToFill()
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
-                                                    } else {
-                                                        RoundedRectangle(cornerRadius: 8)
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                    }
-                                                }
-                                                .frame(width: geometry.size.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
-                                            }
-                                            .frame(height: 233)
-                                            HStack(alignment: .center, spacing: 12) {
-                                                if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                                                    Image(uiImage: image)
-                                                        .resizable()
-                                                        .aspectRatio(contentMode: .fill)
-                                                        .frame(width: 40, height: 40)
-                                                        .clipShape(Circle())
-                                                } else {
-                                                    Circle()
-                                                        .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: 40, height: 40)
-                                                        .overlay(
-                                                            Image(systemName: "film")
-                                                                .font(.system(size: 20))
-                                                                .foregroundColor(.gray)
-                                                        )
-                                                }
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    Text(video.title)
-                                                        .font(.headline)
-                                                        .foregroundColor(.black)
-                                                    Text("#nakajimaginsei")
-                                                        .font(.caption)
-                                                        .foregroundColor(.gray)
-                                                }
-                                            }
-                                            .padding(.top, 8)
-                                            .padding(.leading, 8)
-                                        }
-                                        .padding(.vertical, 8)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                            .padding(.top, 8)
                         }
                     }
                 }
@@ -1799,6 +1755,7 @@ struct AnimeDetailView: View {
         // アイコン編集モーダル（省略）
     }
 }
+
 
 
 

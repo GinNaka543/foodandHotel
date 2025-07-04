@@ -747,6 +747,7 @@ struct AnimeVideoScreen: View {
     @State private var selectedThumbnailData: Data? = nil
     @State private var expandedVideo: MemoryVideo? = nil
     @State private var playingVideoId: UUID? = nil
+    @State private var showMenuSheet = false
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -818,14 +819,83 @@ struct AnimeVideoScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            VideoAlbumGridView(videos: $videos, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, onVideoTap: { video in
-                                selectedVideo = video
-                            }, onVideosChanged: {
-                                print("AnimeVideoScreen: onVideosChanged呼び出し")
-                                saveVideosToUserDefaults()
-                            })
+                            VStack(spacing: 32) {
+                                ForEach(videos) { video in
+                                    HStack(alignment: .top, spacing: 0) {
+                                        Button(action: {
+                                            selectedVideo = video
+                                        }) {
+                                            VStack(alignment: .leading, spacing: 0) {
+                                                GeometryReader { geometry in
+                                                    ZStack {
+                                                        Color.white
+                                                        if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                            Image(uiImage: uiImage)
+                                                                .resizable()
+                                                                .scaledToFill()
+                                                                .frame(width: geometry.size.width, height: 233)
+                                                                .clipped()
+                                                        } else {
+                                                            RoundedRectangle(cornerRadius: 8)
+                                                                .fill(Color.gray.opacity(0.3))
+                                                                .frame(width: geometry.size.width, height: 233)
+                                                        }
+                                                    }
+                                                    .frame(width: geometry.size.width, height: 233)
+                                                    .clipped()
+                                                    .padding(.bottom, 0)
+                                                }
+                                                .frame(height: 233)
+                                                HStack(alignment: .center, spacing: 12) {
+                                                    if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                        Image(uiImage: image)
+                                                            .resizable()
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: 40, height: 40)
+                                                            .clipShape(Circle())
+                                                    } else {
+                                                        Circle()
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 40, height: 40)
+                                                            .overlay(
+                                                                Image(systemName: "film")
+                                                                    .font(.system(size: 20))
+                                                                    .foregroundColor(.gray)
+                                                            )
+                                                    }
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(video.title)
+                                                            .font(.headline)
+                                                            .foregroundColor(.black)
+                                                        Text("#nakajimaginsei")
+                                                            .font(.caption)
+                                                            .foregroundColor(.gray)
+                                                    }
+                                                }
+                                                .padding(.top, 8)
+                                                .padding(.leading, 8)
+                                            }
+                                            .padding(.vertical, 8)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        Spacer()
+                                        // 3点リーダー
+                                        Button(action: {
+                                            selectedVideo = video
+                                            showMenuSheet = true
+                                        }) {
+                                            Image(systemName: "ellipsis.vertical")
+                                                .font(.system(size: 23))
+                                                .foregroundColor(.gray)
+                                                .padding(.trailing, 20)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                            }
+                            .padding(.top, 8)
                         }
-                        .fullScreenCover(item: $selectedVideo) { (video: MemoryVideo) in
+                        .sheet(item: $selectedVideo) { video in
                             VideoPlayerScreen(
                                 video: video,
                                 character: nil as Character?,
@@ -833,62 +903,80 @@ struct AnimeVideoScreen: View {
                                 allVideos: videos
                             )
                         }
+                        .actionSheet(isPresented: $showMenuSheet) {
+                            ActionSheet(title: Text("動画の編集/削除"), buttons: [
+                                .default(Text("タイトル編集")) {
+                                    showEditTitle = true
+                                },
+                                .destructive(Text("削除")) {
+                                    if let video = selectedVideo, let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                        videos.remove(at: idx)
+                                        saveVideosToUserDefaults()
+                                    }
+                                },
+                                .cancel()
+                            ])
+                        }
                     } else {
                         ScrollView {
                             VStack(spacing: 32) {
                                 ForEach(videos) { video in
-                                    VStack(alignment: .leading, spacing: 0) {
-                                        GeometryReader { geometry in
-                                            ZStack {
-                                                Color.white
-                                                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                    Image(uiImage: uiImage)
+                                    Button(action: {
+                                        selectedVideo = video
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            GeometryReader { geometry in
+                                                ZStack {
+                                                    Color.white
+                                                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } else {
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                    }
+                                                }
+                                                .frame(width: geometry.size.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
+                                            }
+                                            .frame(height: 233)
+                                            HStack(alignment: .center, spacing: 12) {
+                                                if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                    Image(uiImage: image)
                                                         .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(width: 40, height: 40)
+                                                        .clipShape(Circle())
                                                 } else {
-                                                    RoundedRectangle(cornerRadius: 8)
+                                                    Circle()
                                                         .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .frame(width: 40, height: 40)
+                                                        .overlay(
+                                                            Image(systemName: "film")
+                                                                .font(.system(size: 20))
+                                                                .foregroundColor(.gray)
+                                                        )
+                                                }
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(video.title)
+                                                        .font(.headline)
+                                                        .foregroundColor(.black)
+                                                    Text("#nakajimaginsei")
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
                                                 }
                                             }
-                                            .frame(width: geometry.size.width, height: 233)
-                                            .clipped()
-                                            .padding(.bottom, 0)
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
                                         }
-                                        .frame(height: 233)
-                                        HStack(alignment: .center, spacing: 12) {
-                                            if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                                                Image(uiImage: image)
-                                                    .resizable()
-                                                    .aspectRatio(contentMode: .fill)
-                                                    .frame(width: 40, height: 40)
-                                                    .clipShape(Circle())
-                                            } else {
-                                                Circle()
-                                                    .fill(Color.gray.opacity(0.3))
-                                                    .frame(width: 40, height: 40)
-                                                    .overlay(
-                                                        Image(systemName: "film")
-                                                            .font(.system(size: 20))
-                                                            .foregroundColor(.gray)
-                                                    )
-                                            }
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(video.title)
-                                                    .font(.headline)
-                                                    .foregroundColor(.black)
-                                                Text("#nakajimaginsei")
-                                                    .font(.caption)
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .offset(x: 10, y: -5)
-                                        }
-                                        .padding(.top, 8)
-                                        .padding(.leading, 8)
+                                        .padding(.vertical, 8)
                                     }
-                                    .padding(.vertical, 8)
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
                             .padding(.top, 8)

@@ -7,6 +7,8 @@ struct VideoPlayerScreen: View {
     let character: Character?
     let anime: Anime?
     let allVideos: [MemoryVideo]
+    var onSave: ((String, String) -> Void)? = nil // タイトル・タグ保存用
+    var onDelete: (() -> Void)? = nil // 削除用
     @Environment(\.presentationMode) var presentationMode
     @State private var player: AVPlayer?
     @State private var isPlaying = false
@@ -14,98 +16,38 @@ struct VideoPlayerScreen: View {
     @State private var duration: Double = 0
     @State private var showControls = true
     @State private var selectedVideo: MemoryVideo?
+    @State private var hideControlsWorkItem: DispatchWorkItem?
+    @State private var showMenuSheet = false
+    @State private var editTitle: String = ""
+    @State private var editTags: String = ""
+    @State private var showDeleteAlert = false
+    @State private var showFullscreen = false
+    // フルスクリーン用
+    @State private var fullscreenShowControls = true
+    @State private var fullscreenPlayer: AVPlayer? = nil
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Color.black.ignoresSafeArea()
-                
                 VStack(spacing: 0) {
-                    // ヘッダー
-                    HStack {
-                        Button(action: {
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.white)
-                        }
-                        Spacer()
-                        Text(video.title)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        Spacer()
-                        Button(action: {
-                            // 共有機能など
-                        }) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.white)
-                        }
+                    ZStack(alignment: .topLeading) {
+                        VideoPlayer(player: player)
+                            .aspectRatio(16.0/9.0, contentMode: .fill)
+                            .frame(width: geometry.size.width, height: geometry.size.height < geometry.size.width ? geometry.size.height : geometry.size.width * 9.0 / 16.0)
+                            .clipped()
+                            .background(Color.black)
+                            .padding(.top, -10)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                    .padding(.bottom, 12)
-                    
-                    // 動画プレイヤー
-                    ZStack {
-                        if let player = player {
-                            VideoPlayer(player: player)
-                                .aspectRatio(16/9, contentMode: .fit)
-                                .onTapGesture {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        showControls.toggle()
-                                    }
-                                }
-                        } else {
-                            Rectangle()
-                                .fill(Color.black)
-                                .aspectRatio(16/9, contentMode: .fit)
-                                .overlay(
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                        .scaleEffect(1.5)
-                                )
-                        }
-                        
-                        // コントロールオーバーレイ
-                        if showControls {
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    Button(action: {
-                                        if isPlaying {
-                                            player?.pause()
-                                        } else {
-                                            player?.play()
-                                        }
-                                        isPlaying.toggle()
-                                    }) {
-                                        Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.white)
-                                            .frame(width: 50, height: 50)
-                                            .background(Color.black.opacity(0.6))
-                                            .clipShape(Circle())
-                                    }
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 20)
-                            }
-                        }
-                    }
-                    
-                    // 動画情報
+                    .frame(width: geometry.size.width, height: geometry.size.height < geometry.size.width ? geometry.size.height : geometry.size.width * 9.0 / 16.0)
+                    .background(Color.black)
+                    // --- 動画情報・関連動画 ---
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(video.title)
                                     .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.black)
                                     .lineLimit(2)
-                                
                                 Text("#" + (video.tags.isEmpty ? "nakajimaginsei" : video.tags.joined(separator: " #")))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
@@ -114,14 +56,12 @@ struct VideoPlayerScreen: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
-                        
                         // 関連動画
                         VStack(alignment: .leading, spacing: 12) {
                             Text("関連動画")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 16)
-                            
                             ScrollView {
                                 LazyVStack(spacing: 12) {
                                     ForEach(allVideos.filter { $0.id != video.id }, id: \.id) { relatedVideo in
@@ -129,7 +69,6 @@ struct VideoPlayerScreen: View {
                                             selectedVideo = relatedVideo
                                         }) {
                                             HStack(spacing: 12) {
-                                                // サムネイル
                                                 if let thumbnailData = relatedVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
@@ -141,15 +80,12 @@ struct VideoPlayerScreen: View {
                                                         .fill(Color.gray.opacity(0.3))
                                                         .frame(width: 120, height: 68)
                                                 }
-                                                
-                                                // 動画情報
                                                 VStack(alignment: .leading, spacing: 4) {
                                                     Text(relatedVideo.title)
                                                         .font(.system(size: 14, weight: .medium))
                                                         .foregroundColor(.white)
                                                         .lineLimit(2)
                                                         .multilineTextAlignment(.leading)
-                                                    
                                                     Text("#" + (relatedVideo.tags.isEmpty ? "nakajimaginsei" : relatedVideo.tags.joined(separator: " #")))
                                                         .font(.system(size: 12))
                                                         .foregroundColor(.gray)
@@ -165,25 +101,102 @@ struct VideoPlayerScreen: View {
                             }
                         }
                     }
-                    .background(Color.black)
+                }
+                // 画面全体の右下に戻るボタン
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Text("戻る")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color.black.opacity(0.8))
+                                .cornerRadius(20)
+                        }
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
+                    }
                 }
             }
         }
         .navigationBarHidden(true)
         .onAppear {
             setupPlayer()
+            editTitle = video.title
+            editTags = video.tags.joined(separator: ",")
+            player?.play()
+            isPlaying = true
         }
         .onDisappear {
             player?.pause()
             player = nil
         }
-        .fullScreenCover(item: $selectedVideo) { newVideo in
-            VideoPlayerScreen(
-                video: newVideo,
-                character: character,
-                anime: anime,
-                allVideos: allVideos
-            )
+        .fullScreenCover(isPresented: $showFullscreen) {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                GeometryReader { geo in
+                    ZStack {
+                        VideoPlayer(player: fullscreenPlayer)
+                            .frame(width: geo.size.width, height: geo.size.height)
+                            .background(Color.black)
+                            .onTapGesture {
+                                withAnimation { fullscreenShowControls.toggle() }
+                            }
+                    }
+                }
+            }
+            .onAppear {
+                fullscreenPlayer?.play()
+            }
+            .onDisappear {
+                fullscreenPlayer?.pause()
+                fullscreenPlayer = nil
+            }
+        }
+        // --- 編集・削除用シート ---
+        .sheet(isPresented: $showMenuSheet) {
+            VStack(spacing: 24) {
+                Text("動画の編集")
+                    .font(.headline)
+                TextField("タイトル", text: $editTitle)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                TextField("タグ（カンマ区切り）", text: $editTags)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                Button("タイトル・タグを保存") {
+                    onSave?(editTitle, editTags)
+                    showMenuSheet = false
+                }
+                .font(.headline)
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                Button("動画を削除") {
+                    showDeleteAlert = true
+                }
+                .foregroundColor(.red)
+                Button("キャンセル") {
+                    showMenuSheet = false
+                }
+            }
+            .padding(32)
+            .alert(isPresented: $showDeleteAlert) {
+                Alert(
+                    title: Text("本当に削除しますか？"),
+                    message: Text("この動画は完全に削除されます。"),
+                    primaryButton: .destructive(Text("削除")) {
+                        onDelete?()
+                        showMenuSheet = false
+                        presentationMode.wrappedValue.dismiss()
+                    },
+                    secondaryButton: .cancel(Text("キャンセル"))
+                )
+            }
         }
     }
     
@@ -202,5 +215,16 @@ struct VideoPlayerScreen: View {
         player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { time in
             currentTime = CMTimeGetSeconds(time)
         }
+    }
+
+    private func resetHideControlsTimer() {
+        hideControlsWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            withAnimation {
+                showControls = false
+            }
+        }
+        hideControlsWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
     }
 } 

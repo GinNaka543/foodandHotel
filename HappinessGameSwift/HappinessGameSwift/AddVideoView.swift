@@ -16,6 +16,8 @@ struct AddVideoView: View {
     @State private var player: AVPlayer?
     @State private var thumbnailImages: [UIImage] = []
     @State private var selectedThumbnailIndex: Int = 0
+    @State private var isExporting = false
+    @State private var exportError: String? = nil
     
     var body: some View {
         NavigationView {
@@ -117,11 +119,40 @@ struct AddVideoView: View {
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("保存") {
-                        onSave()
+                        if let url = selectedVideoURL {
+                            isExporting = true
+                            exportVideoTo1980x1080(inputURL: url) { exportedURL in
+                                DispatchQueue.main.async {
+                                    isExporting = false
+                                    if let exportedURL = exportedURL {
+                                        selectedVideoURL = exportedURL
+                                        onSave()
+                                    } else {
+                                        exportError = "動画のリサイズ保存に失敗しました"
+                                    }
+                                }
+                            }
+                        }
                     }
-                    .disabled(selectedVideoURL == nil)
+                    .disabled(selectedVideoURL == nil || isExporting)
                 }
             }
+            .alert(isPresented: Binding<Bool>(get: { exportError != nil }, set: { _ in exportError = nil })) {
+                Alert(title: Text("エラー"), message: Text(exportError ?? ""), dismissButton: .default(Text("OK")))
+            }
+            .overlay(
+                Group {
+                    if isExporting {
+                        ZStack {
+                            Color.black.opacity(0.3).ignoresSafeArea()
+                            ProgressView("動画を変換中...")
+                                .padding()
+                                .background(Color.white)
+                                .cornerRadius(12)
+                        }
+                    }
+                }
+            )
         }
         .onChange(of: selectedItem) { oldValue, newValue in
             Task {
@@ -168,6 +199,26 @@ struct AddVideoView: View {
         if !thumbnailImages.isEmpty {
             selectedThumbnailIndex = 1
             selectedThumbnailData = thumbnailImages[1].jpegData(compressionQuality: 0.8)
+        }
+    }
+    
+    // 1980x1080へリサイズしてエクスポート
+    func exportVideoTo1980x1080(inputURL: URL, completion: @escaping (URL?) -> Void) {
+        let asset = AVAsset(url: inputURL)
+        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPreset1920x1080) else {
+            completion(nil)
+            return
+        }
+        let outputURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
+        exportSession.outputURL = outputURL
+        exportSession.outputFileType = .mp4
+        exportSession.shouldOptimizeForNetworkUse = true
+        exportSession.exportAsynchronously {
+            if exportSession.status == .completed {
+                completion(outputURL)
+            } else {
+                completion(nil)
+            }
         }
     }
 }

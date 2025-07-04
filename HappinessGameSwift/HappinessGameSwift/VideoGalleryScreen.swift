@@ -125,61 +125,74 @@ struct VideoGalleryScreen: View {
                         ScrollView {
                             VStack(spacing: 16) {
                                 ForEach(videos) { video in
-                                    VStack(alignment: .leading, spacing: 0) {
-                                        GeometryReader { geometry in
-                                            ZStack {
-                                                Color.white
-                                                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
-                                                } else {
-                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                        .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: geometry.size.width, height: 233)
+                                    Button(action: {
+                                        selectedVideo = video
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            GeometryReader { geometry in
+                                                ZStack {
+                                                    Color.white
+                                                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } else {
+                                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                    }
                                                 }
+                                                .frame(width: geometry.size.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
                                             }
-                                            .frame(width: geometry.size.width, height: 233)
-                                            .clipped()
-                                            .padding(.bottom, 0)
+                                            .frame(height: 233)
+                                            HStack(alignment: .center, spacing: 12) {
+                                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                    Image(uiImage: image)
+                                                        .resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(width: 40, height: 40)
+                                                        .clipShape(Circle())
+                                                } else {
+                                                    Circle()
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: 40, height: 40)
+                                                        .overlay(
+                                                            Image(systemName: "person")
+                                                                .font(.system(size: 20))
+                                                                .foregroundColor(.gray)
+                                                        )
+                                                }
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(video.title)
+                                                        .font(.headline)
+                                                        .foregroundColor(.black)
+                                                    Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
+                                                }
+                                                .offset(x: 10, y: -5)
+                                            }
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
                                         }
-                                        .frame(height: 233)
-                                        HStack(alignment: .center, spacing: 12) {
-                                            if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                                                Image(uiImage: image)
-                                                    .resizable()
-                                                    .aspectRatio(contentMode: .fill)
-                                                    .frame(width: 40, height: 40)
-                                                    .clipShape(Circle())
-                                            } else {
-                                                Circle()
-                                                    .fill(Color.gray.opacity(0.3))
-                                                    .frame(width: 40, height: 40)
-                                                    .overlay(
-                                                        Image(systemName: "person")
-                                                            .font(.system(size: 20))
-                                                            .foregroundColor(.gray)
-                                                    )
-                                            }
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(video.title)
-                                                    .font(.headline)
-                                                    .foregroundColor(.black)
-                                                Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
-                                                    .font(.caption)
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .offset(x: 10, y: -5)
-                                        }
-                                        .padding(.top, 8)
-                                        .padding(.leading, 8)
+                                        .padding(.vertical, 8)
                                     }
-                                    .padding(.vertical, 8)
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
                             .padding(.top, 8)
+                        }
+                        .fullScreenCover(item: $selectedVideo) { (video: MemoryVideo) in
+                            VideoPlayerScreen(
+                                video: video,
+                                character: character as Character?,
+                                anime: nil as Anime?,
+                                allVideos: videos
+                            )
                         }
                     }
                 }

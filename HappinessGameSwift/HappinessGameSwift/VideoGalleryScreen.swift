@@ -3,6 +3,7 @@ import AVKit
 import PhotosUI
 import Foundation
 import UIKit
+import AVFoundation
 
 struct MemoryVideo: Identifiable, Codable {
     let id: UUID
@@ -106,11 +107,19 @@ struct VideoGalleryScreen: View {
                     if showAlbum {
                         ScrollView {
                             VideoAlbumGridView(videos: $videos, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, onVideoTap: { video in
-                                playVideoDirectly(video: video)
+                                selectedVideo = video
                             }, onVideosChanged: {
                                 print("VideoGalleryScreen: onVideosChanged呼び出し")
                                 saveVideosToUserDefaults()
                             })
+                        }
+                        .fullScreenCover(item: $selectedVideo) { (video: MemoryVideo) in
+                            VideoPlayerScreen(
+                                video: video,
+                                character: character as Character?,
+                                anime: nil as Anime?,
+                                allVideos: videos
+                            )
                         }
                     } else {
                         ScrollView {
@@ -162,6 +171,7 @@ struct VideoGalleryScreen: View {
                                                     .font(.caption)
                                                     .foregroundColor(.gray)
                                             }
+                                            .offset(x: 10, y: -5)
                                         }
                                         .padding(.top, 8)
                                         .padding(.leading, 8)
@@ -235,7 +245,7 @@ struct VideoGalleryScreen: View {
                     Spacer()
                     VideoThumbnailPlayer(video: video, isInModal: true, onTap: {
                         // モーダル内では再生
-                        playVideoDirectly(video: video)
+                        // 再生機能は削除済み
                     })
                         .frame(maxWidth: .infinity, minHeight: (UIScreen.main.bounds.width) * 9 / 16, maxHeight: (UIScreen.main.bounds.width) * 9 / 16)
                         .cornerRadius(0)
@@ -466,11 +476,7 @@ struct VideoGalleryScreen: View {
         }
     }
     
-    // Videoタブ用の直接再生関数
-    private func playVideoDirectly(video: MemoryVideo) {
-        print("playVideoDirectly called for video: \(video.title)") // デバッグ用
-        playingVideoId = video.id
-    }
+
     
     private func saveVideo() async {
         guard let videoURL = selectedVideoURL else { return }
@@ -660,6 +666,7 @@ struct VideoAlbumGridView: View {
                                 .font(.system(size: 10.8, weight: .regular))
                                 .foregroundColor(.gray)
                         }
+                        .offset(x: 10, y: -5)
                         Spacer()
                     }
                     .padding(.horizontal, 8)
@@ -692,198 +699,13 @@ struct VideoAlbumGridView: View {
                 }
             }
         }
-        .sheet(item: $expandedVideo) { video in
-            ZStack(alignment: .bottomTrailing) {
-                VStack {
-                    Spacer()
-                    VideoThumbnailPlayer(video: video, isInModal: true, onTap: {
-                        // モーダル内では再生
-                        onVideoTap?(video)
-                    })
-                        .frame(maxWidth: .infinity, minHeight: (UIScreen.main.bounds.width) * 9 / 16, maxHeight: (UIScreen.main.bounds.width) * 9 / 16)
-                        .cornerRadius(0)
-                    VStack(alignment: .center, spacing: 16) {
-                        HStack(spacing: 8) {
-                            // 常にvideos配列から最新の値を取得
-                            Text(videos.first(where: { $0.id == video.id })?.title ?? video.title)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                            Button(action: {
-                                editText = videos.first(where: { $0.id == video.id })?.title ?? video.title
-                                showEditTitle = true
-                            }) {
-                                Image(systemName: "pencil")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        if !(videos.first(where: { $0.id == video.id })?.tags ?? video.tags).isEmpty {
-                            HStack(spacing: 8) {
-                                // 常にvideos配列から最新の値を取得
-                                Text("#" + (videos.first(where: { $0.id == video.id })?.tags ?? video.tags).joined(separator: " #"))
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                                Button(action: {
-                                    editText = (videos.first(where: { $0.id == video.id })?.tags ?? video.tags).joined(separator: ",")
-                                    showEditTags = true
-                                }) {
-                                    Image(systemName: "pencil")
-                                        .foregroundColor(.blue)
-                                }
-                            }
-                        }
-                    }
-                    Spacer()
-                }
-                // 閉じるボタンを中央下、ゴミ箱ボタンを右下に配置
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            expandedVideo = nil
-                        }) {
-                            Text("閉じる")
-                                .font(.headline)
-                                .foregroundColor(.blue)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 12)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(20)
-                        }
-                        Spacer()
-                    }
-                    .padding(.bottom, 24)
-                    .padding(.leading, 42)
-                }
-                Button(action: {
-                    deletingVideoID = video.id
-                    showDeleteAlert = true
-                }) {
-                    ZStack {
-                        Color.clear
-                        Image(systemName: "trash")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(.black)
-                    }
-                    .frame(width: 44, height: 44) // 高さを閉じるボタンと揃える
-                }
-                .padding(.bottom, 24)
-                .padding(.trailing, 24)
-
-                // --- 編集用ポップアップ ---
-                if showEditTitle {
-                    Color.black.opacity(0.25)
-                        .edgesIgnoringSafeArea(.all)
-                    VStack(spacing: 20) {
-                        Text("タイトル名を編集")
-                            .font(.headline)
-                            .padding(.top, 12)
-                        TextField("タイトル", text: $editText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.system(size: 18))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                        HStack(spacing: 24) {
-                            Button(action: { showEditTitle = false }) {
-                                Text("キャンセル")
-                                    .foregroundColor(.blue)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                            }
-                            Button(action: {
-                                if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                                    var updated = videos[idx]
-                                    updated.title = editText
-                                    videos[idx] = updated
-                                    print("VideoAlbumGridView: タイトル編集 - \(editText)")
-                                    onVideosChanged?()
-                                }
-                                showEditTitle = false
-                                expandedVideo = nil
-                            }) {
-                                Text("保存")
-                                    .foregroundColor(.blue)
-                                    .fontWeight(.bold)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                            }
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 8)
-                    }
-                    .background(Color.white)
-                    .cornerRadius(18)
-                    .shadow(radius: 16)
-                    .frame(maxWidth: 340)
-                    .padding(.horizontal, 32)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                }
-                if showEditTags {
-                    Color.black.opacity(0.25)
-                        .edgesIgnoringSafeArea(.all)
-                    VStack(spacing: 20) {
-                        Text("タグを編集")
-                            .font(.headline)
-                            .padding(.top, 12)
-                        TextField("タグ（カンマ区切り）", text: $editText)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .font(.system(size: 18))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                        HStack(spacing: 24) {
-                            Button(action: { showEditTags = false }) {
-                                Text("キャンセル")
-                                    .foregroundColor(.blue)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                            }
-                            Button(action: {
-                                if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                                    var updated = videos[idx]
-                                    updated.tags = editText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                                    videos[idx] = updated
-                                    print("VideoAlbumGridView: タグ編集 - \(editText)")
-                                    onVideosChanged?()
-                                }
-                                showEditTags = false
-                                expandedVideo = nil
-                            }) {
-                                Text("保存")
-                                    .foregroundColor(.blue)
-                                    .fontWeight(.bold)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                            }
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.bottom, 8)
-                    }
-                    .background(Color.white)
-                    .cornerRadius(18)
-                    .shadow(radius: 16)
-                    .frame(maxWidth: 340)
-                    .padding(.horizontal, 32)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                }
-                // --- END 編集用ポップアップ ---
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 32)
-            .alert(isPresented: $showDeleteAlert) {
-                Alert(
-                    title: Text("動画を削除しますか？"),
-                    message: Text("この動画は完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
-                        if let id = deletingVideoID {
-                            deleteVideo(id: id)
-                            expandedVideo = nil
-                        }
-                    },
-                    secondaryButton: .cancel(Text("キャンセル"))
-                )
-            }
+        .fullScreenCover(item: $expandedVideo) { (video: MemoryVideo) in
+            VideoPlayerScreen(
+                video: video,
+                character: nil as Character?,
+                anime: nil as Anime?,
+                allVideos: videos
+            )
         }
     }
     

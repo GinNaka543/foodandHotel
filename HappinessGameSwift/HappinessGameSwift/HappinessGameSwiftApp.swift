@@ -16,7 +16,7 @@ struct HappinessGameSwiftApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainContainerView()
                 .environmentObject(mainTab)
                 .environmentObject(characterManager)
                 .environmentObject(animeManager)

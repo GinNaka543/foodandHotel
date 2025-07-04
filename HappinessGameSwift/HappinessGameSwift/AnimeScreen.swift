@@ -645,7 +645,7 @@ struct AnimeArtworkScreen: View {
     }
     
     private func saveArtwork() {
-        guard let image = selectedImage, let imageData = image.jpegData(compressionQuality: 0.8) else { return }
+        guard let image = selectedImage, let _ = image.jpegData(compressionQuality: 0.8) else { return }
         let tags = photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         // 画像を保存
         let fileName = "anime_artwork_\(UUID().uuidString).png"
@@ -819,11 +819,19 @@ struct AnimeVideoScreen: View {
                     if showAlbum {
                         ScrollView {
                             VideoAlbumGridView(videos: $videos, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, onVideoTap: { video in
-                                playVideoDirectly(video: video)
+                                selectedVideo = video
                             }, onVideosChanged: {
                                 print("AnimeVideoScreen: onVideosChanged呼び出し")
                                 saveVideosToUserDefaults()
                             })
+                        }
+                        .fullScreenCover(item: $selectedVideo) { (video: MemoryVideo) in
+                            VideoPlayerScreen(
+                                video: video,
+                                character: nil as Character?,
+                                anime: anime as Anime?,
+                                allVideos: videos
+                            )
                         }
                     } else {
                         ScrollView {
@@ -875,6 +883,7 @@ struct AnimeVideoScreen: View {
                                                     .font(.caption)
                                                     .foregroundColor(.gray)
                                             }
+                                            .offset(x: 10, y: -5)
                                         }
                                         .padding(.top, 8)
                                         .padding(.leading, 8)
@@ -997,23 +1006,34 @@ struct AnimeVideoScreen: View {
     }
     
     private func generateThumbnail(from url: URL) -> Data? {
-        let asset = AVAsset(url: url)
+        let asset = AVURLAsset(url: url)
         let imageGenerator = AVAssetImageGenerator(asset: asset)
         imageGenerator.appliesPreferredTrackTransform = true
         
-        do {
-            let cgImage = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
-            let thumbnail = UIImage(cgImage: cgImage)
-            return thumbnail.jpegData(compressionQuality: 0.8)
-        } catch {
-            print("サムネイル生成エラー: \(error)")
+        let semaphore = DispatchSemaphore(value: 0)
+        var resultImage: UIImage?
+        var resultError: Error?
+        
+        imageGenerator.generateCGImageAsynchronously(for: .zero) { cgImage, time, error in
+            if let cgImage = cgImage {
+                resultImage = UIImage(cgImage: cgImage)
+            } else {
+                resultError = error
+            }
+            semaphore.signal()
+        }
+        
+        semaphore.wait()
+        
+        if let resultImage = resultImage {
+            return resultImage.jpegData(compressionQuality: 0.8)
+        } else {
+            print("サムネイル生成エラー: \(resultError?.localizedDescription ?? "Unknown error")")
             return nil
         }
     }
     
-    private func playVideoDirectly(video: MemoryVideo) {
-        selectedVideo = video
-    }
+
 }
 
 struct AnimeAboutView: View {
@@ -1418,7 +1438,7 @@ struct AddAnimeSheet: View {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                     image = uiImage
                                     let fileName = "anime_icon_\(UUID().uuidString).png"
-                                    if let imagePath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                    if saveImageToDocuments(uiImage, fileName: fileName) != nil {
                                         // AnimeのimageIdentifierにパスを保存
                                     }
                                 }

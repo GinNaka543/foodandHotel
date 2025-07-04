@@ -22,13 +22,14 @@ struct VideoPlayerScreen: View {
     @State private var editTags: String = ""
     @State private var showDeleteAlert = false
     @State private var showFullscreen = false
+    @State private var showExpandButton = false
     // フルスクリーン用
     @State private var fullscreenShowControls = true
     @State private var fullscreenPlayer: AVPlayer? = nil
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
+            ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
                     ZStack(alignment: .topLeading) {
                         VideoPlayer(player: player)
@@ -37,12 +38,14 @@ struct VideoPlayerScreen: View {
                             .clipped()
                             .background(Color.black)
                             .padding(.top, -10)
+                        // AirPlayロゴの位置を10px下げる
+                        Spacer().frame(height: 10)
                     }
                     .frame(width: geometry.size.width, height: geometry.size.height < geometry.size.width ? geometry.size.height : geometry.size.width * 9.0 / 16.0)
                     .background(Color.black)
                     // --- 動画情報・関連動画 ---
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack {
+                        HStack(alignment: .center) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(video.title)
                                     .font(.system(size: 18, weight: .bold))
@@ -53,6 +56,18 @@ struct VideoPlayerScreen: View {
                                     .foregroundColor(.gray)
                             }
                             Spacer()
+                            // 拡大ボタンをタイトルの右端に表示
+                            Button(action: {
+                                showFullscreen = true
+                            }) {
+                                Image(systemName: "arrow.up.left.and.arrow.down.right.square")
+                                    .font(.system(size: 21, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(Color.black.opacity(0.7))
+                                    .clipShape(Circle())
+                            }
+                            .padding(.trailing, 8)
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
@@ -122,6 +137,10 @@ struct VideoPlayerScreen: View {
                         .padding(.bottom, 24)
                     }
                 }
+                // フルスクリーンView
+                .fullScreenCover(isPresented: $showFullscreen) {
+                    FullScreenVideoPlayer(player: player, onDismiss: { showFullscreen = false })
+                }
             }
         }
         .navigationBarHidden(true)
@@ -135,28 +154,6 @@ struct VideoPlayerScreen: View {
         .onDisappear {
             player?.pause()
             player = nil
-        }
-        .fullScreenCover(isPresented: $showFullscreen) {
-            ZStack {
-                Color.black.ignoresSafeArea()
-                GeometryReader { geo in
-                    ZStack {
-                        VideoPlayer(player: fullscreenPlayer)
-                            .frame(width: geo.size.width, height: geo.size.height)
-                            .background(Color.black)
-                            .onTapGesture {
-                                withAnimation { fullscreenShowControls.toggle() }
-                            }
-                    }
-                }
-            }
-            .onAppear {
-                fullscreenPlayer?.play()
-            }
-            .onDisappear {
-                fullscreenPlayer?.pause()
-                fullscreenPlayer = nil
-            }
         }
         // --- 編集・削除用シート ---
         .sheet(isPresented: $showMenuSheet) {
@@ -226,5 +223,35 @@ struct VideoPlayerScreen: View {
         }
         hideControlsWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
+    }
+}
+
+// フルスクリーン用のViewを追加
+struct FullScreenVideoPlayer: View {
+    var player: AVPlayer?
+    var onDismiss: () -> Void
+    @State private var showControls = true
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+            VideoPlayer(player: player)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    withAnimation { showControls.toggle() }
+                }
+            if showControls {
+                Button(action: { onDismiss() }) {
+                    Text("戻る")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(20)
+                }
+                .padding(.trailing, 24)
+                .padding(.top, 24)
+            }
+        }
     }
 } 

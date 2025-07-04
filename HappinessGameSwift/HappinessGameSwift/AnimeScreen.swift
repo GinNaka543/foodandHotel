@@ -747,8 +747,9 @@ struct AnimeVideoScreen: View {
     @State private var selectedThumbnailData: Data? = nil
     @State private var expandedVideo: MemoryVideo? = nil
     @State private var playingVideoId: UUID? = nil
-    @State private var showMenuSheet = false
-    
+    @State private var albums: [Album] = []
+    @State private var selectedAlbum: Album? = nil
+
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
@@ -814,128 +815,124 @@ struct AnimeVideoScreen: View {
                     Spacer(minLength: 80)
                 }
                 .frame(height: 40)
-                
                 // 動画リスト or Album
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            if videos.isEmpty {
-                                Spacer().frame(minHeight: 100)
-                            } else {
-                                VStack(spacing: 16) {
-                                    ForEach(videos) { video in
-                                        HStack(alignment: .center, spacing: 16) {
+                            VStack(spacing: 4) {
+                                Spacer().frame(height: 5)
+                                // --- アルバムリスト ---
+                                ForEach(albums) { album in
+                                    Button(action: {
+                                        selectedAlbum = album
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                GeometryReader { geometry in
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(height: 233)
+                                            } else {
+                                                GeometryReader { geometry in
+                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                }
+                                                .frame(height: 233)
+                                            }
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("#" + album.tag)
+                                                    .font(.system(size: 15.5, weight: .semibold))
+                                                    .foregroundColor(.black)
+                                            }
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
+                                        }
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                        }
+                        .fullScreenCover(item: $selectedAlbum) { album in
+                            AlbumVideoListScreen(videos: album.videos, tag: album.tag)
+                        }
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                Spacer().frame(height: 5)
+                                ForEach(Array(videos.enumerated()), id: \ .element.id) { idx, video in
+                                    if idx > 0 {
+                                        Spacer().frame(height: 35)
+                                    }
+                                    Button(action: {
+                                        selectedVideo = video
+                                    }) {
+                                        HStack(alignment: .top, spacing: 16) {
                                             if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
                                                 Image(uiImage: uiImage)
                                                     .resizable()
                                                     .scaledToFill()
-                                                    .frame(width: 176, height: 106)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                                    .frame(width: 183, height: 109)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                     .clipped()
                                             } else {
-                                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                     .fill(Color.gray.opacity(0.3))
-                                                    .frame(width: 176, height: 106)
+                                                    .frame(width: 183, height: 109)
                                             }
                                             VStack(alignment: .leading, spacing: 4) {
                                                 Text(video.title)
-                                                    .font(.system(size: 13.5, weight: .semibold))
+                                                    .font(.system(size: 16.5, weight: .semibold))
                                                     .foregroundColor(.black)
+                                                    .padding(.vertical, 8)
                                                 Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
-                                                    .font(.system(size: 10.8, weight: .regular))
+                                                    .font(.system(size: 13.8, weight: .regular))
                                                     .foregroundColor(.gray)
+                                                    .padding(.vertical, 2)
                                             }
+                                            .frame(height: 50, alignment: .leading)
+                                            .padding(.top, 3)
+                                            .padding(.leading, 8)
                                             Spacer()
+                                            Button(action: {
+                                                selectedVideo = video
+                                                showEditTitle = true // 必要に応じてActionSheetや編集処理
+                                            }) {
+                                                Image(systemName: "ellipsis.vertical")
+                                                    .font(.system(size: 23))
+                                                    .foregroundColor(.black)
+                                                    .padding(.trailing, 8)
+                                            }
                                         }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 6)
-                                        .background(Color.clear)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            selectedVideo = video
-                                        }
+                                        .padding(.leading, 8)
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
                         }
-                    } else {
-                        ScrollView {
-                            if videos.isEmpty {
-                                Spacer().frame(minHeight: 100)
-                            } else {
-                                VStack(spacing: 16) {
-                                    ForEach(videos) { video in
-                                        Button(action: {
-                                            selectedVideo = video
-                                        }) {
-                                            VStack(alignment: .leading, spacing: 0) {
-                                                GeometryReader { geometry in
-                                                    ZStack {
-                                                        Color.white
-                                                        if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                            Image(uiImage: uiImage)
-                                                                .resizable()
-                                                                .scaledToFill()
-                                                                .frame(width: geometry.size.width, height: 233)
-                                                                .clipped()
-                                                        } else {
-                                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                                .fill(Color.gray.opacity(0.3))
-                                                                .frame(width: geometry.size.width, height: 233)
-                                                        }
-                                                    }
-                                                    .frame(width: geometry.size.width, height: 233)
-                                                    .clipped()
-                                                    .padding(.bottom, 0)
-                                                }
-                                                .frame(height: 233)
-                                                HStack(alignment: .center, spacing: 12) {
-                                                    if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                                                        Image(uiImage: image)
-                                                            .resizable()
-                                                            .aspectRatio(contentMode: .fill)
-                                                            .frame(width: 40, height: 40)
-                                                            .clipShape(Circle())
-                                                    } else {
-                                                        Circle()
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: 40, height: 40)
-                                                            .overlay(
-                                                                Image(systemName: "film")
-                                                                    .font(.system(size: 20))
-                                                                    .foregroundColor(.gray)
-                                                            )
-                                                    }
-                                                    VStack(alignment: .leading, spacing: 2) {
-                                                        Text(video.title)
-                                                            .font(.headline)
-                                                            .foregroundColor(.black)
-                                                        Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
-                                                            .font(.caption)
-                                                            .foregroundColor(.gray)
-                                                    }
-                                                    .offset(x: 10, y: -5)
-                                                    Spacer()
-                                                    // 3点リーダーボタン
-                                                    Button(action: {
-                                                        selectedVideo = video
-                                                        showMenuSheet = true
-                                                    }) {
-                                                        Image(systemName: "ellipsis.vertical")
-                                                            .font(.system(size: 23))
-                                                            .foregroundColor(.gray)
-                                                            .padding(.trailing, 20)
-                                                    }
-                                                }
-                                                .padding(.top, 8)
-                                                .padding(.leading, 8)
-                                            }
-                                            .padding(.vertical, 8)
-                                        }
-                                        .buttonStyle(PlainButtonStyle())
+                        .fullScreenCover(item: $selectedVideo) { video in
+                            VideoPlayerScreen(
+                                video: video,
+                                character: nil,
+                                anime: anime,
+                                allVideos: videos,
+                                onSave: { newTitle, newTags in
+                                    // 編集処理（必要ならここも拡張）
+                                },
+                                onDelete: {
+                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                        videos.remove(at: idx)
+                                        saveVideosToUserDefaults()
+                                        print("[DEBUG] AnimeVideoScreen: 動画削除 - ID: \(video.id)")
+                                    } else {
+                                        print("[DEBUG] AnimeVideoScreen: 削除対象が見つかりませんでした - ID: \(video.id)")
                                     }
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -960,10 +957,13 @@ struct AnimeVideoScreen: View {
                         TextField("#タグ名", text: $newTag)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal, 24)
-                        Button("追加") {
+                        Button("保存") {
                             let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !tag.isEmpty && !filteredTags.contains(tag) {
-                                filteredTags.append(tag)
+                            if !tag.isEmpty {
+                                let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
+                                if !tagVideos.isEmpty {
+                                    albums.append(Album(tag: tag, videos: tagVideos))
+                                }
                             }
                             newTag = ""
                             showTagInput = false
@@ -988,31 +988,46 @@ struct AnimeVideoScreen: View {
         }
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData) {
-                if !videoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !videoTags.trimmingCharacters(in: .whitespaces).isEmpty {
-                    saveVideo()
+                if selectedVideoURL != nil && !videoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !videoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Task {
+                        await saveVideo()
+                    }
                 }
             }
         }
     }
     
-    private func saveVideo() {
+    private func saveVideo() async {
         guard let videoURL = selectedVideoURL else { return }
-        let tags = videoTags.isEmpty ? [] : videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        let tags = videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         
         // 動画ファイルをDocumentsディレクトリに保存
         let fileName = "anime_video_\(UUID().uuidString).mov"
         let documentsPath = saveVideoToDocuments(from: videoURL, fileName: fileName)
         
         // サムネイル生成
-        let thumbnailData = generateThumbnail(from: videoURL)
+        var thumbnailData: Data? = selectedThumbnailData
+        if thumbnailData == nil {
+            let asset = AVURLAsset(url: videoURL)
+            let imageGenerator = AVAssetImageGenerator(asset: asset)
+            imageGenerator.appliesPreferredTrackTransform = true
+            
+            do {
+                let cgImage = try await imageGenerator.image(at: CMTime(seconds: 1.0, preferredTimescale: 1))
+                let uiImage = UIImage(cgImage: cgImage.image)
+                thumbnailData = uiImage.jpegData(compressionQuality: 0.8)
+            } catch {
+                print("サムネイル生成に失敗: \(error)")
+            }
+        }
         
         let newVideo = MemoryVideo(id: UUID(), characterId: anime.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date())
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
-        
         selectedVideoURL = nil
         videoTitle = ""
         videoTags = ""
+        selectedThumbnailData = nil
         showAddSheet = false
     }
     
@@ -1046,38 +1061,9 @@ struct AnimeVideoScreen: View {
         let key = "anime_videos_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(videos) {
             UserDefaults.standard.set(encodedData, forKey: key)
+            print("AnimeVideoScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
         }
     }
-    
-    private func generateThumbnail(from url: URL) -> Data? {
-        let asset = AVURLAsset(url: url)
-        let imageGenerator = AVAssetImageGenerator(asset: asset)
-        imageGenerator.appliesPreferredTrackTransform = true
-        
-        let semaphore = DispatchSemaphore(value: 0)
-        var resultImage: UIImage?
-        var resultError: Error?
-        
-        imageGenerator.generateCGImageAsynchronously(for: .zero) { cgImage, time, error in
-            if let cgImage = cgImage {
-                resultImage = UIImage(cgImage: cgImage)
-            } else {
-                resultError = error
-            }
-            semaphore.signal()
-        }
-        
-        semaphore.wait()
-        
-        if let resultImage = resultImage {
-            return resultImage.jpegData(compressionQuality: 0.8)
-        } else {
-            print("サムネイル生成エラー: \(resultError?.localizedDescription ?? "Unknown error")")
-            return nil
-        }
-    }
-    
-
 }
 
 struct AnimeAboutView: View {

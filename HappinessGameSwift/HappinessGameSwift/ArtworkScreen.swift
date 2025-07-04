@@ -2,6 +2,8 @@ import SwiftUI
 import PhotosUI
 import Foundation
 import UIKit
+import ArtworkPlayerScreen
+import AlbumArtworkListScreen
 
 struct Artwork: Identifiable, Codable {
     let id: UUID
@@ -61,6 +63,9 @@ struct ArtworkScreen: View {
     @State private var editText = ""
     @State private var showDeleteAlert = false
     @State private var deletingArtworkID: UUID? = nil
+    @State private var selectedArtworkForPlayer: Artwork? = nil
+    @State private var albums: [Album] = []
+    @State private var selectedAlbum: Album? = nil
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -131,7 +136,46 @@ struct ArtworkScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, selectedArtwork: $selectedArtwork)
+                            VStack(spacing: 4) {
+                                Spacer().frame(height: 5)
+                                // --- アルバムリスト ---
+                                ForEach(albums) { album in
+                                    Button(action: {
+                                        selectedAlbum = album
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            if let firstArtwork = album.videos.first, let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                GeometryReader { geometry in
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(height: 233)
+                                            } else {
+                                                GeometryReader { geometry in
+                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                }
+                                                .frame(height: 233)
+                                            }
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("#" + album.tag)
+                                                    .font(.system(size: 15.5, weight: .semibold))
+                                                    .foregroundColor(.black)
+                                            }
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
+                                        }
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                        }
+                        .fullScreenCover(item: $selectedAlbum) { album in
+                            AlbumArtworkListScreen(artworks: album.videos, tag: album.tag)
                         }
                     } else {
                         ScrollView {
@@ -174,19 +218,38 @@ struct ArtworkScreen: View {
                                                     Text(artwork.title)
                                                         .font(.headline)
                                                         .foregroundColor(.black)
-                                                    Text("#nakajimaginsei")
+                                                    Text(artwork.tags.isEmpty ? "#nakajimaginsei" : "#" + artwork.tags.joined(separator: " #"))
                                                         .font(.caption)
                                                         .foregroundColor(.gray)
                                                 }
+                                                Spacer()
                                             }
                                             .padding(.top, 8)
                                             .padding(.leading, 8)
                                         }
                                         .padding(.vertical, 8)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            selectedArtworkForPlayer = artwork
+                                        }
                                     }
                                 }
                             }
                             .padding(.top, 8)
+                        }
+                        .fullScreenCover(item: $selectedArtworkForPlayer) { artwork in
+                            ArtworkPlayerScreen(artwork: artwork, onDelete: {
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks.remove(at: idx)
+                                    saveArtworksToUserDefaults()
+                                }
+                            }, onEdit: { newTitle, newTags in
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks[idx].title = newTitle
+                                    artworks[idx].tags = newTags
+                                    saveArtworksToUserDefaults()
+                                }
+                            })
                         }
                     }
                 }
@@ -211,10 +274,13 @@ struct ArtworkScreen: View {
                         TextField("#タグ名", text: $newTag)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal, 24)
-                        Button("追加") {
+                        Button("保存") {
                             let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !tag.isEmpty && !filteredTags.contains(tag) {
-                                filteredTags.append(tag)
+                            if !tag.isEmpty {
+                                let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                                if !tagArtworks.isEmpty {
+                                    albums.append(Album(tag: tag, videos: tagArtworks))
+                                }
                             }
                             newTag = ""
                             showTagInput = false

@@ -90,6 +90,7 @@ struct ArtworkScreen: View {
     @State private var showDeleteAlert = false
     @State private var deletingArtworkID: UUID? = nil
     @State private var selectedArtworkForPlayer: Artwork? = nil
+    @State private var selectedPixivArtwork: Artwork? = nil
     @State private var albums: [ArtworkAlbum] = []
     @State private var selectedAlbum: ArtworkAlbum? = nil
     
@@ -247,17 +248,10 @@ struct ArtworkScreen: View {
                                                         .frame(width: geometry.size.width, height: 233)
                                                         .clipped()
                                                 } else if let pixivURL = artwork.pixivURL {
-                                                    // Pixiv artwork placeholder
-                                                    VStack {
-                                                        Image(systemName: "photo")
-                                                            .font(.system(size: 50))
-                                                            .foregroundColor(.gray.opacity(0.5))
-                                                        Text("Pixiv作品")
-                                                            .font(.caption)
-                                                            .foregroundColor(.gray)
-                                                    }
-                                                    .frame(width: geometry.size.width, height: 233)
-                                                    .background(Color.gray.opacity(0.1))
+                                                    // Pixiv artwork thumbnail
+                                                    PixivThumbnailView(pixivURL: pixivURL)
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
                                                 }
                                             }
                                             .frame(width: geometry.size.width, height: 233)
@@ -298,7 +292,11 @@ struct ArtworkScreen: View {
                                     .padding(.vertical, 8)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        selectedArtworkForPlayer = artwork
+                                        if artwork.pixivURL != nil {
+                                            selectedPixivArtwork = artwork
+                                        } else {
+                                            selectedArtworkForPlayer = artwork
+                                        }
                                     }
                                 }
                             }
@@ -317,6 +315,9 @@ struct ArtworkScreen: View {
                                     saveArtworksToUserDefaults()
                                 }
                             })
+                        }
+                        .fullScreenCover(item: $selectedPixivArtwork) { artwork in
+                            PixivConfirmationScreen(artwork: artwork)
                         }
                     }
                 }

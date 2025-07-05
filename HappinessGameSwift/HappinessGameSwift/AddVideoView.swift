@@ -9,6 +9,7 @@ struct AddVideoView: View {
     @Binding var videoTags: String
     @Binding var selectedThumbnailData: Data?
     let onSave: () -> Void
+    var onYouTubeSave: ((String, String, String, String) -> Void)? = nil
     
     @Environment(\.dismiss) private var dismiss
     @State private var showingVideoPicker = false
@@ -18,6 +19,10 @@ struct AddVideoView: View {
     @State private var selectedThumbnailIndex: Int = 0
     @State private var isExporting = false
     @State private var exportError: String? = nil
+    @State private var youtubeURL: String = ""
+    @State private var isLoadingYouTube = false
+    @State private var youtubeTitle: String = ""
+    @State private var youtubeThumbnailURL: String = ""
     
     var body: some View {
         NavigationView {
@@ -102,6 +107,38 @@ struct AddVideoView: View {
                         
                         TextField("タグを入力", text: $videoTags)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
+                    Divider().padding(.vertical, 8)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("YouTube動画のURLから追加")
+                            .font(.headline)
+                        TextField("https://www.youtube.com/watch?v=...", text: $youtubeURL)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                        
+                        if isLoadingYouTube {
+                            HStack {
+                                ProgressView()
+                                Text("YouTube情報を取得中...")
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                        }
+                        
+                        Button("YouTube動画を追加") {
+                            Task {
+                                await fetchYouTubeInfo()
+                            }
+                        }
+                        .disabled(youtubeURL.isEmpty || isLoadingYouTube)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(youtubeURL.isEmpty || isLoadingYouTube ? Color.gray : Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
                     }
                     
                     Spacer(minLength: 100)
@@ -220,6 +257,53 @@ struct AddVideoView: View {
                 completion(nil)
             }
         }
+    }
+    
+    func fetchYouTubeInfo() async {
+        guard !youtubeURL.isEmpty else { return }
+        
+        isLoadingYouTube = true
+        
+        // Extract video ID from URL
+        let videoId = extractYouTubeVideoId(from: youtubeURL)
+        guard !videoId.isEmpty else {
+            isLoadingYouTube = false
+            return
+        }
+        
+        // Get thumbnail URL
+        youtubeThumbnailURL = "https://img.youtube.com/vi/\(videoId)/maxresdefault.jpg"
+        
+        // For title, we'll use a simple approach
+        // In a real app, you might want to use YouTube Data API
+        youtubeTitle = videoTitle.isEmpty ? "YouTube動画" : videoTitle
+        
+        // Save YouTube video info
+        if let onYouTubeSave = onYouTubeSave {
+            onYouTubeSave(youtubeURL, youtubeTitle, youtubeThumbnailURL, videoTags)
+            dismiss()
+        }
+        
+        isLoadingYouTube = false
+    }
+    
+    func extractYouTubeVideoId(from url: String) -> String {
+        // Handle different YouTube URL formats
+        let patterns = [
+            "(?:youtube\\.com/watch\\?v=|youtu\\.be/)([^&\\n?#]+)",
+            "youtube\\.com/embed/([^&\\n?#]+)",
+            "youtube\\.com/v/([^&\\n?#]+)"
+        ]
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+               let match = regex.firstMatch(in: url, options: [], range: NSRange(location: 0, length: url.utf16.count)),
+               let range = Range(match.range(at: 1), in: url) {
+                return String(url[range])
+            }
+        }
+        
+        return ""
     }
 }
 

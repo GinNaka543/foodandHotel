@@ -210,9 +210,7 @@ struct AnimeScreen: View {
                 }
             }
         }
-        .sheet(isPresented: $showAddSheet, onDismiss: {
-            animeManager.loadAnimes()
-        }) {
+        .sheet(isPresented: $showAddSheet) {
             AddAnimeSheet(animes: $animeManager.animes)
                 .environmentObject(animeManager)
         }
@@ -299,6 +297,22 @@ struct AnimeArtworkScreen: View {
     @State private var albums: [ArtworkAlbum] = []
     @State private var selectedAlbum: ArtworkAlbum? = nil
     
+    // Enum to manage sheet presentations
+    enum SheetType: Identifiable {
+        case addPhoto
+        case tagInput
+        case artworkDetail(Artwork)
+        
+        var id: String {
+            switch self {
+            case .addPhoto: return "addPhoto"
+            case .tagInput: return "tagInput"
+            case .artworkDetail(let artwork): return "artworkDetail_\(artwork.id)"
+            }
+        }
+    }
+    @State private var activeSheet: SheetType? = nil
+    
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
@@ -322,7 +336,7 @@ struct AnimeArtworkScreen: View {
                         Spacer()
                     }
                     // Uploadボタン（右端に揃える）
-                    Button(action: { showAddSheet = true }) {
+                    Button(action: { activeSheet = .addPhoto }) {
                         Text("Upload")
                             .font(.headline)
                             .foregroundColor(.white)
@@ -492,7 +506,7 @@ struct AnimeArtworkScreen: View {
                                         .padding(.vertical, 8)
                                         .contentShape(Rectangle())
                                         .onTapGesture {
-                                            selectedArtwork = artwork
+                                            activeSheet = .artworkDetail(artwork)
                                         }
                                     }
                                 }
@@ -529,50 +543,50 @@ struct AnimeArtworkScreen: View {
                         .padding(.bottom, 32)
                         .padding(.trailing, 24)
                 }
-                .sheet(isPresented: $showTagInput) {
-                    VStack(spacing: 24) {
-                        Text("表示したいタグを入力")
-                            .font(.headline)
-                        TextField("#タグ名", text: $newTag)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(.horizontal, 24)
-                        Button("保存") {
-                            let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !tag.isEmpty {
-                                let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
-                                if !tagArtworks.isEmpty {
-                                    albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks))
-                                }
-                            }
-                            newTag = ""
-                            showTagInput = false
-                        }
-                        .font(.headline)
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 10)
-                        .background(Color.black)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                        Button("キャンセル") {
-                            showTagInput = false
-                        }
-                        .foregroundColor(.red)
-                    }
-                    .padding(32)
-                }
             }
         }
         .onAppear {
             loadArtworks()
         }
-        .sheet(isPresented: $showAddSheet) {
-            AddPhotoView(selectedImage: $selectedImage, photoTitle: $photoTitle, photoTags: $photoTags) {
-                if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
-                    saveArtwork()
+        .sheet(item: $activeSheet) { sheetType in
+            switch sheetType {
+            case .addPhoto:
+                AddPhotoView(selectedImage: $selectedImage, photoTitle: $photoTitle, photoTags: $photoTags) {
+                    if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                        saveArtwork()
+                    }
                 }
-            }
-        }
-        .sheet(item: $selectedArtwork) { artwork in
+            case .tagInput:
+                VStack(spacing: 24) {
+                    Text("表示したいタグを入力")
+                        .font(.headline)
+                    TextField("#タグ名", text: $newTag)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal, 24)
+                    Button("保存") {
+                        let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !tag.isEmpty {
+                            let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                            if !tagArtworks.isEmpty {
+                                albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks))
+                            }
+                        }
+                        newTag = ""
+                        activeSheet = nil
+                    }
+                    .font(.headline)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 10)
+                    .background(Color.black)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    Button("キャンセル") {
+                        activeSheet = nil
+                    }
+                    .foregroundColor(.red)
+                }
+                .padding(32)
+            case .artworkDetail(let artwork):
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 24) {
                     Spacer()
@@ -620,7 +634,7 @@ struct AnimeArtworkScreen: View {
                 HStack(spacing: 24) {
                     Spacer()
                     Button(action: {
-                        selectedArtwork = nil
+                        activeSheet = nil
                     }) {
                         Text("閉じる")
                             .font(.headline)
@@ -632,7 +646,7 @@ struct AnimeArtworkScreen: View {
                     }
                     .padding(.trailing, 78)
                     Button(action: {
-                        deletingArtworkID = selectedArtwork?.id
+                        deletingArtworkID = artwork.id
                         showDeleteAlert = true
                     }) {
                         Image(systemName: "trash")
@@ -712,7 +726,7 @@ struct AnimeArtworkScreen: View {
                                 }
                                 showDeleteAlert = false
                                 deletingArtworkID = nil
-                                selectedArtwork = nil
+                                activeSheet = nil
                             }) {
                                 Text("削除")
                                     .foregroundColor(.red)
@@ -733,6 +747,7 @@ struct AnimeArtworkScreen: View {
                 }
                 // --- END カスタムダイアログ ---
             }
+            }
         }
     }
     
@@ -748,7 +763,7 @@ struct AnimeArtworkScreen: View {
         selectedImage = nil
         photoTitle = ""
         photoTags = ""
-        showAddSheet = false
+        activeSheet = nil
     }
     
     private func loadArtworks() {
@@ -1016,6 +1031,22 @@ struct AnimeVideoScreen: View {
                                                     .frame(width: 183, height: 109)
                                                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                     .clipped()
+                                            } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
+                                                AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                                    image
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 183, height: 109)
+                                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                                        .clipped()
+                                                } placeholder: {
+                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: 183, height: 109)
+                                                        .overlay(
+                                                            ProgressView()
+                                                        )
+                                                }
                                             } else {
                                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                     .fill(Color.gray.opacity(0.3))
@@ -1124,13 +1155,15 @@ struct AnimeVideoScreen: View {
             loadVideos()
         }
         .sheet(isPresented: $showAddSheet) {
-            AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData) {
+            AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData, onSave: {
                 if selectedVideoURL != nil && !videoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !videoTags.trimmingCharacters(in: .whitespaces).isEmpty {
                     Task {
                         await saveVideo()
                     }
                 }
-            }
+            }, onYouTubeSave: { url, title, thumbnailURL, tags in
+                saveYouTubeVideo(url: url, title: title, thumbnailURL: thumbnailURL, tags: tags)
+            })
         }
     }
     
@@ -1158,7 +1191,7 @@ struct AnimeVideoScreen: View {
             }
         }
         
-        let newVideo = MemoryVideo(id: UUID(), characterId: anime.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date())
+        let newVideo = MemoryVideo(id: UUID(), characterId: anime.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date(), youtubeURL: nil, youtubeThumbnailURL: nil)
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
         selectedVideoURL = nil
@@ -1200,6 +1233,27 @@ struct AnimeVideoScreen: View {
             UserDefaults.standard.set(encodedData, forKey: key)
             print("AnimeVideoScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
         }
+    }
+    
+    private func saveYouTubeVideo(url: String, title: String, thumbnailURL: String, tags: String) {
+        let tagArray = tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        
+        // YouTube動画の場合はvideoPathは空文字列にする
+        let newVideo = MemoryVideo(
+            id: UUID(),
+            characterId: anime.id,
+            videoPath: "",
+            thumbnailData: nil,
+            title: title,
+            tags: tagArray,
+            date: Date(),
+            youtubeURL: url,
+            youtubeThumbnailURL: thumbnailURL
+        )
+        
+        videos.insert(newVideo, at: 0)
+        saveVideosToUserDefaults()
+        showAddSheet = false
     }
     
     private func updateAlbumsAfterVideoDeletion(deletedVideoId: UUID) {
@@ -1587,6 +1641,7 @@ struct AddAnimeSheet: View {
     @State private var image: UIImage? = nil
     @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var selectedDay: Int = Calendar.current.component(.day, from: Date())
+    @State private var savedImagePath: String? = nil
     var body: some View {
         NavigationView {
             Form {
@@ -1619,8 +1674,8 @@ struct AddAnimeSheet: View {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                     image = uiImage
                                     let fileName = "anime_icon_\(UUID().uuidString).png"
-                                    if saveImageToDocuments(uiImage, fileName: fileName) != nil {
-                                        // AnimeのimageIdentifierにパスを保存
+                                    if let path = saveImageToDocuments(uiImage, fileName: fileName) {
+                                        savedImagePath = path
                                     }
                                 }
                             }
@@ -1651,8 +1706,7 @@ struct AddAnimeSheet: View {
                     let calendar = Calendar.current
                     let year = calendar.component(.year, from: Date())
                     let date = calendar.date(from: DateComponents(year: year, month: selectedMonth, day: selectedDay)) ?? Date()
-                    let newAnime = Anime(id: UUID(), imageIdentifier: nil, title: title, hashtag: hashtag, releaseDate: date)
-                    animes.append(newAnime)
+                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, title: title, hashtag: hashtag, releaseDate: date)
                     animeManager.addAnime(newAnime)
                     dismiss()
                 }

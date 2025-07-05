@@ -13,6 +13,8 @@ struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
     var title: String
     var tags: [String]
     let date: Date
+    var youtubeURL: String? // YouTube URL
+    var youtubeThumbnailURL: String? // YouTube サムネイルURL
 }
 
 struct Album: Identifiable, Hashable, Equatable {
@@ -52,9 +54,11 @@ struct VideoGalleryScreen: View {
     @State private var playingVideoId: UUID? = nil
     @State private var albums: [Album] = []
     @State private var selectedAlbum: Album? = nil
+    @State private var isDownloadingYouTube = false
+    @State private var youtubeDownloadError: String? = nil
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        return ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 0) {
                     // 戻るボタン
@@ -139,6 +143,22 @@ struct VideoGalleryScreen: View {
                                                         .clipped()
                                                 }
                                                 .frame(height: 233)
+                                            } else if let firstVideo = album.videos.first, let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
+                                                GeometryReader { geometry in
+                                                    AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                                        image
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } placeholder: {
+                                                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .overlay(ProgressView())
+                                                    }
+                                                }
+                                                .frame(height: 233)
                                             } else {
                                                 GeometryReader { geometry in
                                                     RoundedRectangle(cornerRadius: 0, style: .continuous)
@@ -198,6 +218,22 @@ struct VideoGalleryScreen: View {
                                                     .frame(width: 183, height: 109)
                                                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                     .clipped()
+                                            } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
+                                                AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                                    image
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 183, height: 109)
+                                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                                        .clipped()
+                                                } placeholder: {
+                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: 183, height: 109)
+                                                        .overlay(
+                                                            ProgressView()
+                                                        )
+                                                }
                                             } else {
                                                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                     .fill(Color.gray.opacity(0.3))
@@ -313,17 +349,49 @@ struct VideoGalleryScreen: View {
                 }
             }
         }
+        .overlay(
+            Group {
+                if isDownloadingYouTube {
+                    ZStack {
+                        Color.black.opacity(0.5).ignoresSafeArea()
+                        VStack(spacing: 24) {
+                            ProgressView()
+                                .scaleEffect(2)
+                            Text("YouTube動画をダウンロード中…")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .bold()
+                        }
+                        .padding(40)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(20)
+                    }
+                }
+            }
+        )
+        .alert(isPresented: Binding<Bool>(get: { youtubeDownloadError != nil && !isDownloadingYouTube }, set: { _ in youtubeDownloadError = nil })) {
+            Alert(title: Text("YouTubeダウンロードエラー"), message: Text(youtubeDownloadError ?? ""), dismissButton: .default(Text("OK")))
+        }
         .onAppear {
             loadVideos()
         }
         .sheet(isPresented: $showAddSheet) {
-            AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData) {
-                if selectedVideoURL != nil && !videoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !videoTags.trimmingCharacters(in: .whitespaces).isEmpty {
-                    Task {
-                        await saveVideo()
+            AddVideoView(
+                selectedVideoURL: $selectedVideoURL,
+                videoTitle: $videoTitle,
+                videoTags: $videoTags,
+                selectedThumbnailData: $selectedThumbnailData,
+                onSave: {
+                    if selectedVideoURL != nil && !videoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !videoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Task {
+                            await saveVideo()
+                        }
                     }
+                },
+                onYouTubeSave: { url, title, thumbnailURL, tags in
+                    saveYouTubeVideo(url: url, title: title, thumbnailURL: thumbnailURL, tags: tags)
                 }
-            }
+            )
         }
         .sheet(item: $selectedVideo) { video in
             ZStack(alignment: .bottomTrailing) {
@@ -586,7 +654,7 @@ struct VideoGalleryScreen: View {
             }
         }
         
-        let newVideo = MemoryVideo(id: UUID(), characterId: character.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date())
+        let newVideo = MemoryVideo(id: UUID(), characterId: character.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date(), youtubeURL: nil, youtubeThumbnailURL: nil)
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
         selectedVideoURL = nil
@@ -651,6 +719,61 @@ struct VideoGalleryScreen: View {
         }
         print("[DEBUG] VideoGalleryScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
+    
+    private func saveYouTubeVideo(url: String, title: String, thumbnailURL: String, tags: String) {
+        let tagArray = tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        
+        // YouTube動画の場合はvideoPathは空文字列にする
+        let newVideo = MemoryVideo(
+            id: UUID(),
+            characterId: character.id,
+            videoPath: "",
+            thumbnailData: nil,
+            title: title,
+            tags: tagArray,
+            date: Date(),
+            youtubeURL: url,
+            youtubeThumbnailURL: thumbnailURL
+        )
+        
+        videos.insert(newVideo, at: 0)
+        saveVideosToUserDefaults()
+        showAddSheet = false
+    }
+    
+    private func downloadYouTubeVideo(youtubeURL: String) async throws -> URL {
+        let apiKey = "eed595d1demsh4ffce2821e5cd5ap1eac28jsn0896c171f935"
+        let encodedURL = youtubeURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? youtubeURL
+        let apiURLString = "https://youtube-info-download-api.p.rapidapi.com/ajax/download.php?format=mp4&add_info=0&url=\(encodedURL)&audio_quality=128&allow_extended_duration=false"
+        guard let apiURL = URL(string: apiURLString) else {
+            throw NSError(domain: "URL生成エラー", code: 0)
+        }
+        var request = URLRequest(url: apiURL)
+        request.httpMethod = "GET"
+        request.setValue("youtube-info-download-api.p.rapidapi.com", forHTTPHeaderField: "x-rapidapi-host")
+        request.setValue(apiKey, forHTTPHeaderField: "x-rapidapi-key")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw NSError(domain: "APIリクエスト失敗", code: 0)
+        }
+        // --- レスポンス内容をprintで出力 ---
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("[YouTube APIレスポンス]", jsonString)
+        }
+        // 2. レスポンスからダウンロードリンクを抽出（仮にJSONで { "link": "..." } 形式とする）
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let downloadLink = json["link"] as? String,
+              let videoDownloadURL = URL(string: downloadLink) else {
+            throw NSError(domain: "ダウンロードリンク取得失敗", code: 0)
+        }
+        // 3. 動画ファイルをダウンロード
+        let (videoData, _) = try await URLSession.shared.data(from: videoDownloadURL)
+        // 4. 一時ファイルに保存
+        let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
+        try videoData.write(to: tempURL)
+        return tempURL
+    }
 }
 
 struct VideoThumbnailPlayer: View {
@@ -688,6 +811,29 @@ struct VideoThumbnailPlayer: View {
                             onTap?()
                         }
                     }
+                } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
+                    GeometryReader { geometry in
+                        AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width, height: 233)
+                                .clipped()
+                        } placeholder: {
+                            RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: geometry.size.width, height: 233)
+                                .overlay(ProgressView())
+                        }
+                    }
+                    .frame(height: 233)
+                    .onTapGesture {
+                        if isInModal {
+                            playVideo()
+                        } else {
+                            onTap?()
+                        }
+                    }
                 } else {
                     GeometryReader { geometry in
                         RoundedRectangle(cornerRadius: 0, style: .continuous)
@@ -706,7 +852,7 @@ struct VideoThumbnailPlayer: View {
             }
         }
         .onAppear {
-            if player == nil {
+            if player == nil && video.youtubeURL == nil && !video.videoPath.isEmpty {
                 // videoPathから動画ファイルを読み込む
                 let videoURL = URL(fileURLWithPath: video.videoPath)
                 player = AVPlayer(url: videoURL)
@@ -757,6 +903,20 @@ struct VideoAlbumGridView: View {
                                 .frame(width: 176, height: 106)
                                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                                 .clipped()
+                        } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
+                            AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 176, height: 106)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                    .clipped()
+                            } placeholder: {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 176, height: 106)
+                                    .overlay(ProgressView())
+                            }
                         } else {
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
                                 .fill(Color.gray.opacity(0.3))
@@ -927,6 +1087,22 @@ struct AlbumVideoListScreen: View {
                                         .frame(width: 183, height: 109)
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
+                                } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
+                                    AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 183, height: 109)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                            .clipped()
+                                    } placeholder: {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 183, height: 109)
+                                            .overlay(
+                                                ProgressView()
+                                            )
+                                    }
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))

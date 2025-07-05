@@ -28,21 +28,77 @@ struct VideoPlayerScreen: View {
     @State private var fullscreenPlayer: AVPlayer? = nil
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .topLeading) {
-                VStack(spacing: 0) {
-                    ZStack(alignment: .topLeading) {
-                        VideoPlayer(player: player)
-                            .aspectRatio(16.0/9.0, contentMode: .fill)
-                            .frame(width: geometry.size.width, height: geometry.size.height < geometry.size.width ? geometry.size.height : geometry.size.width * 9.0 / 16.0)
-                            .clipped()
-                            .background(Color.black)
-                            .padding(.top, -10)
-                        // AirPlayロゴの位置を10px下げる
-                        Spacer().frame(height: 10)
+        // YouTube動画の場合は、YouTubeアプリで開く
+        if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+            VStack {
+                Spacer()
+                VStack(spacing: 20) {
+                    if let thumbnailURL = video.youtubeThumbnailURL {
+                        AsyncImage(url: URL(string: thumbnailURL)) { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity, maxHeight: 300)
+                                .cornerRadius(12)
+                        } placeholder: {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 200)
+                                .overlay(ProgressView())
+                        }
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height < geometry.size.width ? geometry.size.height : geometry.size.width * 9.0 / 16.0)
-                    .background(Color.black)
+                    
+                    Text(video.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Button(action: {
+                        openYouTubeVideo(url: youtubeURL)
+                    }) {
+                        HStack {
+                            Image(systemName: "play.circle.fill")
+                                .font(.title)
+                            Text("YouTubeで開く")
+                                .font(.headline)
+                        }
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red)
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                    }
+                    
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Text("閉じる")
+                            .foregroundColor(.gray)
+                            .padding()
+                    }
+                }
+                Spacer()
+            }
+            .background(Color(.systemBackground))
+        } else {
+            // 通常の動画プレイヤー
+            GeometryReader { geometry in
+                ZStack(alignment: .topLeading) {
+                    VStack(spacing: 0) {
+                        ZStack(alignment: .topLeading) {
+                            VideoPlayer(player: player)
+                                .aspectRatio(16.0/9.0, contentMode: .fill)
+                                .frame(width: geometry.size.width, height: geometry.size.height < geometry.size.width ? geometry.size.height : geometry.size.width * 9.0 / 16.0)
+                                .clipped()
+                                .background(Color.black)
+                                .padding(.top, -10)
+                            // AirPlayロゴの位置を10px下げる
+                            Spacer().frame(height: 10)
+                        }
+                        .frame(width: geometry.size.width, height: geometry.size.height < geometry.size.width ? geometry.size.height : geometry.size.width * 9.0 / 16.0)
+                        .background(Color.black)
                     // --- 動画情報・関連動画 ---
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .center) {
@@ -101,6 +157,19 @@ struct VideoPlayerScreen: View {
                                                         .aspectRatio(contentMode: .fill)
                                                         .frame(width: 120, height: 68)
                                                         .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                } else if let youtubeThumbnailURL = relatedVideo.youtubeThumbnailURL {
+                                                    AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                                        image
+                                                            .resizable()
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: 120, height: 68)
+                                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                    } placeholder: {
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 120, height: 68)
+                                                            .overlay(ProgressView())
+                                                    }
                                                 } else {
                                                     RoundedRectangle(cornerRadius: 8)
                                                         .fill(Color.gray.opacity(0.3))
@@ -212,9 +281,15 @@ struct VideoPlayerScreen: View {
                 )
             }
         }
+        }
     }
     
     private func setupPlayer() {
+        // YouTube動画の場合はプレイヤーを設定しない
+        if video.youtubeURL != nil && !video.videoPath.isEmpty {
+            return
+        }
+        
         let videoURL = URL(fileURLWithPath: video.videoPath)
         player = AVPlayer(url: videoURL)
         
@@ -228,6 +303,12 @@ struct VideoPlayerScreen: View {
         // 再生状態の監視
         player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 0.5, preferredTimescale: 600), queue: .main) { time in
             currentTime = CMTimeGetSeconds(time)
+        }
+    }
+    
+    private func openYouTubeVideo(url: String) {
+        if let youtubeURL = URL(string: url) {
+            UIApplication.shared.open(youtubeURL)
         }
     }
 

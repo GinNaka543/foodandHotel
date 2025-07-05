@@ -93,6 +93,8 @@ struct ArtworkScreen: View {
     @State private var selectedPixivArtwork: Artwork? = nil
     @State private var albums: [ArtworkAlbum] = []
     @State private var selectedAlbum: ArtworkAlbum? = nil
+    @State private var pixivThumbnail: UIImage? = nil
+    @State private var isLoadingPixivThumbnail = false
     
     var body: some View {
         content
@@ -254,16 +256,8 @@ struct ArtworkScreen: View {
                                                         .clipped()
                                                 } else if let pixivURL = artwork.pixivURL {
                                                     // Pixiv artwork placeholder
-                                                    VStack {
-                                                        Image(systemName: "photo")
-                                                            .font(.system(size: 50))
-                                                            .foregroundColor(.gray.opacity(0.5))
-                                                        Text("Pixiv作品")
-                                                            .font(.caption)
-                                                            .foregroundColor(.gray)
-                                                    }
-                                                    .frame(width: geometry.size.width, height: 233)
-                                                    .background(Color.gray.opacity(0.1))
+                                                    PixivThumbnailPlaceholder()
+                                                        .frame(width: geometry.size.width, height: 233)
                                                 }
                                             }
                                             .frame(width: geometry.size.width, height: 233)
@@ -330,6 +324,13 @@ struct ArtworkScreen: View {
                         }
                         .fullScreenCover(item: $selectedPixivArtwork) { artwork in
                             pixivConfirmationView(for: artwork)
+                                .onAppear {
+                                    loadPixivThumbnail(from: artwork.pixivURL)
+                                }
+                                .onDisappear {
+                                    pixivThumbnail = nil
+                                    isLoadingPixivThumbnail = false
+                                }
                         }
                     }
                 }
@@ -643,19 +644,35 @@ struct ArtworkScreen: View {
                 .fontWeight(.bold)
                 .padding(.top, 40)
             
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.2))
-                .frame(height: 250)
-                .overlay(
-                    VStack(spacing: 16) {
-                        Image(systemName: "photo")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                        Text("Pixiv作品")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                    }
-                )
+            ZStack {
+                if let thumbnail = pixivThumbnail {
+                    Image(uiImage: thumbnail)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 300)
+                        .cornerRadius(12)
+                        .shadow(radius: 5)
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(height: 250)
+                        .overlay(
+                            VStack(spacing: 16) {
+                                if isLoadingPixivThumbnail {
+                                    ProgressView()
+                                        .scaleEffect(1.5)
+                                } else {
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 60))
+                                        .foregroundColor(.gray)
+                                }
+                                Text("Pixiv作品")
+                                    .font(.headline)
+                                    .foregroundColor(.gray)
+                            }
+                        )
+                }
+            }
             
             VStack(spacing: 12) {
                 Text(artwork.title)
@@ -705,6 +722,64 @@ struct ArtworkScreen: View {
             .padding(.horizontal, 32)
             .padding(.bottom, 32)
         }
+    }
+    
+    private func loadPixivThumbnail(from urlString: String?) {
+        guard let urlString = urlString,
+              let url = URL(string: urlString) else { return }
+        
+        isLoadingPixivThumbnail = true
+        
+        Task {
+            do {
+                // Pixivページを取得
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let html = String(data: data, encoding: .utf8) {
+                    // OGP画像を探す
+                    if let imageURL = extractOGImageFromHTML(html) ?? extractTwitterImageFromHTML(html) {
+                        // 画像をダウンロード
+                        if let imageUrl = URL(string: imageURL) {
+                            let (imageData, _) = try await URLSession.shared.data(from: imageUrl)
+                            if let image = UIImage(data: imageData) {
+                                await MainActor.run {
+                                    self.pixivThumbnail = image
+                                    self.isLoadingPixivThumbnail = false
+                                }
+                                return
+                            }
+                        }
+                    }
+                }
+            } catch {
+                print("Failed to load Pixiv thumbnail: \(error)")
+            }
+            
+            await MainActor.run {
+                self.isLoadingPixivThumbnail = false
+            }
+        }
+    }
+    
+    private func extractOGImageFromHTML(_ html: String) -> String? {
+        // og:imageメタタグを探す
+        let pattern = "<meta\\s+property=[\"']og:image[\"']\\s+content=[\"']([^\"']+)[\"']"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+           let match = regex.firstMatch(in: html, options: [], range: NSRange(location: 0, length: html.count)),
+           let range = Range(match.range(at: 1), in: html) {
+            return String(html[range])
+        }
+        return nil
+    }
+    
+    private func extractTwitterImageFromHTML(_ html: String) -> String? {
+        // twitter:imageメタタグを探す
+        let pattern = "<meta\\s+name=[\"']twitter:image[\"']\\s+content=[\"']([^\"']+)[\"']"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+           let match = regex.firstMatch(in: html, options: [], range: NSRange(location: 0, length: html.count)),
+           let range = Range(match.range(at: 1), in: html) {
+            return String(html[range])
+        }
+        return nil
     }
 }
 
@@ -809,6 +884,22 @@ struct AlbumGridView: View {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+struct PixivThumbnailPlaceholder: View {
+    var body: some View {
+        ZStack {
+            Color.gray.opacity(0.1)
+            VStack {
+                Image(systemName: "photo")
+                    .font(.system(size: 50))
+                    .foregroundColor(.gray.opacity(0.5))
+                Text("Pixiv作品")
+                    .font(.caption)
+                    .foregroundColor(.gray)
             }
         }
     }

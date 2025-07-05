@@ -193,7 +193,36 @@ struct ArtworkScreen: View {
                             }
                         }
                         .fullScreenCover(item: $selectedAlbum) { album in
-                            AlbumArtworkListScreen(artworks: album.videos, tag: album.tag)
+                            AlbumArtworkListScreen(
+                                artworks: album.videos, 
+                                tag: album.tag,
+                                onArtworkDeleted: { deletedArtwork in
+                                    // 親画面のartworksリストから削除
+                                    if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
+                                        artworks.remove(at: idx)
+                                        print("[DEBUG] ArtworkScreen: Albumから画像削除 - ID: \(deletedArtwork.id)")
+                                        
+                                        // Albumタブの画像リストも更新
+                                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
+                                        
+                                        saveArtworksToUserDefaults()
+                                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
+                                    }
+                                },
+                                onArtworkEdited: { editedArtwork in
+                                    // 親画面のartworksリストを更新
+                                    if let idx = artworks.firstIndex(where: { $0.id == editedArtwork.id }) {
+                                        artworks[idx] = editedArtwork
+                                        print("[DEBUG] ArtworkScreen: Albumから画像編集 - ID: \(editedArtwork.id)")
+                                        
+                                        // Albumタブの画像リストも更新
+                                        updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
+                                        
+                                        saveArtworksToUserDefaults()
+                                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
+                                    }
+                                }
+                            )
                         }
                     } else {
                         ScrollView {
@@ -520,6 +549,35 @@ struct ArtworkScreen: View {
         if let encodedData = try? JSONEncoder().encode(artworks) {
             UserDefaults.standard.set(encodedData, forKey: key)
         }
+    }
+    
+    private func updateAlbumsAfterArtworkDeletion(deletedArtworkId: UUID) {
+        // 各Albumから削除された画像を除去
+        albums = albums.compactMap { album in
+            let updatedArtworks = album.videos.filter { $0.id != deletedArtworkId }
+            // 画像が1つも残っていない場合はAlbumを削除
+            if updatedArtworks.isEmpty {
+                return nil
+            }
+            // 画像が残っている場合は更新されたAlbumを返す
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks)
+        }
+        print("[DEBUG] ArtworkScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
+    }
+    
+    private func updateAlbumsAfterArtworkEdit(editedArtwork: Artwork) {
+        // 各Albumの該当画像を更新
+        albums = albums.map { album in
+            let updatedArtworks = album.videos.map { artwork in
+                if artwork.id == editedArtwork.id {
+                    return editedArtwork
+                } else {
+                    return artwork
+                }
+            }
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks)
+        }
+        print("[DEBUG] ArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
     }
     
 

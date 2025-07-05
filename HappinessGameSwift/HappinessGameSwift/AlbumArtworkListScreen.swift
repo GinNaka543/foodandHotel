@@ -3,6 +3,8 @@ import SwiftUI
 struct AlbumArtworkListScreen: View {
     @State var artworks: [Artwork]
     let tag: String
+    let onArtworkDeleted: ((Artwork) -> Void)?
+    let onArtworkEdited: ((Artwork) -> Void)?
     @State private var selectedArtwork: Artwork? = nil
     @Environment(\.presentationMode) var presentationMode
     
@@ -71,13 +73,23 @@ struct AlbumArtworkListScreen: View {
             ArtworkPlayerScreen(
                 artwork: artwork,
                 onDelete: {
-                    // 削除後にリストから該当のartworkを削除
+                    // 親画面に削除を通知
+                    onArtworkDeleted?(artwork)
+                    // ローカルリストからも削除
                     if let index = artworks.firstIndex(where: { $0.id == artwork.id }) {
                         artworks.remove(at: index)
                     }
                 },
                 onEdit: { newTitle, newTags in
-                    // 編集後にリストの該当artworkを更新
+                    // 編集されたartworkを作成
+                    var editedArtwork = artwork
+                    editedArtwork.title = newTitle
+                    editedArtwork.tags = newTags
+                    
+                    // 親画面に編集を通知
+                    onArtworkEdited?(editedArtwork)
+                    
+                    // ローカルリストも更新
                     if let index = artworks.firstIndex(where: { $0.id == artwork.id }) {
                         artworks[index].title = newTitle
                         artworks[index].tags = newTags

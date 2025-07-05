@@ -296,6 +296,8 @@ struct AnimeArtworkScreen: View {
     @State private var editText = ""
     @State private var showDeleteAlert = false
     @State private var deletingArtworkID: UUID? = nil
+    @State private var albums: [ArtworkAlbum] = []
+    @State private var selectedAlbum: ArtworkAlbum? = nil
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -367,7 +369,75 @@ struct AnimeArtworkScreen: View {
                 ZStack {
                     if showAlbum {
                         ScrollView {
-                            AlbumGridView(artworks: artworks, highlightFirstRow: false, filteredTags: filteredTags.isEmpty ? nil : filteredTags, selectedArtwork: $selectedArtwork)
+                            VStack(spacing: 4) {
+                                Spacer().frame(height: 5)
+                                // --- アルバムリスト ---
+                                ForEach(albums) { album in
+                                    Button(action: {
+                                        selectedAlbum = album
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            if let firstArtwork = album.videos.first, let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                GeometryReader { geometry in
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(height: 233)
+                                            } else {
+                                                GeometryReader { geometry in
+                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                }
+                                                .frame(height: 233)
+                                            }
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("#" + album.tag)
+                                                    .font(.system(size: 15.5, weight: .semibold))
+                                                    .foregroundColor(.black)
+                                            }
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
+                                        }
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                        }
+                        .fullScreenCover(item: $selectedAlbum) { album in
+                            AlbumArtworkListScreen(
+                                artworks: album.videos, 
+                                tag: album.tag,
+                                onArtworkDeleted: { deletedArtwork in
+                                    // 親画面のartworksリストから削除
+                                    if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
+                                        artworks.remove(at: idx)
+                                        print("[DEBUG] AnimeArtworkScreen: Albumから画像削除 - ID: \(deletedArtwork.id)")
+                                        
+                                        // Albumタブの画像リストも更新
+                                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
+                                        
+                                        saveArtworksToUserDefaults()
+                                        print("[DEBUG] AnimeArtworkScreen: UserDefaultsに保存しました")
+                                    }
+                                },
+                                onArtworkEdited: { editedArtwork in
+                                    // 親画面のartworksリストを更新
+                                    if let idx = artworks.firstIndex(where: { $0.id == editedArtwork.id }) {
+                                        artworks[idx] = editedArtwork
+                                        print("[DEBUG] AnimeArtworkScreen: Albumから画像編集 - ID: \(editedArtwork.id)")
+                                        
+                                        // Albumタブの画像リストも更新
+                                        updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
+                                        
+                                        saveArtworksToUserDefaults()
+                                        print("[DEBUG] AnimeArtworkScreen: UserDefaultsに保存しました")
+                                    }
+                                }
+                            )
                         }
                     } else {
                         ScrollView {
@@ -410,19 +480,38 @@ struct AnimeArtworkScreen: View {
                                                     Text(artwork.title)
                                                         .font(.headline)
                                                         .foregroundColor(.black)
-                                                    Text("#nakajimaginsei")
+                                                    Text(artwork.tags.isEmpty ? "#nakajimaginsei" : "#" + artwork.tags.joined(separator: " #"))
                                                         .font(.caption)
                                                         .foregroundColor(.gray)
                                                 }
+                                                Spacer()
                                             }
                                             .padding(.top, 8)
                                             .padding(.leading, 8)
                                         }
                                         .padding(.vertical, 8)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            selectedArtwork = artwork
+                                        }
                                     }
                                 }
                             }
                             .padding(.top, 8)
+                        }
+                        .fullScreenCover(item: $selectedArtwork) { artwork in
+                            ArtworkPlayerScreen(artwork: artwork, onDelete: {
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks.remove(at: idx)
+                                    saveArtworksToUserDefaults()
+                                }
+                            }, onEdit: { newTitle, newTags in
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks[idx].title = newTitle
+                                    artworks[idx].tags = newTags
+                                    saveArtworksToUserDefaults()
+                                }
+                            })
                         }
                     }
                 }
@@ -447,10 +536,13 @@ struct AnimeArtworkScreen: View {
                         TextField("#タグ名", text: $newTag)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal, 24)
-                        Button("追加") {
+                        Button("保存") {
                             let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !tag.isEmpty && !filteredTags.contains(tag) {
-                                filteredTags.append(tag)
+                            if !tag.isEmpty {
+                                let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                                if !tagArtworks.isEmpty {
+                                    albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks))
+                                }
                             }
                             newTag = ""
                             showTagInput = false
@@ -672,6 +764,35 @@ struct AnimeArtworkScreen: View {
         if let encodedData = try? JSONEncoder().encode(artworks) {
             UserDefaults.standard.set(encodedData, forKey: key)
         }
+    }
+    
+    private func updateAlbumsAfterArtworkDeletion(deletedArtworkId: UUID) {
+        // 各Albumから削除された画像を除去
+        albums = albums.compactMap { album in
+            let updatedArtworks = album.videos.filter { $0.id != deletedArtworkId }
+            // 画像が1つも残っていない場合はAlbumを削除
+            if updatedArtworks.isEmpty {
+                return nil
+            }
+            // 画像が残っている場合は更新されたAlbumを返す
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks)
+        }
+        print("[DEBUG] AnimeArtworkScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
+    }
+    
+    private func updateAlbumsAfterArtworkEdit(editedArtwork: Artwork) {
+        // 各Albumの該当画像を更新
+        albums = albums.map { album in
+            let updatedArtworks = album.videos.map { artwork in
+                if artwork.id == editedArtwork.id {
+                    return editedArtwork
+                } else {
+                    return artwork
+                }
+            }
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks)
+        }
+        print("[DEBUG] AnimeArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
     }
 }
 

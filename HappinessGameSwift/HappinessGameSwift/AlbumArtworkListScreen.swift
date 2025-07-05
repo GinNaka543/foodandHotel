@@ -1,20 +1,30 @@
 import SwiftUI
 
 struct AlbumArtworkListScreen: View {
-    let artworks: [Artwork]
+    @State var artworks: [Artwork]
     let tag: String
     @State private var selectedArtwork: Artwork? = nil
+    @Environment(\.presentationMode) var presentationMode
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
+                Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.black)
+                        .font(.system(size: 24, weight: .bold))
+                }
+                .padding(.leading, 16)
+                
                 Text("#" + tag)
                     .font(.system(size: 22, weight: .bold))
-                    .padding(.leading, 16)
+                    .padding(.leading, 8)
                 Spacer()
             }
             .padding(.top, 24)
             ScrollView {
                 VStack(spacing: 0) {
+                    Spacer().frame(height: 10)
                     ForEach(Array(artworks.enumerated()), id: \ .element.id) { idx, artwork in
                         if idx > 0 {
                             Spacer().frame(height: 35)
@@ -58,7 +68,22 @@ struct AlbumArtworkListScreen: View {
             }
         }
         .fullScreenCover(item: $selectedArtwork) { artwork in
-            ArtworkPlayerScreen(artwork: artwork)
+            ArtworkPlayerScreen(
+                artwork: artwork,
+                onDelete: {
+                    // 削除後にリストから該当のartworkを削除
+                    if let index = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                        artworks.remove(at: index)
+                    }
+                },
+                onEdit: { newTitle, newTags in
+                    // 編集後にリストの該当artworkを更新
+                    if let index = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                        artworks[index].title = newTitle
+                        artworks[index].tags = newTags
+                    }
+                }
+            )
         }
     }
 } 

@@ -2,10 +2,28 @@ import SwiftUI
 import PhotosUI
 import Foundation
 import UIKit
-import ArtworkPlayerScreen
-import AlbumArtworkListScreen
 
-struct Artwork: Identifiable, Codable {
+struct ArtworkAlbum: Identifiable, Hashable, Equatable {
+    let id = UUID()
+    let tag: String
+    var videos: [Artwork]
+    
+    init(tag: String, videos: [Artwork]) {
+        self.tag = tag
+        self.videos = videos
+    }
+    
+    static func == (lhs: ArtworkAlbum, rhs: ArtworkAlbum) -> Bool {
+        lhs.id == rhs.id && lhs.tag == rhs.tag && lhs.videos == rhs.videos
+    }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(tag)
+        hasher.combine(videos)
+    }
+}
+
+struct Artwork: Identifiable, Codable, Hashable {
     let id: UUID
     let characterId: UUID
     var imagePath: String?
@@ -64,8 +82,8 @@ struct ArtworkScreen: View {
     @State private var showDeleteAlert = false
     @State private var deletingArtworkID: UUID? = nil
     @State private var selectedArtworkForPlayer: Artwork? = nil
-    @State private var albums: [Album] = []
-    @State private var selectedAlbum: Album? = nil
+    @State private var albums: [ArtworkAlbum] = []
+    @State private var selectedAlbum: ArtworkAlbum? = nil
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -279,7 +297,7 @@ struct ArtworkScreen: View {
                             if !tag.isEmpty {
                                 let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
                                 if !tagArtworks.isEmpty {
-                                    albums.append(Album(tag: tag, videos: tagArtworks))
+                                    albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks))
                                 }
                             }
                             newTag = ""

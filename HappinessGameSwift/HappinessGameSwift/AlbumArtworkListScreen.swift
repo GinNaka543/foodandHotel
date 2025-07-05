@@ -42,6 +42,20 @@ struct AlbumArtworkListScreen: View {
                                         .frame(width: 183, height: 109)
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
+                                } else if let pixivURL = artwork.pixivURL {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(Color.gray.opacity(0.1))
+                                        VStack {
+                                            Image(systemName: "photo")
+                                                .font(.system(size: 30))
+                                                .foregroundColor(.gray.opacity(0.5))
+                                            Text("Pixiv")
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .frame(width: 183, height: 109)
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))

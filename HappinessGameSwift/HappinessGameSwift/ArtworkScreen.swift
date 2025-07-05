@@ -30,9 +30,11 @@ struct Artwork: Identifiable, Codable, Hashable {
     var title: String
     var tags: [String]
     let date: Date
+    var pixivURL: String? // Pixiv URL
+    var pixivThumbnailURL: String? // Pixiv サムネイルURL
     
     enum CodingKeys: String, CodingKey {
-        case id, characterId, imagePath, title, tags, date
+        case id, characterId, imagePath, title, tags, date, pixivURL, pixivThumbnailURL
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -42,6 +44,8 @@ struct Artwork: Identifiable, Codable, Hashable {
         try container.encode(title, forKey: .title)
         try container.encode(tags, forKey: .tags)
         try container.encode(date, forKey: .date)
+        try container.encodeIfPresent(pixivURL, forKey: .pixivURL)
+        try container.encodeIfPresent(pixivThumbnailURL, forKey: .pixivThumbnailURL)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -51,14 +55,18 @@ struct Artwork: Identifiable, Codable, Hashable {
         title = try container.decode(String.self, forKey: .title)
         tags = try container.decode([String].self, forKey: .tags)
         date = try container.decode(Date.self, forKey: .date)
+        pixivURL = try? container.decodeIfPresent(String.self, forKey: .pixivURL)
+        pixivThumbnailURL = try? container.decodeIfPresent(String.self, forKey: .pixivThumbnailURL)
     }
-    init(id: UUID, characterId: UUID, imagePath: String?, title: String, tags: [String], date: Date) {
+    init(id: UUID, characterId: UUID, imagePath: String?, title: String, tags: [String], date: Date, pixivURL: String? = nil, pixivThumbnailURL: String? = nil) {
         self.id = id
         self.characterId = characterId
         self.imagePath = imagePath
         self.title = title
         self.tags = tags
         self.date = date
+        self.pixivURL = pixivURL
+        self.pixivThumbnailURL = pixivThumbnailURL
     }
 }
 
@@ -228,22 +236,35 @@ struct ArtworkScreen: View {
                         ScrollView {
                             VStack(spacing: 32) {
                                 ForEach(artworks, id: \.id) { artwork in
-                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                                        VStack(alignment: .leading, spacing: 0) {
-                                            GeometryReader { geometry in
-                                                ZStack {
-                                                    Color.white
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        GeometryReader { geometry in
+                                            ZStack {
+                                                Color.white
+                                                if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .scaledToFill()
                                                         .frame(width: geometry.size.width, height: 233)
                                                         .clipped()
+                                                } else if let pixivURL = artwork.pixivURL {
+                                                    // Pixiv artwork placeholder
+                                                    VStack {
+                                                        Image(systemName: "photo")
+                                                            .font(.system(size: 50))
+                                                            .foregroundColor(.gray.opacity(0.5))
+                                                        Text("Pixiv作品")
+                                                            .font(.caption)
+                                                            .foregroundColor(.gray)
+                                                    }
+                                                    .frame(width: geometry.size.width, height: 233)
+                                                    .background(Color.gray.opacity(0.1))
                                                 }
-                                                .frame(width: geometry.size.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
                                             }
-                                            .frame(height: 233)
+                                            .frame(width: geometry.size.width, height: 233)
+                                            .clipped()
+                                            .padding(.bottom, 0)
+                                        }
+                                        .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
                                                 if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                                                     Image(uiImage: image)
@@ -273,12 +294,11 @@ struct ArtworkScreen: View {
                                             }
                                             .padding(.top, 8)
                                             .padding(.leading, 8)
-                                        }
-                                        .padding(.vertical, 8)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            selectedArtworkForPlayer = artwork
-                                        }
+                                    }
+                                    .padding(.vertical, 8)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        selectedArtworkForPlayer = artwork
                                     }
                                 }
                             }
@@ -351,11 +371,33 @@ struct ArtworkScreen: View {
             loadArtworks()
         }
         .sheet(isPresented: $showAddSheet) {
-            AddPhotoView(selectedImage: $selectedImage, photoTitle: $photoTitle, photoTags: $photoTags) {
-                if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
-                    saveArtwork()
+            AddPhotoView(
+                selectedImage: $selectedImage,
+                photoTitle: $photoTitle,
+                photoTags: $photoTags,
+                onSave: {
+                    if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                        saveArtwork()
+                    }
+                },
+                onPixivSave: { url, title, thumbnailURL, tags in
+                    // Save Pixiv artwork
+                    let tagArray = tags.isEmpty ? [] : tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    let newArtwork = Artwork(
+                        id: UUID(),
+                        characterId: character.id,
+                        imagePath: nil,
+                        title: title,
+                        tags: tagArray,
+                        date: Date(),
+                        pixivURL: url,
+                        pixivThumbnailURL: thumbnailURL
+                    )
+                    artworks.insert(newArtwork, at: 0)
+                    saveArtworksToUserDefaults()
+                    showAddSheet = false
                 }
-            }
+            )
         }
         .sheet(item: $selectedArtwork) { artwork in
             ZStack(alignment: .bottomTrailing) {

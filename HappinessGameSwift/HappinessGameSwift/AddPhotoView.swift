@@ -6,10 +6,15 @@ struct AddPhotoView: View {
     @Binding var photoTitle: String
     @Binding var photoTags: String
     let onSave: () -> Void
+    var onPixivSave: ((String, String, String?, String) -> Void)? = nil
     
     @Environment(\.dismiss) private var dismiss
     @State private var showingImagePicker = false
     @State private var selectedItem: PhotosPickerItem?
+    @State private var showPixivInput = false
+    @State private var pixivURL = ""
+    @State private var pixivTitle = ""
+    @State private var pixivTags = ""
     
     var body: some View {
         NavigationView {
@@ -67,6 +72,19 @@ struct AddPhotoView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 
+                // Pixiv URL入力ボタン
+                Button(action: { showPixivInput = true }) {
+                    HStack {
+                        Image(systemName: "link")
+                        Text("Pixiv URLから追加")
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+                }
+                
                 Spacer()
             }
             .padding()
@@ -92,6 +110,66 @@ struct AddPhotoView: View {
                 if let data = try? await newValue?.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
                     selectedImage = image
+                }
+            }
+        }
+        .sheet(isPresented: $showPixivInput) {
+            NavigationView {
+                VStack(spacing: 20) {
+                    Text("Pixiv作品を追加")
+                        .font(.headline)
+                        .padding(.top)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Pixiv URL")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        TextField("https://www.pixiv.net/artworks/...", text: $pixivURL)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("タイトル")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        TextField("作品タイトル", text: $pixivTitle)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("タグ（カンマ区切り）")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                        TextField("タグ1,タグ2,タグ3", text: $pixivTags)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
+                    
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle("Pixiv作品")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("キャンセル") {
+                            showPixivInput = false
+                            pixivURL = ""
+                            pixivTitle = ""
+                            pixivTags = ""
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("保存") {
+                            if let onPixivSave = onPixivSave,
+                               !pixivURL.isEmpty,
+                               !pixivTitle.isEmpty {
+                                onPixivSave(pixivURL, pixivTitle, nil, pixivTags)
+                                dismiss()
+                            }
+                        }
+                        .disabled(pixivURL.isEmpty || pixivTitle.isEmpty)
+                    }
                 }
             }
         }

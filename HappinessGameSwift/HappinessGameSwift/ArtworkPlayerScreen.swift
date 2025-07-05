@@ -24,6 +24,23 @@ struct ArtworkPlayerScreen: View {
                                 .clipped()
                                 .background(Color.black)
                                 .padding(.top, -10)
+                        } else if let pixivURL = artwork.pixivURL {
+                            VStack {
+                                Image(systemName: "photo")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray.opacity(0.5))
+                                Text("Pixiv作品")
+                                    .font(.headline)
+                                    .foregroundColor(.gray)
+                                Text(pixivURL)
+                                    .font(.caption)
+                                    .foregroundColor(.gray.opacity(0.7))
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .padding(.horizontal)
+                            }
+                            .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                            .background(Color.gray.opacity(0.1))
                         } else {
                             Color.gray.opacity(0.2)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
@@ -92,7 +109,7 @@ struct ArtworkPlayerScreen: View {
                     }
                 }
                 .fullScreenCover(isPresented: $showFullscreen) {
-                    FullScreenArtworkView(imagePath: artwork.imagePath, onDismiss: { showFullscreen = false })
+                    FullScreenArtworkView(imagePath: artwork.imagePath, pixivURL: artwork.pixivURL, onDismiss: { showFullscreen = false })
                 }
             }
         }
@@ -145,6 +162,7 @@ struct ArtworkPlayerScreen: View {
 
 struct FullScreenArtworkView: View {
     let imagePath: String?
+    let pixivURL: String?
     var onDismiss: () -> Void
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -154,6 +172,21 @@ struct FullScreenArtworkView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .edgesIgnoringSafeArea(.all)
+            } else if let pixivURL = pixivURL {
+                VStack {
+                    Image(systemName: "photo")
+                        .font(.system(size: 100))
+                        .foregroundColor(.gray.opacity(0.5))
+                    Text("Pixiv作品")
+                        .font(.largeTitle)
+                        .foregroundColor(.gray)
+                    Text(pixivURL)
+                        .font(.headline)
+                        .foregroundColor(.gray.opacity(0.7))
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                        .padding(.horizontal)
+                }
             } else {
                 Color.gray
             }

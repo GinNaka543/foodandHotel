@@ -161,7 +161,23 @@ struct VideoGalleryScreen: View {
                             }
                         }
                         .fullScreenCover(item: $selectedAlbum) { album in
-                            AlbumVideoListScreen(videos: album.videos, tag: album.tag)
+                            AlbumVideoListScreen(
+                                videos: album.videos, 
+                                tag: album.tag,
+                                onVideoDeleted: { deletedVideo in
+                                    // 動画リストから削除
+                                    if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
+                                        videos.remove(at: idx)
+                                        print("[DEBUG] VideoGalleryScreen: Albumから動画削除 - ID: \(deletedVideo.id)")
+                                        
+                                        // Albumタブの動画リストも更新
+                                        updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
+                                        
+                                        saveVideosToUserDefaults()
+                                        print("[DEBUG] VideoGalleryScreen: UserDefaultsに保存しました")
+                                    }
+                                }
+                            )
                         }
                     } else {
                         ScrollView {
@@ -227,12 +243,23 @@ struct VideoGalleryScreen: View {
                                     // 編集処理（必要ならここも拡張）
                                 },
                                 onDelete: {
+                                    print("[DEBUG] VideoGalleryScreen: onDeleteコールバックが呼ばれました")
                                     if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                        print("[DEBUG] VideoGalleryScreen: 削除対象を発見 - インデックス: \(idx)")
                                         videos.remove(at: idx)
+                                        print("[DEBUG] VideoGalleryScreen: 動画を削除しました - 残り動画数: \(videos.count)")
+                                        
+                                        // Albumタブの動画リストも更新
+                                        updateAlbumsAfterVideoDeletion(deletedVideoId: video.id)
+                                        
                                         saveVideosToUserDefaults()
-                                        print("[DEBUG] VideoGalleryScreen: 動画削除 - ID: \(video.id)")
+                                        print("[DEBUG] VideoGalleryScreen: UserDefaultsに保存しました")
                                     } else {
                                         print("[DEBUG] VideoGalleryScreen: 削除対象が見つかりませんでした - ID: \(video.id)")
+                                        print("[DEBUG] VideoGalleryScreen: 現在の動画一覧:")
+                                        for (index, v) in videos.enumerated() {
+                                            print("[DEBUG] VideoGalleryScreen: [\(index)] ID: \(v.id), タイトル: \(v.title)")
+                                        }
                                     }
                                 }
                             )
@@ -535,8 +562,6 @@ struct VideoGalleryScreen: View {
         }
     }
     
-
-    
     private func saveVideo() async {
         guard let videoURL = selectedVideoURL else { return }
         let tags = videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
@@ -611,6 +636,20 @@ struct VideoGalleryScreen: View {
             print("VideoAlbumGridView: 動画削除 - ID: \(id)")
             saveVideosToUserDefaults()
         }
+    }
+    
+    private func updateAlbumsAfterVideoDeletion(deletedVideoId: UUID) {
+        // 各Albumから削除された動画を除去
+        albums = albums.compactMap { album in
+            let updatedVideos = album.videos.filter { $0.id != deletedVideoId }
+            // 動画が1つも残っていない場合はAlbumを削除
+            if updatedVideos.isEmpty {
+                return nil
+            }
+            // 動画が残っている場合は更新されたAlbumを返す
+            return Album(tag: album.tag, videos: updatedVideos)
+        }
+        print("[DEBUG] VideoGalleryScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
 }
 
@@ -786,7 +825,6 @@ struct VideoAlbumGridView: View {
 }
 
 // Videoタブ用のインライン再生View
-import AVKit
 struct VideoInlinePlayer: View {
     let video: MemoryVideo
     let onClose: () -> Void
@@ -853,6 +891,7 @@ struct CharacterIconView: View {
 struct AlbumVideoListScreen: View {
     let videos: [MemoryVideo]
     let tag: String
+    let onVideoDeleted: ((MemoryVideo) -> Void)?
     @Environment(\.presentationMode) var presentationMode
     @State private var selectedVideo: MemoryVideo? = nil
     var body: some View {
@@ -918,7 +957,17 @@ struct AlbumVideoListScreen: View {
                 video: video,
                 character: nil,
                 anime: nil,
-                allVideos: videos
+                allVideos: videos,
+                onSave: { newTitle, newTags in
+                    // 編集処理（必要ならここも拡張）
+                },
+                onDelete: {
+                    print("[DEBUG] AlbumVideoListScreen: onDeleteコールバックが呼ばれました")
+                    // 親画面に削除を通知
+                    onVideoDeleted?(video)
+                    // 画面を閉じる
+                    presentationMode.wrappedValue.dismiss()
+                }
             )
         }
     }

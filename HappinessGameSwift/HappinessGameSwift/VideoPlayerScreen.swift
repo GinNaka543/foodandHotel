@@ -199,13 +199,14 @@ struct VideoPlayerScreen: View {
                     title: Text("本当に削除しますか？"),
                     message: Text("この動画は完全に削除されます。"),
                     primaryButton: .destructive(Text("削除")) {
-                        print("[DEBUG] Alertの削除ボタンが押されました")
+                        print("[DEBUG] VideoPlayerScreen: Alertの削除ボタンが押されました")
+                        print("[DEBUG] VideoPlayerScreen: onDeleteクロージャを呼び出します")
                         onDelete?()
-                        print("[DEBUG] onDeleteクロージャ呼び出し完了")
+                        print("[DEBUG] VideoPlayerScreen: onDeleteクロージャ呼び出し完了")
                         showMenuSheet = false
-                        print("[DEBUG] showMenuSheet = \(showMenuSheet)")
+                        print("[DEBUG] VideoPlayerScreen: showMenuSheet = \(showMenuSheet)")
                         presentationMode.wrappedValue.dismiss()
-                        print("[DEBUG] presentationModeで画面を閉じました")
+                        print("[DEBUG] VideoPlayerScreen: presentationModeで画面を閉じました")
                     },
                     secondaryButton: .cancel(Text("キャンセル"))
                 )

@@ -858,7 +858,23 @@ struct AnimeVideoScreen: View {
                             }
                         }
                         .fullScreenCover(item: $selectedAlbum) { album in
-                            AlbumVideoListScreen(videos: album.videos, tag: album.tag)
+                            AlbumVideoListScreen(
+                                videos: album.videos, 
+                                tag: album.tag,
+                                onVideoDeleted: { deletedVideo in
+                                    // 動画リストから削除
+                                    if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
+                                        videos.remove(at: idx)
+                                        print("[DEBUG] AnimeScreen: Albumから動画削除 - ID: \(deletedVideo.id)")
+                                        
+                                        // Albumタブの動画リストも更新
+                                        updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
+                                        
+                                        saveVideosToUserDefaults()
+                                        print("[DEBUG] AnimeScreen: UserDefaultsに保存しました")
+                                    }
+                                }
+                            )
                         }
                     } else {
                         ScrollView {
@@ -1063,6 +1079,20 @@ struct AnimeVideoScreen: View {
             UserDefaults.standard.set(encodedData, forKey: key)
             print("AnimeVideoScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
         }
+    }
+    
+    private func updateAlbumsAfterVideoDeletion(deletedVideoId: UUID) {
+        // 各Albumから削除された動画を除去
+        albums = albums.compactMap { album in
+            let updatedVideos = album.videos.filter { $0.id != deletedVideoId }
+            // 動画が1つも残っていない場合はAlbumを削除
+            if updatedVideos.isEmpty {
+                return nil
+            }
+            // 動画が残っている場合は更新されたAlbumを返す
+            return Album(tag: album.tag, videos: updatedVideos)
+        }
+        print("[DEBUG] AnimeVideoScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
 }
 
@@ -1740,8 +1770,5 @@ struct AnimeDetailView: View {
         }
         // アイコン編集モーダル（省略）
     }
+    
 }
-
-
-
-

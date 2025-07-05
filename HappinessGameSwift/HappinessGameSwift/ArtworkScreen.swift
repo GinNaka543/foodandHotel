@@ -256,7 +256,7 @@ struct ArtworkScreen: View {
                                                         .clipped()
                                                 } else if let pixivURL = artwork.pixivURL {
                                                     // Pixiv artwork placeholder
-                                                    PixivThumbnailPlaceholder()
+                                                    PixivThumbnailPlaceholder(pixivURL: pixivURL)
                                                         .frame(width: geometry.size.width, height: 233)
                                                 }
                                             }
@@ -725,8 +725,16 @@ struct ArtworkScreen: View {
     }
     
     private func loadPixivThumbnail(from urlString: String?) {
-        guard let urlString = urlString,
-              let url = URL(string: urlString) else { return }
+        guard let urlString = urlString else { return }
+        
+        // まずキャッシュを確認
+        if let cachedImage = PixivThumbnailCache.shared.getImage(for: urlString) {
+            self.pixivThumbnail = cachedImage
+            self.isLoadingPixivThumbnail = false
+            return
+        }
+        
+        guard let url = URL(string: urlString) else { return }
         
         isLoadingPixivThumbnail = true
         
@@ -744,6 +752,8 @@ struct ArtworkScreen: View {
                                 await MainActor.run {
                                     self.pixivThumbnail = image
                                     self.isLoadingPixivThumbnail = false
+                                    // キャッシュに保存
+                                    PixivThumbnailCache.shared.setImage(image, for: urlString)
                                 }
                                 return
                             }
@@ -890,16 +900,157 @@ struct AlbumGridView: View {
 }
 
 struct PixivThumbnailPlaceholder: View {
+    let pixivURL: String
+    @State private var thumbnailImage: UIImage? = nil
+    @State private var isLoading = false
+    @State private var hasCheckedCache = false
+    
     var body: some View {
         ZStack {
-            Color.gray.opacity(0.1)
-            VStack {
-                Image(systemName: "photo")
-                    .font(.system(size: 50))
-                    .foregroundColor(.gray.opacity(0.5))
-                Text("Pixiv作品")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+            if let image = thumbnailImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Color.gray.opacity(0.1)
+                VStack {
+                    if isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray.opacity(0.5))
+                    }
+                    Text("Pixiv作品")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+            }
+        }
+        .onAppear {
+            if !hasCheckedCache {
+                loadThumbnail()
+                hasCheckedCache = true
+            }
+        }
+    }
+    
+    private func loadThumbnail() {
+        // まずキャッシュを確認
+        if let cachedImage = PixivThumbnailCache.shared.getImage(for: pixivURL) {
+            self.thumbnailImage = cachedImage
+            return
+        }
+        
+        // キャッシュにない場合は読み込む
+        isLoading = true
+        
+        Task {
+            do {
+                guard let url = URL(string: pixivURL) else { return }
+                
+                // HTMLを取得
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let html = String(data: data, encoding: .utf8) {
+                    // OGP画像を探す
+                    if let imageURL = extractOGImageFromHTML(html) ?? extractTwitterImageFromHTML(html),
+                       let imageUrl = URL(string: imageURL) {
+                        // 画像をダウンロード
+                        let (imageData, _) = try await URLSession.shared.data(from: imageUrl)
+                        if let image = UIImage(data: imageData) {
+                            await MainActor.run {
+                                self.thumbnailImage = image
+                                self.isLoading = false
+                                // キャッシュに保存
+                                PixivThumbnailCache.shared.setImage(image, for: pixivURL)
+                            }
+                            return
+                        }
+                    }
+                }
+            } catch {
+                print("Failed to load Pixiv thumbnail: \(error)")
+            }
+            
+            await MainActor.run {
+                self.isLoading = false
+            }
+        }
+    }
+    
+    private func extractOGImageFromHTML(_ html: String) -> String? {
+        let pattern = "<meta\\s+property=[\"']og:image[\"']\\s+content=[\"']([^\"']+)[\"']"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+           let match = regex.firstMatch(in: html, options: [], range: NSRange(location: 0, length: html.count)),
+           let range = Range(match.range(at: 1), in: html) {
+            return String(html[range])
+        }
+        return nil
+    }
+    
+    private func extractTwitterImageFromHTML(_ html: String) -> String? {
+        let pattern = "<meta\\s+name=[\"']twitter:image[\"']\\s+content=[\"']([^\"']+)[\"']"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+           let match = regex.firstMatch(in: html, options: [], range: NSRange(location: 0, length: html.count)),
+           let range = Range(match.range(at: 1), in: html) {
+            return String(html[range])
+        }
+        return nil
+    }
+}
+
+// メモリとディスクキャッシュ
+class PixivThumbnailCache {
+    static let shared = PixivThumbnailCache()
+    private var memoryCache: [String: UIImage] = [:]
+    private let queue = DispatchQueue(label: "pixiv.thumbnail.cache", attributes: .concurrent)
+    private let fileManager = FileManager.default
+    private let cacheDirectory: URL
+    
+    private init() {
+        // キャッシュディレクトリを作成
+        let urls = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)
+        cacheDirectory = urls[0].appendingPathComponent("PixivThumbnails")
+        
+        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true, attributes: nil)
+    }
+    
+    func getImage(for url: String) -> UIImage? {
+        // まずメモリキャッシュを確認
+        if let image = queue.sync(execute: { memoryCache[url] }) {
+            return image
+        }
+        
+        // ディスクキャッシュを確認
+        let fileName = url.replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: ":", with: "_")
+        let fileURL = cacheDirectory.appendingPathComponent(fileName)
+        
+        if let data = try? Data(contentsOf: fileURL),
+           let image = UIImage(data: data) {
+            // メモリキャッシュにも保存
+            queue.async(flags: .barrier) {
+                self.memoryCache[url] = image
+            }
+            return image
+        }
+        
+        return nil
+    }
+    
+    func setImage(_ image: UIImage, for url: String) {
+        // メモリキャッシュに保存
+        queue.async(flags: .barrier) {
+            self.memoryCache[url] = image
+        }
+        
+        // ディスクキャッシュに保存
+        DispatchQueue.global(qos: .background).async {
+            let fileName = url.replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: ":", with: "_")
+            let fileURL = self.cacheDirectory.appendingPathComponent(fileName)
+            
+            if let data = image.jpegData(compressionQuality: 0.8) {
+                try? data.write(to: fileURL)
             }
         }
     }

@@ -27,7 +27,7 @@ struct AlbumArtworkListScreen: View {
             ScrollView {
                 VStack(spacing: 0) {
                     Spacer().frame(height: 10)
-                    ForEach(Array(artworks.enumerated()), id: \ .element.id) { idx, artwork in
+                    ForEach(Array(artworks.enumerated()), id: \.element.id) { idx, artwork in
                         if idx > 0 {
                             Spacer().frame(height: 35)
                         }
@@ -43,10 +43,19 @@ struct AlbumArtworkListScreen: View {
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
                                 } else if let pixivURL = artwork.pixivURL {
-                                    PixivThumbnailView(pixivURL: pixivURL)
-                                        .frame(width: 183, height: 109)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                        .clipped()
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .fill(Color.gray.opacity(0.1))
+                                        VStack {
+                                            Image(systemName: "photo")
+                                                .font(.system(size: 30))
+                                                .foregroundColor(.gray.opacity(0.5))
+                                            Text("Pixiv")
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .frame(width: 183, height: 109)
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))

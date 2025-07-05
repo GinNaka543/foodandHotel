@@ -95,6 +95,11 @@ struct ArtworkScreen: View {
     @State private var selectedAlbum: ArtworkAlbum? = nil
     
     var body: some View {
+        content
+    }
+    
+    @ViewBuilder
+    private var content: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 0) {
@@ -248,10 +253,17 @@ struct ArtworkScreen: View {
                                                         .frame(width: geometry.size.width, height: 233)
                                                         .clipped()
                                                 } else if let pixivURL = artwork.pixivURL {
-                                                    // Pixiv artwork thumbnail
-                                                    PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
+                                                    // Pixiv artwork placeholder
+                                                    VStack {
+                                                        Image(systemName: "photo")
+                                                            .font(.system(size: 50))
+                                                            .foregroundColor(.gray.opacity(0.5))
+                                                        Text("Pixiv作品")
+                                                            .font(.caption)
+                                                            .foregroundColor(.gray)
+                                                    }
+                                                    .frame(width: geometry.size.width, height: 233)
+                                                    .background(Color.gray.opacity(0.1))
                                                 }
                                             }
                                             .frame(width: geometry.size.width, height: 233)
@@ -317,7 +329,7 @@ struct ArtworkScreen: View {
                             })
                         }
                         .fullScreenCover(item: $selectedPixivArtwork) { artwork in
-                            PixivConfirmationScreen(artwork: artwork)
+                            pixivConfirmationView(for: artwork)
                         }
                     }
                 }
@@ -623,7 +635,77 @@ struct ArtworkScreen: View {
         print("[DEBUG] ArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
     }
     
-
+    @ViewBuilder
+    private func pixivConfirmationView(for artwork: Artwork) -> some View {
+        VStack(spacing: 24) {
+            Text("Pixivで開きますか？")
+                .font(.title2)
+                .fontWeight(.bold)
+                .padding(.top, 40)
+            
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 250)
+                .overlay(
+                    VStack(spacing: 16) {
+                        Image(systemName: "photo")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        Text("Pixiv作品")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                    }
+                )
+            
+            VStack(spacing: 12) {
+                Text(artwork.title)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                
+                if !artwork.tags.isEmpty {
+                    Text("#" + artwork.tags.joined(separator: " #"))
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+            }
+            
+            Spacer()
+            
+            VStack(spacing: 16) {
+                Button(action: {
+                    if let pixivURL = artwork.pixivURL,
+                       let url = URL(string: pixivURL) {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
+                    Text("Pixivで開く")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                }
+                
+                Button(action: {
+                    selectedPixivArtwork = nil
+                }) {
+                    Text("キャンセル")
+                        .font(.headline)
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(12)
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 32)
+        }
+    }
 }
 
 struct AlbumRowView: View {

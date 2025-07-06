@@ -202,7 +202,7 @@ struct CharaScreen: View {
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
                 // 広告バナー
-                AdBannerView()
+                SimpleAdBannerView()
                     .padding(.vertical, 2)
                 // キャラリストのみスクロール
                 ScrollView {
@@ -468,7 +468,7 @@ struct AddCharacterSheet: View {
     }
 }
 
-struct AdBannerView: View {
+struct SimpleAdBannerView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {

@@ -308,7 +308,7 @@ struct CharaContentView: View {
             .padding(.top, 8)
             
             // 広告バナー
-            AdBannerView()
+            SimpleAdBannerView()
                 .padding(.vertical, 2)
             
             // キャラリストのみスクロール
@@ -412,7 +412,7 @@ struct AnimeContentView: View {
             .padding(.top, 8)
             
             // 広告バナー
-            AdBannerView()
+            SimpleAdBannerView()
                 .padding(.vertical, 2)
             
             ScrollView {

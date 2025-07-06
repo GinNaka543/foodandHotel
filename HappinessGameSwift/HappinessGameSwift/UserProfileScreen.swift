@@ -1,6 +1,26 @@
 import SwiftUI
 import PhotosUI
 
+// 画像保存用のヘルパー関数
+func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
+    let fileManager = FileManager.default
+    let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+    guard let documentsURL = urls.first else { return nil }
+    
+    let fileURL = documentsURL.appendingPathComponent(fileName)
+    
+    if let data = image.pngData() {
+        do {
+            try data.write(to: fileURL)
+            return fileURL.path
+        } catch {
+            print("Error saving image: \(error)")
+            return nil
+        }
+    }
+    return nil
+}
+
 struct UserProfile: Codable {
     var id: String = UUID().uuidString
     var username: String = ""

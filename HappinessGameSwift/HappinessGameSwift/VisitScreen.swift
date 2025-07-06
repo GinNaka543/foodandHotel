@@ -1,10 +1,81 @@
 import SwiftUI
 
-// 一時的な定義（ファイルがプロジェクトに追加されるまで）
+// VisitPlanningScreen.swiftがプロジェクトに追加されるまでの一時的な定義
+struct VisitPlanData: Identifiable, Codable {
+    let id: UUID
+    var animeName: String
+    var title: String
+    var duration: String
+    var spots: [VisitSpot]
+    var thumbnailData: Data?
+    var createdDate: Date
+    
+    init(id: UUID = UUID(), animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, createdDate: Date = Date()) {
+        self.id = id
+        self.animeName = animeName
+        self.title = title
+        self.duration = duration
+        self.spots = spots
+        self.thumbnailData = thumbnailData
+        self.createdDate = createdDate
+    }
+}
+
+struct VisitSpot: Identifiable, Codable {
+    let id: UUID
+    var name: String
+    var address: String
+    var notes: String
+    var event: SpotEvent?
+    
+    init(id: UUID = UUID(), name: String, address: String = "", notes: String = "", event: SpotEvent? = nil) {
+        self.id = id
+        self.name = name
+        self.address = address
+        self.notes = notes
+        self.event = event
+    }
+}
+
+struct SpotEvent: Identifiable, Codable {
+    let id: UUID
+    var type: EventType
+    var description: String
+    var question: String
+    var answer: String
+    
+    init(id: UUID = UUID(), type: EventType, description: String, question: String = "", answer: String = "") {
+        self.id = id
+        self.type = type
+        self.description = description
+        self.question = question
+        self.answer = answer
+    }
+}
+
+enum EventType: String, CaseIterable, Codable {
+    case findLocation = "場所を探す"
+    case takePhoto = "写真を撮る"
+    case animeScene = "アニメシーンを探す"
+    case animeQuiz = "アニメクイズ"
+}
+
+// VisitPlanningScreen.swiftがプロジェクトに追加されるまでの一時的な画面
 struct VisitPlanningScreen: View {
+    @Environment(\.dismiss) var dismiss
+    
     var body: some View {
-        Text("VisitPlanningScreen.swiftをXcodeプロジェクトに追加してください")
-            .padding()
+        NavigationView {
+            VStack {
+                Text("VisitPlanningScreen.swiftをXcodeプロジェクトに追加してください")
+                    .padding()
+                
+                Button("閉じる") {
+                    dismiss()
+                }
+                .padding()
+            }
+        }
     }
 }
 
@@ -13,9 +84,18 @@ struct VisitGameScreen: View {
     let duration: String
     let spots: [VisitSpot]
     
+    @Environment(\.dismiss) var dismiss
+    
     var body: some View {
-        Text("VisitPlanningScreen.swiftをXcodeプロジェクトに追加してください")
+        VStack {
+            Text("VisitPlanningScreen.swiftをXcodeプロジェクトに追加してください")
+                .padding()
+            
+            Button("閉じる") {
+                dismiss()
+            }
             .padding()
+        }
     }
 }
 
@@ -241,36 +321,4 @@ public struct VisitScreen: View {
     }
 }
 
-// VisitPlanningScreenからコピー
- struct VisitPlanData: Identifiable, Codable {
-    let id = UUID()
-    var animeName: String
-    var title: String
-    var duration: String
-    var spots: [VisitSpot]
-    var thumbnailData: Data?
-    var createdDate: Date = Date()
-}
-
-struct VisitSpot: Identifiable, Codable {
-    let id = UUID()
-    var name: String
-    var address: String = ""
-    var notes: String = ""
-    var event: SpotEvent?
-}
-
-struct SpotEvent: Identifiable, Codable {
-    let id = UUID()
-    var type: EventType
-    var description: String
-    var question: String = ""
-    var answer: String = ""
-}
-
-enum EventType: String, CaseIterable, Codable {
-    case findLocation = "場所を探す"
-    case takePhoto = "写真を撮る"
-    case animeScene = "アニメシーンを探す"
-    case animeQuiz = "アニメクイズ"
-} 
+ 

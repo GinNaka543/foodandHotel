@@ -1,16 +1,19 @@
 import Foundation
-import FirebaseCore
-import FirebaseFirestore
-import FirebaseAuth
+// Firebaseをインストールするまでコメントアウト
+// import FirebaseCore
+// import FirebaseFirestore
+// import FirebaseAuth
 
 class FirebaseManager: ObservableObject {
     static let shared = FirebaseManager()
-    private let db = Firestore.firestore()
+    // private let db = Firestore.firestore()
     
     private init() {}
     
     // ユーザープロファイルをFirebaseに保存
     func saveUserProfile(_ profile: UserProfile, completion: @escaping (Result<Void, Error>) -> Void) {
+        // Firebaseが利用可能になったらコメントを解除
+        /*
         let userRef = db.collection("users").document(profile.id)
         
         // アニメとキャラクターのデータを収集
@@ -38,10 +41,15 @@ class FirebaseManager: ObservableObject {
                 completion(.success(()))
             }
         }
+        */
+        // 一時的にローカル保存のみ
+        completion(.success(()))
     }
     
     // ユーザーの好みデータを更新
     private func updateUserPreferences(_ profile: UserProfile) {
+        // Firebaseが利用可能になったらコメントを解除
+        /*
         // アニメ別のインデックスを更新
         for anime in profile.favoriteAnimes {
             let animeRef = db.collection("animeIndex").document(anime)
@@ -71,10 +79,13 @@ class FirebaseManager: ObservableObject {
                 "updatedAt": Timestamp(date: Date())
             ], merge: true)
         }
+        */
     }
     
     // 広告を取得
     func fetchAds(for profile: UserProfile, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
+        // Firebaseが利用可能になったらコメントを解除
+        /*
         var ads: [Advertisement] = []
         let group = DispatchGroup()
         
@@ -122,6 +133,9 @@ class FirebaseManager: ObservableObject {
             let selectedAds = Array(uniqueAds.shuffled().prefix(3))
             completion(.success(selectedAds))
         }
+        */
+        // 一時的にダミーデータを返す
+        completion(.success([]))
     }
     
     // ローカルのキャラクター名を取得
@@ -135,6 +149,8 @@ class FirebaseManager: ObservableObject {
     
     // 広告インプレッションを記録
     func recordAdImpression(advertisementId: String) {
+        // Firebaseが利用可能になったらコメントを解除
+        /*
         guard !advertisementId.isEmpty else { return }
         
         let adRef = db.collection("advertisements").document(advertisementId)
@@ -145,10 +161,13 @@ class FirebaseManager: ObservableObject {
                 print("インプレッション記録エラー: \(error)")
             }
         }
+        */
     }
     
     // 広告クリックを記録
     func recordAdClick(advertisementId: String) {
+        // Firebaseが利用可能になったらコメントを解除
+        /*
         guard !advertisementId.isEmpty else { return }
         
         let adRef = db.collection("advertisements").document(advertisementId)
@@ -159,12 +178,13 @@ class FirebaseManager: ObservableObject {
                 print("クリック記録エラー: \(error)")
             }
         }
+        */
     }
 }
 
 // 広告モデル
 struct Advertisement: Codable, Identifiable, Hashable {
-    @DocumentID var id: String?
+    var id: String?
     var title: String
     var description: String
     var imageURL: String
@@ -184,18 +204,5 @@ struct Advertisement: Codable, Identifiable, Hashable {
     
     static func == (lhs: Advertisement, rhs: Advertisement) -> Bool {
         return lhs.id == rhs.id
-    }
-}
-
-// Firestore用の拡張
-extension DocumentReference {
-    func setData<T: Encodable>(_ data: T, merge: Bool = false, completion: @escaping (Error?) -> Void) {
-        do {
-            let encoder = Firestore.Encoder()
-            let encoded = try encoder.encode(data)
-            setData(encoded, merge: merge, completion: completion)
-        } catch {
-            completion(error)
-        }
     }
 }

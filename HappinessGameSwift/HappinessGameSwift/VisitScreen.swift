@@ -25,7 +25,7 @@ public struct VisitScreen: View {
     
     public var body: some View {
         NavigationView {
-        ZStack(alignment: .bottomTrailing) {
+            ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
@@ -42,8 +42,8 @@ public struct VisitScreen: View {
                                 .font(.system(size: 22, weight: .regular))
                                 .foregroundColor(.gray)
                             TextField("Search", text: $searchText)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled(true)
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(.black)
                             Button(action: { withAnimation { showSearchBar = false; searchText = "" } }) {
@@ -108,10 +108,14 @@ public struct VisitScreen: View {
                             .padding(.top, 100)
                         } else {
                             ForEach(savedPlans) { plan in
-                                Button(action: {
-                                    selectedPlan = plan
-                                    showingSelectedPlan = true
-                                }) {
+                                NavigationLink(destination: 
+                                    VisitGameScreen(
+                                        animeName: plan.animeName,
+                                        duration: plan.duration,
+                                        spots: plan.spots
+                                    )
+                                    .navigationBarHidden(true)
+                                ) {
                                     VStack(alignment: .leading, spacing: 0) {
                                         GeometryReader { geometry in
                                             ZStack {
@@ -202,27 +206,61 @@ public struct VisitScreen: View {
                     loadSavedPlans()
                 }
         }
-        .fullScreenCover(isPresented: $showingSelectedPlan) {
-            if let plan = selectedPlan {
-                VisitGameScreen(
-                    animeName: plan.animeName,
-                    duration: plan.duration,
-                    spots: plan.spots
-                )
-            }
+        .navigationBarHidden(true)
         }
         .onAppear {
             loadSavedPlans()
-        }
+            
+            // デバッグ用: プランがない場合はテストプランを作成
+            if savedPlans.isEmpty {
+                print("DEBUG: プランが空なのでテストプランを作成します")
+                let testSpot1 = VisitSpot(
+                    name: "江ノ島駅",
+                    address: "神奈川県藤沢市",
+                    notes: "スラムダンクの聖地",
+                    event: SpotEvent(
+                        type: .findLocation,
+                        description: "駅を見つけよう"
+                    )
+                )
+                let testSpot2 = VisitSpot(
+                    name: "江ノ島海岸",
+                    address: "神奈川県藤沢市",
+                    notes: "海を眺めよう",
+                    event: SpotEvent(
+                        type: .takePhoto,
+                        description: "海の写真を撮ろう"
+                    )
+                )
+                let testPlan = VisitPlanData(
+                    animeName: "スラムダンク",
+                    title: "江ノ島聖地巡礼",
+                    duration: "1日",
+                    spots: [testSpot1, testSpot2]
+                )
+                savedPlans = [testPlan]
+                print("DEBUG: テストプランを追加しました")
+            }
         }
     }
     
     func loadSavedPlans() {
-        guard let data = UserDefaults.standard.data(forKey: "visitPlans"),
-              let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
+        print("DEBUG: loadSavedPlans開始")
+        guard let data = UserDefaults.standard.data(forKey: "visitPlans") else {
+            print("DEBUG: UserDefaultsにデータがありません")
             return
         }
-        savedPlans = plans
+        
+        do {
+            let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
+            savedPlans = plans
+            print("DEBUG: \(plans.count)個のプランを読み込みました")
+            for plan in plans {
+                print("DEBUG: プラン: \(plan.title), スポット数: \(plan.spots.count)")
+            }
+        } catch {
+            print("DEBUG: デコードエラー: \(error)")
+        }
     }
 }
 

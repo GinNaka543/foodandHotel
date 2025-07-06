@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import UIKit
 
 // VisitTypes.swiftの型を使用するための明示的なimport
 
@@ -9,6 +10,16 @@ struct VisitGameScreen: View {
     let spots: [VisitSpot]
     
     @Environment(\.dismiss) var dismiss
+    
+    init(animeName: String, duration: String, spots: [VisitSpot]) {
+        self.animeName = animeName
+        self.duration = duration
+        self.spots = spots
+        print("DEBUG: VisitGameScreen初期化")
+        print("DEBUG: animeName = \(animeName)")
+        print("DEBUG: duration = \(duration)")
+        print("DEBUG: spots count = \(spots.count)")
+    }
     @State private var currentSpotIndex: Int = 0
     @State private var showingEventDetail = false
     @State private var completedSpots: Set<Int> = []
@@ -16,18 +27,25 @@ struct VisitGameScreen: View {
     @State private var showingResult = false
     @State private var isCorrect = false
     
+    // スロット演出用の状態
+    @State private var isSlotAnimating = false
+    @State private var showSlotMachine = true
+    @State private var slotOffset: CGFloat = 0
+    @State private var selectedSpotIndex: Int? = nil
+    @State private var stamps: [UUID: Bool] = [:]
+    
     var remainingSpots: [VisitSpot] {
         spots.enumerated().filter { !completedSpots.contains($0.offset) }.map { $0.element }
     }
     
     var currentSpot: VisitSpot? {
-        guard currentSpotIndex < spots.count else { return nil }
-        return spots[currentSpotIndex]
+        guard let index = selectedSpotIndex, index < spots.count else { return nil }
+        return spots[index]
     }
     
     var body: some View {
-        NavigationView {
-            ZStack {
+        let _ = print("DEBUG: VisitGameScreen.body呼び出し")
+        ZStack {
                 // 背景
                 LinearGradient(
                     gradient: Gradient(colors: [Color.blue.opacity(0.1), Color.purple.opacity(0.1)]),
@@ -74,10 +92,107 @@ struct VisitGameScreen: View {
                     .background(Color.white)
                     
                     // メインコンテンツ
-                    ScrollView {
-                        VStack(spacing: 24) {
-                            // 進捗バー
-                            VStack(alignment: .leading, spacing: 8) {
+                    if showSlotMachine && remainingSpots.count > 0 {
+                        // スロットマシン画面
+                        VStack(spacing: 40) {
+                            Text("次のスポットを決めよう！")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.purple)
+                                .padding(.top, 40)
+                            
+                            // スロットマシン
+                            ZStack {
+                                // 背景フレーム
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.yellow.opacity(0.3), Color.orange.opacity(0.3)]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 320, height: 200)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(Color.orange, lineWidth: 4)
+                                    )
+                                
+                                // スロット表示部分
+                                VStack {
+                                    GeometryReader { geometry in
+                                        ScrollView(.vertical, showsIndicators: false) {
+                                            VStack(spacing: 0) {
+                                                // ダミーを含めたスポットリスト（無限ループ風演出）
+                                                ForEach(0..<(remainingSpots.count * 5), id: \.self) { index in
+                                                    let spot = remainingSpots[index % remainingSpots.count]
+                                                    VStack(spacing: 8) {
+                                                        Image(systemName: "mappin.circle.fill")
+                                                            .font(.system(size: 40))
+                                                            .foregroundColor(.red)
+                                                        Text(spot.name)
+                                                            .font(.system(size: 20, weight: .bold))
+                                                            .multilineTextAlignment(.center)
+                                                    }
+                                                    .frame(width: 280, height: 120)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .fill(Color.white)
+                                                            .shadow(radius: 5)
+                                                    )
+                                                    .padding(.vertical, 10)
+                                                }
+                                            }
+                                            .offset(y: slotOffset)
+                                        }
+                                        .disabled(true)
+                                        .frame(width: geometry.size.width, height: 140)
+                                        .clipped()
+                                    }
+                                    .frame(height: 140)
+                                }
+                                .frame(width: 300, height: 160)
+                                
+                                // 選択フレーム
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.red, lineWidth: 4)
+                                    .frame(width: 290, height: 140)
+                                    .shadow(color: .red.opacity(0.5), radius: 10)
+                            }
+                            
+                            // スタートボタン
+                            Button(action: startSlotAnimation) {
+                                HStack {
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 30))
+                                    Text(isSlotAnimating ? "回転中..." : "スタート！")
+                                        .font(.system(size: 24, weight: .bold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 60)
+                                .padding(.vertical, 20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 30)
+                                        .fill(
+                                            LinearGradient(
+                                                gradient: Gradient(colors: isSlotAnimating ? [Color.gray, Color.gray.opacity(0.8)] : [Color.red, Color.orange]),
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                )
+                                .scaleEffect(isSlotAnimating ? 0.95 : 1.0)
+                                .animation(.easeInOut(duration: 0.2), value: isSlotAnimating)
+                            }
+                            .disabled(isSlotAnimating)
+                            
+                            Spacer()
+                        }
+                    } else {
+                        // 通常のゲーム画面
+                        ScrollView {
+                            VStack(spacing: 24) {
+                                // 進捗バー
+                                VStack(alignment: .leading, spacing: 8) {
                                 HStack {
                                     Text("進捗")
                                         .font(.system(size: 14, weight: .medium))
@@ -221,11 +336,10 @@ struct VisitGameScreen: View {
                                     // アクションボタン
                                     HStack(spacing: 16) {
                                         Button(action: {
-                                            // このスポットをスキップ
-                                            if currentSpotIndex < spots.count - 1 {
-                                                currentSpotIndex += 1
-                                                userAnswer = ""
-                                            }
+                                            // このスポットをスキップしてスロットマシンに戻る
+                                            userAnswer = ""
+                                            showSlotMachine = true
+                                            selectedSpotIndex = nil
                                         }) {
                                             Text("スキップ")
                                                 .font(.system(size: 16, weight: .medium))
@@ -240,13 +354,19 @@ struct VisitGameScreen: View {
                                         
                                         Button(action: {
                                             // このスポットを完了
-                                            completedSpots.insert(currentSpotIndex)
-                                            if currentSpotIndex < spots.count - 1 {
-                                                currentSpotIndex += 1
-                                                userAnswer = ""
-                                            } else if completedSpots.count == spots.count {
+                                            if let spotIndex = selectedSpotIndex {
+                                                completedSpots.insert(spotIndex)
+                                                stamps[spots[spotIndex].id] = true
+                                            }
+                                            userAnswer = ""
+                                            
+                                            if completedSpots.count == spots.count {
                                                 // 全て完了
                                                 showingResult = true
+                                            } else {
+                                                // スロットマシンに戻る
+                                                showSlotMachine = true
+                                                selectedSpotIndex = nil
                                             }
                                         }) {
                                             Text("完了")
@@ -298,10 +418,10 @@ struct VisitGameScreen: View {
                         }
                         .padding(.bottom, 40)
                     }
+                    }
                 }
             }
             .navigationBarHidden(true)
-        }
         .alert(isPresented: $showingResult) {
             if completedSpots.count == spots.count {
                 return Alert(
@@ -333,6 +453,39 @@ struct VisitGameScreen: View {
             return "tv"
         case .animeQuiz:
             return "questionmark.circle"
+        }
+    }
+    
+    func startSlotAnimation() {
+        isSlotAnimating = true
+        
+        // アニメーション開始
+        withAnimation(.easeInOut(duration: 0.5)) {
+            slotOffset = -CGFloat.random(in: 2000...3000)
+        }
+        
+        // 2秒後に停止
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            // ランダムにスポットを選択
+            let remainingIndices = spots.enumerated()
+                .filter { !completedSpots.contains($0.offset) }
+                .map { $0.offset }
+            
+            if let randomIndex = remainingIndices.randomElement() {
+                selectedSpotIndex = randomIndex
+                
+                // 選択されたスポットの位置に調整
+                let spotPosition = CGFloat(remainingIndices.firstIndex(of: randomIndex) ?? 0)
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0)) {
+                    slotOffset = -(spotPosition * 140 + spotPosition * 20 + 70)
+                }
+                
+                // アニメーション終了後、ゲーム画面に遷移
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    isSlotAnimating = false
+                    showSlotMachine = false
+                }
+            }
         }
     }
 } 

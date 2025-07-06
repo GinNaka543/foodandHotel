@@ -1,4 +1,6 @@
 import SwiftUI
+import Foundation
+// 型定義はVisitTypes.swiftにまとめたのでここでは不要
 
 // Type definitions
 enum EventType: String, CaseIterable, Codable {

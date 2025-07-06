@@ -82,6 +82,13 @@ struct AnimeCustomField: Hashable, Codable {
     var value: String
 }
 
+enum WatchStatus: String, Codable, CaseIterable {
+    case none = "なし"
+    case willWatch = "後で見る"
+    case watchAgain = "もう一度見る"
+    case thisTerm = "今期"
+}
+
 struct Anime: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var imageIdentifier: String?
@@ -89,12 +96,13 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var hashtag: String
     var releaseDate: Date
     var customFields: [AnimeCustomField]?
+    var watchStatus: WatchStatus = .none
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, title, hashtag, releaseDate, customFields
+        case id, imageIdentifier, title, hashtag, releaseDate, customFields, watchStatus
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -104,6 +112,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(releaseDate, forKey: .releaseDate)
         try container.encodeIfPresent(imageIdentifier, forKey: .imageIdentifier)
         try container.encodeIfPresent(customFields, forKey: .customFields)
+        try container.encode(watchStatus, forKey: .watchStatus)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -113,14 +122,16 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         releaseDate = try container.decode(Date.self, forKey: .releaseDate)
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
         customFields = try? container.decodeIfPresent([AnimeCustomField].self, forKey: .customFields)
+        watchStatus = (try? container.decode(WatchStatus.self, forKey: .watchStatus)) ?? .none
     }
-    init(id: UUID, imageIdentifier: String?, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil) {
+    init(id: UUID, imageIdentifier: String?, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.title = title
         self.hashtag = hashtag
         self.releaseDate = releaseDate
         self.customFields = customFields
+        self.watchStatus = watchStatus
     }
 }
 
@@ -134,9 +145,9 @@ struct AnimeScreen: View {
     
     enum AnimeTab: String, CaseIterable {
         case all = "ALL"
-        case willWatch = "Will watch"
-        case watchAgain = "Watch Again"
         case thisTerm = "This term"
+        case willWatch = "Will watch"
+        case watchAgain = "Watch again"
     }
     
     var filteredAnimes: [Anime] {
@@ -144,12 +155,11 @@ struct AnimeScreen: View {
         case .all:
             return animeManager.animes
         case .willWatch:
-            return animeManager.animes.filter { $0.hashtag.contains("will watch") }
+            return animeManager.animes.filter { $0.watchStatus == .willWatch }
         case .watchAgain:
-            return animeManager.animes.filter { $0.hashtag.contains("watch again") }
+            return animeManager.animes.filter { $0.watchStatus == .watchAgain }
         case .thisTerm:
-            // Implementation needed
-            return []
+            return animeManager.animes.filter { $0.watchStatus == .thisTerm }
         }
     }
 
@@ -1293,6 +1303,8 @@ struct AnimeAboutView: View {
     @State private var editFieldValue = ""
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
+    @State private var showEditWatchStatusModal = false
+    @State private var editWatchStatus: WatchStatus = .none
     
     var body: some View {
         GeometryReader { geometry in
@@ -1366,6 +1378,22 @@ struct AnimeAboutView: View {
                             showEditReleaseDateModal = true
                         }
                     
+                    // 視聴ステータス
+                    HStack {
+                        Text("ステータス:")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.gray)
+                        Text(currentAnime.watchStatus.rawValue)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .onTapGesture {
+                        editWatchStatus = currentAnime.watchStatus
+                        showEditWatchStatusModal = true
+                    }
+                    
                     // カスタムフィールド
                     VStack(spacing: 20) {
                         HStack {
@@ -1376,7 +1404,7 @@ struct AnimeAboutView: View {
                                     .foregroundColor(.blue)
                             }
                         }
-                        .padding(.top, 40)
+                        .padding(.top, 20)
                         
                         ForEach(Array((currentAnime.customFields ?? []).enumerated()), id: \.element.name) { index, field in
                             HStack {
@@ -1627,6 +1655,49 @@ struct AnimeAboutView: View {
             .cornerRadius(16)
             .padding(40)
         }
+        // 視聴ステータス編集モーダル
+        .sheet(isPresented: $showEditWatchStatusModal) {
+            VStack(spacing: 20) {
+                Text("視聴ステータスを選択")
+                    .font(.headline)
+                VStack(spacing: 12) {
+                    ForEach(WatchStatus.allCases, id: \.self) { status in
+                        Button(action: {
+                            guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                            var updatedAnime = animes[idx]
+                            updatedAnime.watchStatus = status
+                            animes[idx] = updatedAnime
+                            animeManager.updateAnime(updatedAnime)
+                            showEditWatchStatusModal = false
+                        }) {
+                            HStack {
+                                Text(status.rawValue)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.black)
+                                Spacer()
+                                if editWatchStatus == status {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(editWatchStatus == status ? Color.blue.opacity(0.1) : Color(.systemGray6))
+                            )
+                        }
+                    }
+                }
+                Button("キャンセル") {
+                    showEditWatchStatusModal = false
+                }
+                .foregroundColor(.red)
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
+        }
     }
 }
 
@@ -1642,6 +1713,7 @@ struct AddAnimeSheet: View {
     @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var selectedDay: Int = Calendar.current.component(.day, from: Date())
     @State private var savedImagePath: String? = nil
+    @State private var selectedWatchStatus: WatchStatus = .none
     var body: some View {
         NavigationView {
             Form {
@@ -1702,11 +1774,19 @@ struct AddAnimeSheet: View {
                         .pickerStyle(MenuPickerStyle())
                     }
                 }
+                Section(header: Text("視聴ステータス")) {
+                    Picker("ステータス", selection: $selectedWatchStatus) {
+                        ForEach(WatchStatus.allCases, id: \.self) { status in
+                            Text(status.rawValue).tag(status)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
                 Button("追加") {
                     let calendar = Calendar.current
                     let year = calendar.component(.year, from: Date())
                     let date = calendar.date(from: DateComponents(year: year, month: selectedMonth, day: selectedDay)) ?? Date()
-                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, title: title, hashtag: hashtag, releaseDate: date)
+                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, title: title, hashtag: hashtag, releaseDate: date, watchStatus: selectedWatchStatus)
                     animeManager.addAnime(newAnime)
                     dismiss()
                 }
@@ -1736,6 +1816,8 @@ struct AnimeDetailView: View {
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
     @State private var tempIconImage: UIImage? = nil
+    @State private var showEditWatchStatusModal = false
+    @State private var editWatchStatus: WatchStatus = .none
 
     var body: some View {
         GeometryReader { geometry in
@@ -1809,6 +1891,22 @@ struct AnimeDetailView: View {
                             showEditReleaseDateModal = true
                         }
                     
+                    // 視聴ステータス
+                    HStack {
+                        Text("ステータス:")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.gray)
+                        Text(currentAnime.watchStatus.rawValue)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .onTapGesture {
+                        editWatchStatus = currentAnime.watchStatus
+                        showEditWatchStatusModal = true
+                    }
+                    
                     // ナビゲーションバー（下部メニュー）
                     HStack {
                         Spacer()
@@ -1842,7 +1940,7 @@ struct AnimeDetailView: View {
                         }
                         Spacer()
                     }
-                    .padding(.top, 60)
+                    .padding(.top, 40)
                     .fullScreenCover(isPresented: $showArtwork) {
                         AnimeArtworkScreen(anime: $anime, animes: $animes)
                     }
@@ -1937,6 +2035,49 @@ struct AnimeDetailView: View {
                         showEditReleaseDateModal = false
                     }
                 }
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
+        }
+        // 視聴ステータス編集モーダル
+        .sheet(isPresented: $showEditWatchStatusModal) {
+            VStack(spacing: 20) {
+                Text("視聴ステータスを選択")
+                    .font(.headline)
+                VStack(spacing: 12) {
+                    ForEach(WatchStatus.allCases, id: \.self) { status in
+                        Button(action: {
+                            guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                            var updatedAnime = animes[idx]
+                            updatedAnime.watchStatus = status
+                            animes[idx] = updatedAnime
+                            animeManager.updateAnime(updatedAnime)
+                            showEditWatchStatusModal = false
+                        }) {
+                            HStack {
+                                Text(status.rawValue)
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.black)
+                                Spacer()
+                                if editWatchStatus == status {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(editWatchStatus == status ? Color.blue.opacity(0.1) : Color(.systemGray6))
+                            )
+                        }
+                    }
+                }
+                Button("キャンセル") {
+                    showEditWatchStatusModal = false
+                }
+                .foregroundColor(.red)
             }
             .padding()
             .background(Color(.systemBackground))

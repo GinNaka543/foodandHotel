@@ -25,6 +25,7 @@ public struct VisitScreen: View {
     @State private var selectedTab: VisitTab = .all
     @State private var showSearchBar = false
     @State private var searchText = ""
+    @State private var showingPlanningScreen = false
     
     public var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -141,7 +142,7 @@ public struct VisitScreen: View {
                 Spacer()
             }
             // Createボタン（右下固定）
-            Button(action: { /* 追加処理 */ }) {
+            Button(action: { showingPlanningScreen = true }) {
                 Text("Create")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
@@ -154,6 +155,9 @@ public struct VisitScreen: View {
             }
             .padding(.bottom, 24)
             .padding(.trailing, 20)
+        }
+        .fullScreenCover(isPresented: $showingPlanningScreen) {
+            VisitPlanningScreen()
         }
     }
 } 

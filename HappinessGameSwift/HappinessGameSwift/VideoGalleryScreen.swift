@@ -5,6 +5,8 @@ import Foundation
 import UIKit
 import AVFoundation
 
+// VideoPlayerScreen is now properly imported from VideoPlayerScreen.swift
+
 struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
     let id: UUID
     let characterId: UUID
@@ -58,7 +60,7 @@ struct VideoGalleryScreen: View {
     @State private var youtubeDownloadError: String? = nil
 
     var body: some View {
-        return ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 0) {
                     // 戻るボタン
@@ -1131,8 +1133,8 @@ struct AlbumVideoListScreen: View {
         .fullScreenCover(item: $selectedVideo) { video in
             VideoPlayerScreen(
                 video: video,
-                character: nil,
-                anime: nil,
+                character: nil as Character?,
+                anime: nil as Anime?,
                 allVideos: videos,
                 onSave: { newTitle, newTags in
                     // 編集処理（必要ならここも拡張）

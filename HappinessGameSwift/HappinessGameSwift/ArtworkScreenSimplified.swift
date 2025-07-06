@@ -52,6 +52,52 @@ struct Artwork: Identifiable, Codable, Hashable {
     }
 }
 
+// 一時的なスタブ定義
+struct AlbumArtworkListScreenStub: View {
+    let artworks: [Artwork]
+    let tag: String
+    let onArtworkDeleted: ((Artwork) -> Void)?
+    let onArtworkEdited: ((Artwork) -> Void)?
+    
+    init(artworks: [Artwork], tag: String, onArtworkDeleted: ((Artwork) -> Void)? = nil, onArtworkEdited: ((Artwork) -> Void)? = nil) {
+        self.artworks = artworks
+        self.tag = tag
+        self.onArtworkDeleted = onArtworkDeleted
+        self.onArtworkEdited = onArtworkEdited
+    }
+    
+    var body: some View {
+        VStack {
+            Text("Album Artwork List")
+                .font(.title)
+            Text("AlbumArtworkListScreen.swiftをプロジェクトに追加してください")
+                .foregroundColor(.gray)
+                .padding()
+        }
+    }
+}
+
+struct ArtworkPlayerScreenStub: View {
+    let artwork: Artwork
+    let onArtworkDeleted: ((Artwork) -> Void)?
+    let onArtworkEdited: ((Artwork) -> Void)?
+    
+    init(artwork: Artwork, onArtworkDeleted: ((Artwork) -> Void)? = nil, onArtworkEdited: ((Artwork) -> Void)? = nil) {
+        self.artwork = artwork
+        self.onArtworkDeleted = onArtworkDeleted
+        self.onArtworkEdited = onArtworkEdited
+    }
+    
+    var body: some View {
+        VStack {
+            Text("Artwork Player")
+                .font(.title)
+            Text("ArtworkPlayerScreen.swiftをプロジェクトに追加してください")
+                .foregroundColor(.gray)
+                .padding()
+        }
+    }
+}
 
 // 簡略化されたArtworkScreen
 struct ArtworkScreen: View {
@@ -92,10 +138,10 @@ struct ArtworkScreen: View {
                 Text("ArtworkScreen")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text("正常にファイルが追加されました！")
-                    .foregroundColor(.green)
+                Text("元のコードが複雑すぎるため一時的に簡略化されました")
+                    .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
-                Text("アートワーク機能は正常に動作しています")
+                Text("完全な機能を使用するには、すべてのファイルをXcodeプロジェクトに追加してください")
                     .font(.caption)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)

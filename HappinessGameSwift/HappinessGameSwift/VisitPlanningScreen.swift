@@ -1,41 +1,8 @@
 import SwiftUI
 import PhotosUI
 import Foundation
-// 型定義はVisitTypes.swiftにまとめたのでここでは不要
 
-// Type definitions
-enum EventType: String, CaseIterable, Codable {
-    case findLocation = "場所を探す"
-    case takePhoto = "写真を撮る"
-    case animeScene = "アニメシーンを探す"
-    case animeQuiz = "アニメクイズ"
-}
-
-struct SpotEvent: Identifiable, Codable {
-    let id = UUID()
-    var type: EventType
-    var description: String
-    var question: String = ""
-    var answer: String = ""
-}
-
-struct VisitSpot: Identifiable, Codable {
-    let id = UUID()
-    var name: String
-    var address: String = ""
-    var notes: String = ""
-    var event: SpotEvent?
-}
-
-struct VisitPlanData: Identifiable, Codable {
-    let id = UUID()
-    var animeName: String
-    var title: String
-    var duration: String
-    var spots: [VisitSpot]
-    var thumbnailData: Data?
-    var createdDate: Date = Date()
-}
+// VisitTypes.swiftの型を使用するための明示的なimport
 
 struct VisitPlanningScreen: View {
     @Environment(\.dismiss) var dismiss

@@ -78,18 +78,16 @@ struct MainContainerView: View {
             // 上部コンテンツエリア
             VStack(spacing: 0) {
                 // 選択されたタブに応じてコンテンツを表示
-                Group {
-                    switch mainTab.selectedTab {
-                    case .home:
+                VStack {
+                    if mainTab.selectedTab == .home {
                         HomeScreen().environmentObject(mainTab)
-                    case .chara:
+                    } else if mainTab.selectedTab == .chara {
                         CharaScreen().environmentObject(mainTab)
-                    case .anime:
+                    } else if mainTab.selectedTab == .anime {
                         AnimeScreen().environmentObject(mainTab)
-                    case .visit:
-                        // Temporary implementation until VisitScreen.swift is added to project
-                        VisitScreenTemp()
-                    case .card:
+                    } else if mainTab.selectedTab == .visit {
+                        VisitScreen()
+                    } else if mainTab.selectedTab == .card {
                         CardContentView(selectedTab: .constant(.card))
                     }
                 }
@@ -476,32 +474,4 @@ struct CardContentView: View {
     }
 }
 
-// Temporary VisitScreen implementation until VisitScreen.swift is added to project
-struct VisitScreenTemp: View {
-    var body: some View {
-        VStack {
-            Text("Visit Page")
-                .font(.largeTitle)
-                .padding()
-            
-            Text("⚠️ Important")
-                .font(.headline)
-                .foregroundColor(.orange)
-                .padding(.top)
-            
-            Text("VisitScreen.swift and VisitPlanningScreen.swift need to be added to the Xcode project.")
-                .multilineTextAlignment(.center)
-                .padding()
-            
-            Text("In Xcode:\n1. Right-click on HappinessGameSwift folder\n2. Select 'Add Files to HappinessGameSwift...'\n3. Select both files\n4. Check 'Add to targets: HappinessGameSwift'\n5. Click 'Add'")
-                .font(.caption)
-                .multilineTextAlignment(.leading)
-                .padding()
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(8)
-                .padding()
-            
-            Spacer()
-        }
-    }
-} 
+ 

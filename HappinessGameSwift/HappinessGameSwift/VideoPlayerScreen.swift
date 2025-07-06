@@ -7,7 +7,7 @@ struct VideoPlayerScreen: View {
     let character: Character?
     let anime: Anime?
     let allVideos: [MemoryVideo]
-    var onSave: ((String, String) -> Void)? = nil // タイトル・タグ保存用
+    var onSave: ((String, [String]) -> Void)? = nil // タイトル・タグ保存用
     var onDelete: (() -> Void)? = nil // 削除用
     @Environment(\.presentationMode) var presentationMode
     @State private var player: AVPlayer?
@@ -245,7 +245,8 @@ struct VideoPlayerScreen: View {
                 TextField("タグ（カンマ区切り）", text: $editTags)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 Button("タイトル・タグを保存") {
-                    onSave?(editTitle, editTags)
+                    let tagsArray = editTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    onSave?(editTitle, tagsArray)
                     showMenuSheet = false
                 }
                 .font(.headline)

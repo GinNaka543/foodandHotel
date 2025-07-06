@@ -7,6 +7,10 @@ import Photos
 import AVFoundation
 import AVKit
 
+// Typealias to use the actual screens
+typealias AlbumArtworkListScreenTemp = AlbumArtworkListScreen
+typealias ArtworkPlayerScreenTemp = ArtworkPlayerScreen
+
 fileprivate func daysInMonth(_ month: Int) -> Int {
     let calendar = Calendar.current
     let dateComponents = DateComponents(year: 2000, month: month)
@@ -432,7 +436,7 @@ struct AnimeArtworkScreen: View {
                             }
                         }
                         .fullScreenCover(item: $selectedAlbum) { album in
-                            AlbumArtworkListScreen(
+                            AlbumArtworkListScreenTemp(
                                 artworks: album.videos, 
                                 tag: album.tag,
                                 onArtworkDeleted: { deletedArtwork in
@@ -524,7 +528,7 @@ struct AnimeArtworkScreen: View {
                             .padding(.top, 8)
                         }
                         .fullScreenCover(item: $selectedArtwork) { artwork in
-                            ArtworkPlayerScreen(artwork: artwork, onDelete: {
+                            ArtworkPlayerScreenTemp(artwork: artwork, onDelete: {
                                 if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
                                     artworks.remove(at: idx)
                                     saveArtworksToUserDefaults()
@@ -578,7 +582,7 @@ struct AnimeArtworkScreen: View {
                         if !tag.isEmpty {
                             let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
                             if !tagArtworks.isEmpty {
-                                albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks))
+                                albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
                             }
                         }
                         newTag = ""
@@ -689,7 +693,7 @@ struct AnimeArtworkScreen: View {
                             }
                             Button(action: {
                                 if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                    artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imagePath: artworks[idx].imagePath, title: editText, tags: artworks[idx].tags, date: artworks[idx].date)
+                                    artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imagePath: artworks[idx].imagePath, title: editText, tags: artworks[idx].tags, createdAt: artworks[idx].createdAt)
                                     saveArtworksToUserDefaults()
                                 }
                                 showEditTitle = false
@@ -767,7 +771,7 @@ struct AnimeArtworkScreen: View {
         // 画像を保存
         let fileName = "anime_artwork_\(UUID().uuidString).png"
         let path = saveImageToDocuments(image, fileName: fileName)
-        let newArtwork = Artwork(id: UUID(), characterId: anime.id, imagePath: path, title: photoTitle, tags: tags, date: Date())
+        let newArtwork = Artwork(id: UUID(), characterId: anime.id, imagePath: path, title: photoTitle, tags: tags, createdAt: Date())
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         selectedImage = nil
@@ -800,7 +804,7 @@ struct AnimeArtworkScreen: View {
                 return nil
             }
             // 画像が残っている場合は更新されたAlbumを返す
-            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks)
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
         print("[DEBUG] AnimeArtworkScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
@@ -815,7 +819,7 @@ struct AnimeArtworkScreen: View {
                     return artwork
                 }
             }
-            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks)
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
         print("[DEBUG] AnimeArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
     }
@@ -1093,24 +1097,13 @@ struct AnimeVideoScreen: View {
                             }
                         }
                         .fullScreenCover(item: $selectedVideo) { video in
-                            VideoPlayerScreen(
-                                video: video,
-                                character: nil,
-                                anime: anime,
-                                allVideos: videos,
-                                onSave: { newTitle, newTags in
-                                    // 編集処理（必要ならここも拡張）
-                                },
-                                onDelete: {
-                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                                        videos.remove(at: idx)
-                                        saveVideosToUserDefaults()
-                                        print("[DEBUG] AnimeVideoScreen: 動画削除 - ID: \(video.id)")
-                                    } else {
-                                        print("[DEBUG] AnimeVideoScreen: 削除対象が見つかりませんでした - ID: \(video.id)")
-                                    }
-                                }
-                            )
+                            VStack {
+                                Text("Video Player")
+                                    .font(.title)
+                                Text("VideoPlayerScreen.swiftをプロジェクトに追加してください")
+                                    .foregroundColor(.gray)
+                                    .padding()
+                            }
                         }
                     }
                 }

@@ -1,17 +1,28 @@
 import SwiftUI
 
-struct VisitPlan: Identifiable {
-    let id = UUID()
-    let imageName: String
-    let title: String
-    let iconName: String
+// 一時的な定義（ファイルがプロジェクトに追加されるまで）
+struct VisitPlanningScreen: View {
+    var body: some View {
+        Text("VisitPlanningScreen.swiftをXcodeプロジェクトに追加してください")
+            .padding()
+    }
+}
+
+struct VisitGameScreen: View {
+    let animeName: String
+    let duration: String
+    let spots: [VisitSpot]
+    
+    var body: some View {
+        Text("VisitPlanningScreen.swiftをXcodeプロジェクトに追加してください")
+            .padding()
+    }
 }
 
 public struct VisitScreen: View {
-    // 仮のビジットプランデータ
-    let visitPlans: [VisitPlan] = [
-        VisitPlan(imageName: "青豚", title: "アートウォーク", iconName: "paintbrush")
-    ]
+    @State private var savedPlans: [VisitPlanData] = []
+    @State private var showingSelectedPlan = false
+    @State private var selectedPlan: VisitPlanData?
     
     // タブ用
     enum VisitTab: String, CaseIterable {
@@ -28,6 +39,7 @@ public struct VisitScreen: View {
     @State private var showingPlanningScreen = false
     
     public var body: some View {
+        NavigationView {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 // ヘッダー
@@ -95,46 +107,89 @@ public struct VisitScreen: View {
                 // ビジットプラン欄
                 ScrollView {
                     VStack(spacing: 24) {
-                        ForEach(visitPlans) { plan in
-                            VStack(alignment: .leading, spacing: 0) {
-                                GeometryReader { geometry in
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 0)
-                                            .fill(Color.white)
-                                            .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
-                                        Image(plan.imageName)
-                                            .resizable()
-                                            .scaledToFill()
+                        if savedPlans.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "map")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray)
+                                Text("まだプランがありません")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
+                                Text("右下のCreateボタンから作成してください")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 100)
+                        } else {
+                            ForEach(savedPlans) { plan in
+                                Button(action: {
+                                    selectedPlan = plan
+                                    showingSelectedPlan = true
+                                }) {
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        GeometryReader { geometry in
+                                            ZStack {
+                                                RoundedRectangle(cornerRadius: 0)
+                                                    .fill(Color.white)
+                                                    .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+                                                
+                                                if let thumbnailData = plan.thumbnailData,
+                                                   let uiImage = UIImage(data: thumbnailData) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                } else {
+                                                    Rectangle()
+                                                        .fill(Color(.systemGray5))
+                                                        .overlay(
+                                                            Image(systemName: "photo")
+                                                                .font(.system(size: 40))
+                                                                .foregroundColor(.gray)
+                                                        )
+                                                }
+                                            }
                                             .frame(width: geometry.size.width, height: 233)
                                             .clipped()
+                                            .padding(.bottom, 0)
+                                        }
+                                        .frame(height: 233)
+                                        HStack(alignment: .center, spacing: 12) {
+                                            Circle()
+                                                .fill(Color.blue.opacity(0.2))
+                                                .frame(width: 40, height: 40)
+                                                .overlay(
+                                                    Image(systemName: "map.fill")
+                                                        .font(.system(size: 20))
+                                                        .foregroundColor(.blue)
+                                                )
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(plan.title)
+                                                    .font(.headline)
+                                                    .foregroundColor(.black)
+                                                Text("#\(plan.animeName)")
+                                                    .font(.caption)
+                                                    .foregroundColor(.gray)
+                                            }
+                                            Spacer()
+                                            VStack(alignment: .trailing, spacing: 2) {
+                                                Text(plan.duration)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundColor(.blue)
+                                                Text("\(plan.spots.count)スポット")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.gray)
+                                            }
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
                                     }
-                                    .frame(width: geometry.size.width, height: 233)
-                                    .clipped()
-                                    .padding(.bottom, 0)
                                 }
-                                .frame(height: 233)
-                                HStack(alignment: .center, spacing: 12) {
-                                    Circle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 40, height: 40)
-                                        .overlay(
-                                            Image(systemName: plan.iconName)
-                                                .font(.system(size: 20))
-                                                .foregroundColor(.gray)
-                                        )
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(plan.title)
-                                            .font(.headline)
-                                            .foregroundColor(.black)
-                                        Text("#nakajimaginsei")
-                                            .font(.caption)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                .padding(.top, 8)
-                                .padding(.leading, 8)
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.vertical, 8)
                             }
-                            .padding(.vertical, 8)
                         }
                     }
                     .padding(.top, 8)
@@ -158,6 +213,64 @@ public struct VisitScreen: View {
         }
         .fullScreenCover(isPresented: $showingPlanningScreen) {
             VisitPlanningScreen()
+                .onDisappear {
+                    loadSavedPlans()
+                }
+        }
+        .fullScreenCover(isPresented: $showingSelectedPlan) {
+            if let plan = selectedPlan {
+                VisitGameScreen(
+                    animeName: plan.animeName,
+                    duration: plan.duration,
+                    spots: plan.spots
+                )
+            }
+        }
+        .onAppear {
+            loadSavedPlans()
+        }
         }
     }
+    
+    func loadSavedPlans() {
+        guard let data = UserDefaults.standard.data(forKey: "visitPlans"),
+              let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
+            return
+        }
+        savedPlans = plans
+    }
+}
+
+// VisitPlanningScreenからコピー
+ struct VisitPlanData: Identifiable, Codable {
+    let id = UUID()
+    var animeName: String
+    var title: String
+    var duration: String
+    var spots: [VisitSpot]
+    var thumbnailData: Data?
+    var createdDate: Date = Date()
+}
+
+struct VisitSpot: Identifiable, Codable {
+    let id = UUID()
+    var name: String
+    var address: String = ""
+    var notes: String = ""
+    var event: SpotEvent?
+}
+
+struct SpotEvent: Identifiable, Codable {
+    let id = UUID()
+    var type: EventType
+    var description: String
+    var question: String = ""
+    var answer: String = ""
+}
+
+enum EventType: String, CaseIterable, Codable {
+    case findLocation = "場所を探す"
+    case takePhoto = "写真を撮る"
+    case animeScene = "アニメシーンを探す"
+    case animeQuiz = "アニメクイズ"
 } 

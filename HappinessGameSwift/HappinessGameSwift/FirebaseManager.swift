@@ -11,7 +11,7 @@ class FirebaseManager: ObservableObject {
     private init() {}
     
     // ユーザープロファイルをFirebaseに保存
-    func saveUserProfile(_ profile: UserProfile, completion: @escaping (Result<Void, Error>) -> Void) {
+    func saveUserProfile(_ profile: HappinessGameSwift.UserProfile, completion: @escaping (Result<Void, Error>) -> Void) {
         // Firebaseが利用可能になったらコメントを解除
         /*
         let userRef = db.collection("users").document(profile.id)
@@ -47,7 +47,7 @@ class FirebaseManager: ObservableObject {
     }
     
     // ユーザーの好みデータを更新
-    private func updateUserPreferences(_ profile: UserProfile) {
+    private func updateUserPreferences(_ profile: HappinessGameSwift.UserProfile) {
         // Firebaseが利用可能になったらコメントを解除
         /*
         // アニメ別のインデックスを更新
@@ -83,7 +83,7 @@ class FirebaseManager: ObservableObject {
     }
     
     // 広告を取得
-    func fetchAds(for profile: UserProfile, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
+    func fetchAds(for profile: HappinessGameSwift.UserProfile, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
         // Firebaseが利用可能になったらコメントを解除
         /*
         var ads: [Advertisement] = []

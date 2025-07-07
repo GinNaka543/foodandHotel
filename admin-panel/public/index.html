@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happiness Game 管理者画面</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- ヘッダー -->
+        <header class="bg-indigo-600 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold">
+                        <i class="fas fa-gamepad mr-2"></i>
+                        Happiness Game 管理者画面
+                    </h1>
+                    <div class="text-sm">
+                        <span id="currentTime"></span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <div class="container mx-auto px-4 py-8">
+            <!-- 統計カード -->
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-blue-500 text-white rounded-full">
+                            <i class="fas fa-map-marked-alt text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-500 text-sm">総プラン数</p>
+                            <p class="text-2xl font-bold" id="totalPlans">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-green-500 text-white rounded-full">
+                            <i class="fas fa-location-dot text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-500 text-sm">総スポット数</p>
+                            <p class="text-2xl font-bold" id="totalSpots">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-yellow-500 text-white rounded-full">
+                            <i class="fas fa-clock text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-500 text-sm">1日プラン</p>
+                            <p class="text-2xl font-bold" id="oneDayPlans">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-500 text-white rounded-full">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-500 text-sm">総ユーザー数</p>
+                            <p class="text-2xl font-bold" id="totalUsers">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-pink-500 text-white rounded-full">
+                            <i class="fas fa-user-tag text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-500 text-sm">総キャラクター</p>
+                            <p class="text-2xl font-bold" id="totalCharacters">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 bg-indigo-500 text-white rounded-full">
+                            <i class="fas fa-tv text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-gray-500 text-sm">総アニメ</p>
+                            <p class="text-2xl font-bold" id="totalAnimes">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タブメニュー -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="-mb-px flex">
+                        <a href="#" class="tab-link active" data-tab="plans">
+                            <i class="fas fa-list mr-2"></i>
+                            プラン管理
+                        </a>
+                        <a href="#" class="tab-link" data-tab="users">
+                            <i class="fas fa-user-friends mr-2"></i>
+                            ユーザー管理
+                        </a>
+                        <a href="#" class="tab-link" data-tab="analytics">
+                            <i class="fas fa-chart-bar mr-2"></i>
+                            分析
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- タブコンテンツ -->
+                <div class="p-6">
+                    <!-- プラン管理タブ -->
+                    <div id="plans-tab" class="tab-content">
+                        <div class="mb-4 flex justify-between items-center">
+                            <h2 class="text-xl font-bold">聖地巡礼プラン一覧</h2>
+                            <button onclick="refreshPlans()" class="btn btn-secondary">
+                                <i class="fas fa-refresh mr-2"></i>更新
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="text-left py-2">プラン名</th>
+                                        <th class="text-left py-2">アニメ</th>
+                                        <th class="text-left py-2">期間</th>
+                                        <th class="text-left py-2">スポット数</th>
+                                        <th class="text-left py-2">作成日</th>
+                                        <th class="text-left py-2">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plansTableBody">
+                                    <!-- プランがここに表示されます -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+
+                    <!-- ユーザー管理タブ -->
+                    <div id="users-tab" class="tab-content hidden">
+                        <div class="mb-4 flex justify-between items-center">
+                            <h2 class="text-xl font-bold">ユーザー管理</h2>
+                            <button onclick="refreshUsers()" class="btn btn-secondary">
+                                <i class="fas fa-refresh mr-2"></i>更新
+                            </button>
+                        </div>
+                        
+                        <!-- 検索フォーム -->
+                        <div class="mb-4 bg-gray-50 p-4 rounded">
+                            <h3 class="text-lg font-semibold mb-3">ユーザー検索</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">ユーザー名で検索</label>
+                                    <input type="text" id="searchUsername" placeholder="ユーザー名を入力" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">キャラクターから検索</label>
+                                    <input type="text" id="searchCharacter" placeholder="キャラクター名#タグ" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">アニメから検索</label>
+                                    <input type="text" id="searchAnime" placeholder="アニメ名#ハッシュタグ" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                            <div class="mt-4 flex gap-2">
+                                <button onclick="searchUsers()" class="btn btn-primary">
+                                    <i class="fas fa-search mr-2"></i>検索
+                                </button>
+                                <button onclick="clearSearch()" class="btn btn-secondary">
+                                    <i class="fas fa-times mr-2"></i>クリア
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="text-left py-2">ユーザー名</th>
+                                        <th class="text-left py-2">誕生日</th>
+                                        <th class="text-left py-2">登録キャラクター</th>
+                                        <th class="text-left py-2">登録アニメ</th>
+                                        <th class="text-left py-2">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- ユーザーがここに表示されます -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- ユーザー詳細モーダル -->
+                        <div id="userDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+                            <div class="flex items-center justify-center min-h-screen">
+                                <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full mx-4">
+                                    <div class="p-6">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="text-xl font-bold">ユーザー詳細</h3>
+                                            <button onclick="closeUserDetail()" class="text-gray-500 hover:text-gray-700">
+                                                <i class="fas fa-times text-xl"></i>
+                                            </button>
+                                        </div>
+                                        <div id="userDetailContent">
+                                            <!-- ユーザー詳細がここに表示されます -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 分析タブ -->
+                    <div id="analytics-tab" class="tab-content hidden">
+                        <h2 class="text-xl font-bold mb-4">利用分析</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 p-4 rounded">
+                                <h3 class="font-bold mb-3">期間別プラン数</h3>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span>半日プラン:</span>
+                                        <span id="halfDayCount">0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>1日プラン:</span>
+                                        <span id="oneDayCount">0</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>3日プラン:</span>
+                                        <span id="threeDaysCount">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded">
+                                <h3 class="font-bold mb-3">最近のプラン</h3>
+                                <ul id="recentPlansList" class="space-y-1 text-sm">
+                                    <!-- 最近のプランがここに表示されます -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

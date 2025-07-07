@@ -1,6 +1,11 @@
 // API URL
 const API_URL = 'http://localhost:3002/api';
 
+// ユーザーデータのキャッシュ
+let allUsers = [];
+let allCharacters = new Map();
+let allAnimes = new Map();
+
 // 現在時刻の更新
 function updateTime() {
     const now = new Date();
@@ -135,32 +140,50 @@ function refreshPlans() {
 
 
 // ユーザー一覧の取得
-async function loadUsers() {
+async function loadUsers(searchParams = null) {
     try {
-        const response = await fetch(`${API_URL}/users`);
+        const response = await fetch(`${API_URL}/firebase/users`);
         const data = await response.json();
         
         const tbody = document.getElementById('usersTableBody');
         tbody.innerHTML = '';
         
         if (!data.users || data.users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">ユーザーがいません</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">ユーザーがいません</td></tr>';
             return;
         }
         
-        for (const user of data.users) {
+        // 全ユーザーデータを保存
+        allUsers = data.users;
+        
+        // 検索フィルタリング
+        let filteredUsers = data.users;
+        if (searchParams) {
+            filteredUsers = await filterUsers(data.users, searchParams);
+        }
+        
+        if (filteredUsers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">検索条件に一致するユーザーがいません</td></tr>';
+            return;
+        }
+        
+        for (const user of filteredUsers) {
             // キャラクター名とアニメ名を取得
             let characterNames = 'なし';
             let animeNames = 'なし';
             
             try {
                 const [charResponse, animeResponse] = await Promise.all([
-                    fetch(`${API_URL}/users/${user.id}/characters`),
-                    fetch(`${API_URL}/users/${user.id}/animes`)
+                    fetch(`${API_URL}/firebase/users/${user.id}/characters`),
+                    fetch(`${API_URL}/firebase/users/${user.id}/animes`)
                 ]);
                 
                 const charData = await charResponse.json();
                 const animeData = await animeResponse.json();
+                
+                // キャラクターとアニメデータをキャッシュ
+                allCharacters.set(user.id, charData.characters || []);
+                allAnimes.set(user.id, animeData.animes || []);
                 
                 if (charData.characters && charData.characters.length > 0) {
                     characterNames = charData.characters.map(char => `${char.name}#${char.tag || ''}`).join(', ');
@@ -203,9 +226,9 @@ async function loadUsers() {
 async function viewUserDetail(userId) {
     try {
         const [userResponse, charactersResponse, animesResponse] = await Promise.all([
-            fetch(`${API_URL}/users`),
-            fetch(`${API_URL}/users/${userId}/characters`),
-            fetch(`${API_URL}/users/${userId}/animes`)
+            fetch(`${API_URL}/firebase/users`),
+            fetch(`${API_URL}/firebase/users/${userId}/characters`),
+            fetch(`${API_URL}/firebase/users/${userId}/animes`)
         ]);
         
         const userData = await userResponse.json();
@@ -235,10 +258,6 @@ async function viewUserDetail(userId) {
                             <span class="ml-2">${user.birthday || '未設定'}</span>
                         </div>
                         <div>
-                            <span class="text-gray-600">作成日:</span>
-                            <span class="ml-2">${user.createdAt || '-'}</span>
-                        </div>
-                        <div>
                             <span class="text-gray-600">プラットフォーム:</span>
                             <span class="ml-2">${user.platform || 'Unknown'}</span>
                         </div>
@@ -254,7 +273,6 @@ async function viewUserDetail(userId) {
                                     <div class="font-medium">${char.name}</div>
                                     <div class="text-sm text-gray-600">タグ: ${char.tag || 'なし'}</div>
                                     <div class="text-sm text-gray-600">アニメ: ${char.anime || 'なし'}</div>
-                                    <div class="text-xs text-gray-400">作成: ${char.createdAt || '-'}</div>
                                 </div>
                             `).join('') : 
                             '<p class="text-gray-500">登録されたキャラクターがありません</p>'
@@ -270,7 +288,6 @@ async function viewUserDetail(userId) {
                                 <div class="bg-gray-50 p-2 rounded mb-2">
                                     <div class="font-medium">${anime.title}</div>
                                     <div class="text-sm text-gray-600">ハッシュタグ: ${anime.hashtag || 'なし'}</div>
-                                    <div class="text-xs text-gray-400">作成: ${anime.createdAt || '-'}</div>
                                 </div>
                             `).join('') : 
                             '<p class="text-gray-500">登録されたアニメがありません</p>'
@@ -294,8 +311,106 @@ function closeUserDetail() {
 
 // ユーザー一覧の更新
 function refreshUsers() {
+    clearSearch();
     loadUsers();
     loadStats();
+}
+
+// ユーザーのフィルタリング
+async function filterUsers(users, searchParams) {
+    const filteredUsers = [];
+    
+    for (const user of users) {
+        let match = true;
+        
+        // ユーザー名で検索
+        if (searchParams.username && match) {
+            match = user.username && user.username.toLowerCase().includes(searchParams.username.toLowerCase());
+        }
+        
+        // キャラクターで検索
+        if (searchParams.character && match) {
+            const characters = allCharacters.get(user.id) || [];
+            if (characters.length === 0) {
+                // キャラクターデータをフェッチ
+                try {
+                    const response = await fetch(`${API_URL}/firebase/users/${user.id}/characters`);
+                    const data = await response.json();
+                    allCharacters.set(user.id, data.characters || []);
+                    const userChars = data.characters || [];
+                    match = userChars.some(char => {
+                        const charStr = `${char.name}${char.tag ? '#' + char.tag : ''}`.toLowerCase();
+                        return charStr.includes(searchParams.character.toLowerCase());
+                    });
+                } catch (error) {
+                    match = false;
+                }
+            } else {
+                match = characters.some(char => {
+                    const charStr = `${char.name}${char.tag ? '#' + char.tag : ''}`.toLowerCase();
+                    return charStr.includes(searchParams.character.toLowerCase());
+                });
+            }
+        }
+        
+        // アニメで検索
+        if (searchParams.anime && match) {
+            const animes = allAnimes.get(user.id) || [];
+            if (animes.length === 0) {
+                // アニメデータをフェッチ
+                try {
+                    const response = await fetch(`${API_URL}/firebase/users/${user.id}/animes`);
+                    const data = await response.json();
+                    allAnimes.set(user.id, data.animes || []);
+                    const userAnimes = data.animes || [];
+                    match = userAnimes.some(anime => {
+                        const animeStr = `${anime.title}${anime.hashtag ? '#' + anime.hashtag : ''}`.toLowerCase();
+                        return animeStr.includes(searchParams.anime.toLowerCase());
+                    });
+                } catch (error) {
+                    match = false;
+                }
+            } else {
+                match = animes.some(anime => {
+                    const animeStr = `${anime.title}${anime.hashtag ? '#' + anime.hashtag : ''}`.toLowerCase();
+                    return animeStr.includes(searchParams.anime.toLowerCase());
+                });
+            }
+        }
+        
+        if (match) {
+            filteredUsers.push(user);
+        }
+    }
+    
+    return filteredUsers;
+}
+
+// ユーザー検索
+function searchUsers() {
+    const username = document.getElementById('searchUsername').value.trim();
+    const character = document.getElementById('searchCharacter').value.trim();
+    const anime = document.getElementById('searchAnime').value.trim();
+    
+    if (!username && !character && !anime) {
+        alert('検索条件を入力してください');
+        return;
+    }
+    
+    const searchParams = {};
+    if (username) searchParams.username = username;
+    if (character) searchParams.character = character;
+    if (anime) searchParams.anime = anime;
+    
+    loadUsers(searchParams);
+}
+
+// 検索フォームのクリア
+function clearSearch() {
+    document.getElementById('searchUsername').value = '';
+    document.getElementById('searchCharacter').value = '';
+    document.getElementById('searchAnime').value = '';
+    loadUsers();
 }
 
 // 初期データの読み込み

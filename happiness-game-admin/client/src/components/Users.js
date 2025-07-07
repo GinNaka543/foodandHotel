@@ -4,6 +4,7 @@ import axios from 'axios';
 function Users() {
   const [users, setUsers] = useState([]);
   const [searchParams, setSearchParams] = useState({
+    all: '',
     anime: '',
     character: '',
     hashtag: ''
@@ -31,6 +32,7 @@ function Users() {
     
     try {
       const params = new URLSearchParams();
+      if (searchParams.all) params.append('all', searchParams.all);
       if (searchParams.anime) params.append('anime', searchParams.anime);
       if (searchParams.character) params.append('character', searchParams.character);
       if (searchParams.hashtag) params.append('hashtag', searchParams.hashtag);
@@ -66,6 +68,13 @@ function Users() {
         <form onSubmit={handleSearch} className="search-form">
           <input
             type="text"
+            name="all"
+            placeholder="全てで検索（ユーザー名、キャラクター、アニメ、ハッシュタグ）"
+            value={searchParams.all}
+            onChange={handleInputChange}
+          />
+          <input
+            type="text"
             name="anime"
             placeholder="アニメ名で検索"
             value={searchParams.anime}
@@ -87,7 +96,7 @@ function Users() {
           />
           <button type="submit" className="btn btn-primary">検索</button>
           <button type="button" className="btn" onClick={() => {
-            setSearchParams({ anime: '', character: '', hashtag: '' });
+            setSearchParams({ all: '', anime: '', character: '', hashtag: '' });
             fetchAllUsers();
           }}>
             リセット

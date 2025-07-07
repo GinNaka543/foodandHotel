@@ -323,6 +323,69 @@ async function filterUsers(users, searchParams) {
     for (const user of users) {
         let match = true;
         
+        // 全てで検索（ユーザー名、キャラクター、アニメ、ハッシュタグを含む）
+        if (searchParams.all && match) {
+            const searchTerm = searchParams.all.toLowerCase();
+            let userMatch = false;
+            
+            // ユーザー名で検索
+            if (user.username && user.username.toLowerCase().includes(searchTerm)) {
+                userMatch = true;
+            }
+            
+            // キャラクターで検索
+            if (!userMatch) {
+                const characters = allCharacters.get(user.id) || [];
+                if (characters.length === 0) {
+                    // キャラクターデータをフェッチ
+                    try {
+                        const response = await fetch(`${API_URL}/firebase/users/${user.id}/characters`);
+                        const data = await response.json();
+                        allCharacters.set(user.id, data.characters || []);
+                        const userChars = data.characters || [];
+                        userMatch = userChars.some(char => {
+                            const charStr = `${char.name}${char.tag ? '#' + char.tag : ''}`.toLowerCase();
+                            return charStr.includes(searchTerm);
+                        });
+                    } catch (error) {
+                        // エラーの場合はスキップ
+                    }
+                } else {
+                    userMatch = characters.some(char => {
+                        const charStr = `${char.name}${char.tag ? '#' + char.tag : ''}`.toLowerCase();
+                        return charStr.includes(searchTerm);
+                    });
+                }
+            }
+            
+            // アニメで検索
+            if (!userMatch) {
+                const animes = allAnimes.get(user.id) || [];
+                if (animes.length === 0) {
+                    // アニメデータをフェッチ
+                    try {
+                        const response = await fetch(`${API_URL}/firebase/users/${user.id}/animes`);
+                        const data = await response.json();
+                        allAnimes.set(user.id, data.animes || []);
+                        const userAnimes = data.animes || [];
+                        userMatch = userAnimes.some(anime => {
+                            const animeStr = `${anime.title}${anime.hashtag ? '#' + anime.hashtag : ''}`.toLowerCase();
+                            return animeStr.includes(searchTerm);
+                        });
+                    } catch (error) {
+                        // エラーの場合はスキップ
+                    }
+                } else {
+                    userMatch = animes.some(anime => {
+                        const animeStr = `${anime.title}${anime.hashtag ? '#' + anime.hashtag : ''}`.toLowerCase();
+                        return animeStr.includes(searchTerm);
+                    });
+                }
+            }
+            
+            match = userMatch;
+        }
+        
         // ユーザー名で検索
         if (searchParams.username && match) {
             match = user.username && user.username.toLowerCase().includes(searchParams.username.toLowerCase());
@@ -388,16 +451,18 @@ async function filterUsers(users, searchParams) {
 
 // ユーザー検索
 function searchUsers() {
+    const all = document.getElementById('searchAll').value.trim();
     const username = document.getElementById('searchUsername').value.trim();
     const character = document.getElementById('searchCharacter').value.trim();
     const anime = document.getElementById('searchAnime').value.trim();
     
-    if (!username && !character && !anime) {
+    if (!all && !username && !character && !anime) {
         alert('検索条件を入力してください');
         return;
     }
     
     const searchParams = {};
+    if (all) searchParams.all = all;
     if (username) searchParams.username = username;
     if (character) searchParams.character = character;
     if (anime) searchParams.anime = anime;
@@ -407,6 +472,7 @@ function searchUsers() {
 
 // 検索フォームのクリア
 function clearSearch() {
+    document.getElementById('searchAll').value = '';
     document.getElementById('searchUsername').value = '';
     document.getElementById('searchCharacter').value = '';
     document.getElementById('searchAnime').value = '';

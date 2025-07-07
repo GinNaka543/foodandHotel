@@ -5,7 +5,7 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(cors());
@@ -64,8 +64,8 @@ app.get('/api/users', async (req, res) => {
 // 特定のアニメ/キャラクター/タグでユーザーを検索
 app.get('/api/users/search', async (req, res) => {
   try {
-    const { anime, character, hashtag } = req.query;
-    console.log('検索条件:', { anime, character, hashtag });
+    const { all, anime, character, hashtag } = req.query;
+    console.log('検索条件:', { all, anime, character, hashtag });
     const usersSnapshot = await db.collection('users').get();
     const users = [];
     for (const doc of usersSnapshot.docs) {
@@ -87,6 +87,19 @@ app.get('/api/users/search', async (req, res) => {
       console.log('  hashtags:', user.hashtags);
       // 検索条件に合致するか
       let match = true;
+      
+      // 全てで検索（ユーザー名、キャラクター、アニメ、ハッシュタグを含む）
+      if (all) {
+        const searchTerm = all.toLowerCase();
+        const userMatch = 
+          (user.username && user.username.toLowerCase().includes(searchTerm)) ||
+          (user.favoriteAnimes && user.favoriteAnimes.some(anime => anime && anime.toLowerCase().includes(searchTerm))) ||
+          (user.favoriteCharacters && user.favoriteCharacters.some(char => char && char.toLowerCase().includes(searchTerm))) ||
+          (user.hashtags && user.hashtags.some(tag => tag && tag.toLowerCase().includes(searchTerm)));
+        
+        if (!userMatch) match = false;
+      }
+      
       if (anime) {
         const animeStr = (user.favoriteAnimes || []).filter(a => !!a && isNaN(a)).join(' ').toLowerCase();
         if (!animeStr.includes(anime.toLowerCase())) match = false;

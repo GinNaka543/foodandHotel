@@ -31,6 +31,14 @@
 		B5A40D0BD2025C14C1026A3B /* styles.css in Resources */ = {isa = PBXBuildFile; fileRef = 1C2E559CCB0196835162F8B9 /* styles.css */; };
 		B6AD542C7CF413879F96639C /* kakanokari.png in Resources */ = {isa = PBXBuildFile; fileRef = 302B0138B61079A40A461DED /* kakanokari.png */; };
 		CBF056FA12F454254ECB78EC /* long.png in Resources */ = {isa = PBXBuildFile; fileRef = EE6AC7BB855D6E55D1650968 /* long.png */; };
+		CCC2EC332E1AE19600F805CA /* VisitPlanningScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC302E1AE19600F805CA /* VisitPlanningScreen.swift */; };
+		CCC2EC342E1AE19600F805CA /* VisitGameScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC2F2E1AE19600F805CA /* VisitGameScreen.swift */; };
+		CCC2EC352E1AE19600F805CA /* VisitScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC312E1AE19600F805CA /* VisitScreen.swift */; };
+		CCC2EC362E1AE19600F805CA /* UserProfileScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC2D2E1AE19600F805CA /* UserProfileScreen.swift */; };
+		CCC2EC372E1AE19600F805CA /* VideoPlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC2E2E1AE19600F805CA /* VideoPlayerScreen.swift */; };
+		CCC2EC382E1AE19600F805CA /* VisitTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC322E1AE19600F805CA /* VisitTypes.swift */; };
+		CCC2EC3B2E1AE1A000F805CA /* AlbumArtworkListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC392E1AE1A000F805CA /* AlbumArtworkListScreen.swift */; };
+		CCC2EC3C2E1AE1A000F805CA /* ArtworkPlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC2EC3A2E1AE1A000F805CA /* ArtworkPlayerScreen.swift */; };
 		CCFFBB472E15B5C800841C5E /* ListTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFFBB462E15B5C800841C5E /* ListTab.swift */; };
 		CCFFBB482E15B5C800841C5E /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFFBB452E15B5C800841C5E /* ListPageScreen.swift */; };
 		CCFFBB4D2E1683DE00841C5E /* 青豚.jpg in Resources */ = {isa = PBXBuildFile; fileRef = CCFFBB4C2E1683DE00841C5E /* 青豚.jpg */; };
@@ -43,7 +51,6 @@
 		E1339427749E217883955BDA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7BE982C7872DC6D224F29F01 /* Assets.xcassets */; };
 		E2CE1BF33856FC8867E120FD /* picture.png in Resources */ = {isa = PBXBuildFile; fileRef = 1732CC9BA056AC4DF36E4C3E /* picture.png */; };
 		E541F3113FCB41B22350152B /* sample.png in Resources */ = {isa = PBXBuildFile; fileRef = A100D117EF0D523B0B82B2E2 /* sample.png */; };
-		FAC12A89B54FBAE7BA9FEC40 /* HappinessGameSwift.xcodeproj in Resources */ = {isa = PBXBuildFile; fileRef = FD97CD6F27FD0CDA4D5104CF /* HappinessGameSwift.xcodeproj */; };
 		FAE9F4C26C1F62A738C4798B /* CharaScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DD5F60E41FC2EF9FB8C7A6 /* CharaScreen.swift */; };
 /* End PBXBuildFile section */
 
@@ -2391,6 +2398,14 @@
 		CC8022D7859AD295085897BA /* 68aea0d11581e0a7d69d19a3228ede5db133de */ = {isa = PBXFileReference; lastKnownFileType = file; path = 68aea0d11581e0a7d69d19a3228ede5db133de; sourceTree = "<group>"; };
 		CC97ED4F10572D585ABD0F1F /* 76043696e65ee2bdf9ff7f3922e0ac8f0c9a79 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 76043696e65ee2bdf9ff7f3922e0ac8f0c9a79; sourceTree = "<group>"; };
 		CCB314E028198DE78C65E804 /* 0f5d4d4ad1c4dd3d431d7fee7394b0e0bc9a52 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 0f5d4d4ad1c4dd3d431d7fee7394b0e0bc9a52; sourceTree = "<group>"; };
+		CCC2EC2D2E1AE19600F805CA /* UserProfileScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileScreen.swift; sourceTree = "<group>"; };
+		CCC2EC2E2E1AE19600F805CA /* VideoPlayerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerScreen.swift; sourceTree = "<group>"; };
+		CCC2EC2F2E1AE19600F805CA /* VisitGameScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitGameScreen.swift; sourceTree = "<group>"; };
+		CCC2EC302E1AE19600F805CA /* VisitPlanningScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanningScreen.swift; sourceTree = "<group>"; };
+		CCC2EC312E1AE19600F805CA /* VisitScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitScreen.swift; sourceTree = "<group>"; };
+		CCC2EC322E1AE19600F805CA /* VisitTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitTypes.swift; sourceTree = "<group>"; };
+		CCC2EC392E1AE1A000F805CA /* AlbumArtworkListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumArtworkListScreen.swift; sourceTree = "<group>"; };
+		CCC2EC3A2E1AE1A000F805CA /* ArtworkPlayerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkPlayerScreen.swift; sourceTree = "<group>"; };
 		CCE9CD0D46B293EBBC9E3732 /* 73af2132633ae12b3e2de559b24078ab5a30f3 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 73af2132633ae12b3e2de559b24078ab5a30f3; sourceTree = "<group>"; };
 		CCFFBB452E15B5C800841C5E /* ListPageScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListPageScreen.swift; sourceTree = "<group>"; };
 		CCFFBB462E15B5C800841C5E /* ListTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTab.swift; sourceTree = "<group>"; };
@@ -2933,7 +2948,6 @@
 		FD7366A0E48716EBF83929D7 /* 52704eedf5c4eee9485c2913c87df487507cee */ = {isa = PBXFileReference; lastKnownFileType = file; path = 52704eedf5c4eee9485c2913c87df487507cee; sourceTree = "<group>"; };
 		FD784C7556DF8FD72F5C7798 /* 5d6e5c770260257693a75dc4acc23116a89a7b */ = {isa = PBXFileReference; lastKnownFileType = file; path = 5d6e5c770260257693a75dc4acc23116a89a7b; sourceTree = "<group>"; };
 		FD929758B867202A264ABD23 /* 77bc7c8192ee28cedd17e4bed630cacb145a86 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 77bc7c8192ee28cedd17e4bed630cacb145a86; sourceTree = "<group>"; };
-		FD97CD6F27FD0CDA4D5104CF /* HappinessGameSwift.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = HappinessGameSwift.xcodeproj; sourceTree = "<group>"; };
 		FD9A75630E979BD014351EB5 /* 6091d2c30ab981be90c354629215f14755a9b9 */ = {isa = PBXFileReference; lastKnownFileType = file; path = 6091d2c30ab981be90c354629215f14755a9b9; sourceTree = "<group>"; };
 		FDAC569723BD002A9533AD95 /* c2725b70f1882be97f5214fafe22d27a0ec01e */ = {isa = PBXFileReference; lastKnownFileType = text; path = c2725b70f1882be97f5214fafe22d27a0ec01e; sourceTree = "<group>"; };
 		FDAEF3FAE4BD25F66D78091F /* f4caa00af79e49a6d857e66f583189f78bea92 */ = {isa = PBXFileReference; lastKnownFileType = file; path = f4caa00af79e49a6d857e66f583189f78bea92; sourceTree = "<group>"; };
@@ -4105,7 +4119,6 @@
 			isa = PBXGroup;
 			children = (
 				5240C2DFB60323E87DD6E621 /* Assets.xcassets */,
-				FD97CD6F27FD0CDA4D5104CF /* HappinessGameSwift.xcodeproj */,
 				4EA48E65CF18AA7DC8B95FC5 /* project.pbxproj.xml */,
 				0D02593D185B573601812C9B /* project.yml */,
 				8932DF71AB572E52D5788011 /* Audio */,
@@ -7031,13 +7044,6 @@
 			path = 70;
 			sourceTree = "<group>";
 		};
-		CCFFBB3D2E1593CC00841C5E /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		CD064292E5C888A25C375E77 /* 9d */ = {
 			isa = PBXGroup;
 			children = (
@@ -7565,6 +7571,14 @@
 		E5F7CE7539310BB203515D71 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCC2EC392E1AE1A000F805CA /* AlbumArtworkListScreen.swift */,
+				CCC2EC3A2E1AE1A000F805CA /* ArtworkPlayerScreen.swift */,
+				CCC2EC2D2E1AE19600F805CA /* UserProfileScreen.swift */,
+				CCC2EC2E2E1AE19600F805CA /* VideoPlayerScreen.swift */,
+				CCC2EC2F2E1AE19600F805CA /* VisitGameScreen.swift */,
+				CCC2EC302E1AE19600F805CA /* VisitPlanningScreen.swift */,
+				CCC2EC312E1AE19600F805CA /* VisitScreen.swift */,
+				CCC2EC322E1AE19600F805CA /* VisitTypes.swift */,
 				CCFFBB452E15B5C800841C5E /* ListPageScreen.swift */,
 				CCFFBB462E15B5C800841C5E /* ListTab.swift */,
 				9FAC206CAB4E1BA3553C4D2B /* AddPhotoView.swift */,
@@ -8147,12 +8161,6 @@
 			mainGroup = 8F7DBBC39F2D4E379E0D6B9A;
 			minimizedProjectReferenceProxies = 1;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = CCFFBB3D2E1593CC00841C5E /* Products */;
-					ProjectRef = FD97CD6F27FD0CDA4D5104CF /* HappinessGameSwift.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				D2E01CF40DBA9B5BAA5AF916 /* HappinessGameSwift */,
@@ -8169,7 +8177,6 @@
 				2F902DBA52DAC255B401BD93 /* Assets.xcassets in Resources */,
 				E1339427749E217883955BDA /* Assets.xcassets in Resources */,
 				5E89889A8F5DAA8827C52911 /* Clogo.png in Resources */,
-				FAC12A89B54FBAE7BA9FEC40 /* HappinessGameSwift.xcodeproj in Resources */,
 				13DAB6AA034DE27E8F84BEA5 /* Preview Assets.xcassets in Resources */,
 				8DD8B744AF99ADC7D1EC8DB5 /* app.js in Resources */,
 				1033A4B6768FD583B1756337 /* index.html in Resources */,
@@ -8197,6 +8204,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				D2B4980E2A64BA82166C0CDC /* AddPhotoView.swift in Sources */,
+				CCC2EC332E1AE19600F805CA /* VisitPlanningScreen.swift in Sources */,
+				CCC2EC342E1AE19600F805CA /* VisitGameScreen.swift in Sources */,
+				CCC2EC352E1AE19600F805CA /* VisitScreen.swift in Sources */,
+				CCC2EC362E1AE19600F805CA /* UserProfileScreen.swift in Sources */,
+				CCC2EC372E1AE19600F805CA /* VideoPlayerScreen.swift in Sources */,
+				CCC2EC382E1AE19600F805CA /* VisitTypes.swift in Sources */,
 				2E2F43D52BC1A316E4439CC1 /* AddVideoView.swift in Sources */,
 				2C1EA8657D743758341FC066 /* AnimeListScreen.swift in Sources */,
 				CCFFBB472E15B5C800841C5E /* ListTab.swift in Sources */,
@@ -8207,6 +8220,8 @@
 				FAE9F4C26C1F62A738C4798B /* CharaScreen.swift in Sources */,
 				2C08D3C35B7F3419BC6915A6 /* CharacterListScreen.swift in Sources */,
 				4D1A54107342FFC454E8DD33 /* HappinessGameSwiftApp.swift in Sources */,
+				CCC2EC3B2E1AE1A000F805CA /* AlbumArtworkListScreen.swift in Sources */,
+				CCC2EC3C2E1AE1A000F805CA /* ArtworkPlayerScreen.swift in Sources */,
 				25E5B5F6E5DEC0F0341D447A /* HomeScreen.swift in Sources */,
 				D5B4F6BA5C01BB7AF5D68605 /* ImageUtils.swift in Sources */,
 				D5857EB6666719C3267674A1 /* MemoryScreen.swift in Sources */,

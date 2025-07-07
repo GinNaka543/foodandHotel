@@ -3,9 +3,26 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
+const admin = require('firebase-admin');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
+
+// Firebase初期化
+try {
+    // サービスアカウントキーがある場合は使用
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+    } else {
+        // 開発環境では仮の初期化
+        console.log('Firebase service account not found, running in demo mode');
+    }
+} catch (error) {
+    console.log('Firebase initialization failed, running in demo mode:', error.message);
+}
 
 // Middleware
 app.use(cors());
@@ -81,11 +98,38 @@ app.delete('/api/plans/:id', async (req, res) => {
 // API: 統計情報取得
 app.get('/api/stats', async (req, res) => {
     try {
+        // Firebase統計を追加
+        let firebaseStats = {};
+        
+        if (admin.apps.length > 0) {
+            const db = admin.firestore();
+            
+            // ユーザー数を取得
+            const usersSnapshot = await db.collection('users').get();
+            const usersCount = usersSnapshot.size;
+            
+            // キャラクター数を取得
+            const charactersSnapshot = await db.collection('userCharacters').get();
+            const charactersCount = charactersSnapshot.size;
+            
+            // アニメ数を取得
+            const animesSnapshot = await db.collection('userAnimes').get();
+            const animesCount = animesSnapshot.size;
+            
+            firebaseStats = {
+                totalUsers: usersCount,
+                totalCharacters: charactersCount,
+                totalAnimes: animesCount
+            };
+        }
+        
+        // ローカルプラン統計
         const plansPath = path.join(DATA_DIR, 'plans.json');
         const plansData = await fs.readFile(plansPath, 'utf-8').catch(() => '[]');
         const plans = JSON.parse(plansData);
         
         const stats = {
+            ...firebaseStats,
             totalPlans: plans.length,
             plansByDuration: {
                 halfDay: plans.filter(p => p.duration === '半日').length,
@@ -99,6 +143,98 @@ app.get('/api/stats', async (req, res) => {
         res.json(stats);
     } catch (error) {
         res.status(500).json({ error: 'Failed to get stats' });
+    }
+});
+
+// API: Firebaseユーザー一覧取得
+app.get('/api/firebase/users', async (req, res) => {
+    try {
+        if (admin.apps.length === 0) {
+            return res.json({ users: [], message: 'Firebase not connected' });
+        }
+        
+        const db = admin.firestore();
+        const usersSnapshot = await db.collection('users').orderBy('updatedAt', 'desc').limit(50).get();
+        
+        const users = [];
+        usersSnapshot.forEach(doc => {
+            const data = doc.data();
+            users.push({
+                id: doc.id,
+                username: data.username || 'Unknown',
+                birthday: data.birthday ? data.birthday.toDate().toLocaleDateString('ja-JP') : null,
+                createdAt: data.createdAt ? data.createdAt.toDate().toLocaleDateString('ja-JP') : null,
+                updatedAt: data.updatedAt ? data.updatedAt.toDate().toLocaleDateString('ja-JP') : null,
+                platform: data.platform || 'Unknown'
+            });
+        });
+        
+        res.json({ users });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch Firebase users' });
+    }
+});
+
+// API: ユーザーのキャラクター取得
+app.get('/api/firebase/users/:userId/characters', async (req, res) => {
+    try {
+        if (admin.apps.length === 0) {
+            return res.json({ characters: [], message: 'Firebase not connected' });
+        }
+        
+        const { userId } = req.params;
+        const db = admin.firestore();
+        const charactersSnapshot = await db.collection('userCharacters')
+            .where('userId', '==', userId)
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        const characters = [];
+        charactersSnapshot.forEach(doc => {
+            const data = doc.data();
+            characters.push({
+                id: doc.id,
+                name: data.name,
+                tag: data.tag,
+                anime: data.anime,
+                createdAt: data.createdAt ? data.createdAt.toDate().toLocaleDateString('ja-JP') : null
+            });
+        });
+        
+        res.json({ characters });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user characters' });
+    }
+});
+
+// API: ユーザーのアニメ取得
+app.get('/api/firebase/users/:userId/animes', async (req, res) => {
+    try {
+        if (admin.apps.length === 0) {
+            return res.json({ animes: [], message: 'Firebase not connected' });
+        }
+        
+        const { userId } = req.params;
+        const db = admin.firestore();
+        const animesSnapshot = await db.collection('userAnimes')
+            .where('userId', '==', userId)
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        const animes = [];
+        animesSnapshot.forEach(doc => {
+            const data = doc.data();
+            animes.push({
+                id: doc.id,
+                title: data.title,
+                hashtag: data.hashtag,
+                createdAt: data.createdAt ? data.createdAt.toDate().toLocaleDateString('ja-JP') : null
+            });
+        });
+        
+        res.json({ animes });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch user animes' });
     }
 });
 

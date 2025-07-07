@@ -7,3 +7,5 @@ styles.css
 HappinessGameSwift/project.pbxproj.xml.backup
 HappinessGameSwift/build
 HappinessGameSwift.xcodeproj/project.xcworkspace
+build
+happiness-game-admin/client/node_modules/.cache

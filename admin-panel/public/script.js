@@ -1,5 +1,5 @@
 // API URL
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3002/api';
 
 // 現在時刻の更新
 function updateTime() {
@@ -37,6 +37,9 @@ async function loadStats() {
         document.getElementById('totalPlans').textContent = stats.totalPlans;
         document.getElementById('totalSpots').textContent = stats.totalSpots;
         document.getElementById('oneDayPlans').textContent = stats.plansByDuration.oneDay;
+        document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+        document.getElementById('totalCharacters').textContent = stats.totalCharacters || 0;
+        document.getElementById('totalAnimes').textContent = stats.totalAnimes || 0;
         
         // 期間別カウント
         document.getElementById('halfDayCount').textContent = stats.plansByDuration.halfDay;
@@ -130,80 +133,172 @@ function refreshPlans() {
     loadStats();
 }
 
-// スポット入力フィールドの追加
-function addSpotInput() {
-    const container = document.getElementById('spotsContainer');
-    const div = document.createElement('div');
-    div.className = 'spot-input mb-2 flex items-center';
-    div.innerHTML = `
-        <input type="text" name="spots[]" class="form-input flex-1" placeholder="スポット名">
-        <button type="button" onclick="removeSpotInput(this)" class="ml-2 text-red-500 hover:text-red-700">
-            <i class="fas fa-times"></i>
-        </button>
-    `;
-    container.appendChild(div);
-}
 
-// スポット入力フィールドの削除
-function removeSpotInput(button) {
-    button.parentElement.remove();
-}
-
-// プラン作成フォームの送信
-document.getElementById('createPlanForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const spots = [];
-    formData.getAll('spots[]').forEach(spot => {
-        if (spot.trim()) {
-            spots.push({
-                name: spot,
-                address: '',
-                notes: '',
-                event: null
-            });
-        }
-    });
-    
-    const planData = {
-        animeName: formData.get('animeName'),
-        title: formData.get('title'),
-        duration: formData.get('duration'),
-        spots: spots
-    };
-    
+// ユーザー一覧の取得
+async function loadUsers() {
     try {
-        const response = await fetch(`${API_URL}/plans`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(planData)
-        });
+        const response = await fetch(`${API_URL}/users`);
+        const data = await response.json();
         
-        if (response.ok) {
-            alert('プランを作成しました');
-            e.target.reset();
-            document.getElementById('spotsContainer').innerHTML = `
-                <div class="spot-input mb-2">
-                    <input type="text" name="spots[]" class="form-input" placeholder="スポット名">
-                </div>
-            `;
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = '';
+        
+        if (!data.users || data.users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">ユーザーがいません</td></tr>';
+            return;
+        }
+        
+        for (const user of data.users) {
+            // キャラクター名とアニメ名を取得
+            let characterNames = 'なし';
+            let animeNames = 'なし';
             
-            // プラン管理タブに切り替え
-            document.querySelector('[data-tab="plans"]').click();
-            loadPlans();
-            loadStats();
-        } else {
-            alert('プランの作成に失敗しました');
+            try {
+                const [charResponse, animeResponse] = await Promise.all([
+                    fetch(`${API_URL}/users/${user.id}/characters`),
+                    fetch(`${API_URL}/users/${user.id}/animes`)
+                ]);
+                
+                const charData = await charResponse.json();
+                const animeData = await animeResponse.json();
+                
+                if (charData.characters && charData.characters.length > 0) {
+                    characterNames = charData.characters.map(char => `${char.name}#${char.tag || ''}`).join(', ');
+                    if (characterNames.length > 50) {
+                        characterNames = characterNames.substring(0, 50) + '...';
+                    }
+                }
+                
+                if (animeData.animes && animeData.animes.length > 0) {
+                    animeNames = animeData.animes.map(anime => `${anime.title}#${anime.hashtag || ''}`).join(', ');
+                    if (animeNames.length > 50) {
+                        animeNames = animeNames.substring(0, 50) + '...';
+                    }
+                }
+            } catch (error) {
+                console.log('ユーザーコンテンツの取得に失敗:', error);
+            }
+            
+            const tr = document.createElement('tr');
+            tr.className = 'border-b hover:bg-gray-50';
+            tr.innerHTML = `
+                <td class="py-3">${user.username || 'Unknown'}</td>
+                <td class="py-3">${user.birthday || '未設定'}</td>
+                <td class="py-3 text-sm">${characterNames}</td>
+                <td class="py-3 text-sm">${animeNames}</td>
+                <td class="py-3">
+                    <button onclick="viewUserDetail('${user.id}')" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-eye"></i> 詳細
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
         }
     } catch (error) {
-        console.error('プランの作成に失敗しました:', error);
-        alert('プランの作成に失敗しました');
+        console.error('ユーザー一覧の取得に失敗しました:', error);
     }
-});
+}
+
+// ユーザー詳細の表示
+async function viewUserDetail(userId) {
+    try {
+        const [userResponse, charactersResponse, animesResponse] = await Promise.all([
+            fetch(`${API_URL}/users`),
+            fetch(`${API_URL}/users/${userId}/characters`),
+            fetch(`${API_URL}/users/${userId}/animes`)
+        ]);
+        
+        const userData = await userResponse.json();
+        const charactersData = await charactersResponse.json();
+        const animesData = await animesResponse.json();
+        
+        const user = userData.users.find(u => u.id === userId);
+        if (!user) {
+            alert('ユーザーが見つかりません');
+            return;
+        }
+        
+        const modal = document.getElementById('userDetailModal');
+        const content = document.getElementById('userDetailContent');
+        
+        content.innerHTML = `
+            <div class="space-y-6">
+                <div class="border-b pb-4">
+                    <h4 class="text-lg font-semibold mb-2">基本情報</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-gray-600">ユーザー名:</span>
+                            <span class="ml-2 font-medium">${user.username || 'Unknown'}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">誕生日:</span>
+                            <span class="ml-2">${user.birthday || '未設定'}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">作成日:</span>
+                            <span class="ml-2">${user.createdAt || '-'}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">プラットフォーム:</span>
+                            <span class="ml-2">${user.platform || 'Unknown'}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="border-b pb-4">
+                    <h4 class="text-lg font-semibold mb-2">登録キャラクター (${charactersData.characters ? charactersData.characters.length : 0}件)</h4>
+                    <div class="max-h-40 overflow-y-auto">
+                        ${charactersData.characters && charactersData.characters.length > 0 ? 
+                            charactersData.characters.map(char => `
+                                <div class="bg-gray-50 p-2 rounded mb-2">
+                                    <div class="font-medium">${char.name}</div>
+                                    <div class="text-sm text-gray-600">タグ: ${char.tag || 'なし'}</div>
+                                    <div class="text-sm text-gray-600">アニメ: ${char.anime || 'なし'}</div>
+                                    <div class="text-xs text-gray-400">作成: ${char.createdAt || '-'}</div>
+                                </div>
+                            `).join('') : 
+                            '<p class="text-gray-500">登録されたキャラクターがありません</p>'
+                        }
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-2">登録アニメ (${animesData.animes ? animesData.animes.length : 0}件)</h4>
+                    <div class="max-h-40 overflow-y-auto">
+                        ${animesData.animes && animesData.animes.length > 0 ? 
+                            animesData.animes.map(anime => `
+                                <div class="bg-gray-50 p-2 rounded mb-2">
+                                    <div class="font-medium">${anime.title}</div>
+                                    <div class="text-sm text-gray-600">ハッシュタグ: ${anime.hashtag || 'なし'}</div>
+                                    <div class="text-xs text-gray-400">作成: ${anime.createdAt || '-'}</div>
+                                </div>
+                            `).join('') : 
+                            '<p class="text-gray-500">登録されたアニメがありません</p>'
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    } catch (error) {
+        console.error('ユーザー詳細の取得に失敗しました:', error);
+        alert('ユーザー詳細の取得に失敗しました');
+    }
+}
+
+// ユーザー詳細モーダルを閉じる
+function closeUserDetail() {
+    document.getElementById('userDetailModal').classList.add('hidden');
+}
+
+// ユーザー一覧の更新
+function refreshUsers() {
+    loadUsers();
+    loadStats();
+}
 
 // 初期データの読み込み
 loadStats();
 loadPlans();
+loadUsers();

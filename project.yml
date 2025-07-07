@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     iOS: "18.5"
   xcodeVersion: "16.4"
+  cocoapods: true
 
 settings:
   SWIFT_VERSION: "5.0"
@@ -27,27 +28,31 @@ targets:
   HappinessGameSwift:
     type: application
     platform: iOS
+    deploymentTarget: "18.5"
     sources:
-      - path: HappinessGameSwift/HappinessGameSwift
       - path: HappinessGameSwift
         excludes:
           - "*.plist"
           - "Info.plist"
           - "Preview"
           - "Content"
-      - path: .
-        excludes:
-          - "HappinessGameSwift"
-          - "*.yml"
-          - "*.md"
-          - "Podfile"
-          - "*.xcodeproj"
-          - "*.xcworkspace"
+          - "Assets.xcassets"
+          - "../happiness-game-admin"
+          - "../happiness-game-admin/**"
+          - "../happiness-game-admin/client/node_modules"
+          - "../happiness-game-admin/client/node_modules/**"
+          - "../happiness-game-admin/server/node_modules"
+          - "../happiness-game-admin/server/node_modules/**"
+          - "../happiness-game-admin/node_modules"
+          - "../happiness-game-admin/node_modules/**"
+          - "../node_modules"
+          - "../node_modules/**"
     resources:
       - path: HappinessGameSwift/Assets.xcassets
       - path: images
       - path: Audio
     settings:
+      INFOPLIST_FILE: HappinessGameSwift/Info.plist
       PRODUCT_BUNDLE_IDENTIFIER: com.example.HappinessGameSwift
       PRODUCT_NAME: HappinessGameSwift
       MARKETING_VERSION: "1.0"

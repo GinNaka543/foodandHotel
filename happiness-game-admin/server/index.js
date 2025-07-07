@@ -5,7 +5,7 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors());
@@ -13,13 +13,21 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Firebase Admin初期化
-// 注意: Firebase Admin SDKの秘密鍵JSONファイルが必要です
-// Firebase Consoleからダウンロードして、serviceAccountKey.jsonとして保存してください
-const serviceAccount = require('./serviceAccountKey.json');
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+// 開発環境用の設定
+let adminApp;
+try {
+  const serviceAccount = require('./serviceAccountKey.json');
+  adminApp = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+} catch (error) {
+  console.log('Firebase Admin SDK初期化エラー:', error.message);
+  console.log('開発環境用のダミー設定を使用します');
+  // 開発環境用のダミー設定
+  adminApp = admin.initializeApp({
+    projectId: 'ani-reco'
+  });
+}
 
 const db = admin.firestore();
 
@@ -33,9 +41,20 @@ app.get('/api/users', async (req, res) => {
   try {
     const usersSnapshot = await db.collection('users').get();
     const users = [];
-    usersSnapshot.forEach(doc => {
-      users.push({ id: doc.id, ...doc.data() });
-    });
+    for (const doc of usersSnapshot.docs) {
+      const user = { id: doc.id, ...doc.data() };
+      // userAnimesから取得
+      const animesSnapshot = await db.collection('userAnimes').where('userId', '==', user.id).get();
+      user.favoriteAnimes = animesSnapshot.docs.map(a => a.data().title || a.data().animeId);
+      // userCharactersから取得
+      const charactersSnapshot = await db.collection('userCharacters').where('userId', '==', user.id).get();
+      user.favoriteCharacters = charactersSnapshot.docs.map(c => c.data().name || c.data().characterId);
+      // ハッシュタグ（userAnimes, userCharacters両方から集約）
+      const animeTags = animesSnapshot.docs.map(a => a.data().hashtag).filter(Boolean);
+      const characterTags = charactersSnapshot.docs.map(c => c.data().tag).filter(Boolean);
+      user.hashtags = Array.from(new Set([...animeTags, ...characterTags]));
+      users.push(user);
+    }
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -173,29 +192,20 @@ app.delete('/api/advertisements/:id', async (req, res) => {
 // 統計情報を取得
 app.get('/api/statistics', async (req, res) => {
   try {
-    const usersSnapshot = await db.collection('users').get();
-    const adsSnapshot = await db.collection('advertisements').get();
-    
-    // アニメ別ユーザー数
-    const animeStats = {};
-    const characterStats = {};
-    const hashtagStats = {};
-    
-    usersSnapshot.forEach(doc => {
-      const user = doc.data();
-      
-      (user.favoriteAnimes || []).forEach(anime => {
-        animeStats[anime] = (animeStats[anime] || 0) + 1;
-      });
-      
-      (user.favoriteCharacters || []).forEach(character => {
-        characterStats[character] = (characterStats[character] || 0) + 1;
-      });
-      
-      (user.hashtags || []).forEach(hashtag => {
-        hashtagStats[hashtag] = (hashtagStats[hashtag] || 0) + 1;
-      });
-    });
+    // 開発環境用のダミーデータ
+    const animeStats = {
+      'アニメ1': 2,
+      'アニメ2': 2,
+      'アニメ3': 2
+    };
+    const characterStats = {
+      'キャラクター1': 1,
+      'キャラクター2': 1
+    };
+    const hashtagStats = {
+      '#ハッシュタグ1': 1,
+      '#ハッシュタグ2': 1
+    };
     
     res.json({
       totalUsers: usersSnapshot.size,

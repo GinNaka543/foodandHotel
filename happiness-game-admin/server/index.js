@@ -65,42 +65,44 @@ app.get('/api/users', async (req, res) => {
 app.get('/api/users/search', async (req, res) => {
   try {
     const { anime, character, hashtag } = req.query;
-    let users = new Set();
-
-    if (anime) {
-      const animeDoc = await db.collection('animeIndex').doc(anime).get();
-      if (animeDoc.exists) {
-        const data = animeDoc.data();
-        data.users.forEach(userId => users.add(userId));
+    console.log('検索条件:', { anime, character, hashtag });
+    const usersSnapshot = await db.collection('users').get();
+    const users = [];
+    for (const doc of usersSnapshot.docs) {
+      const user = { id: doc.id, ...doc.data() };
+      // userAnimesから取得
+      const animesSnapshot = await db.collection('userAnimes').where('userId', '==', user.id).get();
+      user.favoriteAnimes = animesSnapshot.docs.map(a => a.data().title || a.data().animeId);
+      // userCharactersから取得
+      const charactersSnapshot = await db.collection('userCharacters').where('userId', '==', user.id).get();
+      user.favoriteCharacters = charactersSnapshot.docs.map(c => c.data().name || c.data().characterId);
+      // ハッシュタグ（userAnimes, userCharacters両方から集約）
+      const animeTags = animesSnapshot.docs.map(a => a.data().hashtag).filter(Boolean);
+      const characterTags = charactersSnapshot.docs.map(c => c.data().tag).filter(Boolean);
+      user.hashtags = Array.from(new Set([...animeTags, ...characterTags]));
+      // デバッグ出力
+      console.log('ユーザー:', user.username || user.id);
+      console.log('  favoriteAnimes:', user.favoriteAnimes);
+      console.log('  favoriteCharacters:', user.favoriteCharacters);
+      console.log('  hashtags:', user.hashtags);
+      // 検索条件に合致するか
+      let match = true;
+      if (anime) {
+        const animeStr = (user.favoriteAnimes || []).filter(a => !!a && isNaN(a)).join(' ').toLowerCase();
+        if (!animeStr.includes(anime.toLowerCase())) match = false;
       }
-    }
-
-    if (character) {
-      const characterDoc = await db.collection('characterIndex').doc(character).get();
-      if (characterDoc.exists) {
-        const data = characterDoc.data();
-        data.users.forEach(userId => users.add(userId));
+      if (character) {
+        const charStr = (user.favoriteCharacters || []).filter(c => !!c && isNaN(c)).join(' ').toLowerCase();
+        if (!charStr.includes(character.toLowerCase())) match = false;
       }
-    }
-
-    if (hashtag) {
-      const hashtagDoc = await db.collection('hashtagIndex').doc(hashtag).get();
-      if (hashtagDoc.exists) {
-        const data = hashtagDoc.data();
-        data.users.forEach(userId => users.add(userId));
+      if (hashtag) {
+        const tagStr = (user.hashtags || []).filter(h => !!h).join(' ').toLowerCase();
+        if (!tagStr.includes(hashtag.toLowerCase())) match = false;
       }
+      console.log('  match:', match);
+      if (match) users.push(user);
     }
-
-    // ユーザー詳細を取得
-    const userDetails = [];
-    for (const userId of users) {
-      const userDoc = await db.collection('users').doc(userId).get();
-      if (userDoc.exists) {
-        userDetails.push({ id: userDoc.id, ...userDoc.data() });
-      }
-    }
-
-    res.json(userDetails);
+    res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

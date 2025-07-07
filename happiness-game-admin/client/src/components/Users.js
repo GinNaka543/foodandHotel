@@ -107,7 +107,6 @@ function Users() {
                 <th>お気に入りアニメ</th>
                 <th>お気に入りキャラクター</th>
                 <th>ハッシュタグ</th>
-                <th>登録日</th>
               </tr>
             </thead>
             <tbody>
@@ -130,7 +129,6 @@ function Users() {
                       <span key={tag} className="tag">#{tag}</span>
                     ))}
                   </td>
-                  <td>{formatDate(user.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

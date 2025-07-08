@@ -47,9 +47,6 @@ struct AdvertisementAdminScreen: View {
                         Image(systemName: "plus")
                     }
                 }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    FixAdsButton()
-                }
             }
             .sheet(isPresented: $showingAddAdvertisement) {
                 AdvertisementEditView(advertisement: nil) { newAd in
@@ -296,7 +293,22 @@ struct AdvertisementEditView: View {
                     }
                     
                     VStack(alignment: .leading) {
-                        TextField("画像URL", text: $imageURL)
+                        HStack {
+                            TextField("画像URL", text: $imageURL)
+                            
+                            Button(action: {
+                                // GitHub URLをraw URLに変換
+                                if let githubRawURL = ImageExtractor.shared.convertGitHubURLToRaw(imageURL) {
+                                    imageURL = githubRawURL
+                                    print("✅ [AdvertisementEditView] GitHub URLをraw URLに変換: \(imageURL)")
+                                }
+                            }) {
+                                Text("GitHub URL修正")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(!imageURL.contains("github.com") || !imageURL.contains("/blob/"))
+                        }
                         
                         if !imageURL.isEmpty {
                             AsyncImage(url: URL(string: imageURL)) { image in

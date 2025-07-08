@@ -16,7 +16,14 @@ struct FirebaseAdView: View {
                     .frame(height: 60)
                     .frame(maxWidth: .infinity)
             } else if !advertisements.isEmpty {
-                let ad = advertisements[currentIndex % advertisements.count]
+                var ad = advertisements[currentIndex % advertisements.count]
+                // GitHub URLの場合はraw URLに変換
+                if ad.imageURL.contains("github.com") && ad.imageURL.contains("/blob/") {
+                    ad.imageURL = ad.imageURL
+                        .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
+                        .replacingOccurrences(of: "/blob/", with: "/")
+                    print("🔄 [FirebaseAdView] GitHub URLをraw URLに変換: \(ad.imageURL)")
+                }
                 if placement == "character" {
                     // キャラクターページ: 左テキスト・右画像
                     HStack(spacing: 16) {

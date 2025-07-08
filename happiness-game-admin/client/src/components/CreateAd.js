@@ -24,6 +24,19 @@ function convertImgurUrl(url) {
   return url;
 }
 
+// GitHub blob URL→raw URL変換関数
+function convertGitHubUrl(url) {
+  if (!url) return '';
+  // GitHubのblobページURLパターン: https://github.com/user/repo/blob/branch/path
+  // これをraw URLに変換: https://raw.githubusercontent.com/user/repo/branch/path
+  if (url.includes('github.com') && url.includes('/blob/')) {
+    return url
+      .replace('github.com', 'raw.githubusercontent.com')
+      .replace('/blob/', '/');
+  }
+  return url;
+}
+
 function CreateAd() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -141,7 +154,8 @@ function CreateAd() {
     }
     
     const updatedFormData = { ...formData };
-    updatedFormData.imageURL = convertImgurUrl(updatedFormData.imageURL);
+    // Imgur URLとGitHub URLの両方を変換
+    updatedFormData.imageURL = convertGitHubUrl(convertImgurUrl(updatedFormData.imageURL));
     if (inputValues.anime.trim() && !updatedFormData.targetAnimes.includes(inputValues.anime.trim())) {
       updatedFormData.targetAnimes = [...updatedFormData.targetAnimes, inputValues.anime.trim()];
     }
@@ -196,14 +210,32 @@ function CreateAd() {
 
           <div className="form-group">
             <label>画像URL *</label>
-            <input
-              type="url"
-              name="imageURL"
-              value={formData.imageURL}
-              onChange={handleChange}
-              placeholder="https://example.com/image.jpg"
-              required
-            />
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <input
+                type="url"
+                name="imageURL"
+                value={formData.imageURL}
+                onChange={handleChange}
+                placeholder="https://example.com/image.jpg"
+                required
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  const convertedUrl = convertGitHubUrl(formData.imageURL);
+                  if (convertedUrl !== formData.imageURL) {
+                    setFormData(prev => ({ ...prev, imageURL: convertedUrl }));
+                    alert('GitHub URLをraw URLに変換しました');
+                  }
+                }}
+                disabled={!formData.imageURL.includes('github.com') || !formData.imageURL.includes('/blob/')}
+                style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+              >
+                GitHub URL修正
+              </button>
+            </div>
           </div>
 
           {/* 画像プレビュー部分で変換を適用 */}

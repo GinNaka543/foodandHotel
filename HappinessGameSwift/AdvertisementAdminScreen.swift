@@ -229,6 +229,8 @@ struct AdvertisementEditView: View {
     @State private var description: String = ""
     @State private var imageURL: String = ""
     @State private var linkURL: String = ""
+    @State private var isLoadingImage = false
+    @State private var imageLoadError: String?
     @State private var selectedPlacements: Set<String> = []
     @State private var isActive: Bool = true
     @State private var expiresAt: Date = Date().addingTimeInterval(30 * 24 * 60 * 60)
@@ -249,8 +251,69 @@ struct AdvertisementEditView: View {
                     TextField("タイトル", text: $title)
                     TextField("説明", text: $description, axis: .vertical)
                         .lineLimit(3...6)
-                    TextField("画像URL", text: $imageURL)
-                    TextField("リンクURL", text: $linkURL)
+                    
+                    VStack(alignment: .leading) {
+                        TextField("リンクURL", text: $linkURL)
+                            .onChange(of: linkURL) { newValue in
+                                imageLoadError = nil
+                                // GitHub URLの場合は自動で画像を取得
+                                if newValue.contains("github.com") && newValue.contains("/blob/") && 
+                                   (newValue.hasSuffix(".png") || newValue.hasSuffix(".jpg") || 
+                                    newValue.hasSuffix(".jpeg") || newValue.hasSuffix(".gif") || 
+                                    newValue.hasSuffix(".webp")) {
+                                    fetchImageFromURL()
+                                }
+                            }
+                        
+                        HStack {
+                            Button(action: {
+                                fetchImageFromURL()
+                            }) {
+                                if isLoadingImage {
+                                    ProgressView()
+                                        .scaleEffect(0.8)
+                                } else {
+                                    Text("画像取得")
+                                        .font(.caption)
+                                }
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(linkURL.isEmpty || isLoadingImage)
+                            
+                            Text("GitHub画像URLの場合は自動で変換されます")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                        }
+                        
+                        if let error = imageLoadError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                        }
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        TextField("画像URL", text: $imageURL)
+                        
+                        if !imageURL.isEmpty {
+                            AsyncImage(url: URL(string: imageURL)) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxHeight: 200)
+                                    .cornerRadius(8)
+                            } placeholder: {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(height: 100)
+                                    .overlay(
+                                        Text("画像をプレビュー")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    )
+                            }
+                        }
+                    }
                 }
                 
                 Section("表示設定") {
@@ -342,5 +405,27 @@ struct AdvertisementEditView: View {
         
         onSave(newAd)
         dismiss()
+    }
+    
+    private func fetchImageFromURL() {
+        guard !linkURL.isEmpty else { return }
+        
+        print("🔍 [AdvertisementEditView] 画像取得開始: \(linkURL)")
+        isLoadingImage = true
+        imageLoadError = nil
+        
+        ImageExtractor.shared.extractFirstImageURL(from: linkURL) { result in
+            isLoadingImage = false
+            
+            switch result {
+            case .success(let extractedImageURL):
+                print("✅ [AdvertisementEditView] 画像URL取得成功: \(extractedImageURL)")
+                imageURL = extractedImageURL
+                imageLoadError = nil
+            case .failure(let error):
+                print("❌ [AdvertisementEditView] 画像URL取得失敗: \(error)")
+                imageLoadError = "画像を取得できませんでした"
+            }
+        }
     }
 }

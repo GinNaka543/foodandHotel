@@ -308,10 +308,6 @@ struct HomeScreen: View {
                 }
                 .padding(.horizontal, 20)
                 
-                // Firebase広告
-                FirebaseAdView(placement: "home")
-                    .padding(.top, 8)
-                
                 // サービス
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
@@ -347,26 +343,15 @@ struct HomeScreen: View {
                 .padding(.top, 16)
                 .padding(.horizontal, 20)
 
-                // 広告バナー
-                VStack(spacing: 0) {
-                    if let bannerImage = UIImage(named: "青豚") {
-                        Image(uiImage: bannerImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 360, height: 189)
-                            .cornerRadius(10)
-                            .clipped()
-                            .padding(.top, 20)
-                    }
-                    if let kagImage = UIImage(named: "かぐや") {
-                        Image(uiImage: kagImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 360, height: 189)
-                            .cornerRadius(10)
-                            .clipped()
-                            .padding(.top, 16)
-                    }
+                // 広告バナー（FirebaseAdViewを青豚バナーと同じサイズ・レイアウトで表示）
+                HStack {
+                    Spacer()
+                    FirebaseAdView(placement: "home")
+                        .frame(width: 360, height: 189)
+                        .cornerRadius(10)
+                        .clipped()
+                        .padding(.top, 20)
+                    Spacer()
                 }
                 // ここに空行を追加しておくことで、Xcodeのキャッシュ対策になる場合があります。
             }

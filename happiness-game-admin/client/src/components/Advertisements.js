@@ -2,9 +2,22 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 
+const PLACEMENT_ICONS = {
+  home: '🏠',
+  character: '👤',
+  product: '📦',
+};
+const GENERAL_PAGES = [
+  { key: 'home', label: 'ホーム', icon: '🏠', max: 2 },
+  { key: 'character', label: 'キャラ', icon: '👤', max: 1 },
+  { key: 'product', label: 'プロダクト', icon: '📦', max: null },
+];
+
 function Advertisements() {
   const [advertisements, setAdvertisements] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('target'); // 'target' or 'general'
+  const [generalPage, setGeneralPage] = useState('home'); // 'home' | 'character' | 'product'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,14 +72,84 @@ function Advertisements() {
     return date.toLocaleDateString('ja-JP');
   };
 
+  // フィルタリング
+  const filteredAds = advertisements.filter(ad => {
+    const isGeneral =
+      (!ad.targetAnimes || ad.targetAnimes.length === 0) &&
+      (!ad.targetCharacters || ad.targetCharacters.length === 0) &&
+      (!ad.targetHashtags || ad.targetHashtags.length === 0);
+    if (activeTab === 'general') {
+      // サブタブでページごとに絞り込み
+      return isGeneral && (ad.placements || []).includes(generalPage);
+    }
+    return !isGeneral;
+  });
+
+  // 一般広告の上限チェック
+  const currentGeneralCount = advertisements.filter(ad =>
+    (!ad.targetAnimes || ad.targetAnimes.length === 0) &&
+    (!ad.targetCharacters || ad.targetCharacters.length === 0) &&
+    (!ad.targetHashtags || ad.targetHashtags.length === 0) &&
+    (ad.placements || []).includes(generalPage)
+  ).length;
+  const pageConfig = GENERAL_PAGES.find(p => p.key === generalPage);
+  const isGeneralLimit = pageConfig.max !== null && currentGeneralCount >= pageConfig.max;
+
   return (
     <div className="advertisements-page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h2>広告管理</h2>
-        <Link to="/create-ad" className="btn btn-primary">
-          新規広告作成
-        </Link>
+        {activeTab === 'target' ? (
+          <Link to="/create-ad" className="btn btn-primary">
+            新規広告作成
+          </Link>
+        ) : (
+          <button
+            className="btn btn-primary"
+            disabled={isGeneralLimit}
+            onClick={() => navigate(`/create-ad?generalPage=${generalPage}`)}
+          >
+            {pageConfig.icon} {pageConfig.label}ページ用の広告を作成
+          </button>
+        )}
       </div>
+
+      {/* タブUI */}
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+        <button
+          className={activeTab === 'target' ? 'btn btn-primary' : 'btn btn-secondary'}
+          onClick={() => setActiveTab('target')}
+        >
+          ターゲット広告
+        </button>
+        <button
+          className={activeTab === 'general' ? 'btn btn-primary' : 'btn btn-secondary'}
+          onClick={() => setActiveTab('general')}
+        >
+          一般広告（全ユーザー向け）
+        </button>
+      </div>
+
+      {/* 一般広告サブタブ */}
+      {activeTab === 'general' && (
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+          {GENERAL_PAGES.map(page => (
+            <button
+              key={page.key}
+              className={generalPage === page.key ? 'btn btn-primary' : 'btn btn-secondary'}
+              onClick={() => setGeneralPage(page.key)}
+            >
+              <span style={{ fontSize: '1.2rem', marginRight: '0.3rem' }}>{page.icon}</span>
+              {page.label}ページ
+              {page.max !== null && (
+                <span style={{ fontSize: '0.9rem', color: '#888', marginLeft: 6 }}>
+                  （最大{page.max}件）
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div>読み込み中...</div>
@@ -78,6 +161,7 @@ function Advertisements() {
                 <th>タイトル</th>
                 <th>説明</th>
                 <th>ターゲット</th>
+                <th>配置場所</th>
                 <th>表示回数</th>
                 <th>クリック数</th>
                 <th>CTR</th>
@@ -87,7 +171,7 @@ function Advertisements() {
               </tr>
             </thead>
             <tbody>
-              {advertisements.map(ad => (
+              {filteredAds.map(ad => (
                 <tr key={ad.id}>
                   <td>{ad.title}</td>
                   <td>{ad.description.length > 50 ? ad.description.substring(0, 50) + '...' : ad.description}</td>
@@ -103,10 +187,17 @@ function Advertisements() {
                       }}
                     >
                       {[
-                        ad.targetAnimes.length > 0 ? `アニメ: ${ad.targetAnimes.join(', ')}` : null,
-                        ad.targetCharacters.length > 0 ? `キャラ: ${ad.targetCharacters.join(', ')}` : null,
-                        ad.targetHashtags.length > 0 ? `タグ: ${ad.targetHashtags.map(tag => `#${tag}`).join(', ')}` : null
+                        ad.targetAnimes && ad.targetAnimes.length > 0 ? `アニメ: ${ad.targetAnimes.join(', ')}` : null,
+                        ad.targetCharacters && ad.targetCharacters.length > 0 ? `キャラ: ${ad.targetCharacters.join(', ')}` : null,
+                        ad.targetHashtags && ad.targetHashtags.length > 0 ? `タグ: ${ad.targetHashtags.map(tag => `#${tag}`).join(', ')}` : null
                       ].filter(Boolean).join('  ')}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '1.3rem' }}>
+                      {(ad.placements || []).map(p => (
+                        <span key={p} title={p}>{PLACEMENT_ICONS[p] || p}</span>
+                      ))}
                     </div>
                   </td>
                   <td>{ad.impressions || 0}</td>
@@ -161,7 +252,7 @@ function Advertisements() {
               ))}
             </tbody>
           </table>
-          {advertisements.length === 0 && (
+          {filteredAds.length === 0 && (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
               広告がありません
             </div>

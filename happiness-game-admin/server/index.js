@@ -3,6 +3,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const admin = require('firebase-admin');
 require('dotenv').config();
+const axios = require('axios');
+const cheerio = require('cheerio');
 
 const app = express();
 const PORT = process.env.PORT || 5002;
@@ -210,10 +212,45 @@ app.delete('/api/advertisements/:id', async (req, res) => {
   }
 });
 
+// 画像抽出API
+app.get('/api/extract-image', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ error: 'url is required' });
+  try {
+    const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const html = response.data;
+    const $ = cheerio.load(html);
+    // 1. OGP画像
+    let imgUrl = $('meta[property="og:image"]').attr('content');
+    // 2. imgタグ
+    if (!imgUrl) {
+      imgUrl = $('img').first().attr('src');
+    }
+    // 3. imgurの相対パス対応
+    if (imgUrl && imgUrl.startsWith('//')) {
+      imgUrl = 'https:' + imgUrl;
+    }
+    if (imgUrl && !/^https?:/.test(imgUrl)) {
+      // 相対パスの場合は元URLから解決
+      const u = new URL(url);
+      imgUrl = u.origin + (imgUrl.startsWith('/') ? imgUrl : '/' + imgUrl);
+    }
+    if (imgUrl) {
+      res.json({ imageUrl: imgUrl });
+    } else {
+      res.status(404).json({ error: 'No image found' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch or parse HTML' });
+  }
+});
+
 // 統計情報を取得
 app.get('/api/statistics', async (req, res) => {
   try {
     // 開発環境用のダミーデータ
+    const usersSnapshot = await db.collection('users').get();
+    const adsSnapshot = await db.collection('advertisements').get();
     const animeStats = {
       'アニメ1': 2,
       'アニメ2': 2,

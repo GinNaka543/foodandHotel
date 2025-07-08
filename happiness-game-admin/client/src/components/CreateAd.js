@@ -12,7 +12,8 @@ function CreateAd() {
     targetAnimes: [],
     targetCharacters: [],
     targetHashtags: [],
-    expiresAt: ''
+    expiresAt: '',
+    placements: []
   });
   
   const [inputValues, setInputValues] = useState({
@@ -60,6 +61,11 @@ function CreateAd() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (formData.placements.length === 0) {
+      alert('少なくとも1つの表示場所を選択してください。');
+      return;
+    }
     
     try {
       await axios.post('/api/advertisements', formData);
@@ -220,6 +226,80 @@ function CreateAd() {
               value={formData.expiresAt}
               onChange={handleChange}
             />
+          </div>
+
+          <div className="form-group">
+            <label>広告表示場所 *</label>
+            <div className="placement-options">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  value="home"
+                  checked={formData.placements.includes('home')}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData(prev => ({
+                        ...prev,
+                        placements: [...prev.placements, 'home']
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        placements: prev.placements.filter(p => p !== 'home')
+                      }));
+                    }
+                  }}
+                />
+                ホームページ（インフォメーション下）
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  value="character"
+                  checked={formData.placements.includes('character')}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData(prev => ({
+                        ...prev,
+                        placements: [...prev.placements, 'character']
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        placements: prev.placements.filter(p => p !== 'character')
+                      }));
+                    }
+                  }}
+                />
+                キャラページ（広告バー）
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  value="product"
+                  checked={formData.placements.includes('product')}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setFormData(prev => ({
+                        ...prev,
+                        placements: [...prev.placements, 'product']
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        placements: prev.placements.filter(p => p !== 'product')
+                      }));
+                    }
+                  }}
+                />
+                プロダクトページ
+              </label>
+            </div>
+            {formData.placements.length === 0 && (
+              <p style={{ color: 'red', fontSize: '14px', marginTop: '5px' }}>
+                少なくとも1つの表示場所を選択してください
+              </p>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>

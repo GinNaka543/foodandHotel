@@ -307,6 +307,11 @@ struct HomeScreen: View {
                     }
                 }
                 .padding(.horizontal, 20)
+                
+                // Firebase広告
+                FirebaseAdView(placement: "home")
+                    .padding(.top, 8)
+                
                 // サービス
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {

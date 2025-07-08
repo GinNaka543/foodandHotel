@@ -132,7 +132,8 @@ app.post('/api/advertisements', async (req, res) => {
       targetAnimes,
       targetCharacters,
       targetHashtags,
-      expiresAt
+      expiresAt,
+      placements
     } = req.body;
 
     const advertisement = {
@@ -143,6 +144,7 @@ app.post('/api/advertisements', async (req, res) => {
       targetAnimes: targetAnimes || [],
       targetCharacters: targetCharacters || [],
       targetHashtags: targetHashtags || [],
+      placements: placements || [],
       impressions: 0,
       clicks: 0,
       isActive: true,

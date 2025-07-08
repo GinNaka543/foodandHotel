@@ -140,7 +140,70 @@ class FirebaseManager: ObservableObject {
         */
     }
     
-    // 広告を取得
+    // 広告を取得（プレースメント指定）
+    func fetchAds(for placement: String, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
+        print("🔥 広告取得開始: placement=\(placement)")
+        
+        db.collection("advertisements")
+            .whereField("isActive", isEqualTo: true)
+            .whereField("placements", arrayContains: placement)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ 広告取得エラー: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ 広告なし")
+                    completion(.success([]))
+                    return
+                }
+                
+                var ads: [Advertisement] = []
+                for doc in documents {
+                    let data = doc.data()
+                    print("📄 広告データ: \(data)")
+                    
+                    var ad = Advertisement(
+                        id: doc.documentID,
+                        title: data["title"] as? String ?? "",
+                        description: data["description"] as? String ?? "",
+                        imageURL: data["imageURL"] as? String ?? "",
+                        linkURL: data["linkURL"] as? String ?? "",
+                        targetAnimes: data["targetAnimes"] as? [String] ?? [],
+                        targetCharacters: data["targetCharacters"] as? [String] ?? [],
+                        targetHashtags: data["targetHashtags"] as? [String] ?? [],
+                        placements: data["placements"] as? [String] ?? [],
+                        impressions: data["impressions"] as? Int ?? 0,
+                        clicks: data["clicks"] as? Int ?? 0,
+                        isActive: data["isActive"] as? Bool ?? true
+                    )
+                    
+                    // Timestamp変換
+                    if let createdTimestamp = data["createdAt"] as? Timestamp {
+                        ad.createdAt = createdTimestamp.dateValue()
+                    }
+                    if let expiresTimestamp = data["expiresAt"] as? Timestamp {
+                        ad.expiresAt = expiresTimestamp.dateValue()
+                    }
+                    
+                    // 有効期限チェック
+                    if let expiresAt = ad.expiresAt, expiresAt < Date() {
+                        print("⚠️ 期限切れ広告: \(ad.title)")
+                        continue
+                    }
+                    
+                    ads.append(ad)
+                    print("✅ 広告追加: \(ad.title)")
+                }
+                
+                print("✅ 広告取得成功: \(ads.count)件")
+                completion(.success(ads.shuffled()))
+            }
+    }
+    
+    // 広告を取得（旧メソッド - 互換性のため残す）
     func fetchAds(for profile: HappinessGameSwift.UserProfile, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
         // Firebaseが利用可能になったらコメントを解除
         /*
@@ -207,8 +270,6 @@ class FirebaseManager: ObservableObject {
     
     // 広告インプレッションを記録
     func recordAdImpression(advertisementId: String) {
-        // Firebaseが利用可能になったらコメントを解除
-        /*
         guard !advertisementId.isEmpty else { return }
         
         let adRef = db.collection("advertisements").document(advertisementId)
@@ -217,15 +278,14 @@ class FirebaseManager: ObservableObject {
         ]) { error in
             if let error = error {
                 print("インプレッション記録エラー: \(error)")
+            } else {
+                print("✅ インプレッション記録成功: \(advertisementId)")
             }
         }
-        */
     }
     
     // 広告クリックを記録
     func recordAdClick(advertisementId: String) {
-        // Firebaseが利用可能になったらコメントを解除
-        /*
         guard !advertisementId.isEmpty else { return }
         
         let adRef = db.collection("advertisements").document(advertisementId)
@@ -234,14 +294,15 @@ class FirebaseManager: ObservableObject {
         ]) { error in
             if let error = error {
                 print("クリック記録エラー: \(error)")
+            } else {
+                print("✅ クリック記録成功: \(advertisementId)")
             }
         }
-        */
     }
 }
 
 // 広告モデル
-struct Advertisement: Codable, Identifiable, Hashable {
+struct Advertisement: Identifiable, Hashable {
     var id: String?
     var title: String
     var description: String
@@ -250,10 +311,11 @@ struct Advertisement: Codable, Identifiable, Hashable {
     var targetAnimes: [String]
     var targetCharacters: [String]
     var targetHashtags: [String]
+    var placements: [String]
     var impressions: Int = 0
     var clicks: Int = 0
     var isActive: Bool = true
-    var createdAt: Date
+    var createdAt: Date?
     var expiresAt: Date?
     
     func hash(into hasher: inout Hasher) {

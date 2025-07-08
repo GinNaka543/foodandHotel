@@ -89,6 +89,10 @@ struct ProductScreen: View {
             }
             .padding(.top, 16)
             
+            // Firebase広告
+            FirebaseAdView(placement: "product")
+                .padding(.top, 8)
+            
             // 商品リスト
             ScrollView {
                 VStack(spacing: 0) {
@@ -351,6 +355,7 @@ struct AddProductView: View {
     @State private var selectedImage: PhotosPickerItem?
     @State private var productImage: UIImage?
     @State private var imageData: Data?
+    @State private var selectedPlacements: Set<AdPlacement> = []
     
     var body: some View {
         NavigationView {
@@ -401,6 +406,30 @@ struct AddProductView: View {
                     TextField("購入リンク（URL）", text: $link)
                         .autocapitalization(.none)
                 }
+                
+                Section("広告表示場所") {
+                    ForEach(AdPlacement.allCases, id: \.self) { placement in
+                        HStack {
+                            Text(placement.rawValue)
+                            Spacer()
+                            if selectedPlacements.contains(placement) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.blue)
+                            } else {
+                                Image(systemName: "circle")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if selectedPlacements.contains(placement) {
+                                selectedPlacements.remove(placement)
+                            } else {
+                                selectedPlacements.insert(placement)
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("新規商品")
             .navigationBarTitleDisplayMode(.inline)
@@ -417,7 +446,9 @@ struct AddProductView: View {
                             price: Int(price) ?? 0,
                             description: description,
                             imageData: imageData,
-                            link: link
+                            link: link,
+                            isActive: true,
+                            adPlacements: selectedPlacements
                         )
                         productManager.addProduct(newProduct)
                         dismiss()
@@ -442,6 +473,7 @@ struct EditProductView: View {
     @State private var selectedImage: PhotosPickerItem?
     @State private var productImage: UIImage?
     @State private var imageData: Data?
+    @State private var selectedPlacements: Set<AdPlacement>
     
     init(product: Product, productManager: ProductManager) {
         self.product = product
@@ -452,6 +484,7 @@ struct EditProductView: View {
         self._link = State(initialValue: product.link)
         self._isActive = State(initialValue: product.isActive)
         self._imageData = State(initialValue: product.imageData)
+        self._selectedPlacements = State(initialValue: product.adPlacements)
         if let data = product.imageData {
             self._productImage = State(initialValue: UIImage(data: data))
         }
@@ -507,6 +540,30 @@ struct EditProductView: View {
                         .autocapitalization(.none)
                 }
                 
+                Section("広告表示場所") {
+                    ForEach(AdPlacement.allCases, id: \.self) { placement in
+                        HStack {
+                            Text(placement.rawValue)
+                            Spacer()
+                            if selectedPlacements.contains(placement) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.blue)
+                            } else {
+                                Image(systemName: "circle")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if selectedPlacements.contains(placement) {
+                                selectedPlacements.remove(placement)
+                            } else {
+                                selectedPlacements.insert(placement)
+                            }
+                        }
+                    }
+                }
+                
                 Section("公開設定") {
                     Toggle("商品を公開する", isOn: $isActive)
                 }
@@ -528,6 +585,7 @@ struct EditProductView: View {
                         updatedProduct.link = link
                         updatedProduct.isActive = isActive
                         updatedProduct.imageData = imageData
+                        updatedProduct.adPlacements = selectedPlacements
                         
                         productManager.updateProduct(updatedProduct)
                         dismiss()

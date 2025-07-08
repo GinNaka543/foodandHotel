@@ -1,5 +1,11 @@
 import Foundation
 
+enum AdPlacement: String, Codable, CaseIterable {
+    case home = "ホームページ"
+    case character = "キャラページ"
+    case product = "プロダクトページ"
+}
+
 struct Product: Identifiable, Codable {
     let id: UUID
     var title: String
@@ -9,8 +15,9 @@ struct Product: Identifiable, Codable {
     var link: String
     var createdDate: Date
     var isActive: Bool
+    var adPlacements: Set<AdPlacement>
     
-    init(id: UUID = UUID(), title: String, price: Int, description: String = "", imageData: Data? = nil, link: String = "", createdDate: Date = Date(), isActive: Bool = true) {
+    init(id: UUID = UUID(), title: String, price: Int, description: String = "", imageData: Data? = nil, link: String = "", createdDate: Date = Date(), isActive: Bool = true, adPlacements: Set<AdPlacement> = []) {
         self.id = id
         self.title = title
         self.price = price
@@ -19,6 +26,7 @@ struct Product: Identifiable, Codable {
         self.link = link
         self.createdDate = createdDate
         self.isActive = isActive
+        self.adPlacements = adPlacements
     }
 }
 
@@ -63,5 +71,9 @@ class ProductManager: ObservableObject {
     
     var activeProducts: [Product] {
         products.filter { $0.isActive }
+    }
+    
+    func getProductsForPlacement(_ placement: AdPlacement) -> [Product] {
+        products.filter { $0.isActive && $0.adPlacements.contains(placement) }
     }
 }

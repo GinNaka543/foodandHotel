@@ -47,6 +47,9 @@ struct AdvertisementAdminScreen: View {
                         Image(systemName: "plus")
                     }
                 }
+                ToolbarItem(placement: .navigationBarLeading) {
+                    FixAdsButton()
+                }
             }
             .sheet(isPresented: $showingAddAdvertisement) {
                 AdvertisementEditView(advertisement: nil) { newAd in
@@ -386,11 +389,18 @@ struct AdvertisementEditView: View {
     }
     
     private func saveAdvertisement() {
+        // GitHub URLの場合はraw URLに変換
+        var finalImageURL = imageURL
+        if let githubRawURL = ImageExtractor.shared.convertGitHubURLToRaw(imageURL) {
+            finalImageURL = githubRawURL
+            print("💾 [AdvertisementEditView] GitHub URLをraw URLに変換して保存: \(finalImageURL)")
+        }
+        
         let newAd = Advertisement(
             id: advertisement?.id,
             title: title,
             description: description,
-            imageURL: imageURL,
+            imageURL: finalImageURL,
             linkURL: linkURL,
             targetAnimes: advertisement?.targetAnimes ?? [],
             targetCharacters: advertisement?.targetCharacters ?? [],

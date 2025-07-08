@@ -10,6 +10,7 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var mainTab = MainTabSelection()
     @StateObject private var characterManager = CharacterManager()
     @StateObject private var animeManager = AnimeManager()
+    @StateObject private var productManager = ProductManager()
     
     init() {
         FirebaseApp.configure()
@@ -22,6 +23,7 @@ struct HappinessGameSwiftApp: App {
                 .environmentObject(mainTab)
                 .environmentObject(characterManager)
                 .environmentObject(animeManager)
+                .environmentObject(productManager)
                 .onAppear {
                     // 開発用: サンプル画像を自動生成
                     createSampleImagesIfNeeded()
@@ -90,7 +92,7 @@ struct MainContainerView: View {
                     } else if mainTab.selectedTab == .visit {
                         VisitScreen()
                     } else if mainTab.selectedTab == .card {
-                        CardContentView(selectedTab: .constant(.card))
+                        ProductScreen()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

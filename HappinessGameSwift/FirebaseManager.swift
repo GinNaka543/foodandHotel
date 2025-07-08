@@ -143,6 +143,7 @@ class FirebaseManager: ObservableObject {
     // 広告を取得（プレースメント指定）
     func fetchAds(for placement: String, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
         print("🔥 広告取得開始: placement=\(placement)")
+        print("[DEBUG] Firestoreクエリ: collection=advertisements, isActive=true, placements(array-contains)=\(placement)")
         
         db.collection("advertisements")
             .whereField("isActive", isEqualTo: true)
@@ -155,15 +156,17 @@ class FirebaseManager: ObservableObject {
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ 広告なし")
+                    print("⚠️ 広告なし (snapshot.documents is nil)")
                     completion(.success([]))
                     return
                 }
                 
+                print("[DEBUG] 取得ドキュメント数: \(documents.count)")
                 var ads: [Advertisement] = []
                 for doc in documents {
                     let data = doc.data()
-                    print("📄 広告データ: \(data)")
+                    print("[DEBUG] ドキュメントID: \(doc.documentID)")
+                    print("[DEBUG] フィールド一覧: \(data)")
                     
                     var ad = Advertisement(
                         id: doc.documentID,

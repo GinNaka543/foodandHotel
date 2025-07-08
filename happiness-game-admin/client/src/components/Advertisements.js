@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Advertisements() {
   const [advertisements, setAdvertisements] = useState([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchAdvertisements();
@@ -29,6 +30,26 @@ function Advertisements() {
       } catch (error) {
         console.error('Error deactivating advertisement:', error);
       }
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('この広告を完全に削除しますか？（元に戻せません）')) {
+      try {
+        await axios.delete(`/api/advertisements/${id}?force=true`);
+        fetchAdvertisements();
+      } catch (error) {
+        console.error('Error deleting advertisement:', error);
+      }
+    }
+  };
+
+  const handleActivate = async (id) => {
+    try {
+      await axios.put(`/api/advertisements/${id}`, { isActive: true });
+      fetchAdvertisements();
+    } catch (error) {
+      console.error('Error activating advertisement:', error);
     }
   };
 
@@ -71,16 +92,21 @@ function Advertisements() {
                   <td>{ad.title}</td>
                   <td>{ad.description.length > 50 ? ad.description.substring(0, 50) + '...' : ad.description}</td>
                   <td>
-                    <div style={{ fontSize: '0.875rem' }}>
-                      {ad.targetAnimes.length > 0 && (
-                        <div>アニメ: {ad.targetAnimes.join(', ')}</div>
-                      )}
-                      {ad.targetCharacters.length > 0 && (
-                        <div>キャラ: {ad.targetCharacters.join(', ')}</div>
-                      )}
-                      {ad.targetHashtags.length > 0 && (
-                        <div>タグ: {ad.targetHashtags.map(tag => `#${tag}`).join(', ')}</div>
-                      )}
+                    <div
+                      style={{
+                        fontSize: '0.875rem',
+                        whiteSpace: 'nowrap',
+                        overflowX: 'auto',
+                        maxWidth: '250px',
+                        WebkitOverflowScrolling: 'touch',
+                        display: 'block'
+                      }}
+                    >
+                      {[
+                        ad.targetAnimes.length > 0 ? `アニメ: ${ad.targetAnimes.join(', ')}` : null,
+                        ad.targetCharacters.length > 0 ? `キャラ: ${ad.targetCharacters.join(', ')}` : null,
+                        ad.targetHashtags.length > 0 ? `タグ: ${ad.targetHashtags.map(tag => `#${tag}`).join(', ')}` : null
+                      ].filter(Boolean).join('  ')}
                     </div>
                   </td>
                   <td>{ad.impressions || 0}</td>
@@ -97,15 +123,39 @@ function Advertisements() {
                   </td>
                   <td>{formatDate(ad.createdAt)}</td>
                   <td>
-                    {ad.isActive && (
+                    <>
                       <button
                         className="btn btn-danger"
                         onClick={() => handleDeactivate(ad.id)}
-                        style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem' }}
+                        style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem', marginRight: '0.5rem' }}
+                        disabled={!ad.isActive}
                       >
                         停止
                       </button>
-                    )}
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => navigate(`/create-ad?id=${ad.id}`)}
+                        style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem', marginRight: '0.5rem' }}
+                      >
+                        編集
+                      </button>
+                      <button
+                        className="btn btn-danger"
+                        onClick={() => handleDelete(ad.id)}
+                        style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem', marginRight: '0.5rem' }}
+                      >
+                        削除
+                      </button>
+                      {!ad.isActive && (
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => handleActivate(ad.id)}
+                          style={{ fontSize: '0.875rem', padding: '0.25rem 0.75rem' }}
+                        >
+                          アクティブ化
+                        </button>
+                      )}
+                    </>
                   </td>
                 </tr>
               ))}

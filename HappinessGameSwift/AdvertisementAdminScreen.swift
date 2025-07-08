@@ -2,7 +2,6 @@ import SwiftUI
 import Firebase
 
 struct AdvertisementAdminScreen: View {
-    @StateObject private var firebaseManager = FirebaseManager()
     @State private var advertisements: [Advertisement] = []
     @State private var showingAddAdvertisement = false
     @State private var editingAdvertisement: Advertisement?
@@ -324,7 +323,7 @@ struct AdvertisementEditView: View {
     }
     
     private func saveAdvertisement() {
-        var newAd = Advertisement(
+        let newAd = Advertisement(
             id: advertisement?.id,
             title: title,
             description: description,

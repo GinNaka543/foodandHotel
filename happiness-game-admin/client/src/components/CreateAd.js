@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function CreateAd() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const editId = params.get('id');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -21,6 +24,24 @@ function CreateAd() {
     character: '',
     hashtag: ''
   });
+
+  useEffect(() => {
+    if (editId) {
+      // 編集モード: 既存データ取得
+      axios.get(`/api/advertisements`).then(res => {
+        const ad = res.data.find(a => a.id === editId);
+        if (ad) {
+          setFormData({
+            ...ad,
+            placements: Array.isArray(ad.placements) ? ad.placements : [],
+            expiresAt: (ad.expiresAt && !isNaN(new Date(ad.expiresAt)))
+              ? new Date(ad.expiresAt).toISOString().slice(0, 16)
+              : ''
+          });
+        }
+      });
+    }
+  }, [editId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,18 +83,34 @@ function CreateAd() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (formData.placements.length === 0) {
+    const updatedFormData = { ...formData };
+    if (inputValues.anime.trim() && !updatedFormData.targetAnimes.includes(inputValues.anime.trim())) {
+      updatedFormData.targetAnimes = [...updatedFormData.targetAnimes, inputValues.anime.trim()];
+    }
+    if (inputValues.character.trim() && !updatedFormData.targetCharacters.includes(inputValues.character.trim())) {
+      updatedFormData.targetCharacters = [...updatedFormData.targetCharacters, inputValues.character.trim()];
+    }
+    if (inputValues.hashtag.trim() && !updatedFormData.targetHashtags.includes(inputValues.hashtag.trim())) {
+      updatedFormData.targetHashtags = [...updatedFormData.targetHashtags, inputValues.hashtag.trim()];
+    }
+    
+    if (updatedFormData.placements.length === 0) {
       alert('少なくとも1つの表示場所を選択してください。');
       return;
     }
     
     try {
-      await axios.post('/api/advertisements', formData);
-      alert('広告が正常に作成されました！');
+      if (editId) {
+        await axios.put(`/api/advertisements/${editId}`, updatedFormData);
+        alert('広告が正常に更新されました！');
+      } else {
+        await axios.post('/api/advertisements', updatedFormData);
+        alert('広告が正常に作成されました！');
+      }
       navigate('/advertisements');
     } catch (error) {
-      console.error('Error creating advertisement:', error);
-      alert('広告の作成に失敗しました。');
+      console.error('Error creating/updating advertisement:', error);
+      alert('広告の作成/更新に失敗しました。');
     }
   };
 

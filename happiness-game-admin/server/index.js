@@ -190,17 +190,21 @@ app.put('/api/advertisements/:id', async (req, res) => {
   }
 });
 
-// 広告を削除（非アクティブ化）
+// 広告を削除（非アクティブ化 or 完全削除）
 app.delete('/api/advertisements/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    await db.collection('advertisements').doc(id).update({
-      isActive: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-    
-    res.json({ message: 'Advertisement deactivated successfully' });
+    const force = req.query.force === 'true';
+    if (force) {
+      await db.collection('advertisements').doc(id).delete();
+      res.json({ message: 'Advertisement deleted permanently' });
+    } else {
+      await db.collection('advertisements').doc(id).update({
+        isActive: false,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      res.json({ message: 'Advertisement deactivated successfully' });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

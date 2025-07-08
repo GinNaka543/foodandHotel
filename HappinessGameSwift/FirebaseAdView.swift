@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct FirebaseAdView: View {
     let placement: String
@@ -9,6 +10,18 @@ struct FirebaseAdView: View {
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     
+    private func convertedAd() -> Advertisement {
+        var ad = advertisements[currentIndex % advertisements.count]
+        // GitHub URLの場合はraw URLに変換
+        if ad.imageURL.contains("github.com") && ad.imageURL.contains("/blob/") {
+            ad.imageURL = ad.imageURL
+                .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
+                .replacingOccurrences(of: "/blob/", with: "/")
+            print("🔄 [FirebaseAdView] GitHub URLをraw URLに変換: \(ad.imageURL)")
+        }
+        return ad
+    }
+    
     var body: some View {
         Group {
             if isLoading {
@@ -16,162 +29,185 @@ struct FirebaseAdView: View {
                     .frame(height: 60)
                     .frame(maxWidth: .infinity)
             } else if !advertisements.isEmpty {
-                var ad = advertisements[currentIndex % advertisements.count]
-                // GitHub URLの場合はraw URLに変換
-                if ad.imageURL.contains("github.com") && ad.imageURL.contains("/blob/") {
-                    ad.imageURL = ad.imageURL
-                        .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
-                        .replacingOccurrences(of: "/blob/", with: "/")
-                    print("🔄 [FirebaseAdView] GitHub URLをraw URLに変換: \(ad.imageURL)")
-                }
+                let ad = convertedAd()
                 if placement == "character" {
                     // キャラクターページ: 左テキスト・右画像
-                    HStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(ad.title)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                                .lineLimit(1)
-                            Text(ad.description)
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                        Spacer()
-                        if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
-                            let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                case .failure(let error):
-                                    let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
-                                    Color(.systemGray5)
-                                        .overlay(
-                                            Text("画像エラー")
-                                                .font(.caption)
-                                                .foregroundColor(.red)
-                                        )
-                                case .empty:
-                                    let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
-                                    ProgressView()
-                                @unknown default:
-                                    Color(.systemGray5)
-                                }
+                    Button(action: {
+                        handleAdClick(ad)
+                    }) {
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ad.title)
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(ad.description)
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(2)
                             }
-                            .frame(width: 90, height: 90)
-                            .cornerRadius(10)
-                            .clipped()
-                        } else {
-                            let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
-                            Color(.systemGray5)
-                                .frame(width: 90, height: 90)
-                                .cornerRadius(10)
+                            .padding(.leading, 12)
+                            Spacer()
+                            if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
+                                let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                    case .failure(let error):
+                                        let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
+                                        Color(.systemGray5)
+                                            .overlay(
+                                                Text("画像エラー")
+                                                    .font(.caption)
+                                                    .foregroundColor(.red)
+                                            )
+                                    case .empty:
+                                        let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
+                                        ProgressView()
+                                    @unknown default:
+                                        Color(.systemGray5)
+                                    }
+                                }
+                                .frame(width: 132, height: 86)
+                                .cornerRadius(8)
                                 .clipped()
+                            } else {
+                                let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
+                                Color(.systemGray5)
+                                    .frame(width: 132, height: 86)
+                                    .cornerRadius(8)
+                                    .clipped()
+                            }
                         }
+                        .padding(.vertical, 8)
                     }
-                    .padding(16)
-                    .cornerRadius(12)
-                    .padding(.horizontal, 16)
+                    .buttonStyle(PlainButtonStyle())
                 } else if placement == "product" {
                     // プロダクトページ: 左画像・右テキスト（アニメ一覧風）
-                    HStack(spacing: 16) {
-                        if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
-                            let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                case .failure(let error):
-                                    let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
-                                    Color(.systemGray5)
-                                        .overlay(
-                                            Text("画像エラー")
-                                                .font(.caption)
-                                                .foregroundColor(.red)
-                                        )
-                                case .empty:
-                                    let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
-                                    ProgressView()
-                                @unknown default:
-                                    Color(.systemGray5)
+                    Button(action: {
+                        handleAdClick(ad)
+                    }) {
+                        HStack(spacing: 16) {
+                            if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
+                                let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                    case .failure(let error):
+                                        let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
+                                        Color(.systemGray5)
+                                            .overlay(
+                                                Text("画像エラー")
+                                                    .font(.caption)
+                                                    .foregroundColor(.red)
+                                            )
+                                    case .empty:
+                                        let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
+                                        ProgressView()
+                                    @unknown default:
+                                        Color(.systemGray5)
+                                    }
                                 }
-                            }
-                            .frame(width: 90, height: 90)
-                            .cornerRadius(10)
-                            .clipped()
-                        } else {
-                            let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
-                            Color(.systemGray5)
-                                .frame(width: 90, height: 90)
+                                .frame(width: 168.48, height: 99)
                                 .cornerRadius(10)
                                 .clipped()
+                            } else {
+                                let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
+                                Color(.systemGray5)
+                                    .frame(width: 168.48, height: 99)
+                                    .cornerRadius(10)
+                                    .clipped()
+                            }
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(ad.title)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                    .lineLimit(2)
+                                Text(ad.description)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(2)
+                            }
+                            Spacer()
                         }
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(ad.title)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.primary)
-                                .lineLimit(1)
-                            Text(ad.description)
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                        Spacer()
+                        .padding(16)
+                        .cornerRadius(12)
                     }
-                    .padding(16)
-                    .cornerRadius(12)
-                    .padding(.horizontal, 16)
+                    .buttonStyle(PlainButtonStyle())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, -4)
                 } else {
                     // ホームページ: 画像のみ
-                    VStack {
-                        if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
-                            let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
-                            AsyncImage(url: url) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                case .failure(let error):
-                                    let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
-                                    Color(.systemGray5)
-                                        .overlay(
-                                            Text("画像エラー")
-                                                .font(.caption)
-                                                .foregroundColor(.red)
-                                        )
-                                case .empty:
-                                    let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
-                                    ProgressView()
-                                @unknown default:
-                                    Color(.systemGray5)
+                    Button(action: {
+                        handleAdClick(ad)
+                    }) {
+                        VStack {
+                            if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
+                                let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                    case .failure(let error):
+                                        let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
+                                        Color(.systemGray5)
+                                            .overlay(
+                                                Text("画像エラー")
+                                                    .font(.caption)
+                                                    .foregroundColor(.red)
+                                            )
+                                    case .empty:
+                                        let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
+                                        ProgressView()
+                                    @unknown default:
+                                        Color(.systemGray5)
+                                    }
                                 }
-                            }
-                            .frame(width: 360, height: 189)
-                            .cornerRadius(10)
-                            .clipped()
-                        } else {
-                            let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
-                            Color(.systemGray5)
                                 .frame(width: 360, height: 189)
                                 .cornerRadius(10)
                                 .clipped()
+                            } else {
+                                let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
+                                Color(.systemGray5)
+                                    .frame(width: 360, height: 189)
+                                    .cornerRadius(10)
+                                    .clipped()
+                            }
                         }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     .padding(.horizontal, 16)
                 }
             }
         }
         .onAppear {
             loadAds()
+        }
+    }
+    
+    private func handleAdClick(_ ad: Advertisement) {
+        print("🖱️ [FirebaseAdView] 広告クリック: \(ad.title) - \(ad.linkURL)")
+        
+        // クリックを記録
+        if let adId = ad.id {
+            FirebaseManager.shared.recordAdClick(advertisementId: adId)
+        }
+        
+        // URLを開く
+        if let url = URL(string: ad.linkURL) {
+            UIApplication.shared.open(url)
         }
     }
     
@@ -247,10 +283,6 @@ struct FirebaseAdView: View {
         timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
             withAnimation {
                 currentIndex = (currentIndex + 1) % advertisements.count
-                // 次の広告のインプレッション記録
-                if let adId = advertisements[currentIndex].id {
-                    FirebaseManager.shared.recordAdImpression(advertisementId: adId)
-                }
             }
         }
     }

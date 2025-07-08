@@ -215,9 +215,10 @@ struct CharaScreen: View {
                 .frame(height: 38)
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
-                // 広告バナー
+                // 広告バナー（検索バーと同じ幅に）
                 SimpleAdBannerView()
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                 // キャラリストのみスクロール
                 ScrollView {
                     VStack(spacing: 0) {

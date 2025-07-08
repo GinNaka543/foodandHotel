@@ -31,8 +31,9 @@ struct ProductScreen: View {
                 
                 Spacer()
                 
+                // ギアボタンは何も起きないようにする
                 Button(action: {
-                    showingAdminPanel = true
+                    // 何もしない
                 }) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 24))
@@ -96,35 +97,20 @@ struct ProductScreen: View {
             // 商品リスト
             ScrollView {
                 VStack(spacing: 0) {
-                    if filteredProducts.isEmpty {
-                        VStack(spacing: 16) {
-                            Image(systemName: "shippingbox")
-                                .font(.system(size: 60))
-                                .foregroundColor(.gray)
-                            Text("商品がまだ登録されていません")
-                                .font(.system(size: 16))
-                                .foregroundColor(.gray)
+                    ForEach(filteredProducts) { product in
+                        Button(action: {
+                            selectedProduct = product
+                        }) {
+                            ProductRow(product: product)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 100)
-                    } else {
-                        ForEach(filteredProducts) { product in
-                            Button(action: {
-                                selectedProduct = product
-                            }) {
-                                ProductRow(product: product)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
+                    // 商品が0件のときは何も表示しない（メッセージもアイコンも削除）
                 }
                 .padding(.bottom, 100)
             }
-        }
-        .sheet(isPresented: $showingAdminPanel) {
-            ProductAdminPanel(productManager: productManager)
         }
         .sheet(item: $selectedProduct) { product in
             ProductDetailView(product: product)
@@ -143,13 +129,13 @@ struct ProductRow: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 80, height: 80)
+                    .frame(width: 96, height: 80)
                     .cornerRadius(12)
                     .clipped()
             } else {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray5))
-                    .frame(width: 80, height: 80)
+                    .frame(width: 96, height: 80)
                     .overlay(
                         Image(systemName: "photo")
                             .font(.system(size: 30))

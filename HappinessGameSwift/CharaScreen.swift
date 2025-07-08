@@ -482,30 +482,6 @@ struct AddCharacterSheet: View {
     }
 }
 
-struct SimpleAdBannerView: View {
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("【スタバ新作✨】")
-                    .font(.system(size: 16, weight: .bold))
-                Text("飲んでみた正直な感想😄")
-                    .font(.system(size: 15, weight: .regular))
-                Text("Trending on LINE VOOM")
-                    .font(.system(size: 13))
-                    .foregroundColor(.gray)
-            }
-            .padding(.leading, 9)
-            Spacer()
-            Image("かのかり")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 63, height: 63)
-                .clipped()
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        }
-        .padding(12)
-    }
-}
 
 struct CharacterDetailView: View {
     @Binding var character: Character

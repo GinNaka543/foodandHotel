@@ -282,6 +282,13 @@ struct ProductAdminPanel: View {
                     }
                 }
                 
+                Section("広告管理") {
+                    NavigationLink(destination: AdvertisementAdminScreen()) {
+                        Label("広告を管理", systemImage: "megaphone.fill")
+                            .foregroundColor(.blue)
+                    }
+                }
+                
                 Section("登録済み商品") {
                     ForEach(productManager.products) { product in
                         HStack {

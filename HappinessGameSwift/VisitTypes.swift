@@ -21,17 +21,38 @@ struct SpotEvent: Identifiable, Codable {
     }
 }
 
+struct TransportInfo: Codable {
+    var method: String = "電車"
+    var duration: Int = 30
+    var cost: Int = 0
+    var route: String = ""
+}
+
 struct VisitSpot: Identifiable, Codable {
     let id = UUID()
     var name: String
     var address: String = ""
     var notes: String = ""
     var event: SpotEvent?
-    init(name: String, address: String = "", notes: String = "", event: SpotEvent? = nil) {
+    var nearestStation: String = ""
+    var arrivalTime: Date?
+    var departureTime: Date?
+    var stayDuration: Int = 60
+    var transportToNext: TransportInfo?
+    var isCompleted: Bool = false
+    
+    init(name: String, address: String = "", notes: String = "", event: SpotEvent? = nil, 
+         nearestStation: String = "", arrivalTime: Date? = nil, departureTime: Date? = nil,
+         stayDuration: Int = 60, transportToNext: TransportInfo? = nil) {
         self.name = name
         self.address = address
         self.notes = notes
         self.event = event
+        self.nearestStation = nearestStation
+        self.arrivalTime = arrivalTime
+        self.departureTime = departureTime
+        self.stayDuration = stayDuration
+        self.transportToNext = transportToNext
     }
 }
 
@@ -43,12 +64,16 @@ struct VisitPlanData: Identifiable, Codable {
     var spots: [VisitSpot]
     var thumbnailData: Data?
     var createdDate: Date = Date()
-    init(animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, createdDate: Date = Date()) {
+    var startTime: Date = Date()
+    var totalCost: Int = 0
+    
+    init(animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, createdDate: Date = Date(), startTime: Date = Date()) {
         self.animeName = animeName
         self.title = title
         self.duration = duration
         self.spots = spots
         self.thumbnailData = thumbnailData
         self.createdDate = createdDate
+        self.startTime = startTime
     }
 } 

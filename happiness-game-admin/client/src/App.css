@@ -246,3 +246,10 @@ tr:hover {
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   margin-top: 2rem;
 }
+
+.scroll-x-cell {
+  display: block;
+  white-space: nowrap;
+  overflow-x: auto;
+  max-width: 320px;
+}

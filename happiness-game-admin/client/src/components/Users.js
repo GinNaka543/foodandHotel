@@ -112,7 +112,6 @@ function Users() {
             <thead>
               <tr>
                 <th>ユーザー名</th>
-                <th>ID</th>
                 <th>お気に入りアニメ</th>
                 <th>お気に入りキャラクター</th>
                 <th>ハッシュタグ</th>
@@ -121,22 +120,27 @@ function Users() {
             <tbody>
               {users.map(user => (
                 <tr key={user.id}>
-                  <td>{user.username || '未設定'}</td>
-                  <td>{user.id.substring(0, 8)}...</td>
+                  <td><div className="scroll-x-cell">{user.username || '未設定'}</div></td>
                   <td>
-                    {(user.favoriteAnimes || []).map(anime => (
-                      <span key={anime} className="tag">{anime}</span>
-                    ))}
+                    <div className="scroll-x-cell">
+                      {(user.favoriteAnimes || []).map(anime => (
+                        <span key={anime} className="tag">{anime}</span>
+                      ))}
+                    </div>
                   </td>
                   <td>
-                    {(user.favoriteCharacters || []).map(character => (
-                      <span key={character} className="tag">{character}</span>
-                    ))}
+                    <div className="scroll-x-cell">
+                      {(user.favoriteCharacters || []).map(character => (
+                        <span key={character} className="tag">{character}</span>
+                      ))}
+                    </div>
                   </td>
                   <td>
-                    {(user.hashtags || []).map(tag => (
-                      <span key={tag} className="tag">#{tag}</span>
-                    ))}
+                    <div className="scroll-x-cell">
+                      {(user.hashtags || []).map(tag => (
+                        <span key={tag} className="tag">#{tag}</span>
+                      ))}
+                    </div>
                   </td>
                 </tr>
               ))}

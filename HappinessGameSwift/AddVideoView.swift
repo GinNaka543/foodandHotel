@@ -174,8 +174,15 @@ struct AddVideoView: View {
                     .disabled(selectedVideoURL == nil || isExporting)
                 }
             }
-            .alert(isPresented: Binding<Bool>(get: { exportError != nil }, set: { _ in exportError = nil })) {
-                Alert(title: Text("エラー"), message: Text(exportError ?? ""), dismissButton: .default(Text("OK")))
+            .alert("エラー", isPresented: Binding<Bool>(
+                get: { exportError != nil },
+                set: { _ in exportError = nil }
+            )) {
+                Button("OK") {
+                    exportError = nil
+                }
+            } message: {
+                Text(exportError ?? "")
             }
             .overlay(
                 Group {
@@ -191,7 +198,7 @@ struct AddVideoView: View {
                 }
             )
         }
-        .onChange(of: selectedItem) { oldValue, newValue in
+        .onChange(of: selectedItem) { newValue in
             Task {
                 if let data = try? await newValue?.loadTransferable(type: Data.self) {
                     let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mov")

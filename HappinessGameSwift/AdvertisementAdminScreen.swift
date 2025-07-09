@@ -1,5 +1,5 @@
 import SwiftUI
-import Firebase
+import FirebaseFirestore
 
 struct AdvertisementAdminScreen: View {
     @State private var advertisements: [Advertisement] = []

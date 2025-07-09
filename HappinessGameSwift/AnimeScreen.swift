@@ -1563,7 +1563,7 @@ struct AnimeAboutView: View {
                 .cornerRadius(16)
                 .padding(40)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onChange(of: iconPickerItem) { oldValue, newValue in
+                .onChange(of: iconPickerItem) { newValue in
                     if let newItem = newValue {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -1747,7 +1747,7 @@ struct AddAnimeSheet: View {
                                 .foregroundColor(.blue)
                         }
                     }
-                    .onChange(of: selectedItem) { oldValue, newValue in
+                    .onChange(of: selectedItem) { newValue in
                         if let newItem = newValue {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {

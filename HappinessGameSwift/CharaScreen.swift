@@ -410,7 +410,7 @@ struct AddCharacterSheet: View {
                                 .foregroundColor(.blue)
                         }
                     }
-                    .onChange(of: selectedItem) { oldValue, newValue in
+                    .onChange(of: selectedItem) { newValue in
                         if let newItem = newValue {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -449,29 +449,25 @@ struct AddCharacterSheet: View {
                 }
             }
             .navigationTitle("キャラ追加")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("追加") {
-                        print("[DEBUG] 追加ボタンタップ")
-                        // 年は固定値（例：2000年）でDateを生成
-                        let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
-                        let calendar = Calendar.current
-                        let date = calendar.date(from: components) ?? Date()
-                        var imageIdentifier: String? = nil
-                        if let image = image {
-                            let fileName = "icon_\(UUID().uuidString).png"
-                            imageIdentifier = saveImageToDocuments(image, fileName: fileName)
-                        }
-                        let newChar = Character(id: UUID(), imageIdentifier: imageIdentifier, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: "", customFields: nil)
-                        // CharacterManagerのみを使用して追加（重複を防ぐ）
-                        characterManager.addCharacter(newChar)
-                        dismiss()
-                    }.disabled(name.isEmpty || tag.isEmpty)
-                }
-            }
+            .navigationBarItems(
+                leading: Button("キャンセル") { dismiss() },
+                trailing: Button("追加") {
+                    print("[DEBUG] 追加ボタンタップ")
+                    // 年は固定値（例：2000年）でDateを生成
+                    let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
+                    let calendar = Calendar.current
+                    let date = calendar.date(from: components) ?? Date()
+                    var imageIdentifier: String? = nil
+                    if let image = image {
+                        let fileName = "icon_\(UUID().uuidString).png"
+                        imageIdentifier = saveImageToDocuments(image, fileName: fileName)
+                    }
+                    let newChar = Character(id: UUID(), imageIdentifier: imageIdentifier, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: "", customFields: nil)
+                    // CharacterManagerのみを使用して追加（重複を防ぐ）
+                    characterManager.addCharacter(newChar)
+                    dismiss()
+                }.disabled(name.isEmpty || tag.isEmpty)
+            )
         }
     }
     // 月ごとの日数を返す
@@ -747,7 +743,7 @@ struct CharacterDetailView: View {
                 .cornerRadius(16)
                 .padding(40)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onChange(of: iconPickerItem) { oldValue, newValue in
+                .onChange(of: iconPickerItem) { newValue in
                     if let newItem = newValue {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -1165,7 +1161,7 @@ struct AboutView: View {
             .cornerRadius(16)
             .padding(40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onChange(of: iconPickerItem) { oldValue, newValue in
+            .onChange(of: iconPickerItem) { newValue in
                 if let newItem = newValue {
                     Task {
                         if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {

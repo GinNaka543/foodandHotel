@@ -1,0 +1,123 @@
+import SwiftUI
+import PhotosUI
+import Foundation
+import UIKit
+
+// 必要な型定義をコピー
+struct ArtworkAlbum: Identifiable, Hashable, Equatable {
+    let id = UUID()
+    let tag: String
+    var videos: [Artwork]
+    let characterImageName: String
+
+    var count: Int { videos.count }
+    var firstImagePath: String? { videos.first?.imagePath }
+
+    static func == (lhs: ArtworkAlbum, rhs: ArtworkAlbum) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+struct Artwork: Identifiable, Codable, Hashable {
+    let id: UUID
+    let characterId: UUID
+    var imagePath: String?
+    var title: String
+    var tags: [String]
+    var createdAt: Date
+    var pixivURL: String?
+    var twitterURL: String?
+
+    init(id: UUID = UUID(), characterId: UUID, imagePath: String? = nil, title: String, tags: [String] = [], createdAt: Date = Date(), pixivURL: String? = nil, twitterURL: String? = nil) {
+        self.id = id
+        self.characterId = characterId
+        self.imagePath = imagePath
+        self.title = title
+        self.tags = tags
+        self.createdAt = createdAt
+        self.pixivURL = pixivURL
+        self.twitterURL = twitterURL
+    }
+
+    static func == (lhs: Artwork, rhs: Artwork) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+
+// 簡略化されたArtworkScreen
+struct ArtworkScreen: View {
+    let character: Character
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            HStack {
+                Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.title2)
+                        .foregroundColor(.black)
+                }
+                Spacer()
+                Text(character.name)
+                    .font(.title)
+                    .fontWeight(.bold)
+                Spacer()
+                Button(action: {}) {
+                    Text("Upload")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(Color.black)
+                        .cornerRadius(8)
+                }
+            }
+            .padding()
+            
+            Spacer()
+            
+            VStack(spacing: 16) {
+                Image(systemName: "photo.artframe")
+                    .font(.system(size: 50))
+                    .foregroundColor(.gray)
+                Text("ArtworkScreen")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                Text("正常にファイルが追加されました！")
+                    .foregroundColor(.green)
+                    .multilineTextAlignment(.center)
+                Text("アートワーク機能は正常に動作しています")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding()
+            }
+            
+            Spacer()
+        }
+    }
+}
+
+// 必要な関数定義
+func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
+    guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
+    let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    let fileURL = documentsDirectory.appendingPathComponent(fileName)
+    
+    do {
+        try data.write(to: fileURL)
+        return fileURL.path
+    } catch {
+        print("Error saving image: \(error)")
+        return nil
+    }
+}

@@ -212,41 +212,6 @@ public struct VisitScreen: View {
         }
         .onAppear {
             loadSavedPlans()
-            
-            // デバッグ用: プランがない場合はテストプランを作成
-            if savedPlans.isEmpty {
-                print("DEBUG: プランが空なのでテストプランを作成します")
-                let testSpot1 = VisitSpot(
-                    name: "江ノ島駅",
-                    address: "神奈川県藤沢市片瀬江ノ島1-4-7",
-                    notes: "スラムダンクの聖地",
-                    event: SpotEvent(
-                        type: .findLocation,
-                        description: "駅を見つけよう"
-                    ),
-                    timeRange: "10:00〜10:30",
-                    activity: "駅周辺を散策し、アニメに登場した場所を探す"
-                )
-                let testSpot2 = VisitSpot(
-                    name: "江ノ島海岸",
-                    address: "神奈川県藤沢市片瀬海岸1-15",
-                    notes: "海を眺めよう",
-                    event: SpotEvent(
-                        type: .takePhoto,
-                        description: "海の写真を撮ろう"
-                    ),
-                    timeRange: "11:00〜12:00",
-                    activity: "海岸でアニメのシーンを再現して写真撮影"
-                )
-                let testPlan = VisitPlanData(
-                    animeName: "スラムダンク",
-                    title: "江ノ島聖地巡礼",
-                    duration: "1日",
-                    spots: [testSpot1, testSpot2]
-                )
-                savedPlans = [testPlan]
-                print("DEBUG: テストプランを追加しました")
-            }
         }
     }
     

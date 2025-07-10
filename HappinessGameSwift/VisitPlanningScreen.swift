@@ -804,6 +804,55 @@ struct AddSpotView: View {
                     }
                 }
                 
+                // 交通手段セクションを上に配置
+                if !previousSpots.isEmpty {
+                    let lastSpot = previousSpots.filter { $0.dayNumber == selectedDay }.last ?? previousSpots.last
+                    Section("移動手段 - \(lastSpot?.name ?? "前のスポット")から") {
+                        Picker("移動手段", selection: $transportMethod) {
+                            ForEach(transportMethods, id: \.self) { method in
+                                Text(method).tag(method)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("どのくらい時間がかかりますか？")
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            HStack {
+                                TextField("30", value: $transportDuration, format: .number)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 60)
+                                    .multilineTextAlignment(.center)
+                                Text("分")
+                                    .font(.system(size: 14))
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("交通費はいくらですか？")
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            HStack {
+                                TextField("0", value: $transportCost, format: .number)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 80)
+                                    .multilineTextAlignment(.center)
+                                Text("円")
+                                    .font(.system(size: 14))
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("どのルートを使いますか？（任意）")
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            TextField("例：JR山手線 → 東京メトロ銀座線", text: $transportRoute)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        }
+                    }
+                }
+                
                 Section("スポット情報 - Day \(selectedDay)") {
                     TextField("スポット名", text: $spotName)
                     
@@ -890,54 +939,6 @@ struct AddSpotView: View {
                                 spotImage = UIImage(data: data)
                                 spotImageData = data
                             }
-                        }
-                    }
-                }
-                
-                if !previousSpots.isEmpty {
-                    let lastSpot = previousSpots.filter { $0.dayNumber == selectedDay }.last ?? previousSpots.last
-                    Section("移動手段 - \(lastSpot?.name ?? "前のスポット")から") {
-                        Picker("移動手段", selection: $transportMethod) {
-                            ForEach(transportMethods, id: \.self) { method in
-                                Text(method).tag(method)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("どのくらい時間がかかりますか？")
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                            HStack {
-                                TextField("30", value: $transportDuration, format: .number)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .frame(width: 60)
-                                    .multilineTextAlignment(.center)
-                                Text("分")
-                                    .font(.system(size: 14))
-                            }
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("交通費はいくらですか？")
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                            HStack {
-                                TextField("0", value: $transportCost, format: .number)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .frame(width: 80)
-                                    .multilineTextAlignment(.center)
-                                Text("円")
-                                    .font(.system(size: 14))
-                            }
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("どのルートを使いますか？（任意）")
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                            TextField("例：JR山手線 → 東京メトロ銀座線", text: $transportRoute)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
                         }
                     }
                 }

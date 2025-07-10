@@ -109,6 +109,7 @@ enum WatchStatus: String, Codable, CaseIterable {
 struct Anime: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var imageIdentifier: String?
+    var backgroundImagePath: String?
     var title: String
     var hashtag: String
     var releaseDate: Date
@@ -120,7 +121,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -129,6 +130,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(hashtag, forKey: .hashtag)
         try container.encode(releaseDate, forKey: .releaseDate)
         try container.encodeIfPresent(imageIdentifier, forKey: .imageIdentifier)
+        try container.encodeIfPresent(backgroundImagePath, forKey: .backgroundImagePath)
         try container.encodeIfPresent(customFields, forKey: .customFields)
         try container.encode(watchStatus, forKey: .watchStatus)
         try container.encode(watchStatuses, forKey: .watchStatuses)
@@ -140,6 +142,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         hashtag = try container.decode(String.self, forKey: .hashtag)
         releaseDate = try container.decode(Date.self, forKey: .releaseDate)
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
+        backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([AnimeCustomField].self, forKey: .customFields)
         watchStatus = (try? container.decode(WatchStatus.self, forKey: .watchStatus)) ?? .none
         
@@ -153,9 +156,10 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
             watchStatuses = []
         }
     }
-    init(id: UUID, imageIdentifier: String?, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = []) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = []) {
         self.id = id
         self.imageIdentifier = imageIdentifier
+        self.backgroundImagePath = backgroundImagePath
         self.title = title
         self.hashtag = hashtag
         self.releaseDate = releaseDate
@@ -1866,7 +1870,7 @@ struct AddAnimeSheet: View {
                     let calendar = Calendar.current
                     let year = calendar.component(.year, from: Date())
                     let date = calendar.date(from: DateComponents(year: year, month: selectedMonth, day: selectedDay)) ?? Date()
-                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, title: title, hashtag: hashtag, releaseDate: date, watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
+                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: date, watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
                     animeManager.addAnime(newAnime)
                     dismiss()
                 }
@@ -1898,6 +1902,9 @@ struct AnimeDetailView: View {
     @State private var tempIconImage: UIImage? = nil
     @State private var showEditWatchStatusModal = false
     @State private var editWatchStatuses: Set<WatchStatus> = []
+    @State private var showEditBackgroundModal = false
+    @State private var backgroundPickerItem: PhotosPickerItem? = nil
+    @State private var backgroundImage: UIImage? = nil
 
     var body: some View {
         GeometryReader { geometry in
@@ -1905,7 +1912,28 @@ struct AnimeDetailView: View {
             let titleText = currentAnime.title
             let dateText = DateFormatter.monthDayEnglish.string(from: currentAnime.releaseDate)
             ZStack(alignment: .topLeading) {
-                Color(.systemBackground).ignoresSafeArea()
+                // 背景画像
+                if let imagePath = currentAnime.backgroundImagePath,
+                   let uiImage = UIImage(contentsOfFile: imagePath) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                        .overlay(Color.black.opacity(0.3).ignoresSafeArea())
+                } else {
+                    Color(.systemBackground).ignoresSafeArea()
+                }
+                
+                // タップで編集できるように背景領域
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: 300)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        showEditBackgroundModal = true
+                    }
+                
                 Button(action: {
                     if let onDismiss = onDismiss {
                         onDismiss()
@@ -2186,6 +2214,88 @@ struct AnimeDetailView: View {
             .background(Color(.systemBackground))
             .cornerRadius(16)
             .padding(40)
+        }
+        // 背景画像編集モーダル
+        .sheet(isPresented: $showEditBackgroundModal) {
+            NavigationView {
+                VStack(spacing: 20) {
+                    Text("背景画像を選択")
+                        .font(.headline)
+                    
+                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
+                        VStack {
+                            if let backgroundImage = backgroundImage {
+                                Image(uiImage: backgroundImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 200)
+                                    .clipped()
+                                    .cornerRadius(12)
+                            } else if let imagePath = anime.backgroundImagePath,
+                                      let uiImage = UIImage(contentsOfFile: imagePath) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 200)
+                                    .clipped()
+                                    .cornerRadius(12)
+                            } else {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(height: 200)
+                                    .overlay(
+                                        VStack {
+                                            Image(systemName: "photo.fill")
+                                                .font(.system(size: 50))
+                                                .foregroundColor(.gray)
+                                            Text("背景画像を選択")
+                                                .foregroundColor(.gray)
+                                        }
+                                    )
+                            }
+                        }
+                    }
+                    .onChange(of: backgroundPickerItem) { _ in
+                        Task {
+                            if let data = try? await backgroundPickerItem?.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: data) {
+                                backgroundImage = uiImage
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding()
+                .navigationBarTitle("背景画像", displayMode: .inline)
+                .navigationBarItems(
+                    leading: Button("キャンセル") {
+                        backgroundImage = nil
+                        showEditBackgroundModal = false
+                    },
+                    trailing: Button("保存") {
+                        if let backgroundImage = backgroundImage {
+                            // 画像を保存
+                            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+                            let fileName = "anime_bg_\(UUID().uuidString).jpg"
+                            let filePath = documentsPath.appendingPathComponent(fileName)
+                            
+                            if let imageData = backgroundImage.jpegData(compressionQuality: 0.8) {
+                                try? imageData.write(to: filePath)
+                                
+                                // アニメ情報を更新
+                                guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                                var updatedAnime = animes[idx]
+                                updatedAnime.backgroundImagePath = filePath.path
+                                animes[idx] = updatedAnime
+                                animeManager.updateAnime(updatedAnime)
+                            }
+                        }
+                        showEditBackgroundModal = false
+                    }
+                    .disabled(backgroundImage == nil)
+                )
+            }
         }
         // アイコン編集モーダル（省略）
     }

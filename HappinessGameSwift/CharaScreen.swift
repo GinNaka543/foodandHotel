@@ -90,6 +90,7 @@ struct CustomField: Hashable, Codable {
 struct Character: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var imageIdentifier: String? // PhotoライブラリのassetIdentifier
+    var backgroundImagePath: String? // 背景画像のパス
     var name: String
     var tag: String
     var birthday: Date
@@ -106,7 +107,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     }
     // Codable対応
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields
+        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -121,6 +122,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         try container.encode(seichi, forKey: .seichi)
         try container.encode(height, forKey: .height)
         try container.encodeIfPresent(imageIdentifier, forKey: .imageIdentifier)
+        try container.encodeIfPresent(backgroundImagePath, forKey: .backgroundImagePath)
         try container.encodeIfPresent(customFields, forKey: .customFields)
     }
     public init(from decoder: Decoder) throws {
@@ -136,11 +138,13 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         seichi = (try? container.decode(String.self, forKey: .seichi)) ?? ""
         height = (try? container.decode(String.self, forKey: .height)) ?? ""
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
+        backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([CustomField].self, forKey: .customFields)
     }
-    init(id: UUID, imageIdentifier: String?, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil) {
         self.id = id
         self.imageIdentifier = imageIdentifier
+        self.backgroundImagePath = backgroundImagePath
         self.name = name
         self.tag = tag
         self.birthday = birthday
@@ -506,12 +510,15 @@ struct CharacterDetailView: View {
     @State private var showEditNameModal = false
     @State private var showEditBirthdayModal = false
     @State private var showEditIconModal = false
+    @State private var showEditBackgroundModal = false
     @State private var editName: String = ""
     @State private var editTag: String = ""
     @State private var editBirthday: Date = Date()
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
     @State private var tempIconImage: UIImage? = nil // モーダル内の一時的な画像表示用
+    @State private var backgroundPickerItem: PhotosPickerItem? = nil
+    @State private var backgroundImage: UIImage? = nil
 
     var body: some View {
         GeometryReader { geometry in
@@ -520,7 +527,25 @@ struct CharacterDetailView: View {
             let nameText = currentCharacter.name
             let birthdayText = DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday)
             ZStack(alignment: .topLeading) {
-                Color(.systemBackground).ignoresSafeArea()
+                // 背景画像または色
+                if let backgroundPath = currentCharacter.backgroundImagePath, 
+                   let bgImage = UIImage(contentsOfFile: backgroundPath) {
+                    Image(uiImage: bgImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            showEditBackgroundModal = true
+                        }
+                } else {
+                    Color(.systemBackground)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            showEditBackgroundModal = true
+                        }
+                }
                 Button(action: {
                     if let onDismiss = onDismiss {
                         onDismiss()
@@ -563,6 +588,9 @@ struct CharacterDetailView: View {
                         }
                     }
                     .contentShape(Rectangle())
+                    .onTapGesture {
+                        showEditIconModal = true
+                    }
                     // 名前
                     HStack {
                         Spacer()
@@ -775,6 +803,85 @@ struct CharacterDetailView: View {
                 Button(action: { 
                     showEditIconModal = false
                     tempIconImage = nil // モーダルを閉じる時にクリア
+                }) {
+                    Text("閉じる")
+                        .font(.system(size: 18, weight: .regular))
+                        .foregroundColor(.blue)
+                        .padding(.trailing, 16)
+                        .padding(.top, 16)
+                }
+            }
+            .ignoresSafeArea(.container, edges: .top)
+        }
+        // 背景画像編集モーダル
+        .sheet(isPresented: $showEditBackgroundModal) {
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 24) {
+                    Text("背景画像を選択")
+                        .font(.headline)
+                        .padding(.top, 40)
+                    
+                    if let bgImage = backgroundImage {
+                        Image(uiImage: bgImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 200)
+                            .cornerRadius(12)
+                            .clipped()
+                    } else if let backgroundPath = character.backgroundImagePath,
+                             let bgImage = UIImage(contentsOfFile: backgroundPath) {
+                        Image(uiImage: bgImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 200)
+                            .cornerRadius(12)
+                            .clipped()
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 200)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                    
+                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
+                        Text("写真を選択")
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .padding(40)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onChange(of: backgroundPickerItem) { newValue in
+                    if let newItem = newValue {
+                        Task {
+                            if let data = try? await newItem.loadTransferable(type: Data.self),
+                               let uiImage = UIImage(data: data) {
+                                backgroundImage = uiImage
+                                
+                                // 画像をドキュメントディレクトリに保存
+                                let fileName = "background_\(UUID().uuidString).png"
+                                if let imagePath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                    // 直接characterを更新
+                                    character.backgroundImagePath = imagePath
+                                    
+                                    // characterManagerも更新
+                                    characterManager.updateCharacter(character)
+                                }
+                                
+                                showEditBackgroundModal = false
+                            }
+                        }
+                    }
+                }
+                
+                Button(action: {
+                    showEditBackgroundModal = false
                 }) {
                     Text("閉じる")
                         .font(.system(size: 18, weight: .regular))
@@ -1215,6 +1322,13 @@ struct AboutView: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(height: 180)
                         .clipped()
+                } else if let backgroundPath = character?.backgroundImagePath,
+                         let bgImage = UIImage(contentsOfFile: backgroundPath) {
+                    Image(uiImage: bgImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 180)
+                        .clipped()
                 } else {
                     Rectangle()
                         .fill(Color.gray.opacity(0.18))
@@ -1229,10 +1343,6 @@ struct AboutView: View {
                     Text("写真を選択")
                         .foregroundColor(.blue)
                 }
-                Button("保存") {
-                    // 画像保存処理（必要ならここでbackgroundImageを更新）
-                    showBackgroundModal = false
-                }
             }
             .padding(.top, 32)
             .padding(.horizontal, 24)
@@ -1242,6 +1352,28 @@ struct AboutView: View {
                     .foregroundColor(.blue)
                     .padding(.trailing, 16)
                     .padding(.top, 16)
+            }
+        }
+        .onChange(of: backgroundPickerItem) { newValue in
+            if let newItem = newValue {
+                Task {
+                    if let data = try? await newItem.loadTransferable(type: Data.self),
+                       let uiImage = UIImage(data: data) {
+                        backgroundImage = uiImage
+                        
+                        // 画像をドキュメントディレクトリに保存
+                        let fileName = "background_\(UUID().uuidString).png"
+                        if let imagePath = saveImageToDocuments(uiImage, fileName: fileName) {
+                            // キャラクターの背景画像パスを更新
+                            if let idx = characters.firstIndex(where: { $0.id == characterId }) {
+                                characters[idx].backgroundImagePath = imagePath
+                                characterManager.updateCharacter(characters[idx])
+                            }
+                        }
+                        
+                        showBackgroundModal = false
+                    }
+                }
             }
         }
         .ignoresSafeArea(.container, edges: .top)

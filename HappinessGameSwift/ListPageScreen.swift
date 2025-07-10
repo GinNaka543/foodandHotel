@@ -214,8 +214,9 @@ public struct ListPageScreen: View {
         return characters.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
     private var filteredAnimes: [Anime] {
-        if searchText.isEmpty { return animes }
-        return animes.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+        let animesWithTitles = animes.filter { !$0.title.isEmpty }
+        if searchText.isEmpty { return animesWithTitles }
+        return animesWithTitles.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }
     private var filteredBirthdays: [Character] {
         if searchText.isEmpty { return birthdays }

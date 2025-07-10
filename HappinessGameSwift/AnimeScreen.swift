@@ -115,13 +115,14 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var hashtag: String
     var releaseDate: Date
     var customFields: [AnimeCustomField]?
-    var watchStatus: WatchStatus = .none
+    var watchStatus: WatchStatus = .none  // 後方互換性のため残す
+    var watchStatuses: [WatchStatus] = []  // 複数選択用の新しいフィールド
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, title, hashtag, releaseDate, customFields, watchStatus
+        case id, imageIdentifier, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -132,6 +133,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encodeIfPresent(imageIdentifier, forKey: .imageIdentifier)
         try container.encodeIfPresent(customFields, forKey: .customFields)
         try container.encode(watchStatus, forKey: .watchStatus)
+        try container.encode(watchStatuses, forKey: .watchStatuses)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -142,8 +144,18 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
         customFields = try? container.decodeIfPresent([AnimeCustomField].self, forKey: .customFields)
         watchStatus = (try? container.decode(WatchStatus.self, forKey: .watchStatus)) ?? .none
+        
+        // watchStatusesを読み込む。古いデータの場合は、watchStatusから移行
+        if let statuses = try? container.decode([WatchStatus].self, forKey: .watchStatuses) {
+            watchStatuses = statuses
+        } else if watchStatus != .none {
+            // 後方互換性: 古いデータの場合、watchStatusから配列を作成
+            watchStatuses = [watchStatus]
+        } else {
+            watchStatuses = []
+        }
     }
-    init(id: UUID, imageIdentifier: String?, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none) {
+    init(id: UUID, imageIdentifier: String?, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = []) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.title = title
@@ -151,6 +163,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.releaseDate = releaseDate
         self.customFields = customFields
         self.watchStatus = watchStatus
+        self.watchStatuses = watchStatuses.isEmpty && watchStatus != .none ? [watchStatus] : watchStatuses
     }
 }
 
@@ -175,13 +188,13 @@ struct AnimeScreen: View {
         case .all:
             return animeManager.animes
         case .watching:
-            return animeManager.animes.filter { $0.watchStatus == .watching }
+            return animeManager.animes.filter { $0.watchStatuses.contains(.watching) }
         case .willWatch:
-            return animeManager.animes.filter { $0.watchStatus == .willWatch }
+            return animeManager.animes.filter { $0.watchStatuses.contains(.willWatch) }
         case .watchAgain:
-            return animeManager.animes.filter { $0.watchStatus == .watchAgain }
+            return animeManager.animes.filter { $0.watchStatuses.contains(.watchAgain) }
         case .thisTerm:
-            return animeManager.animes.filter { $0.watchStatus == .thisTerm }
+            return animeManager.animes.filter { $0.watchStatuses.contains(.thisTerm) }
         }
     }
 
@@ -1315,7 +1328,7 @@ struct AnimeAboutView: View {
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
     @State private var showEditWatchStatusModal = false
-    @State private var editWatchStatus: WatchStatus = .none
+    @State private var editWatchStatuses: Set<WatchStatus> = []
     
     var body: some View {
         GeometryReader { geometry in
@@ -1390,18 +1403,32 @@ struct AnimeAboutView: View {
                         }
                     
                     // 視聴ステータス
-                    HStack {
+                    VStack(spacing: 4) {
                         Text("ステータス:")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
-                        Text(currentAnime.watchStatus.rawValue)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.blue)
+                        if currentAnime.watchStatuses.isEmpty {
+                            Text("なし")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.gray)
+                        } else {
+                            HStack(spacing: 8) {
+                                ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
+                                    Text(status.rawValue)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
+                                }
+                            }
+                        }
                     }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .onTapGesture {
-                        editWatchStatus = currentAnime.watchStatus
+                        editWatchStatuses = Set(currentAnime.watchStatuses)
                         showEditWatchStatusModal = true
                     }
                     
@@ -1669,40 +1696,54 @@ struct AnimeAboutView: View {
         // 視聴ステータス編集モーダル
         .sheet(isPresented: $showEditWatchStatusModal) {
             VStack(spacing: 20) {
-                Text("視聴ステータスを選択")
+                Text("視聴ステータスを選択（複数選択可）")
                     .font(.headline)
                 VStack(spacing: 12) {
-                    ForEach(WatchStatus.allCases, id: \.self) { status in
+                    ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
                         Button(action: {
-                            guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                            var updatedAnime = animes[idx]
-                            updatedAnime.watchStatus = status
-                            animes[idx] = updatedAnime
-                            animeManager.updateAnime(updatedAnime)
-                            showEditWatchStatusModal = false
+                            if editWatchStatuses.contains(status) {
+                                editWatchStatuses.remove(status)
+                            } else {
+                                editWatchStatuses.insert(status)
+                            }
                         }) {
                             HStack {
                                 Text(status.rawValue)
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.black)
                                 Spacer()
-                                if editWatchStatus == status {
-                                    Image(systemName: "checkmark")
+                                if editWatchStatuses.contains(status) {
+                                    Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(.blue)
+                                } else {
+                                    Image(systemName: "circle")
+                                        .foregroundColor(.gray)
                                 }
                             }
                             .padding()
                             .background(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(editWatchStatus == status ? Color.blue.opacity(0.1) : Color(.systemGray6))
+                                    .fill(editWatchStatuses.contains(status) ? Color.blue.opacity(0.1) : Color(.systemGray6))
                             )
                         }
                     }
                 }
-                Button("キャンセル") {
-                    showEditWatchStatusModal = false
+                HStack(spacing: 20) {
+                    Button("キャンセル") {
+                        showEditWatchStatusModal = false
+                    }
+                    .foregroundColor(.red)
+                    
+                    Button("保存") {
+                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                        var updatedAnime = animes[idx]
+                        updatedAnime.watchStatuses = Array(editWatchStatuses)
+                        animes[idx] = updatedAnime
+                        animeManager.updateAnime(updatedAnime)
+                        showEditWatchStatusModal = false
+                    }
+                    .foregroundColor(.blue)
                 }
-                .foregroundColor(.red)
             }
             .padding()
             .background(Color(.systemBackground))
@@ -1724,7 +1765,7 @@ struct AddAnimeSheet: View {
     @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var selectedDay: Int = Calendar.current.component(.day, from: Date())
     @State private var savedImagePath: String? = nil
-    @State private var selectedWatchStatus: WatchStatus = .none
+    @State private var selectedWatchStatuses: Set<WatchStatus> = []
     var body: some View {
         NavigationView {
             Form {
@@ -1785,19 +1826,34 @@ struct AddAnimeSheet: View {
                         .pickerStyle(MenuPickerStyle())
                     }
                 }
-                Section(header: Text("視聴ステータス")) {
-                    Picker("ステータス", selection: $selectedWatchStatus) {
-                        ForEach(WatchStatus.allCases, id: \.self) { status in
-                            Text(status.rawValue).tag(status)
+                Section(header: Text("視聴ステータス（複数選択可）")) {
+                    ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
+                        HStack {
+                            Text(status.rawValue)
+                            Spacer()
+                            if selectedWatchStatuses.contains(status) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.blue)
+                            } else {
+                                Image(systemName: "circle")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if selectedWatchStatuses.contains(status) {
+                                selectedWatchStatuses.remove(status)
+                            } else {
+                                selectedWatchStatuses.insert(status)
+                            }
                         }
                     }
-                    .pickerStyle(SegmentedPickerStyle())
                 }
                 Button("追加") {
                     let calendar = Calendar.current
                     let year = calendar.component(.year, from: Date())
                     let date = calendar.date(from: DateComponents(year: year, month: selectedMonth, day: selectedDay)) ?? Date()
-                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, title: title, hashtag: hashtag, releaseDate: date, watchStatus: selectedWatchStatus)
+                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, title: title, hashtag: hashtag, releaseDate: date, watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
                     animeManager.addAnime(newAnime)
                     dismiss()
                 }
@@ -1828,7 +1884,7 @@ struct AnimeDetailView: View {
     @State private var iconImage: UIImage? = nil
     @State private var tempIconImage: UIImage? = nil
     @State private var showEditWatchStatusModal = false
-    @State private var editWatchStatus: WatchStatus = .none
+    @State private var editWatchStatuses: Set<WatchStatus> = []
 
     var body: some View {
         GeometryReader { geometry in
@@ -1903,18 +1959,32 @@ struct AnimeDetailView: View {
                         }
                     
                     // 視聴ステータス
-                    HStack {
+                    VStack(spacing: 4) {
                         Text("ステータス:")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
-                        Text(currentAnime.watchStatus.rawValue)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.blue)
+                        if currentAnime.watchStatuses.isEmpty {
+                            Text("なし")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.gray)
+                        } else {
+                            HStack(spacing: 8) {
+                                ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
+                                    Text(status.rawValue)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
+                                }
+                            }
+                        }
                     }
                     .padding(.top, 8)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .onTapGesture {
-                        editWatchStatus = currentAnime.watchStatus
+                        editWatchStatuses = Set(currentAnime.watchStatuses)
                         showEditWatchStatusModal = true
                     }
                     
@@ -2055,40 +2125,54 @@ struct AnimeDetailView: View {
         // 視聴ステータス編集モーダル
         .sheet(isPresented: $showEditWatchStatusModal) {
             VStack(spacing: 20) {
-                Text("視聴ステータスを選択")
+                Text("視聴ステータスを選択（複数選択可）")
                     .font(.headline)
                 VStack(spacing: 12) {
-                    ForEach(WatchStatus.allCases, id: \.self) { status in
+                    ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
                         Button(action: {
-                            guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                            var updatedAnime = animes[idx]
-                            updatedAnime.watchStatus = status
-                            animes[idx] = updatedAnime
-                            animeManager.updateAnime(updatedAnime)
-                            showEditWatchStatusModal = false
+                            if editWatchStatuses.contains(status) {
+                                editWatchStatuses.remove(status)
+                            } else {
+                                editWatchStatuses.insert(status)
+                            }
                         }) {
                             HStack {
                                 Text(status.rawValue)
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.black)
                                 Spacer()
-                                if editWatchStatus == status {
-                                    Image(systemName: "checkmark")
+                                if editWatchStatuses.contains(status) {
+                                    Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(.blue)
+                                } else {
+                                    Image(systemName: "circle")
+                                        .foregroundColor(.gray)
                                 }
                             }
                             .padding()
                             .background(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .fill(editWatchStatus == status ? Color.blue.opacity(0.1) : Color(.systemGray6))
+                                    .fill(editWatchStatuses.contains(status) ? Color.blue.opacity(0.1) : Color(.systemGray6))
                             )
                         }
                     }
                 }
-                Button("キャンセル") {
-                    showEditWatchStatusModal = false
+                HStack(spacing: 20) {
+                    Button("キャンセル") {
+                        showEditWatchStatusModal = false
+                    }
+                    .foregroundColor(.red)
+                    
+                    Button("保存") {
+                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                        var updatedAnime = animes[idx]
+                        updatedAnime.watchStatuses = Array(editWatchStatuses)
+                        animes[idx] = updatedAnime
+                        animeManager.updateAnime(updatedAnime)
+                        showEditWatchStatusModal = false
+                    }
+                    .foregroundColor(.blue)
                 }
-                .foregroundColor(.red)
             }
             .padding()
             .background(Color(.systemBackground))

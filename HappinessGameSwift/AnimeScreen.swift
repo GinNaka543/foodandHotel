@@ -1404,7 +1404,7 @@ struct AnimeAboutView: View {
                     
                     // 視聴ステータス
                     VStack(spacing: 4) {
-                        Text("ステータス:")
+                        Text("ステータス")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
                         if currentAnime.watchStatuses.isEmpty {
@@ -1960,7 +1960,7 @@ struct AnimeDetailView: View {
                     
                     // 視聴ステータス
                     VStack(spacing: 4) {
-                        Text("ステータス:")
+                        Text("ステータス")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.gray)
                         if currentAnime.watchStatuses.isEmpty {

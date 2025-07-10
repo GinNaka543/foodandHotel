@@ -43,11 +43,13 @@ struct VisitSpot: Identifiable, Codable {
     var timeRange: String = ""
     var activity: String = ""
     var imageData: Data?
+    var dayNumber: Int = 1
+    var spotCost: Int = 0
     
     init(name: String, address: String = "", notes: String = "", event: SpotEvent? = nil, 
          nearestStation: String = "", arrivalTime: Date? = nil, departureTime: Date? = nil,
          stayDuration: Int = 60, transportToNext: TransportInfo? = nil, timeRange: String = "", 
-         activity: String = "", imageData: Data? = nil) {
+         activity: String = "", imageData: Data? = nil, dayNumber: Int = 1, spotCost: Int = 0) {
         self.name = name
         self.address = address
         self.notes = notes
@@ -60,6 +62,8 @@ struct VisitSpot: Identifiable, Codable {
         self.timeRange = timeRange
         self.activity = activity
         self.imageData = imageData
+        self.dayNumber = dayNumber
+        self.spotCost = spotCost
     }
 }
 
@@ -73,8 +77,9 @@ struct VisitPlanData: Identifiable, Codable {
     var createdDate: Date = Date()
     var startTime: Date = Date()
     var totalCost: Int = 0
+    var numberOfDays: Int = 1
     
-    init(animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, createdDate: Date = Date(), startTime: Date = Date()) {
+    init(animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, createdDate: Date = Date(), startTime: Date = Date(), numberOfDays: Int = 1) {
         self.animeName = animeName
         self.title = title
         self.duration = duration
@@ -82,5 +87,6 @@ struct VisitPlanData: Identifiable, Codable {
         self.thumbnailData = thumbnailData
         self.createdDate = createdDate
         self.startTime = startTime
+        self.numberOfDays = numberOfDays
     }
 } 

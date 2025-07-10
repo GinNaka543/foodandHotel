@@ -112,7 +112,9 @@ public struct VisitScreen: View {
                                     VisitGameScreen(
                                         animeName: plan.animeName,
                                         duration: plan.duration,
-                                        spots: plan.spots
+                                        planTitle: plan.title,
+                                        spots: plan.spots,
+                                        numberOfDays: plan.numberOfDays
                                     )
                                     .navigationBarHidden(true)
                                 ) {

@@ -102,6 +102,7 @@ struct AnimeCustomField: Hashable, Codable {
 
 enum WatchStatus: String, Codable, CaseIterable {
     case none = "なし"
+    case watching = "視聴中"
     case willWatch = "後で見る"
     case watchAgain = "もう一度見る"
     case thisTerm = "今期"
@@ -163,6 +164,7 @@ struct AnimeScreen: View {
     
     enum AnimeTab: String, CaseIterable {
         case all = "ALL"
+        case watching = "Watching"
         case thisTerm = "This term"
         case willWatch = "Will watch"
         case watchAgain = "Watch again"
@@ -172,6 +174,8 @@ struct AnimeScreen: View {
         switch selectedTab {
         case .all:
             return animeManager.animes
+        case .watching:
+            return animeManager.animes.filter { $0.watchStatus == .watching }
         case .willWatch:
             return animeManager.animes.filter { $0.watchStatus == .willWatch }
         case .watchAgain:

@@ -510,10 +510,13 @@ struct AddSpotView: View {
     let previousSpots: [VisitSpot]
     
     @State private var spotName: String = ""
-    @State private var spotAddress: String = ""
-    @State private var nearestStation: String = ""
-    @State private var stayDuration: Int = 60
+    @State private var timeRange: String = ""
+    @State private var activity: String = ""
     @State private var spotNotes: String = ""
+    @State private var spotAddress: String = ""
+    @State private var selectedImage: PhotosPickerItem?
+    @State private var spotImage: UIImage?
+    @State private var spotImageData: Data?
     @State private var transportMethod: String = "電車"
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
@@ -521,27 +524,58 @@ struct AddSpotView: View {
     
     let transportMethods = ["電車", "バス", "徒歩", "タクシー"]
     
+    var calculatedStayDuration: Int {
+        calculateDurationFromTimeRange(timeRange)
+    }
+    
     var body: some View {
         NavigationView {
             Form {
                 Section("スポット情報") {
                     TextField("スポット名", text: $spotName)
-                    TextField("最寄り駅", text: $nearestStation)
+                    
+                    TextField("滞在時間帯（例：10:00〜11:30）", text: $timeRange)
+                    
                     TextField("住所", text: $spotAddress)
                     
-                    HStack {
-                        Text("滞在時間")
-                        Spacer()
-                        Picker("", selection: $stayDuration) {
-                            ForEach([30, 60, 90, 120], id: \.self) { minutes in
-                                Text("\(minutes)分").tag(minutes)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                    }
+                    TextField("ここで何をするのか", text: $activity, axis: .vertical)
+                        .lineLimit(2...4)
                     
                     TextField("メモ", text: $spotNotes, axis: .vertical)
                         .lineLimit(2...4)
+                    
+                    // 画像選択
+                    PhotosPicker(selection: $selectedImage,
+                               matching: .images,
+                               photoLibrary: .shared()) {
+                        if let spotImage = spotImage {
+                            Image(uiImage: spotImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(8)
+                        } else {
+                            HStack {
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                                Text("スポット画像を選択")
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 100)
+                            .background(Color(.systemGray5))
+                            .cornerRadius(8)
+                        }
+                    }
+                    .onChange(of: selectedImage) { newItem in
+                        Task {
+                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                spotImage = UIImage(data: data)
+                                spotImageData = data
+                            }
+                        }
+                    }
                 }
                 
                 if !previousSpots.isEmpty {
@@ -600,8 +634,10 @@ struct AddSpotView: View {
                             name: spotName,
                             address: spotAddress,
                             notes: spotNotes,
-                            nearestStation: nearestStation,
-                            stayDuration: stayDuration
+                            stayDuration: calculatedStayDuration,
+                            timeRange: timeRange,
+                            activity: activity,
+                            imageData: spotImageData
                         )
                         spots.append(newSpot)
                         dismiss()
@@ -610,6 +646,26 @@ struct AddSpotView: View {
                 }
             }
         }
+    }
+    
+    func calculateDurationFromTimeRange(_ timeRange: String) -> Int {
+        // 時間帯の形式: "10:00〜11:30" or "10:00~11:30"
+        let components = timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
+        guard components.count == 2 else { return 60 } // デフォルト60分
+        
+        let startTimeStr = components[0].trimmingCharacters(in: .whitespaces)
+        let endTimeStr = components[1].trimmingCharacters(in: .whitespaces)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        
+        guard let startTime = formatter.date(from: startTimeStr),
+              let endTime = formatter.date(from: endTimeStr) else { return 60 }
+        
+        let interval = endTime.timeIntervalSince(startTime)
+        let minutes = Int(interval / 60)
+        
+        return minutes > 0 ? minutes : 60 // 負の値の場合はデフォルト60分
     }
 }
 
@@ -624,6 +680,11 @@ struct EditSpotView: View {
     @State private var nearestStation: String
     @State private var stayDuration: Int
     @State private var spotNotes: String
+    @State private var timeRange: String
+    @State private var activity: String
+    @State private var selectedImage: PhotosPickerItem?
+    @State private var spotImage: UIImage?
+    @State private var spotImageData: Data?
     
     init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date) {
         self.spot = spot
@@ -634,6 +695,16 @@ struct EditSpotView: View {
         self._nearestStation = State(initialValue: spot.nearestStation)
         self._stayDuration = State(initialValue: spot.stayDuration)
         self._spotNotes = State(initialValue: spot.notes)
+        self._timeRange = State(initialValue: spot.timeRange)
+        self._activity = State(initialValue: spot.activity)
+        if let imageData = spot.imageData {
+            self._spotImage = State(initialValue: UIImage(data: imageData))
+            self._spotImageData = State(initialValue: imageData)
+        }
+    }
+    
+    var calculatedStayDuration: Int {
+        calculateDurationFromTimeRange(timeRange)
     }
     
     var body: some View {
@@ -641,22 +712,49 @@ struct EditSpotView: View {
             Form {
                 Section("スポット情報") {
                     TextField("スポット名", text: $spotName)
-                    TextField("最寄り駅", text: $nearestStation)
+                    
+                    TextField("滞在時間帯（例：10:00〜11:30）", text: $timeRange)
+                    
                     TextField("住所", text: $spotAddress)
                     
-                    HStack {
-                        Text("滞在時間")
-                        Spacer()
-                        Picker("", selection: $stayDuration) {
-                            ForEach([30, 60, 90, 120], id: \.self) { minutes in
-                                Text("\(minutes)分").tag(minutes)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                    }
+                    TextField("ここで何をするのか", text: $activity, axis: .vertical)
+                        .lineLimit(2...4)
                     
                     TextField("メモ", text: $spotNotes, axis: .vertical)
                         .lineLimit(2...4)
+                    
+                    // 画像選択
+                    PhotosPicker(selection: $selectedImage,
+                               matching: .images,
+                               photoLibrary: .shared()) {
+                        if let spotImage = spotImage {
+                            Image(uiImage: spotImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(8)
+                        } else {
+                            HStack {
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                                Text("スポット画像を選択")
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 100)
+                            .background(Color(.systemGray5))
+                            .cornerRadius(8)
+                        }
+                    }
+                    .onChange(of: selectedImage) { newItem in
+                        Task {
+                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                spotImage = UIImage(data: data)
+                                spotImageData = data
+                            }
+                        }
+                    }
                 }
                 
                 Section {
@@ -685,13 +783,36 @@ struct EditSpotView: View {
                             spots[index].name = spotName
                             spots[index].address = spotAddress
                             spots[index].nearestStation = nearestStation
-                            spots[index].stayDuration = stayDuration
+                            spots[index].stayDuration = calculatedStayDuration
                             spots[index].notes = spotNotes
+                            spots[index].timeRange = timeRange
+                            spots[index].activity = activity
+                            spots[index].imageData = spotImageData
                         }
                         dismiss()
                     }
                 }
             }
         }
+    }
+    
+    func calculateDurationFromTimeRange(_ timeRange: String) -> Int {
+        // 時間帯の形式: "10:00〜11:30" or "10:00~11:30"
+        let components = timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
+        guard components.count == 2 else { return 60 } // デフォルト60分
+        
+        let startTimeStr = components[0].trimmingCharacters(in: .whitespaces)
+        let endTimeStr = components[1].trimmingCharacters(in: .whitespaces)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        
+        guard let startTime = formatter.date(from: startTimeStr),
+              let endTime = formatter.date(from: endTimeStr) else { return 60 }
+        
+        let interval = endTime.timeIntervalSince(startTime)
+        let minutes = Int(interval / 60)
+        
+        return minutes > 0 ? minutes : 60 // 負の値の場合はデフォルト60分
     }
 }

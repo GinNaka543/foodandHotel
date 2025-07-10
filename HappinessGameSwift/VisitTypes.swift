@@ -40,10 +40,14 @@ struct VisitSpot: Identifiable, Codable {
     var stayDuration: Int = 60
     var transportToNext: TransportInfo?
     var isCompleted: Bool = false
+    var timeRange: String = ""
+    var activity: String = ""
+    var imageData: Data?
     
     init(name: String, address: String = "", notes: String = "", event: SpotEvent? = nil, 
          nearestStation: String = "", arrivalTime: Date? = nil, departureTime: Date? = nil,
-         stayDuration: Int = 60, transportToNext: TransportInfo? = nil) {
+         stayDuration: Int = 60, transportToNext: TransportInfo? = nil, timeRange: String = "", 
+         activity: String = "", imageData: Data? = nil) {
         self.name = name
         self.address = address
         self.notes = notes
@@ -53,6 +57,9 @@ struct VisitSpot: Identifiable, Codable {
         self.departureTime = departureTime
         self.stayDuration = stayDuration
         self.transportToNext = transportToNext
+        self.timeRange = timeRange
+        self.activity = activity
+        self.imageData = imageData
     }
 }
 

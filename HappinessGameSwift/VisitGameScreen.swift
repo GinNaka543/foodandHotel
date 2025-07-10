@@ -173,64 +173,88 @@ struct SpotCard: View {
     }()
     
     var body: some View {
-        HStack(spacing: 16) {
-            // チェックボックス
-            Button(action: onToggle) {
-                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 24))
-                    .foregroundColor(isCompleted ? .green : .gray)
+        HStack(spacing: 12) {
+            // スポット画像（タップで詳細表示）
+            ZStack(alignment: .topLeading) {
+                Button(action: onTap) {
+                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 140, height: 100)
+                            .clipped()
+                            .cornerRadius(8)
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray5))
+                            .frame(width: 140, height: 100)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // 滞在時間バッジ（左上に配置）
+                Text("\(spot.stayDuration)分")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.orange)
+                    )
+                    .padding(.top, 8)
+                    .padding(.leading, 8)
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                // 時刻と名前
-                HStack {
-                    if let arrivalTime = spot.arrivalTime {
-                        Text(timeFormatter.string(from: arrivalTime))
-                            .font(.system(size: 14, weight: .medium))
+                
+            VStack(alignment: .leading, spacing: 6) {
+                // スポット名
+                Text(spot.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+                    .padding(.top, 15) // 15ピクセル下げる
+                    
+                    // 滞在時間帯
+                    if !spot.timeRange.isEmpty {
+                        Text(spot.timeRange)
+                            .font(.system(size: 12))
                             .foregroundColor(.blue)
                     }
-                    Text(spot.name)
-                        .font(.system(size: 16, weight: .semibold))
-                        .strikethrough(isCompleted)
-                        .foregroundColor(isCompleted ? .gray : .primary)
-                }
-                
-                // 最寄り駅
-                if !spot.nearestStation.isEmpty {
-                    Label(spot.nearestStation, systemImage: "tram")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                }
-                
-                // 滞在時間とメモ
-                HStack {
-                    Label("\(spot.stayDuration)分", systemImage: "clock")
-                        .font(.system(size: 13))
-                        .foregroundColor(.orange)
                     
-                    if !spot.notes.isEmpty {
-                        Text("・")
-                            .foregroundColor(.gray)
-                        Text(spot.notes)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
+                    // 住所情報
+                    if !spot.address.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                            Text(spot.address)
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
                     }
+                    
+                    Spacer()
                 }
-            }
-            
-            Spacer()
-            
-            // 詳細ボタン
-            Button(action: onTap) {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(.blue)
-            }
+                
+                Spacer()
+                
+                // チェックボックス
+                Button(action: onToggle) {
+                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 24))
+                        .foregroundColor(isCompleted ? .green : .gray)
+                }
         }
-        .padding(16)
-        .background(Color(.systemBackground))
+        .padding(12)
+        .background(Color.white)
         .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
     }
@@ -315,38 +339,24 @@ struct SpotDetailView: View {
                             .font(.system(size: 20, weight: .semibold))
                     }
                     
-                    // 時刻情報
-                    if let arrivalTime = spot.arrivalTime, let departureTime = spot.departureTime {
+                    // 滞在時間帯
+                    if !spot.timeRange.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("時刻")
+                            Text("滞在時間帯")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
-                            HStack(spacing: 16) {
-                                Label("到着: \(timeFormatter.string(from: arrivalTime))", systemImage: "arrow.down.circle")
-                                Label("出発: \(timeFormatter.string(from: departureTime))", systemImage: "arrow.up.circle")
-                            }
-                            .font(.system(size: 16))
-                        }
-                    }
-                    
-                    // 最寄り駅
-                    if !spot.nearestStation.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("最寄り駅")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
-                            Label(spot.nearestStation, systemImage: "tram")
+                            Text(spot.timeRange)
                                 .font(.system(size: 16))
                         }
                     }
                     
-                    // 住所
-                    if !spot.address.isEmpty {
+                    // ここで何をするのか
+                    if !spot.activity.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("住所")
+                            Text("ここで何をするのか")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
-                            Label(spot.address, systemImage: "mappin")
+                            Text(spot.activity)
                                 .font(.system(size: 16))
                         }
                     }
@@ -359,6 +369,17 @@ struct SpotDetailView: View {
                         Label("\(spot.stayDuration)分", systemImage: "clock")
                             .font(.system(size: 16))
                             .foregroundColor(.orange)
+                    }
+                    
+                    // 住所
+                    if !spot.address.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("住所")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                            Label(spot.address, systemImage: "mappin")
+                                .font(.system(size: 16))
+                        }
                     }
                     
                     // メモ

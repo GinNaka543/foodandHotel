@@ -170,20 +170,15 @@ struct FirebaseAdView: View {
                                 .foregroundColor(.black)
                             
                             Spacer()
-                            
-                            // 矢印アイコン
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.gray)
                         }
                         .padding(.horizontal, 16)
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                            ForEach(advertisements.prefix(5)) { ad in
-                                Button(action: {
-                                    handleAdClick(ad)
-                                }) {
+                                ForEach(advertisements.prefix(5)) { ad in
+                                    Button(action: {
+                                        handleAdClick(ad)
+                                    }) {
                                     ZStack(alignment: .bottom) {
                                         // 画像
                                         if let url = URL(string: convertGitHubUrl(ad.imageURL)), !ad.imageURL.isEmpty {
@@ -242,7 +237,7 @@ struct FirebaseAdView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 4)
+                        .padding(.horizontal, 16)
                         }
                     }
                 } else {

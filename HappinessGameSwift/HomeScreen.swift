@@ -308,32 +308,6 @@ struct HomeScreen: View {
                 }
                 .padding(.horizontal, 20)
                 
-                // サービス
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("Recommend")
-                            .font(.system(size: 18, weight: .bold))
-                        Spacer()
-                        Text("See all")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.top, 16)
-                    .padding(.bottom, 4)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 24) {
-                            ForEach(["LINE AI", "Stickers", "Themes", "LINE GIFT", "LINE POINT C", "LINE GAME"], id: \.self) { service in
-                                VStack(spacing: 6) {
-                                    Circle().stroke(Color.gray, lineWidth: 2).frame(width: 36, height: 36)
-                                    Text(service)
-                                        .font(.system(size: 12))
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 8)
-                    }
-                }
-                .padding(.horizontal, 20)
                 // インフォメーションタイトル
                 HStack {
                     Text("Information")

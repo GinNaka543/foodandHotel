@@ -163,8 +163,11 @@ struct CharaScreen: View {
     @EnvironmentObject var mainTab: MainTabSelection
     
     var filteredCharacters: [Character] {
-        if searchText.isEmpty { return characterManager.characters }
-        return characterManager.characters.filter {
+        // Filter out characters without names first
+        let charactersWithNames = characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
+        if searchText.isEmpty { return charactersWithNames }
+        return charactersWithNames.filter {
             $0.name.localizedCaseInsensitiveContains(searchText) ||
             $0.tag.localizedCaseInsensitiveContains(searchText) ||
             $0.birthday.formatted(.dateTime.year().month().day()).contains(searchText)
@@ -191,7 +194,13 @@ struct CharaScreen: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color.blue)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .cornerRadius(20)
                     }
                 }
@@ -598,11 +607,6 @@ struct CharacterDetailView: View {
                             }
                         }
                         .buttonStyle(PlainButtonStyle())
-                        Spacer()
-                        VStack {
-                            Image(systemName: "link")
-                            Text("Event").font(.caption2)
-                        }
                         Spacer()
                     }
                     .padding(.top, 60)

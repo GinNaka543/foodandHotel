@@ -184,17 +184,20 @@ struct AnimeScreen: View {
     }
     
     var filteredAnimes: [Anime] {
+        // Filter out animes without titles first
+        let animesWithTitles = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
         switch selectedTab {
         case .all:
-            return animeManager.animes
+            return animesWithTitles
         case .watching:
-            return animeManager.animes.filter { $0.watchStatuses.contains(.watching) }
+            return animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
         case .willWatch:
-            return animeManager.animes.filter { $0.watchStatuses.contains(.willWatch) }
+            return animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
         case .watchAgain:
-            return animeManager.animes.filter { $0.watchStatuses.contains(.watchAgain) }
+            return animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
         case .thisTerm:
-            return animeManager.animes.filter { $0.watchStatuses.contains(.thisTerm) }
+            return animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
         }
     }
 
@@ -216,7 +219,13 @@ struct AnimeScreen: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color.blue)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                             .cornerRadius(20)
                     }
                 }
@@ -245,7 +254,6 @@ struct AnimeScreen: View {
                 }
                 // 広告バナー
                 FirebaseAdView(placement: "anime")
-                    .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                 
                 ScrollView {
@@ -302,12 +310,10 @@ struct AnimeRow: View {
                     .frame(width: 183, height: 99)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     .clipped()
-                    .offset(x: -10)
             } else {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.gray.opacity(0.3))
                     .frame(width: 183, height: 99)
-                    .offset(x: -10)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(anime.title)
@@ -319,10 +325,9 @@ struct AnimeRow: View {
                     .foregroundColor(.gray)
                     .frame(height: 20)
             }
-            .offset(x: -10, y: -15)
+            .offset(y: -15)
             Spacer()
         }
-        .padding(.horizontal, 8)
         .padding(.vertical, 6)
         .background(Color.clear)
         .contentShape(Rectangle())
@@ -2024,11 +2029,6 @@ struct AnimeDetailView: View {
                             }
                         }
                         .buttonStyle(PlainButtonStyle())
-                        Spacer()
-                        VStack {
-                            Image(systemName: "link")
-                            Text("Visit").font(.caption2)
-                        }
                         Spacer()
                     }
                     .padding(.top, 40)

@@ -6,6 +6,7 @@ const PLACEMENT_OPTIONS = [
   { key: 'home', label: 'ホーム', icon: '🏠' },
   { key: 'character', label: 'キャラ', icon: '👤' },
   { key: 'product', label: 'プロダクト', icon: '📦' },
+  { key: 'visit', label: 'ビジット', icon: '✈️' },
 ];
 
 // ImgurページURL→画像直リンク変換関数
@@ -42,7 +43,7 @@ function CreateAd() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const editId = params.get('id');
-  const generalPage = params.get('generalPage'); // 'home' | 'character' | 'product' or null
+  const generalPage = params.get('generalPage'); // 'home' | 'character' | 'product' | 'visit' or null
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -177,7 +178,11 @@ function CreateAd() {
       navigate('/advertisements');
     } catch (error) {
       console.error('Error creating/updating advertisement:', error);
-      alert('広告の作成/更新に失敗しました。');
+      if (error.response && error.response.data && error.response.data.error) {
+        alert(error.response.data.error);
+      } else {
+        alert('広告の作成/更新に失敗しました。');
+      }
     }
   };
 

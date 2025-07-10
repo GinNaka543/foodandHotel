@@ -8,6 +8,8 @@ public struct VisitScreen: View {
     @State private var savedPlans: [VisitPlanData] = []
     @State private var showingSelectedPlan = false
     @State private var selectedPlan: VisitPlanData?
+    @State private var visitAds: [Advertisement] = []
+    @StateObject private var firebaseManager = FirebaseManager.shared
     
     // タブ用
     enum VisitTab: String, CaseIterable {
@@ -92,7 +94,10 @@ public struct VisitScreen: View {
                 // ビジットプラン欄
                 ScrollView {
                     VStack(spacing: 24) {
-                        if savedPlans.isEmpty {
+                        // 広告とプランを交互に表示
+                        let combinedItems = createCombinedItems()
+                        
+                        if combinedItems.isEmpty {
                             VStack(spacing: 16) {
                                 Image(systemName: "map")
                                     .font(.system(size: 50))
@@ -107,7 +112,8 @@ public struct VisitScreen: View {
                             .frame(maxWidth: .infinity)
                             .padding(.top, 100)
                         } else {
-                            ForEach(savedPlans) { plan in
+                            ForEach(Array(combinedItems.enumerated()), id: \.offset) { index, item in
+                                if let plan = item as? VisitPlanData {
                                 NavigationLink(destination: 
                                     VisitGameScreen(
                                         animeName: plan.animeName,
@@ -180,6 +186,92 @@ public struct VisitScreen: View {
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 .padding(.vertical, 8)
+                                } else if let ad = item as? Advertisement {
+                                    // 広告カード
+                                    Button(action: {
+                                        if let url = URL(string: ad.linkURL) {
+                                            firebaseManager.recordAdClick(advertisementId: ad.id ?? "")
+                                            UIApplication.shared.open(url)
+                                        }
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            GeometryReader { geometry in
+                                                ZStack {
+                                                    RoundedRectangle(cornerRadius: 0)
+                                                        .fill(Color.white)
+                                                        .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
+                                                    
+                                                    AsyncImage(url: URL(string: convertGitHubUrl(ad.imageURL))) { image in
+                                                        image
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } placeholder: {
+                                                        Rectangle()
+                                                            .fill(Color(.systemGray5))
+                                                            .overlay(
+                                                                Image(systemName: "photo")
+                                                                    .font(.system(size: 40))
+                                                                    .foregroundColor(.gray)
+                                                            )
+                                                    }
+                                                    
+                                                    // 広告インジケーター
+                                                    VStack {
+                                                        HStack {
+                                                            Spacer()
+                                                            Text("AD")
+                                                                .font(.system(size: 10, weight: .semibold))
+                                                                .foregroundColor(.white)
+                                                                .padding(.horizontal, 6)
+                                                                .padding(.vertical, 2)
+                                                                .background(Color.black.opacity(0.6))
+                                                                .cornerRadius(4)
+                                                                .padding(8)
+                                                        }
+                                                        Spacer()
+                                                    }
+                                                }
+                                                .frame(width: geometry.size.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
+                                            }
+                                            .frame(height: 233)
+                                            HStack(alignment: .center, spacing: 12) {
+                                                Circle()
+                                                    .fill(Color.orange.opacity(0.2))
+                                                    .frame(width: 40, height: 40)
+                                                    .overlay(
+                                                        Image(systemName: "megaphone.fill")
+                                                            .font(.system(size: 20))
+                                                            .foregroundColor(.orange)
+                                                    )
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(ad.title)
+                                                        .font(.headline)
+                                                        .foregroundColor(.black)
+                                                        .lineLimit(1)
+                                                    Text(ad.description)
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
+                                                        .lineLimit(2)
+                                                }
+                                                Spacer()
+                                                Image(systemName: "chevron.right")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            }
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                        }
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .padding(.vertical, 8)
+                                    .onAppear {
+                                        firebaseManager.recordAdImpression(advertisementId: ad.id ?? "")
+                                    }
+                                }
                             }
                         }
                     }
@@ -212,6 +304,7 @@ public struct VisitScreen: View {
         }
         .onAppear {
             loadSavedPlans()
+            loadVisitAds()
         }
     }
     
@@ -233,6 +326,110 @@ public struct VisitScreen: View {
             print("DEBUG: デコードエラー: \(error)")
         }
     }
+    
+    func loadVisitAds() {
+        firebaseManager.fetchAds(for: "visit") { result in
+            switch result {
+            case .success(let ads):
+                print("✅ ビジット広告取得成功: \(ads.count)件")
+                
+                // ユーザーのアニメ・キャラクター・ハッシュタグを取得
+                let userAnimes = getUserAnimes()
+                let userCharacters = getUserCharacters() 
+                let userHashtags = getUserHashtags()
+                
+                // フィルタリング: ターゲット広告は対象のユーザーのみ、一般広告は全ユーザー
+                self.visitAds = ads.filter { ad in
+                    // 一般広告の場合は全員に表示
+                    if ad.targetAnimes.isEmpty && ad.targetCharacters.isEmpty && ad.targetHashtags.isEmpty {
+                        return true
+                    }
+                    
+                    // ターゲット広告の場合はマッチング確認
+                    let animeMatch = ad.targetAnimes.isEmpty || ad.targetAnimes.contains { userAnimes.contains($0) }
+                    let characterMatch = ad.targetCharacters.isEmpty || ad.targetCharacters.contains { userCharacters.contains($0) }
+                    let hashtagMatch = ad.targetHashtags.isEmpty || ad.targetHashtags.contains { userHashtags.contains($0) }
+                    
+                    return animeMatch && characterMatch && hashtagMatch
+                }
+                
+                print("✅ フィルタリング後のビジット広告: \(self.visitAds.count)件")
+                
+            case .failure(let error):
+                print("❌ ビジット広告取得エラー: \(error)")
+            }
+        }
+    }
+    
+    func createCombinedItems() -> [Any] {
+        var items: [Any] = []
+        
+        // プランをまず追加
+        items.append(contentsOf: savedPlans)
+        
+        // 広告を3つごとに挿入（ただし最大1つのみ表示）
+        if !visitAds.isEmpty && !items.isEmpty {
+            // 3番目の位置に広告を挿入（インデックス2の後）
+            if items.count >= 3 {
+                items.insert(visitAds[0], at: 3)
+            } else {
+                // プランが3つ未満の場合は最後に追加
+                items.append(visitAds[0])
+            }
+        }
+        
+        return items
+    }
+    
+    // ユーザーのアニメ・キャラクター・ハッシュタグを取得する関数
+    func getUserAnimes() -> [String] {
+        // 簡易的な実装：UserDefaultsから直接文字列配列として取得
+        // 実際のアプリケーションでは、AnimeManagerなどを通じて取得する方が望ましい
+        if let animesData = UserDefaults.standard.data(forKey: "animes"),
+           let animes = try? JSONSerialization.jsonObject(with: animesData) as? [[String: Any]] {
+            return animes.compactMap { $0["title"] as? String }
+        }
+        return []
+    }
+    
+    func getUserCharacters() -> [String] {
+        // 簡易的な実装：UserDefaultsから直接文字列配列として取得
+        if let charactersData = UserDefaults.standard.data(forKey: "characters"),
+           let characters = try? JSONSerialization.jsonObject(with: charactersData) as? [[String: Any]] {
+            return characters.compactMap { $0["name"] as? String }
+        }
+        return []
+    }
+    
+    func getUserHashtags() -> [String] {
+        var hashtags: [String] = []
+        
+        // アニメのハッシュタグ
+        if let animesData = UserDefaults.standard.data(forKey: "animes"),
+           let animes = try? JSONSerialization.jsonObject(with: animesData) as? [[String: Any]] {
+            let animeTags = animes.compactMap { $0["hashtag"] as? String }
+            hashtags.append(contentsOf: animeTags)
+        }
+        
+        // キャラクターのハッシュタグ
+        if let charactersData = UserDefaults.standard.data(forKey: "characters"),
+           let characters = try? JSONSerialization.jsonObject(with: charactersData) as? [[String: Any]] {
+            let characterTags = characters.compactMap { $0["tag"] as? String }
+            hashtags.append(contentsOf: characterTags)
+        }
+        
+        return Array(Set(hashtags)) // 重複を除去
+    }
+}
+
+// GitHub URL変換関数
+func convertGitHubUrl(_ url: String) -> String {
+    if url.contains("github.com") && url.contains("/blob/") {
+        return url
+            .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
+            .replacingOccurrences(of: "/blob/", with: "/")
+    }
+    return url
 }
 
 

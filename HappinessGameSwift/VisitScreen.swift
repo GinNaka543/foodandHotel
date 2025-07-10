@@ -217,21 +217,21 @@ public struct VisitScreen: View {
                                                             )
                                                     }
                                                     
-                                                    // 広告インジケーター
-                                                    VStack {
-                                                        HStack {
-                                                            Spacer()
-                                                            Text("AD")
-                                                                .font(.system(size: 10, weight: .semibold))
-                                                                .foregroundColor(.white)
-                                                                .padding(.horizontal, 6)
-                                                                .padding(.vertical, 2)
-                                                                .background(Color.black.opacity(0.6))
-                                                                .cornerRadius(4)
-                                                                .padding(8)
-                                                        }
-                                                        Spacer()
-                                                    }
+                                                    // 広告インジケーター（削除）
+                                                    // VStack {
+                                                    //     HStack {
+                                                    //         Spacer()
+                                                    //         Text("AD")
+                                                    //             .font(.system(size: 10, weight: .semibold))
+                                                    //             .foregroundColor(.white)
+                                                    //             .padding(.horizontal, 6)
+                                                    //             .padding(.vertical, 2)
+                                                    //             .background(Color.black.opacity(0.6))
+                                                    //             .cornerRadius(4)
+                                                    //             .padding(8)
+                                                    //     }
+                                                    //     Spacer()
+                                                    // }
                                                 }
                                                 .frame(width: geometry.size.width, height: 233)
                                                 .clipped()

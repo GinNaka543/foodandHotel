@@ -1,12 +1,57 @@
 import SwiftUI
 import PhotosUI
 
+// 欲しい商品用のモデル
+struct WishlistItem: Identifiable, Codable {
+    let id = UUID()
+    var name: String
+    var price: Int
+    var link: String
+    var createdDate = Date()
+}
+
+// 欲しい商品管理用のクラス
+class WishlistManager: ObservableObject {
+    @Published var items: [WishlistItem] = []
+    private let wishlistKey = "user_wishlist"
+    
+    init() {
+        loadItems()
+    }
+    
+    func loadItems() {
+        if let data = UserDefaults.standard.data(forKey: wishlistKey),
+           let decoded = try? JSONDecoder().decode([WishlistItem].self, from: data) {
+            items = decoded
+        }
+    }
+    
+    func saveItems() {
+        if let encoded = try? JSONEncoder().encode(items) {
+            UserDefaults.standard.set(encoded, forKey: wishlistKey)
+        }
+    }
+    
+    func addItem(_ item: WishlistItem) {
+        items.append(item)
+        saveItems()
+    }
+    
+    func removeItem(_ item: WishlistItem) {
+        items.removeAll { $0.id == item.id }
+        saveItems()
+    }
+}
+
 struct ProductScreen: View {
     @StateObject private var productManager = ProductManager()
+    @StateObject private var wishlistManager = WishlistManager()
     @State private var showMenu = false
     @State private var searchText = ""
     @State private var selectedProduct: Product?
     @State private var showingAdminPanel = false
+    @State private var selectedTab = "おすすめ"
+    @State private var showAddWishlistItem = false
     
     var filteredProducts: [Product] {
         let activeProducts = productManager.activeProducts
@@ -31,13 +76,23 @@ struct ProductScreen: View {
                 
                 Spacer()
                 
-                // ギアボタンは何も起きないようにする
+                // 商品を追加ボタン
                 Button(action: {
-                    // 何もしない
+                    showAddWishlistItem = true
                 }) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.black)
+                    Text("商品を追加")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(20)
                 }
             }
             .padding(.horizontal, 16)
@@ -66,54 +121,181 @@ struct ProductScreen: View {
             .padding(.horizontal, 12)
             .padding(.top, 8)
             
-            // タブUI
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 20) {
-                    Text("ALL")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black)
-                        .padding(.bottom, 4)
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(.black),
-                            alignment: .bottom
-                        )
-                    
-                    ForEach(["Figures", "Keychains", "Apparel", "Accessories"], id: \.self) { category in
-                        Text(category)
-                            .font(.system(size: 16))
-                            .foregroundColor(.gray)
+            // タブUI - シンプルに2つのみ
+            HStack(spacing: 40) {
+                Button(action: {
+                    selectedTab = "おすすめ"
+                }) {
+                    VStack(spacing: 4) {
+                        Text("おすすめ")
+                            .font(.system(size: 16, weight: selectedTab == "おすすめ" ? .semibold : .regular))
+                            .foregroundColor(selectedTab == "おすすめ" ? .black : .gray)
+                        Rectangle()
+                            .frame(height: 2)
+                            .foregroundColor(selectedTab == "おすすめ" ? .black : .clear)
                     }
                 }
-                .padding(.horizontal, 16)
+                
+                Button(action: {
+                    selectedTab = "欲しい商品"
+                }) {
+                    VStack(spacing: 4) {
+                        Text("欲しい商品")
+                            .font(.system(size: 16, weight: selectedTab == "欲しい商品" ? .semibold : .regular))
+                            .foregroundColor(selectedTab == "欲しい商品" ? .black : .gray)
+                        Rectangle()
+                            .frame(height: 2)
+                            .foregroundColor(selectedTab == "欲しい商品" ? .black : .clear)
+                    }
+                }
             }
+            .padding(.horizontal, 16)
             .padding(.top, 16)
             
-            // Firebase広告
-            FirebaseAdView(placement: "product")
-                .padding(.top, 8)
-            
-            // 商品リスト
-            ScrollView {
-                VStack(spacing: 0) {
-                    ForEach(filteredProducts) { product in
-                        Button(action: {
-                            selectedProduct = product
-                        }) {
-                            ProductRow(product: product)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
+            if selectedTab == "おすすめ" {
+                // Firebase広告
+                FirebaseAdView(placement: "product")
+                    .padding(.top, 8)
+                
+                Spacer()
+            } else {
+                // 欲しい商品リスト
+                ScrollView {
+                    VStack(spacing: 0) {
+                        if wishlistManager.items.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "cart")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray)
+                                Text("欲しい商品がありません")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
+                                Text("右上の「商品を追加」から追加してください")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 100)
+                        } else {
+                            ForEach(wishlistManager.items) { item in
+                                WishlistItemRow(item: item, wishlistManager: wishlistManager)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                            }
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
-                    // 商品が0件のときは何も表示しない（メッセージもアイコンも削除）
+                    .padding(.bottom, 100)
                 }
-                .padding(.bottom, 100)
+                .padding(.top, 8)
             }
         }
         .sheet(item: $selectedProduct) { product in
             ProductDetailView(product: product)
+        }
+        .sheet(isPresented: $showAddWishlistItem) {
+            AddWishlistItemView(wishlistManager: wishlistManager)
+        }
+    }
+}
+
+// 欲しい商品の行表示
+struct WishlistItemRow: View {
+    let item: WishlistItem
+    let wishlistManager: WishlistManager
+    @State private var showDeleteAlert = false
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // アイコン部分
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 168.48, height: 99)
+                .overlay(
+                    Image(systemName: "cart.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.gray)
+                )
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text(item.name)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+                Text("¥\(item.price)")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.red)
+            }
+            Spacer()
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let url = URL(string: item.link) {
+                UIApplication.shared.open(url)
+            }
+        }
+        .contextMenu {
+            Button(action: {
+                showDeleteAlert = true
+            }) {
+                Label("削除", systemImage: "trash")
+            }
+        }
+        .alert(isPresented: $showDeleteAlert) {
+            Alert(
+                title: Text("削除確認"),
+                message: Text("この商品を削除しますか？"),
+                primaryButton: .destructive(Text("削除")) {
+                    wishlistManager.removeItem(item)
+                },
+                secondaryButton: .cancel(Text("キャンセル"))
+            )
+        }
+    }
+}
+
+// 欲しい商品追加画面
+struct AddWishlistItemView: View {
+    let wishlistManager: WishlistManager
+    @Environment(\.dismiss) var dismiss
+    @State private var name = ""
+    @State private var priceText = ""
+    @State private var link = ""
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("商品情報") {
+                    TextField("商品名", text: $name)
+                    TextField("価格", text: $priceText)
+                        .keyboardType(.numberPad)
+                    TextField("リンク", text: $link)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                }
+            }
+            .navigationTitle("商品を追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        if let price = Int(priceText), !name.isEmpty {
+                            let item = WishlistItem(
+                                name: name,
+                                price: price,
+                                link: link
+                            )
+                            wishlistManager.addItem(item)
+                            dismiss()
+                        }
+                    }
+                    .disabled(name.isEmpty || priceText.isEmpty)
+                }
+            }
         }
     }
 }
@@ -263,46 +445,28 @@ struct ProductAdminPanel: View {
                     Button(action: {
                         showingAddProduct = true
                     }) {
-                        Label("新規商品を追加", systemImage: "plus.circle.fill")
-                            .foregroundColor(.blue)
+                        Label("新規商品追加", systemImage: "plus.circle.fill")
+                            .foregroundColor(.green)
                     }
                 }
                 
-                Section("広告管理") {
-                    NavigationLink(destination: AdvertisementAdminScreen()) {
-                        Label("広告を管理", systemImage: "megaphone.fill")
-                            .foregroundColor(.blue)
-                    }
-                }
-                
-                Section("登録済み商品") {
+                Section("商品一覧") {
                     ForEach(productManager.products) { product in
                         HStack {
                             VStack(alignment: .leading) {
                                 Text(product.title)
-                                    .font(.system(size: 16, weight: .medium))
+                                    .font(.headline)
                                 Text("¥\(product.price)")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
-                            
                             Spacer()
-                            
-                            if product.isActive {
-                                Text("公開中")
-                                    .font(.system(size: 12))
+                            if !product.isActive {
+                                Text("非表示")
+                                    .font(.caption)
                                     .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.2))
-                                    .foregroundColor(.green)
-                                    .cornerRadius(4)
-                            } else {
-                                Text("非公開")
-                                    .font(.system(size: 12))
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
+                                    .padding(.vertical, 2)
                                     .background(Color.gray.opacity(0.2))
-                                    .foregroundColor(.gray)
                                     .cornerRadius(4)
                             }
                         }
@@ -312,256 +476,100 @@ struct ProductAdminPanel: View {
                         }
                     }
                     .onDelete { indexSet in
-                        for index in indexSet {
-                            productManager.deleteProduct(productManager.products[index])
-                        }
+                        productManager.products.remove(atOffsets: indexSet)
+                        productManager.saveProducts()
                     }
                 }
             }
             .navigationTitle("商品管理")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("閉じる") {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完了") {
                         dismiss()
                     }
                 }
             }
         }
         .sheet(isPresented: $showingAddProduct) {
-            AddProductView(productManager: productManager)
+            AddEditProductView(productManager: productManager)
         }
         .sheet(item: $editingProduct) { product in
-            EditProductView(product: product, productManager: productManager)
+            AddEditProductView(productManager: productManager, editingProduct: product)
         }
     }
 }
 
-struct AddProductView: View {
+struct AddEditProductView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var productManager: ProductManager
+    var editingProduct: Product?
     
     @State private var title = ""
-    @State private var price = ""
+    @State private var priceText = ""
     @State private var description = ""
     @State private var link = ""
-    @State private var selectedImage: PhotosPickerItem?
-    @State private var productImage: UIImage?
-    @State private var imageData: Data?
+    @State private var selectedImage: UIImage?
+    @State private var showingImagePicker = false
+    @State private var isActive = true
     @State private var selectedPlacements: Set<AdPlacement> = []
     
     var body: some View {
         NavigationView {
             Form {
-                Section("商品画像") {
-                    PhotosPicker(selection: $selectedImage,
-                               matching: .images,
-                               photoLibrary: .shared()) {
-                        if let productImage = productImage {
-                            Image(uiImage: productImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 200)
-                                .clipped()
-                                .cornerRadius(12)
-                        } else {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemGray5))
-                                .frame(height: 200)
-                                .overlay(
-                                    VStack(spacing: 8) {
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 40))
-                                            .foregroundColor(.gray)
-                                        Text("画像を選択")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.gray)
-                                    }
-                                )
-                        }
-                    }
-                    .onChange(of: selectedImage) { newItem in
-                        Task {
-                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                productImage = UIImage(data: data)
-                                imageData = data
-                            }
-                        }
-                    }
-                }
-                
-                Section("商品情報") {
+                Section("基本情報") {
                     TextField("商品名", text: $title)
-                    TextField("価格", text: $price)
+                    TextField("価格", text: $priceText)
                         .keyboardType(.numberPad)
                     TextField("商品説明", text: $description, axis: .vertical)
                         .lineLimit(3...6)
-                    TextField("購入リンク（URL）", text: $link)
+                    TextField("購入リンク", text: $link)
                         .autocapitalization(.none)
                 }
                 
-                Section("広告表示場所") {
-                    ForEach(AdPlacement.allCases, id: \.self) { placement in
-                        HStack {
-                            Text(placement.rawValue)
-                            Spacer()
-                            if selectedPlacements.contains(placement) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.blue)
-                            } else {
-                                Image(systemName: "circle")
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if selectedPlacements.contains(placement) {
-                                selectedPlacements.remove(placement)
-                            } else {
-                                selectedPlacements.insert(placement)
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("新規商品")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("追加") {
-                        let newProduct = Product(
-                            title: title,
-                            price: Int(price) ?? 0,
-                            description: description,
-                            imageData: imageData,
-                            link: link,
-                            isActive: true,
-                            adPlacements: selectedPlacements
-                        )
-                        productManager.addProduct(newProduct)
-                        dismiss()
-                    }
-                    .disabled(title.isEmpty || price.isEmpty)
-                }
-            }
-        }
-    }
-}
-
-struct EditProductView: View {
-    @Environment(\.dismiss) var dismiss
-    let product: Product
-    @ObservedObject var productManager: ProductManager
-    
-    @State private var title: String
-    @State private var price: String
-    @State private var description: String
-    @State private var link: String
-    @State private var isActive: Bool
-    @State private var selectedImage: PhotosPickerItem?
-    @State private var productImage: UIImage?
-    @State private var imageData: Data?
-    @State private var selectedPlacements: Set<AdPlacement>
-    
-    init(product: Product, productManager: ProductManager) {
-        self.product = product
-        self.productManager = productManager
-        self._title = State(initialValue: product.title)
-        self._price = State(initialValue: String(product.price))
-        self._description = State(initialValue: product.description)
-        self._link = State(initialValue: product.link)
-        self._isActive = State(initialValue: product.isActive)
-        self._imageData = State(initialValue: product.imageData)
-        self._selectedPlacements = State(initialValue: product.adPlacements)
-        if let data = product.imageData {
-            self._productImage = State(initialValue: UIImage(data: data))
-        }
-    }
-    
-    var body: some View {
-        NavigationView {
-            Form {
                 Section("商品画像") {
-                    PhotosPicker(selection: $selectedImage,
-                               matching: .images,
-                               photoLibrary: .shared()) {
-                        if let productImage = productImage {
-                            Image(uiImage: productImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 200)
-                                .clipped()
-                                .cornerRadius(12)
-                        } else {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemGray5))
-                                .frame(height: 200)
-                                .overlay(
-                                    VStack(spacing: 8) {
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 40))
-                                            .foregroundColor(.gray)
-                                        Text("画像を選択")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.gray)
-                                    }
-                                )
-                        }
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 200)
+                            .frame(maxWidth: .infinity)
                     }
-                    .onChange(of: selectedImage) { newItem in
-                        Task {
-                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                productImage = UIImage(data: data)
-                                imageData = data
-                            }
-                        }
+                    
+                    Button(action: {
+                        showingImagePicker = true
+                    }) {
+                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                              systemImage: "photo")
                     }
                 }
                 
-                Section("商品情報") {
-                    TextField("商品名", text: $title)
-                    TextField("価格", text: $price)
-                        .keyboardType(.numberPad)
-                    TextField("商品説明", text: $description, axis: .vertical)
-                        .lineLimit(3...6)
-                    TextField("購入リンク（URL）", text: $link)
-                        .autocapitalization(.none)
-                }
-                
-                Section("広告表示場所") {
-                    ForEach(AdPlacement.allCases, id: \.self) { placement in
-                        HStack {
-                            Text(placement.rawValue)
-                            Spacer()
-                            if selectedPlacements.contains(placement) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.blue)
-                            } else {
-                                Image(systemName: "circle")
-                                    .foregroundColor(.gray)
+                Section("表示設定") {
+                    Toggle("アクティブ", isOn: $isActive)
+                    
+                    VStack(alignment: .leading) {
+                        Text("広告配置")
+                            .font(.headline)
+                        ForEach(AdPlacement.allCases, id: \.self) { placement in
+                            HStack {
+                                Image(systemName: selectedPlacements.contains(placement) ? "checkmark.square.fill" : "square")
+                                    .foregroundColor(selectedPlacements.contains(placement) ? .blue : .gray)
+                                Text(placement.rawValue)
+                                Spacer()
                             }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if selectedPlacements.contains(placement) {
-                                selectedPlacements.remove(placement)
-                            } else {
-                                selectedPlacements.insert(placement)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if selectedPlacements.contains(placement) {
+                                    selectedPlacements.remove(placement)
+                                } else {
+                                    selectedPlacements.insert(placement)
+                                }
                             }
                         }
                     }
-                }
-                
-                Section("公開設定") {
-                    Toggle("商品を公開する", isOn: $isActive)
                 }
             }
-            .navigationTitle("商品編集")
+            .navigationTitle(editingProduct == nil ? "新規商品" : "商品編集")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -571,21 +579,62 @@ struct EditProductView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("保存") {
-                        var updatedProduct = product
-                        updatedProduct.title = title
-                        updatedProduct.price = Int(price) ?? 0
-                        updatedProduct.description = description
-                        updatedProduct.link = link
-                        updatedProduct.isActive = isActive
-                        updatedProduct.imageData = imageData
-                        updatedProduct.adPlacements = selectedPlacements
-                        
-                        productManager.updateProduct(updatedProduct)
-                        dismiss()
+                        saveProduct()
                     }
-                    .disabled(title.isEmpty || price.isEmpty)
+                    .disabled(title.isEmpty || priceText.isEmpty)
                 }
             }
         }
+        .sheet(isPresented: $showingImagePicker) {
+            ImagePicker(selectedImage: $selectedImage)
+        }
+        .onAppear {
+            if let product = editingProduct {
+                title = product.title
+                priceText = String(product.price)
+                description = product.description
+                link = product.link
+                isActive = product.isActive
+                selectedPlacements = product.adPlacements
+                if let imageData = product.imageData {
+                    selectedImage = UIImage(data: imageData)
+                }
+            }
+        }
+    }
+    
+    private func saveProduct() {
+        guard let price = Int(priceText) else { return }
+        
+        let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
+        
+        if let editingProduct = editingProduct,
+           let index = productManager.products.firstIndex(where: { $0.id == editingProduct.id }) {
+            // 編集
+            productManager.products[index].title = title
+            productManager.products[index].price = price
+            productManager.products[index].description = description
+            productManager.products[index].link = link
+            productManager.products[index].imageData = imageData
+            productManager.products[index].isActive = isActive
+            productManager.products[index].adPlacements = selectedPlacements
+        } else {
+            // 新規追加
+            let newProduct = Product(
+                id: UUID(),
+                title: title,
+                price: price,
+                description: description,
+                imageData: imageData,
+                link: link,
+                createdDate: Date(),
+                isActive: isActive,
+                adPlacements: selectedPlacements
+            )
+            productManager.products.append(newProduct)
+        }
+        
+        productManager.saveProducts()
+        dismiss()
     }
 }

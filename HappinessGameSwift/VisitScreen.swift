@@ -97,7 +97,7 @@ public struct VisitScreen: View {
                         // 広告とプランを交互に表示
                         let combinedItems = createCombinedItems()
                         
-                        if combinedItems.isEmpty {
+                        if savedPlans.isEmpty && visitAds.isEmpty {
                             VStack(spacing: 16) {
                                 Image(systemName: "map")
                                     .font(.system(size: 50))
@@ -332,11 +332,16 @@ public struct VisitScreen: View {
             switch result {
             case .success(let ads):
                 print("✅ ビジット広告取得成功: \(ads.count)件")
+                for ad in ads {
+                    print("  - 広告: \(ad.title), ID: \(ad.id ?? "nil"), placement: \(ad.placements)")
+                }
                 
                 // ユーザーのアニメ・キャラクター・ハッシュタグを取得
-                let userAnimes = getUserAnimes()
-                let userCharacters = getUserCharacters() 
-                let userHashtags = getUserHashtags()
+                let userAnimes = self.getUserAnimes()
+                let userCharacters = self.getUserCharacters() 
+                let userHashtags = self.getUserHashtags()
+                
+                print("ユーザーデータ - アニメ: \(userAnimes), キャラ: \(userCharacters), タグ: \(userHashtags)")
                 
                 // フィルタリング: ターゲット広告は対象のユーザーのみ、一般広告は全ユーザー
                 self.visitAds = ads.filter { ad in
@@ -354,6 +359,9 @@ public struct VisitScreen: View {
                 }
                 
                 print("✅ フィルタリング後のビジット広告: \(self.visitAds.count)件")
+                if !self.visitAds.isEmpty {
+                    print("  表示する広告: \(self.visitAds[0].title)")
+                }
                 
             case .failure(let error):
                 print("❌ ビジット広告取得エラー: \(error)")
@@ -364,19 +372,13 @@ public struct VisitScreen: View {
     func createCombinedItems() -> [Any] {
         var items: [Any] = []
         
-        // プランをまず追加
-        items.append(contentsOf: savedPlans)
-        
-        // 広告を3つごとに挿入（ただし最大1つのみ表示）
-        if !visitAds.isEmpty && !items.isEmpty {
-            // 3番目の位置に広告を挿入（インデックス2の後）
-            if items.count >= 3 {
-                items.insert(visitAds[0], at: 3)
-            } else {
-                // プランが3つ未満の場合は最後に追加
-                items.append(visitAds[0])
-            }
+        // 広告を最初に追加（存在する場合）
+        if !visitAds.isEmpty {
+            items.append(visitAds[0])
         }
+        
+        // その後にプランを追加
+        items.append(contentsOf: savedPlans)
         
         return items
     }

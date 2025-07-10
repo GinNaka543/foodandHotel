@@ -128,7 +128,7 @@ struct VisitGameScreen: View {
                                         showingDetail = true
                                     },
                                     onToggle: {
-                                        toggleSpotCompletion(at: index)
+                                        toggleSpotCompletion(spotId: spot.id)
                                     }
                                 )
                                 
@@ -189,8 +189,10 @@ struct VisitGameScreen: View {
         }
     }
     
-    func toggleSpotCompletion(at index: Int) {
-        spots[index].isCompleted.toggle()
+    func toggleSpotCompletion(spotId: UUID) {
+        if let index = spots.firstIndex(where: { $0.id == spotId }) {
+            spots[index].isCompleted.toggle()
+        }
     }
 }
 

@@ -3,10 +3,11 @@ import PhotosUI
 
 // 欲しい商品用のモデル
 struct WishlistItem: Identifiable, Codable {
-    let id = UUID()
+    var id = UUID()
     var name: String
     var price: Int
     var link: String
+    var imageData: Data?
     var createdDate = Date()
 }
 
@@ -207,14 +208,24 @@ struct WishlistItemRow: View {
     var body: some View {
         HStack(spacing: 16) {
             // アイコン部分
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 168.48, height: 99)
-                .overlay(
-                    Image(systemName: "cart.fill")
-                        .font(.system(size: 30))
-                        .foregroundColor(.gray)
-                )
+            if let imageData = item.imageData,
+               let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 168.48, height: 99)
+                    .cornerRadius(8)
+                    .clipped()
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 168.48, height: 99)
+                    .overlay(
+                        Image(systemName: "cart.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.gray)
+                    )
+            }
             
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.name)
@@ -260,10 +271,27 @@ struct AddWishlistItemView: View {
     @State private var name = ""
     @State private var priceText = ""
     @State private var link = ""
+    @State private var selectedImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
     
     var body: some View {
         NavigationView {
             Form {
+                Section("商品画像") {
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 200)
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                              systemImage: "photo")
+                    }
+                }
+                
                 Section("商品情報") {
                     TextField("商品名", text: $name)
                     TextField("価格", text: $priceText)
@@ -275,25 +303,31 @@ struct AddWishlistItemView: View {
             }
             .navigationTitle("商品を追加")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+            .navigationBarItems(
+                leading: Button("キャンセル") {
+                    dismiss()
+                },
+                trailing: Button("保存") {
+                    if let price = Int(priceText), !name.isEmpty {
+                        let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
+                        let item = WishlistItem(
+                            name: name,
+                            price: price,
+                            link: link,
+                            imageData: imageData
+                        )
+                        wishlistManager.addItem(item)
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
-                        if let price = Int(priceText), !name.isEmpty {
-                            let item = WishlistItem(
-                                name: name,
-                                price: price,
-                                link: link
-                            )
-                            wishlistManager.addItem(item)
-                            dismiss()
-                        }
-                    }
-                    .disabled(name.isEmpty || priceText.isEmpty)
+                .disabled(name.isEmpty || priceText.isEmpty)
+            )
+        }
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
                 }
             }
         }
@@ -421,13 +455,11 @@ struct ProductDetailView: View {
             }
             .navigationTitle("商品詳細")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
-                        dismiss()
-                    }
+            .navigationBarItems(
+                trailing: Button("閉じる") {
+                    dismiss()
                 }
-            }
+            )
         }
     }
 }
@@ -483,13 +515,11 @@ struct ProductAdminPanel: View {
             }
             .navigationTitle("商品管理")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完了") {
-                        dismiss()
-                    }
+            .navigationBarItems(
+                trailing: Button("完了") {
+                    dismiss()
                 }
-            }
+            )
         }
         .sheet(isPresented: $showingAddProduct) {
             AddEditProductView(productManager: productManager)
@@ -510,7 +540,7 @@ struct AddEditProductView: View {
     @State private var description = ""
     @State private var link = ""
     @State private var selectedImage: UIImage?
-    @State private var showingImagePicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isActive = true
     @State private var selectedPlacements: Set<AdPlacement> = []
     
@@ -536,9 +566,7 @@ struct AddEditProductView: View {
                             .frame(maxWidth: .infinity)
                     }
                     
-                    Button(action: {
-                        showingImagePicker = true
-                    }) {
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                         Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
                               systemImage: "photo")
                     }
@@ -571,22 +599,23 @@ struct AddEditProductView: View {
             }
             .navigationTitle(editingProduct == nil ? "新規商品" : "商品編集")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
-                        dismiss()
-                    }
+            .navigationBarItems(
+                leading: Button("キャンセル") {
+                    dismiss()
+                },
+                trailing: Button("保存") {
+                    saveProduct()
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
-                        saveProduct()
-                    }
-                    .disabled(title.isEmpty || priceText.isEmpty)
+                .disabled(title.isEmpty || priceText.isEmpty)
+            )
+        }
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
                 }
             }
-        }
-        .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(selectedImage: $selectedImage)
         }
         .onAppear {
             if let product = editingProduct {

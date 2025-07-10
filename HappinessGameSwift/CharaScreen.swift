@@ -186,9 +186,13 @@ struct CharaScreen: View {
                     Spacer()
                     // 右上＋ボタン
                     Button(action: { showAddSheet = true }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.black)
+                        Text("キャラを追加")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.blue)
+                            .cornerRadius(20)
                     }
                 }
                 .padding(.horizontal, 16)

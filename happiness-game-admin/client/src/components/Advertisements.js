@@ -7,12 +7,14 @@ const PLACEMENT_ICONS = {
   character: '👤',
   product: '📦',
   visit: '✈️',
+  anime: '🎬',
 };
 const GENERAL_PAGES = [
   { key: 'home', label: 'ホーム', icon: '🏠', max: 2 },
   { key: 'character', label: 'キャラ', icon: '👤', max: 1 },
   { key: 'product', label: 'プロダクト', icon: '📦', max: null },
   { key: 'visit', label: 'ビジット', icon: '✈️', max: 1 },
+  { key: 'anime', label: 'アニメ', icon: '🎬', max: 5 },
 ];
 
 function Advertisements() {

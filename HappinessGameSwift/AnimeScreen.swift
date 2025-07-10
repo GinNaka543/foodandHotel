@@ -211,13 +211,18 @@ struct AnimeScreen: View {
                     }
                     Spacer()
                     Button(action: { showAddSheet = true }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.black)
+                        Text("アニメを追加")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.blue)
+                            .cornerRadius(20)
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
+                .padding(.bottom, 7) // タブとボタンの間隔を7px追加
                 // タブUI
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
@@ -238,6 +243,11 @@ struct AnimeScreen: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                 }
+                // 広告バナー
+                FirebaseAdView(placement: "anime")
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredAnimes, id: \.id) { anime in

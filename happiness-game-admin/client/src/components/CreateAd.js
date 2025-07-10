@@ -7,6 +7,7 @@ const PLACEMENT_OPTIONS = [
   { key: 'character', label: 'キャラ', icon: '👤' },
   { key: 'product', label: 'プロダクト', icon: '📦' },
   { key: 'visit', label: 'ビジット', icon: '✈️' },
+  { key: 'anime', label: 'アニメ', icon: '🎬' },
 ];
 
 // ImgurページURL→画像直リンク変換関数
@@ -43,7 +44,7 @@ function CreateAd() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const editId = params.get('id');
-  const generalPage = params.get('generalPage'); // 'home' | 'character' | 'product' | 'visit' or null
+  const generalPage = params.get('generalPage'); // 'home' | 'character' | 'product' | 'visit' | 'anime' or null
   const [formData, setFormData] = useState({
     title: '',
     description: '',

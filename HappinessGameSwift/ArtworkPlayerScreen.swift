@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct ArtworkPlayerScreen: View {
     let artwork: Artwork

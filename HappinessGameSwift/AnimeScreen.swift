@@ -7,9 +7,7 @@ import Photos
 import AVFoundation
 import AVKit
 
-// Typealias to use the actual screens
-typealias AlbumArtworkListScreenTemp = AlbumArtworkListScreen
-typealias ArtworkPlayerScreenTemp = ArtworkPlayerScreen
+// Removed duplicate typealias - now defined in ArtworkScreen.swift
 
 fileprivate func daysInMonth(_ month: Int) -> Int {
     let calendar = Calendar.current

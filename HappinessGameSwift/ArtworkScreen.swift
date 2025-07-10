@@ -1,27 +1,8 @@
 import SwiftUI
 import PhotosUI
 import Foundation
-import UIKit
 
-// 必要な型定義をコピー
-struct ArtworkAlbum: Identifiable, Hashable, Equatable {
-    let id = UUID()
-    let tag: String
-    var videos: [Artwork]
-    let characterImageName: String
-
-    var count: Int { videos.count }
-    var firstImagePath: String? { videos.first?.imagePath }
-
-    static func == (lhs: ArtworkAlbum, rhs: ArtworkAlbum) -> Bool {
-        lhs.id == rhs.id
-    }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-    }
-}
-
+// Artwork model that can be used for both anime and character artworks
 struct Artwork: Identifiable, Codable, Hashable {
     let id: UUID
     let characterId: UUID
@@ -31,7 +12,7 @@ struct Artwork: Identifiable, Codable, Hashable {
     var createdAt: Date
     var pixivURL: String?
     var twitterURL: String?
-
+    
     init(id: UUID = UUID(), characterId: UUID, imagePath: String? = nil, title: String, tags: [String] = [], createdAt: Date = Date(), pixivURL: String? = nil, twitterURL: String? = nil) {
         self.id = id
         self.characterId = characterId
@@ -42,18 +23,45 @@ struct Artwork: Identifiable, Codable, Hashable {
         self.pixivURL = pixivURL
         self.twitterURL = twitterURL
     }
-
+    
     static func == (lhs: Artwork, rhs: Artwork) -> Bool {
         lhs.id == rhs.id
     }
-
+    
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
     }
 }
 
+// Album model for grouping artworks by tags
+struct ArtworkAlbum: Identifiable, Hashable, Equatable {
+    let id = UUID()
+    let tag: String
+    var videos: [Artwork]
+    let characterImageName: String
+    
+    var count: Int { videos.count }
+    var firstImagePath: String? { videos.first?.imagePath }
+    
+    init(tag: String, videos: [Artwork], characterImageName: String = "") {
+        self.tag = tag
+        self.videos = videos
+        self.characterImageName = characterImageName
+    }
+    
+    static func == (lhs: ArtworkAlbum, rhs: ArtworkAlbum) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
 
-// CharacterArtworkScreen - AnimeArtworkScreenと同じ構造
+// Typealias to use the actual screens
+typealias AlbumArtworkListScreenTemp = AlbumArtworkListScreen
+typealias ArtworkPlayerScreenTemp = ArtworkPlayerScreen
+
 struct ArtworkScreen: View {
     let character: Character
     @Environment(\.presentationMode) var presentationMode
@@ -143,8 +151,7 @@ struct ArtworkScreen: View {
                                 .foregroundColor(showAlbum == false ? .black : .clear)
                         }
                     }
-                    .padding(.trailing, 50)
-                    
+                    Spacer()
                     Button(action: { showAlbum = true }) {
                         VStack(spacing: 2) {
                             Text("Album")
@@ -155,467 +162,522 @@ struct ArtworkScreen: View {
                                 .foregroundColor(showAlbum == true ? .black : .clear)
                         }
                     }
-                    Spacer(minLength: 70)
+                    Spacer(minLength: 80)
                 }
-                .padding(.top, 16)
-                .padding(.bottom, 8)
+                .frame(height: 40)
                 
-                // コンテンツ
-                if showAlbum {
-                    // アルバムビュー
-                    ScrollView {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                            ForEach(albums, id: \.self) { album in
-                                Button(action: {
-                                    selectedAlbum = album
-                                }) {
-                                    VStack(spacing: 8) {
-                                        if let firstImagePath = album.firstImagePath,
-                                           let image = UIImage(contentsOfFile: firstImagePath) {
-                                            Image(uiImage: image)
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fill)
-                                                .frame(width: 160, height: 160)
-                                                .clipped()
-                                                .cornerRadius(12)
-                                        } else {
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .fill(Color.gray.opacity(0.3))
-                                                .frame(width: 160, height: 160)
-                                                .overlay(
-                                                    Image(systemName: "photo")
-                                                        .font(.system(size: 40))
-                                                        .foregroundColor(.gray)
-                                                )
+                // 画像リスト or Album
+                ZStack {
+                    if showAlbum {
+                        ScrollView {
+                            VStack(spacing: 4) {
+                                Spacer().frame(height: 5)
+                                // --- アルバムリスト ---
+                                ForEach(albums) { album in
+                                    Button(action: {
+                                        selectedAlbum = album
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            if let firstArtwork = album.videos.first, let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                GeometryReader { geometry in
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(height: 233)
+                                            } else {
+                                                GeometryReader { geometry in
+                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                }
+                                                .frame(height: 233)
+                                            }
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("#" + album.tag)
+                                                    .font(.system(size: 15.5, weight: .semibold))
+                                                    .foregroundColor(.black)
+                                            }
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
                                         }
-                                        
-                                        Text(album.tag)
-                                            .font(.caption)
-                                            .foregroundColor(.black)
-                                        
-                                        Text("\(album.count)枚")
-                                            .font(.caption2)
-                                            .foregroundColor(.gray)
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
                         }
-                        .padding()
-                    }
-                } else {
-                    // アートワークビュー
-                    ScrollView {
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                            ForEach(artworks) { artwork in
-                                Button(action: {
-                                    selectedArtwork = artwork
-                                    activeSheet = .artworkDetail(artwork)
-                                }) {
-                                    if let imagePath = artwork.imagePath,
-                                       let image = UIImage(contentsOfFile: imagePath) {
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 120)
-                                            .clipped()
-                                    } else {
-                                        Rectangle()
-                                            .fill(Color.gray.opacity(0.3))
-                                            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 120)
-                                            .overlay(
-                                                Image(systemName: "photo")
-                                                    .foregroundColor(.gray)
-                                            )
+                        .fullScreenCover(item: $selectedAlbum) { album in
+                            AlbumArtworkListScreenTemp(
+                                artworks: album.videos, 
+                                tag: album.tag,
+                                onArtworkDeleted: { deletedArtwork in
+                                    // 親画面のartworksリストから削除
+                                    if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
+                                        artworks.remove(at: idx)
+                                        print("[DEBUG] ArtworkScreen: Albumから画像削除 - ID: \(deletedArtwork.id)")
+                                        
+                                        // Albumタブの画像リストも更新
+                                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
+                                        
+                                        saveArtworksToUserDefaults()
+                                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
+                                    }
+                                },
+                                onArtworkEdited: { editedArtwork in
+                                    // 親画面のartworksリストを更新
+                                    if let idx = artworks.firstIndex(where: { $0.id == editedArtwork.id }) {
+                                        artworks[idx] = editedArtwork
+                                        print("[DEBUG] ArtworkScreen: Albumから画像編集 - ID: \(editedArtwork.id)")
+                                        
+                                        // Albumタブの画像リストも更新
+                                        updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
+                                        
+                                        saveArtworksToUserDefaults()
+                                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
+                                    }
+                                }
+                            )
+                        }
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 32) {
+                                ForEach(artworks, id: \.id) { artwork in
+                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            GeometryReader { geometry in
+                                                ZStack {
+                                                    Color.white
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                }
+                                                .frame(width: geometry.size.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
+                                            }
+                                            .frame(height: 233)
+                                            HStack(alignment: .center, spacing: 12) {
+                                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                    Image(uiImage: image)
+                                                        .resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(width: 40, height: 40)
+                                                        .clipShape(Circle())
+                                                } else {
+                                                    Circle()
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: 40, height: 40)
+                                                        .overlay(
+                                                            Image(systemName: "person")
+                                                                .font(.system(size: 20))
+                                                                .foregroundColor(.gray)
+                                                        )
+                                                }
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(artwork.title)
+                                                        .font(.headline)
+                                                        .foregroundColor(.black)
+                                                    Text(artwork.tags.isEmpty ? "#nakajimaginsei" : "#" + artwork.tags.joined(separator: " #"))
+                                                        .font(.caption)
+                                                        .foregroundColor(.gray)
+                                                }
+                                                Spacer()
+                                            }
+                                            .padding(.top, 8)
+                                            .padding(.leading, 8)
+                                        }
+                                        .padding(.vertical, 8)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            activeSheet = .artworkDetail(artwork)
+                                        }
                                     }
                                 }
                             }
+                            .padding(.top, 8)
                         }
-                        .padding(8)
+                        .fullScreenCover(item: $selectedArtwork) { artwork in
+                            ArtworkPlayerScreenTemp(artwork: artwork, onDelete: {
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks.remove(at: idx)
+                                    saveArtworksToUserDefaults()
+                                }
+                            }, onEdit: { newTitle, newTags in
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks[idx].title = newTitle
+                                    artworks[idx].tags = newTags
+                                    saveArtworksToUserDefaults()
+                                }
+                            })
+                        }
                     }
                 }
             }
-            
-            // 新規写真追加ボタン
-            if !showAlbum {
-                Button(action: { activeSheet = .addPhoto }) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 22, weight: .bold))
+            // Albumタブ時のみ右下に＋ボタン
+            if showAlbum {
+                Button(action: { showTagInput = true }) {
+                    Image(systemName: "number")
+                        .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 56, height: 56)
-                        .background(Color.blue)
+                        .background(Color.black)
                         .clipShape(Circle())
-                        .shadow(radius: 4)
+                        .shadow(radius: 6)
+                        .padding(.bottom, 32)
+                        .padding(.trailing, 24)
                 }
-                .padding(.trailing, 16)
-                .padding(.bottom, 16)
             }
         }
         .onAppear {
             loadArtworks()
-            updateAlbums()
         }
         .sheet(item: $activeSheet) { sheetType in
             switch sheetType {
             case .addPhoto:
-                AddPhotoSheet(
-                    selectedImage: $selectedImage,
-                    photoTitle: $photoTitle,
-                    photoTags: $photoTags,
-                    showTagInput: $showTagInput,
-                    filteredTags: $filteredTags,
-                    newTag: $newTag,
-                    onSave: saveArtwork
-                )
-            case .tagInput:
-                EmptyView() // Not used in this context
-            case .artworkDetail(let artwork):
-                if let artwork = artworks.first(where: { $0.id == artwork.id }) {
-                    ArtworkDetailView(
-                        artwork: artwork,
-                        onDelete: { deleteArtwork(artwork) },
-                        onUpdate: { updatedArtwork in
-                            updateArtwork(updatedArtwork)
-                        }
-                    )
+                AddPhotoView(selectedImage: $selectedImage, photoTitle: $photoTitle, photoTags: $photoTags) {
+                    if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                        saveArtwork()
+                    }
                 }
+            case .tagInput:
+                VStack(spacing: 24) {
+                    Text("表示したいタグを入力")
+                        .font(.headline)
+                    TextField("#タグ名", text: $newTag)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal, 24)
+                    Button("保存") {
+                        let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !tag.isEmpty {
+                            let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                            if !tagArtworks.isEmpty {
+                                albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
+                            }
+                        }
+                        newTag = ""
+                        activeSheet = nil
+                    }
+                    .font(.headline)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 10)
+                    .background(Color.black)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    Button("キャンセル") {
+                        activeSheet = nil
+                    }
+                    .foregroundColor(.red)
+                }
+                .padding(32)
+            case .artworkDetail(let artwork):
+            ZStack(alignment: .bottomTrailing) {
+                VStack(spacing: 24) {
+                    Spacer()
+                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: .infinity, maxHeight: 400)
+                            .clipped()
+                            .cornerRadius(24)
+                    } else {
+                        Text("画像データがありません")
+                            .foregroundColor(.gray)
+                    }
+                    VStack(spacing: 16) {
+                        HStack(spacing: 8) {
+                            Text("タイトル: \(artwork.title)")
+                                .font(.headline)
+                            Button(action: {
+                                editText = artwork.title
+                                showEditTitle = true
+                            }) {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        HStack(spacing: 8) {
+                            Text("タグ: \(artwork.tags.joined(separator: ", "))")
+                                .font(.subheadline)
+                            Button(action: {
+                                editText = artwork.tags.joined(separator: ",")
+                                showEditTags = true
+                            }) {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        Text("ID: \(artwork.id.uuidString.prefix(8))")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                }
+                // 右下に閉じるボタンとゴミ箱ボタンを横並びで配置
+                HStack(spacing: 24) {
+                    Spacer()
+                    Button(action: {
+                        activeSheet = nil
+                    }) {
+                        Text("閉じる")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 10)
+                            .background(Color.black)
+                            .cornerRadius(10)
+                    }
+                    .padding(.trailing, 78)
+                    Button(action: {
+                        deletingArtworkID = artwork.id
+                        showDeleteAlert = true
+                    }) {
+                        Image(systemName: "trash")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                            .foregroundColor(.black)
+                    }
+                }
+                .padding([.bottom, .trailing], 24)
+                // --- カスタムダイアログ ---
+                if showEditTitle {
+                    Color.black.opacity(0.25)
+                        .edgesIgnoringSafeArea(.all)
+                    VStack(spacing: 20) {
+                        Text("タイトル名を編集")
+                            .font(.headline)
+                            .padding(.top, 12)
+                        TextField("タイトル", text: $editText)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.system(size: 18))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                        HStack(spacing: 24) {
+                            Button(action: { showEditTitle = false }) {
+                                Text("キャンセル")
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                            Button(action: {
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks[idx].title = editText
+                                    saveArtworksToUserDefaults()
+                                }
+                                showEditTitle = false
+                            }) {
+                                Text("保存")
+                                    .foregroundColor(.blue)
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
+                    }
+                    .background(Color.white)
+                    .cornerRadius(18)
+                    .shadow(radius: 16)
+                    .frame(maxWidth: 340)
+                    .padding(.horizontal, 32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                if showDeleteAlert {
+                    Color.black.opacity(0.25)
+                        .edgesIgnoringSafeArea(.all)
+                    VStack(spacing: 20) {
+                        Text("本当に削除しますか？")
+                            .font(.headline)
+                            .padding(.top, 12)
+                        HStack(spacing: 24) {
+                            Button(action: {
+                                showDeleteAlert = false
+                                deletingArtworkID = nil
+                            }) {
+                                Text("キャンセル")
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                            Button(action: {
+                                if let delID = deletingArtworkID,
+                                   let idx = artworks.firstIndex(where: { $0.id == delID }) {
+                                    artworks.remove(at: idx)
+                                    saveArtworksToUserDefaults()
+                                }
+                                showDeleteAlert = false
+                                deletingArtworkID = nil
+                                activeSheet = nil
+                            }) {
+                                Text("削除")
+                                    .foregroundColor(.red)
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
+                    }
+                    .background(Color.white)
+                    .cornerRadius(18)
+                    .shadow(radius: 16)
+                    .frame(maxWidth: 340)
+                    .padding(.horizontal, 32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                // --- カスタムダイアログ終了 ---
+                if showEditTags {
+                    Color.black.opacity(0.25)
+                        .edgesIgnoringSafeArea(.all)
+                    VStack(spacing: 20) {
+                        Text("タグを編集")
+                            .font(.headline)
+                            .padding(.top, 12)
+                        TextField("タグ（カンマ区切り）", text: $editText)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .font(.system(size: 18))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                        HStack(spacing: 24) {
+                            Button(action: { showEditTags = false }) {
+                                Text("キャンセル")
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                            Button(action: {
+                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                    artworks[idx].tags = editText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                                    saveArtworksToUserDefaults()
+                                }
+                                showEditTags = false
+                            }) {
+                                Text("保存")
+                                    .foregroundColor(.blue)
+                                    .fontWeight(.bold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                            }
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
+                    }
+                    .background(Color.white)
+                    .cornerRadius(18)
+                    .shadow(radius: 16)
+                    .frame(maxWidth: 340)
+                    .padding(.horizontal, 32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
+                // --- END カスタムダイアログ ---
+            }
             }
         }
-        .fullScreenCover(item: $selectedAlbum) { album in
-            AlbumArtworkListScreen(
-                artworks: album.videos,
-                tag: album.tag,
-                onArtworkDeleted: { deletedArtwork in
-                    deleteArtwork(deletedArtwork)
-                },
-                onArtworkEdited: { editedArtwork in
-                    updateArtwork(editedArtwork)
+        .sheet(isPresented: $showTagInput) {
+            VStack(spacing: 24) {
+                Text("表示したいタグを入力")
+                    .font(.headline)
+                TextField("#タグ名", text: $newTag)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal, 24)
+                Button("保存") {
+                    let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !tag.isEmpty {
+                        let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                        if !tagArtworks.isEmpty {
+                            albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
+                        }
+                    }
+                    newTag = ""
+                    showTagInput = false
                 }
-            )
+                .font(.headline)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 10)
+                .background(Color.black)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                Button("キャンセル") {
+                    showTagInput = false
+                }
+                .foregroundColor(.red)
+            }
+            .padding(32)
         }
     }
     
-    // 以下、必要な関数を追加
-    func loadArtworks() {
+    // MARK: - Helper Functions
+    
+    private func loadArtworks() {
         let key = "character_artworks_\(character.id.uuidString)"
         if let data = UserDefaults.standard.data(forKey: key),
-           let decoded = try? JSONDecoder().decode([Artwork].self, from: data) {
-            artworks = decoded
+           let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
+            artworks = decodedArtworks
         }
     }
     
-    func saveArtworks() {
+    private func saveArtworksToUserDefaults() {
         let key = "character_artworks_\(character.id.uuidString)"
-        if let data = try? JSONEncoder().encode(artworks) {
-            UserDefaults.standard.set(data, forKey: key)
+        if let encodedData = try? JSONEncoder().encode(artworks) {
+            UserDefaults.standard.set(encodedData, forKey: key)
         }
     }
     
-    func saveArtwork() {
-        guard let selectedImage = selectedImage else { return }
-        
-        let fileName = "\(UUID().uuidString).jpg"
-        guard let imagePath = saveImageToDocuments(selectedImage, fileName: fileName) else { return }
-        
-        let tags = photoTags
-            .split(separator: " ")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-        
-        let artwork = Artwork(
+    private func saveArtwork() {
+        guard let image = selectedImage else { return }
+        let tags = photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        // 画像を保存
+        let fileName = "character_artwork_\(UUID().uuidString).png"
+        let path = saveImageToDocuments(image, fileName: fileName)
+        let newArtwork = Artwork(
+            id: UUID(),
             characterId: character.id,
-            imagePath: imagePath,
-            title: photoTitle.isEmpty ? "Untitled" : photoTitle,
-            tags: tags
+            imagePath: path,
+            title: photoTitle,
+            tags: tags,
+            createdAt: Date()
         )
-        
-        artworks.append(artwork)
-        saveArtworks()
-        updateAlbums()
-        
-        // Reset
-        self.selectedImage = nil
-        self.photoTitle = ""
-        self.photoTags = ""
+        artworks.insert(newArtwork, at: 0)
+        saveArtworksToUserDefaults()
+        selectedImage = nil
+        photoTitle = ""
+        photoTags = ""
+        activeSheet = nil
     }
     
-    func deleteArtwork(_ artwork: Artwork) {
-        artworks.removeAll { $0.id == artwork.id }
-        saveArtworks()
-        updateAlbums()
-        
-        // Delete image file
-        if let imagePath = artwork.imagePath {
-            try? FileManager.default.removeItem(atPath: imagePath)
+    private func updateAlbumsAfterArtworkDeletion(deletedArtworkId: UUID) {
+        // 各Albumから削除された画像を除去
+        albums = albums.compactMap { album in
+            let updatedArtworks = album.videos.filter { $0.id != deletedArtworkId }
+            // 画像が1つも残っていない場合はAlbumを削除
+            if updatedArtworks.isEmpty {
+                return nil
+            }
+            // 画像が残っている場合は更新されたAlbumを返す
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
+        print("[DEBUG] ArtworkScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
     
-    func updateArtwork(_ updatedArtwork: Artwork) {
-        if let index = artworks.firstIndex(where: { $0.id == updatedArtwork.id }) {
-            artworks[index] = updatedArtwork
-            saveArtworks()
-            updateAlbums()
-        }
-    }
-    
-    func updateAlbums() {
-        let groupedByTag = Dictionary(grouping: artworks) { artwork -> String in
-            artwork.tags.first ?? "Untagged"
-        }
-        
-        albums = groupedByTag.map { tag, artworks in
-            ArtworkAlbum(tag: tag, videos: artworks, characterImageName: character.name)
-        }.sorted { $0.tag < $1.tag }
-    }
-}
-
-// 必要な関数定義
-func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
-    guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
-    let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-    let fileURL = documentsDirectory.appendingPathComponent(fileName)
-    
-    do {
-        try data.write(to: fileURL)
-        return fileURL.path
-    } catch {
-        print("Error saving image: \(error)")
-        return nil
-    }
-}
-
-// AddPhotoSheet
-struct AddPhotoSheet: View {
-    @Binding var selectedImage: UIImage?
-    @Binding var photoTitle: String
-    @Binding var photoTags: String
-    @Binding var showTagInput: Bool
-    @Binding var filteredTags: [String]
-    @Binding var newTag: String
-    let onSave: () -> Void
-    @Environment(\.presentationMode) var presentationMode
-    @State private var imagePickerPresented = false
-    
-    var body: some View {
-        NavigationView {
-            VStack {
-                if let image = selectedImage {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 300)
-                        .padding()
+    private func updateAlbumsAfterArtworkEdit(editedArtwork: Artwork) {
+        // 各Albumの該当画像を更新
+        albums = albums.map { album in
+            let updatedArtworks = album.videos.map { artwork in
+                if artwork.id == editedArtwork.id {
+                    return editedArtwork
                 } else {
-                    Button(action: { imagePickerPresented = true }) {
-                        VStack {
-                            Image(systemName: "photo.fill")
-                                .font(.system(size: 50))
-                                .foregroundColor(.gray)
-                            Text("写真を選択")
-                                .foregroundColor(.gray)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 200)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(12)
-                    }
-                    .padding()
-                }
-                
-                Form {
-                    Section(header: Text("タイトル")) {
-                        TextField("タイトルを入力", text: $photoTitle)
-                    }
-                    
-                    Section(header: Text("タグ")) {
-                        TextField("タグをスペース区切りで入力", text: $photoTags)
-                    }
-                }
-                
-                Spacer()
-            }
-            .navigationTitle("写真を追加")
-            .navigationBarItems(
-                leading: Button("キャンセル") {
-                    presentationMode.wrappedValue.dismiss()
-                },
-                trailing: Button("保存") {
-                    onSave()
-                    presentationMode.wrappedValue.dismiss()
-                }
-                .disabled(selectedImage == nil)
-            )
-        }
-        .sheet(isPresented: $imagePickerPresented) {
-            ImagePicker(selectedImage: $selectedImage)
-        }
-    }
-}
-
-// ImagePicker
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var selectedImage: UIImage?
-    @Environment(\.presentationMode) var presentationMode
-    
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.delegate = context.coordinator
-        picker.sourceType = .photoLibrary
-        return picker
-    }
-    
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: ImagePicker
-        
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-        
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.selectedImage = image
-            }
-            parent.presentationMode.wrappedValue.dismiss()
-        }
-        
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.presentationMode.wrappedValue.dismiss()
-        }
-    }
-}
-
-// ArtworkDetailView
-struct ArtworkDetailView: View {
-    let artwork: Artwork
-    let onDelete: () -> Void
-    let onUpdate: (Artwork) -> Void
-    @Environment(\.presentationMode) var presentationMode
-    @State private var showDeleteAlert = false
-    @State private var showEditTitle = false
-    @State private var showEditTags = false
-    @State private var editedTitle = ""
-    @State private var editedTags = ""
-    
-    var body: some View {
-        NavigationView {
-            VStack {
-                if let imagePath = artwork.imagePath,
-                   let image = UIImage(contentsOfFile: imagePath) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 400)
-                }
-                
-                List {
-                    Section {
-                        HStack {
-                            Text("タイトル")
-                            Spacer()
-                            Text(artwork.title)
-                                .foregroundColor(.gray)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            editedTitle = artwork.title
-                            showEditTitle = true
-                        }
-                        
-                        HStack {
-                            Text("タグ")
-                            Spacer()
-                            Text(artwork.tags.joined(separator: " "))
-                                .foregroundColor(.gray)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            editedTags = artwork.tags.joined(separator: " ")
-                            showEditTags = true
-                        }
-                    }
-                    
-                    Section {
-                        Button(action: {
-                            showDeleteAlert = true
-                        }) {
-                            Text("削除")
-                                .foregroundColor(.red)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
+                    return artwork
                 }
             }
-            .navigationTitle("アートワーク詳細")
-            .navigationBarItems(trailing: Button("完了") {
-                presentationMode.wrappedValue.dismiss()
-            })
-            .alert(isPresented: $showDeleteAlert) {
-                Alert(
-                    title: Text("削除確認"),
-                    message: Text("このアートワークを削除しますか？"),
-                    primaryButton: .destructive(Text("削除")) {
-                        onDelete()
-                        presentationMode.wrappedValue.dismiss()
-                    },
-                    secondaryButton: .cancel(Text("キャンセル"))
-                )
-            }
-            .sheet(isPresented: $showEditTitle) {
-                EditTextView(
-                    title: "タイトルを編集",
-                    text: $editedTitle,
-                    onSave: {
-                        var updatedArtwork = artwork
-                        updatedArtwork.title = editedTitle
-                        onUpdate(updatedArtwork)
-                    }
-                )
-            }
-            .sheet(isPresented: $showEditTags) {
-                EditTextView(
-                    title: "タグを編集",
-                    text: $editedTags,
-                    onSave: {
-                        var updatedArtwork = artwork
-                        updatedArtwork.tags = editedTags
-                            .split(separator: " ")
-                            .map { $0.trimmingCharacters(in: .whitespaces) }
-                            .filter { !$0.isEmpty }
-                        onUpdate(updatedArtwork)
-                    }
-                )
-            }
+            return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
-    }
-}
-
-// EditTextView
-struct EditTextView: View {
-    let title: String
-    @Binding var text: String
-    let onSave: () -> Void
-    @Environment(\.presentationMode) var presentationMode
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                TextField(title, text: $text)
-            }
-            .navigationTitle(title)
-            .navigationBarItems(
-                leading: Button("キャンセル") {
-                    presentationMode.wrappedValue.dismiss()
-                },
-                trailing: Button("保存") {
-                    onSave()
-                    presentationMode.wrappedValue.dismiss()
-                }
-            )
-        }
+        print("[DEBUG] ArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
     }
 }

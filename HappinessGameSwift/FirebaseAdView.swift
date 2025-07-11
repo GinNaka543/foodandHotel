@@ -195,8 +195,7 @@ struct FirebaseAdView: View {
                         }
                         .padding(.horizontal, 16)
                         
-                        GeometryReader { geometry in
-                            ScrollView(.horizontal, showsIndicators: false) {
+                        ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
                                     // 広告を二度表示することで無限ループを実現
                                 ForEach(0..<2, id: \.self) { setIndex in
@@ -285,9 +284,7 @@ struct FirebaseAdView: View {
                                             }
                                         }
                                 )
-                            }
                         }
-                        .frame(height: 144)
                         }
                     }
                 } else {

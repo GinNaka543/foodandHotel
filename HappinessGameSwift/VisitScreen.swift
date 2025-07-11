@@ -196,8 +196,8 @@ public struct VisitScreen: View {
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
             }
         }
         .buttonStyle(PlainButtonStyle())

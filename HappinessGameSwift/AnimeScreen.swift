@@ -425,33 +425,37 @@ struct AnimeArtworkScreen: View {
                 .padding(.top, 8)
                 .padding(.leading, 30)
 
-                // タブバー
-                HStack(spacing: 0) {
-                    Spacer(minLength: 70)
-                    Button(action: { showAlbum = false }) {
-                        VStack(spacing: 2) {
+                // タブバー - カプセル型デザイン（中央揃え）
+                HStack {
+                    Spacer()
+                    HStack(spacing: 12) {
+                        Button(action: { showAlbum = false }) {
                             Text("ArtWork")
-                                .font(.headline)
-                                .foregroundColor(.black)
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(showAlbum == false ? .black : .clear)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(!showAlbum ? .white : .black)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                                )
+                        }
+                        
+                        Button(action: { showAlbum = true }) {
+                            Text("Album")
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(showAlbum ? .white : .black)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                                )
                         }
                     }
                     Spacer()
-                    Button(action: { showAlbum = true }) {
-                        VStack(spacing: 2) {
-                            Text("Album")
-                                .font(.headline)
-                                .foregroundColor(.black)
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(showAlbum == true ? .black : .clear)
-                        }
-                    }
-                    Spacer(minLength: 80)
                 }
-                .frame(height: 40)
+                .padding(.vertical, 8)
                 
                 // 画像リスト or Album
                 ZStack {
@@ -998,33 +1002,37 @@ struct AnimeVideoScreen: View {
                 .padding(.top, 8)
                 .padding(.leading, 30)
 
-                // タブバー
-                HStack(spacing: 0) {
-                    Spacer(minLength: 70)
-                    Button(action: { showAlbum = false }) {
-                        VStack(spacing: 2) {
+                // タブバー - カプセル型デザイン（中央揃え）
+                HStack {
+                    Spacer()
+                    HStack(spacing: 12) {
+                        Button(action: { showAlbum = false }) {
                             Text("Video")
-                                .font(.headline)
-                                .foregroundColor(.black)
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(showAlbum == false ? .black : .clear)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(!showAlbum ? .white : .black)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                                )
+                        }
+                        
+                        Button(action: { showAlbum = true }) {
+                            Text("Album")
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(showAlbum ? .white : .black)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                                )
                         }
                     }
                     Spacer()
-                    Button(action: { showAlbum = true }) {
-                        VStack(spacing: 2) {
-                            Text("Album")
-                                .font(.headline)
-                                .foregroundColor(.black)
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(showAlbum == true ? .black : .clear)
-                        }
-                    }
-                    Spacer(minLength: 80)
                 }
-                .frame(height: 40)
+                .padding(.vertical, 8)
                 // 動画リスト or Album
                 ZStack {
                     if showAlbum {
@@ -1345,6 +1353,10 @@ struct AnimeAboutView: View {
     @State private var editedWatchStatuses: Set<WatchStatus> = []
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
+    @State private var showEditSelection: Bool = false
+    @State private var showIconPicker: Bool = false
+    @State private var iconPickerItem: PhotosPickerItem? = nil
+    @State private var newIconImage: UIImage? = nil
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
     
@@ -1352,16 +1364,58 @@ struct AnimeAboutView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
+                    // アニメアイコン
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            showIconPicker = true
+                        }) {
+                            if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 100, height: 100)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .overlay(
+                                        Circle()
+                                            .fill(Color.black.opacity(0.5))
+                                            .frame(width: 100, height: 100)
+                                            .overlay(
+                                                Image(systemName: "camera.fill")
+                                                    .font(.system(size: 20))
+                                                    .foregroundColor(.white)
+                                            )
+                                            .opacity(0)
+                                    )
+                            } else {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 100, height: 100)
+                                    .overlay(
+                                        VStack(spacing: 4) {
+                                            Image(systemName: "film.fill")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.gray)
+                                            Text("タップで追加")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(.gray)
+                                        }
+                                    )
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    .padding(.top, 20)
+                    .padding(.bottom, 10)
+                    
                     // プロフィールセクション
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text("プロフィール")
                                 .font(.system(size: 20, weight: .bold))
-                            Button(action: { isEditingProfile.toggle() }) {
-                                Image(systemName: isEditingProfile ? "checkmark.circle.fill" : "pencil")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.blue)
-                            }
                             Spacer()
                         }
                         .padding(.horizontal, 20)
@@ -1393,13 +1447,6 @@ struct AnimeAboutView: View {
                         HStack {
                             Text("概要")
                                 .font(.system(size: 20, weight: .bold))
-                            Button(action: { 
-                                isEditingDescription.toggle()
-                            }) {
-                                Image(systemName: isEditingDescription ? "checkmark.circle.fill" : "pencil")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.blue)
-                            }
                             Spacer()
                         }
                         .padding(.horizontal, 20)
@@ -1458,6 +1505,20 @@ struct AnimeAboutView: View {
                 leading: Button("閉じる") {
                     saveAnime()
                     onClose()
+                },
+                trailing: Button(action: {
+                    if isEditingProfile || isEditingDescription {
+                        // 保存処理
+                        saveAnime()
+                        isEditingProfile = false
+                        isEditingDescription = false
+                    } else {
+                        // 編集選択モーダルを表示
+                        showEditSelection = true
+                    }
+                }) {
+                    Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
+                        .foregroundColor(.blue)
                 }
             )
         }
@@ -1470,6 +1531,73 @@ struct AnimeAboutView: View {
         }
         .onDisappear {
             saveAnime()
+        }
+        .actionSheet(isPresented: $showEditSelection) {
+            ActionSheet(
+                title: Text("編集する項目を選択してください"),
+                buttons: [
+                    .default(Text("プロフィールを編集")) {
+                        isEditingProfile = true
+                    },
+                    .default(Text("概要を編集")) {
+                        isEditingDescription = true
+                    },
+                    .cancel(Text("キャンセル"))
+                ]
+            )
+        }
+        .sheet(isPresented: $showIconPicker) {
+            PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                VStack(spacing: 20) {
+                    Text("アイコンを選択")
+                        .font(.headline)
+                    
+                    if let newIconImage = newIconImage {
+                        Image(uiImage: newIconImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 150, height: 150)
+                            .clipShape(Circle())
+                    }
+                    
+                    Button("画像を選択") {
+                        // PhotosPickerが自動で処理
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    
+                    if newIconImage != nil {
+                        Button("保存") {
+                            saveNewIcon()
+                            showIconPicker = false
+                        }
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                    
+                    Button("キャンセル") {
+                        showIconPicker = false
+                        newIconImage = nil
+                        iconPickerItem = nil
+                    }
+                    .foregroundColor(.red)
+                }
+                .padding()
+            }
+            .onChange(of: iconPickerItem) { newValue in
+                if let newValue = newValue {
+                    Task {
+                        if let data = try? await newValue.loadTransferable(type: Data.self),
+                           let image = UIImage(data: data) {
+                            newIconImage = image
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -1568,11 +1696,10 @@ struct AnimeAboutView: View {
         // 編集中の場合は編集内容を保存
         var updatedAnime = animes[idx]
         
-        if isEditingProfile {
-            updatedAnime.title = editedTitle
-            updatedAnime.hashtag = editedHashtag
-            updatedAnime.watchStatuses = Array(editedWatchStatuses)
-        }
+        // プロフィール編集内容を常に保存
+        updatedAnime.title = editedTitle
+        updatedAnime.hashtag = editedHashtag
+        updatedAnime.watchStatuses = Array(editedWatchStatuses)
         
         // 概要をカスタムフィールドに保存
         if updatedAnime.customFields == nil {
@@ -1591,6 +1718,54 @@ struct AnimeAboutView: View {
         
         // Bindingも更新
         anime = updatedAnime
+    }
+    
+    // アイコン保存機能
+    private func saveNewIcon() {
+        guard let newIconImage = newIconImage,
+              let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+        
+        // 画像をDocumentsディレクトリに保存
+        let fileName = "anime_icon_\(UUID().uuidString).png"
+        if let savedPath = saveImageToDocuments(newIconImage, fileName: fileName) {
+            var updatedAnime = animes[idx]
+            
+            // 古いアイコンを削除
+            if let oldPath = updatedAnime.imageIdentifier {
+                try? FileManager.default.removeItem(atPath: oldPath)
+            }
+            
+            // 新しいアイコンパスを設定
+            updatedAnime.imageIdentifier = savedPath
+            
+            animes[idx] = updatedAnime
+            animeManager.updateAnime(updatedAnime)
+            
+            // Bindingも更新
+            anime = updatedAnime
+        }
+        
+        newIconImage = nil
+        iconPickerItem = nil
+    }
+    
+    // 画像をDocumentsディレクトリに保存
+    private func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
+        
+        let fileManager = FileManager.default
+        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+        guard let documentsURL = urls.first else { return nil }
+        
+        let fileURL = documentsURL.appendingPathComponent(fileName)
+        
+        do {
+            try data.write(to: fileURL)
+            return fileURL.path
+        } catch {
+            print("画像保存エラー: \(error)")
+            return nil
+        }
     }
 }
 struct AddAnimeSheet: View {

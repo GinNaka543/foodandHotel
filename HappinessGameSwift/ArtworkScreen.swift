@@ -138,33 +138,37 @@ struct ArtworkScreen: View {
                 .padding(.top, 8)
                 .padding(.leading, 30)
 
-                // タブバー
-                HStack(spacing: 0) {
-                    Spacer(minLength: 70)
-                    Button(action: { showAlbum = false }) {
-                        VStack(spacing: 2) {
+                // タブバー - カプセル型デザイン（中央揃え）
+                HStack {
+                    Spacer()
+                    HStack(spacing: 12) {
+                        Button(action: { showAlbum = false }) {
                             Text("ArtWork")
-                                .font(.headline)
-                                .foregroundColor(.black)
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(showAlbum == false ? .black : .clear)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(!showAlbum ? .white : .black)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                                )
+                        }
+                        
+                        Button(action: { showAlbum = true }) {
+                            Text("Album")
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundColor(showAlbum ? .white : .black)
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 8)
+                                .background(
+                                    Capsule()
+                                        .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                                )
                         }
                     }
                     Spacer()
-                    Button(action: { showAlbum = true }) {
-                        VStack(spacing: 2) {
-                            Text("Album")
-                                .font(.headline)
-                                .foregroundColor(.black)
-                            Rectangle()
-                                .frame(height: 2)
-                                .foregroundColor(showAlbum == true ? .black : .clear)
-                        }
-                    }
-                    Spacer(minLength: 80)
                 }
-                .frame(height: 40)
+                .padding(.vertical, 8)
                 
                 // 画像リスト or Album
                 ZStack {

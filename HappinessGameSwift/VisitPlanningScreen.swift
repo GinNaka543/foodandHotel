@@ -321,53 +321,51 @@ struct VisitPlanningScreen: View {
                 
                 // 下部のボタン
                 VStack(spacing: 12) {
-                    HStack(spacing: 16) {
-                        Button(action: {
-                            savePlan()
-                            dismiss()
-                        }) {
-                            Text("下書き保存")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.gray)
-                                )
-                        }
-                        .disabled(planTitle.isEmpty || animeName.isEmpty)
-                        
-                        Button(action: {
-                            showingItinerary = true
-                        }) {
-                            Text("旅程を確認")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.green)
-                                )
-                        }
-                        .disabled(spots.isEmpty)
-                    }
-                    
                     Button(action: {
-                        showingPublishDialog = true
+                        showingItinerary = true
                     }) {
-                        Text("プランを公開")
+                        Text("旅程を確認")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.purple)
+                                    .fill(Color.green)
                             )
                     }
-                    .disabled(planTitle.isEmpty || animeName.isEmpty || spots.isEmpty)
+                    .disabled(spots.isEmpty)
+                    
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            saveDraft()
+                        }) {
+                            Text("下書きを保存")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue, lineWidth: 2)
+                                )
+                        }
+                        
+                        Button(action: {
+                            showingPublishDialog = true
+                        }) {
+                            Text("プランを確定")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.purple)
+                                )
+                        }
+                        .disabled(planTitle.isEmpty || animeName.isEmpty || spots.isEmpty)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 20)
@@ -544,6 +542,43 @@ struct VisitPlanningScreen: View {
                 }
             }
         })
+    }
+    
+    func saveDraft() {
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // 下書きプランを作成（isPublicをfalseに設定）
+        let plan = VisitPlanModel(
+            id: UUID().uuidString,
+            userId: userId,
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            description: planDescription,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailUrl: nil,
+            price: 0,
+            createdDate: Date(),
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            totalCost: calculateTotalCost(),
+            isPublic: false, // 下書きは非公開
+            purchasedBy: [],
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        
+        // Firebaseに下書きとして保存
+        firebaseManager.saveVisitPlan(plan) { result in
+            switch result {
+            case .success:
+                DispatchQueue.main.async {
+                    self.dismiss()
+                }
+            case .failure(let error):
+                print("下書き保存エラー: \(error)")
+            }
+        }
     }
 }
 

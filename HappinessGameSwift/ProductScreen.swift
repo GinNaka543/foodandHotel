@@ -122,36 +122,41 @@ struct ProductScreen: View {
             .padding(.horizontal, 12)
             .padding(.top, 8)
             
-            // タブUI - シンプルに2つのみ
-            HStack(spacing: 40) {
-                Button(action: {
-                    selectedTab = "おすすめ"
-                }) {
-                    VStack(spacing: 4) {
+            // タブUI - カプセル型デザイン（中央揃え）
+            HStack {
+                Spacer()
+                HStack(spacing: 12) {
+                    Button(action: {
+                        selectedTab = "おすすめ"
+                    }) {
                         Text("おすすめ")
-                            .font(.system(size: 16, weight: selectedTab == "おすすめ" ? .semibold : .regular))
-                            .foregroundColor(selectedTab == "おすすめ" ? .black : .gray)
-                        Rectangle()
-                            .frame(height: 2)
-                            .foregroundColor(selectedTab == "おすすめ" ? .black : .clear)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(selectedTab == "おすすめ" ? .white : .black)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(selectedTab == "おすすめ" ? Color(.darkGray) : Color(.systemGray5))
+                            )
                     }
-                }
-                
-                Button(action: {
-                    selectedTab = "欲しい商品"
-                }) {
-                    VStack(spacing: 4) {
+                    
+                    Button(action: {
+                        selectedTab = "欲しい商品"
+                    }) {
                         Text("欲しい商品")
-                            .font(.system(size: 16, weight: selectedTab == "欲しい商品" ? .semibold : .regular))
-                            .foregroundColor(selectedTab == "欲しい商品" ? .black : .gray)
-                        Rectangle()
-                            .frame(height: 2)
-                            .foregroundColor(selectedTab == "欲しい商品" ? .black : .clear)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(selectedTab == "欲しい商品" ? .white : .black)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(selectedTab == "欲しい商品" ? Color(.darkGray) : Color(.systemGray5))
+                            )
                     }
                 }
+                Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
+            .padding(.vertical, 8)
             
             if selectedTab == "おすすめ" {
                 // Firebase広告

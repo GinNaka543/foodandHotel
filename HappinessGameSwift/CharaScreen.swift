@@ -837,8 +837,13 @@ struct AboutView: View {
     @State private var editedVoiceActor: String = ""
     @State private var editedCupSize: String = ""
     @State private var editedBirthday: Date = Date()
+    @State private var editedTag: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
+    @State private var showEditSelection: Bool = false
+    @State private var showIconPicker: Bool = false
+    @State private var iconPickerItem: PhotosPickerItem? = nil
+    @State private var newIconImage: UIImage? = nil
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var characterManager: CharacterManager
 
@@ -854,16 +859,60 @@ struct AboutView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
+                    // キャラクターアイコン
+                    if let character = character {
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                showIconPicker = true
+                            }) {
+                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 100, height: 100)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                        .overlay(
+                                            Circle()
+                                                .fill(Color.black.opacity(0.5))
+                                                .frame(width: 100, height: 100)
+                                                .overlay(
+                                                    Image(systemName: "camera.fill")
+                                                        .font(.system(size: 20))
+                                                        .foregroundColor(.white)
+                                                )
+                                                .opacity(0)
+                                        )
+                                } else {
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 100, height: 100)
+                                        .overlay(
+                                            VStack(spacing: 4) {
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 40))
+                                                    .foregroundColor(.gray)
+                                                Text("タップで追加")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.gray)
+                                            }
+                                        )
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .padding(.top, 20)
+                        .padding(.bottom, 10)
+                    }
+                    
                     // プロフィールセクション
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Text("プロフィール")
                                 .font(.system(size: 20, weight: .bold))
-                            Button(action: { isEditingProfile.toggle() }) {
-                                Image(systemName: isEditingProfile ? "checkmark.circle.fill" : "pencil")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.blue)
-                            }
                             Spacer()
                         }
                         .padding(.horizontal, 20)
@@ -874,6 +923,8 @@ struct AboutView: View {
                         VStack(spacing: 0) {
                             if isEditingProfile {
                                 editableProfileRow(label: "名前", text: $editedName)
+                                Divider().padding(.leading, 20)
+                                editableProfileRow(label: "タグ", text: $editedTag)
                                 Divider().padding(.leading, 20)
                                 dateProfileRow(label: "誕生日", date: $editedBirthday)
                                 Divider().padding(.leading, 20)
@@ -886,6 +937,8 @@ struct AboutView: View {
                                 editableProfileRow(label: "カップ数", text: $editedCupSize)
                             } else {
                                 profileRow(label: "名前", value: character?.name ?? "")
+                                Divider().padding(.leading, 20)
+                                profileRow(label: "タグ", value: "#\(character?.tag ?? "")")
                                 Divider().padding(.leading, 20)
                                 profileRow(label: "誕生日", value: DateFormatter.monthDayJapanese.string(from: character?.birthday ?? Date()))
                                 Divider().padding(.leading, 20)
@@ -908,13 +961,6 @@ struct AboutView: View {
                         HStack {
                             Text("概要")
                                 .font(.system(size: 20, weight: .bold))
-                            Button(action: { 
-                                isEditingDescription.toggle()
-                            }) {
-                                Image(systemName: isEditingDescription ? "checkmark.circle.fill" : "pencil")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.blue)
-                            }
                             Spacer()
                         }
                         .padding(.horizontal, 20)
@@ -973,6 +1019,20 @@ struct AboutView: View {
                 leading: Button("閉じる") {
                     saveCharacter()
                     onClose()
+                },
+                trailing: Button(action: {
+                    if isEditingProfile || isEditingDescription {
+                        // 保存処理
+                        saveCharacter()
+                        isEditingProfile = false
+                        isEditingDescription = false
+                    } else {
+                        // 編集選択モーダルを表示
+                        showEditSelection = true
+                    }
+                }) {
+                    Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
+                        .foregroundColor(.blue)
                 }
             )
         }
@@ -985,10 +1045,78 @@ struct AboutView: View {
                 editedVoiceActor = character.voiceActor
                 editedCupSize = character.cupSize
                 editedBirthday = character.birthday
+                editedTag = character.tag
             }
         }
         .onDisappear {
             saveCharacter()
+        }
+        .actionSheet(isPresented: $showEditSelection) {
+            ActionSheet(
+                title: Text("編集する項目を選択してください"),
+                buttons: [
+                    .default(Text("プロフィールを編集")) {
+                        isEditingProfile = true
+                    },
+                    .default(Text("概要を編集")) {
+                        isEditingDescription = true
+                    },
+                    .cancel(Text("キャンセル"))
+                ]
+            )
+        }
+        .sheet(isPresented: $showIconPicker) {
+            PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                VStack(spacing: 20) {
+                    Text("アイコンを選択")
+                        .font(.headline)
+                    
+                    if let newIconImage = newIconImage {
+                        Image(uiImage: newIconImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 150, height: 150)
+                            .clipShape(Circle())
+                    }
+                    
+                    Button("画像を選択") {
+                        // PhotosPickerが自動で処理
+                    }
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    
+                    if newIconImage != nil {
+                        Button("保存") {
+                            saveNewIcon()
+                            showIconPicker = false
+                        }
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                    }
+                    
+                    Button("キャンセル") {
+                        showIconPicker = false
+                        newIconImage = nil
+                        iconPickerItem = nil
+                    }
+                    .foregroundColor(.red)
+                }
+                .padding()
+            }
+            .onChange(of: iconPickerItem) { newValue in
+                if let newValue = newValue {
+                    Task {
+                        if let data = try? await newValue.loadTransferable(type: Data.self),
+                           let image = UIImage(data: data) {
+                            newIconImage = image
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -1088,14 +1216,14 @@ struct AboutView: View {
         // 編集中の場合は編集内容を保存
         var updatedCharacter = characters[idx]
         
-        if isEditingProfile {
-            updatedCharacter.name = editedName
-            updatedCharacter.age = editedAge
-            updatedCharacter.favoriteFood = editedFavoriteFood
-            updatedCharacter.voiceActor = editedVoiceActor
-            updatedCharacter.cupSize = editedCupSize
-            updatedCharacter.birthday = editedBirthday
-        }
+        // プロフィール編集内容を常に保存
+        updatedCharacter.name = editedName
+        updatedCharacter.age = editedAge
+        updatedCharacter.favoriteFood = editedFavoriteFood
+        updatedCharacter.voiceActor = editedVoiceActor
+        updatedCharacter.cupSize = editedCupSize
+        updatedCharacter.birthday = editedBirthday
+        updatedCharacter.tag = editedTag
         
         // 概要をカスタムフィールドに保存
         if updatedCharacter.customFields == nil {
@@ -1111,6 +1239,51 @@ struct AboutView: View {
         
         characters[idx] = updatedCharacter
         characterManager.updateCharacter(updatedCharacter)
+    }
+    
+    // アイコン保存機能
+    private func saveNewIcon() {
+        guard let newIconImage = newIconImage,
+              let idx = characters.firstIndex(where: { $0.id == characterId }) else { return }
+        
+        // 画像をDocumentsディレクトリに保存
+        let fileName = "character_icon_\(UUID().uuidString).png"
+        if let savedPath = saveImageToDocuments(newIconImage, fileName: fileName) {
+            var updatedCharacter = characters[idx]
+            
+            // 古いアイコンを削除
+            if let oldPath = updatedCharacter.imageIdentifier {
+                try? FileManager.default.removeItem(atPath: oldPath)
+            }
+            
+            // 新しいアイコンパスを設定
+            updatedCharacter.imageIdentifier = savedPath
+            
+            characters[idx] = updatedCharacter
+            characterManager.updateCharacter(updatedCharacter)
+        }
+        
+        newIconImage = nil
+        iconPickerItem = nil
+    }
+    
+    // 画像をDocumentsディレクトリに保存
+    private func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
+        
+        let fileManager = FileManager.default
+        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+        guard let documentsURL = urls.first else { return nil }
+        
+        let fileURL = documentsURL.appendingPathComponent(fileName)
+        
+        do {
+            try data.write(to: fileURL)
+            return fileURL.path
+        } catch {
+            print("画像保存エラー: \(error)")
+            return nil
+        }
     }
 }
 

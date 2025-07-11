@@ -58,7 +58,7 @@ struct HomeScreen: View {
     
     // キャラクター名を30文字以内で表示する関数
     private func getCharacterNamesText() -> String {
-        let names = characterManager.characters.map { $0.name }
+        let names = characterManager.characters.filter { !$0.name.isEmpty }.map { $0.name }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
             return joinedNames.isEmpty ? "キャラクターが登録されていません" : joinedNames
@@ -271,7 +271,7 @@ struct HomeScreen: View {
                                 .foregroundColor(.gray)
                         }
                         Spacer()
-                        Text("\(characterManager.characters.count)")
+                        Text("\(characterManager.characters.filter { !$0.name.isEmpty }.count)")
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                     }

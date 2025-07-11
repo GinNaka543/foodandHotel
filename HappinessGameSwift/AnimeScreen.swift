@@ -178,11 +178,11 @@ struct AnimeScreen: View {
     @EnvironmentObject var mainTab: MainTabSelection
     
     enum AnimeTab: String, CaseIterable {
-        case all = "ALL"
-        case watching = "Watching"
-        case thisTerm = "This term"
-        case willWatch = "Will watch"
-        case watchAgain = "Watch again"
+        case all = "すべて"
+        case watching = "視聴中"
+        case thisTerm = "今期"
+        case willWatch = "視聴予定"
+        case watchAgain = "再視聴"
     }
     
     var filteredAnimes: [Anime] {

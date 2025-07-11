@@ -68,11 +68,11 @@ struct MainContainerView: View {
         
         var title: String {
             switch self {
-            case .home: return "Home"
-            case .chara: return "Chara"
-            case .anime: return "Anime"
-            case .visit: return "Visit"
-            case .card: return "Product"
+            case .home: return "ホーム"
+            case .chara: return "キャラ"
+            case .anime: return "アニメ"
+            case .visit: return "訪問"
+            case .card: return "プロダクト"
             }
         }
     }

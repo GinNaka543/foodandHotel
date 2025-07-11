@@ -187,7 +187,7 @@ struct HomeScreen: View {
                     .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 24)
+                .padding(.top, 9)
                 // ステータスボタン
                 HStack {
                     Button(action: {
@@ -223,8 +223,8 @@ struct HomeScreen: View {
                 .padding(.top, 12)
                 // リスト
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Friend lists")
-                        .font(.system(size: 18, weight: .bold))
+                    Text("Favorite lists")
+                        .font(.system(size: 19, weight: .bold))
                         .padding(.top, 16)
                         .padding(.bottom, 4)
                     
@@ -315,14 +315,21 @@ struct HomeScreen: View {
                     }
                 }
                 .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+                
+                // 人気キャラランキングセクション
+                // タイトルはCharacterRankingScrollView内で表示
+                CharacterRankingScrollView()
+                    .frame(height: 140) // 1.4倍サイズ用に高さ調整
+                .padding(.top, 1)
+                .padding(.bottom, 6)
                 
                 // インフォメーションタイトル
                 HStack {
                     Text("Information")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 19, weight: .bold))
                     Spacer()
                 }
-                .padding(.top, 16)
                 .padding(.horizontal, 20)
 
                 // 広告バナー（1つの広告を表示、高さを1.3倍に）
@@ -335,7 +342,7 @@ struct HomeScreen: View {
                     Spacer()
                 }
                 .padding(.top, 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, 12)
             }
         }
         .background(Color.white)

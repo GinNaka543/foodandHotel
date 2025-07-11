@@ -1360,12 +1360,11 @@ struct AnimeAboutView: View {
                 }) {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .font(.system(size: 18, weight: .medium))
                         Text("Back")
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .font(.system(size: 17, weight: .medium))
-                            .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                     }
                 }
                 .padding(.top, 24)
@@ -1400,8 +1399,7 @@ struct AnimeAboutView: View {
                     // タイトル
                     Text(nameText)
                         .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        .foregroundColor(.black)
                         .padding(.top, 20)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .onTapGesture {
@@ -1514,6 +1512,7 @@ struct AnimeAboutView: View {
                         animeManager.updateAnime(updatedAnime)
                         showEditNameModal = false
                     }
+                    .disabled(editName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .padding()
@@ -1620,6 +1619,7 @@ struct AnimeAboutView: View {
                         newFieldName = ""
                         newFieldValue = ""
                     }
+                    .disabled(newFieldName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .padding()
@@ -1979,29 +1979,35 @@ struct AnimeDetailView: View {
                     HStack {
                         Spacer()
                         Button(action: { showArtwork = true }) {
-                            VStack {
+                            VStack(spacing: 4) {
                                 Image(systemName: "photo.on.rectangle")
                                     .foregroundColor(.white)
+                                    .font(.system(size: 24))
                                 Text("ArtWork").font(.caption2).foregroundColor(.white)
                             }
+                            .frame(width: 80, height: 60)
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
                         Button(action: { showVideo = true }) {
-                            VStack {
+                            VStack(spacing: 4) {
                                 Image(systemName: "video")
                                     .foregroundColor(.white)
+                                    .font(.system(size: 24))
                                 Text("Video").font(.caption2).foregroundColor(.white)
                             }
+                            .frame(width: 80, height: 60)
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
                         Button(action: { showAbout = true }) {
-                            VStack {
+                            VStack(spacing: 4) {
                                 Image(systemName: "info.circle")
                                     .foregroundColor(.white)
+                                    .font(.system(size: 24))
                                 Text("About").font(.caption2).foregroundColor(.white)
                             }
+                            .frame(width: 80, height: 60)
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -2048,6 +2054,7 @@ struct AnimeDetailView: View {
                         animeManager.updateAnime(updatedAnime)
                         showEditTitleModal = false
                     }
+                    .disabled(editTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .padding()

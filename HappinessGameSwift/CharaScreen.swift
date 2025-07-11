@@ -607,6 +607,11 @@ struct CharacterDetailView: View {
                             .padding(.top, 20)
                             .frame(maxWidth: .infinity)
                             .multilineTextAlignment(.center)
+                            .onTapGesture {
+                                editName = currentCharacter.name
+                                editTag = currentCharacter.tag
+                                showEditNameModal = true
+                            }
                         Spacer()
                     }
                     // 誕生日
@@ -621,29 +626,35 @@ struct CharacterDetailView: View {
                     HStack {
                         Spacer()
                         Button(action: { showArtwork = true }) {
-                            VStack {
+                            VStack(spacing: 4) {
                                 Image(systemName: "photo.on.rectangle")
                                     .foregroundColor(.white)
+                                    .font(.system(size: 24))
                                 Text("ArtWork").font(.caption2).foregroundColor(.white)
                             }
+                            .frame(width: 80, height: 60)
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
                         Button(action: { showVideo = true }) {
-                            VStack {
+                            VStack(spacing: 4) {
                                 Image(systemName: "video")
                                     .foregroundColor(.white)
+                                    .font(.system(size: 24))
                                 Text("Video").font(.caption2).foregroundColor(.white)
                             }
+                            .frame(width: 80, height: 60)
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
                         Button(action: { showAbout = true }) {
-                            VStack {
+                            VStack(spacing: 4) {
                                 Image(systemName: "info.circle")
                                     .foregroundColor(.white)
+                                    .font(.system(size: 24))
                                 Text("About").font(.caption2).foregroundColor(.white)
                             }
+                            .frame(width: 80, height: 60)
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -705,6 +716,7 @@ struct CharacterDetailView: View {
                         characterManager.updateCharacter(updatedCharacter)
                         showEditNameModal = false
                     }
+                    .disabled(editName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             .padding()
@@ -1135,6 +1147,7 @@ struct AboutView: View {
                         characterManager.objectWillChange.send()
                     }
                 }
+                .disabled(newFieldName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding()
@@ -1197,6 +1210,9 @@ struct AboutView: View {
             }
             HStack {
                 Button("キャンセル") {
+                    // 元の値に戻す
+                    editName = character?.name ?? ""
+                    editTag = character?.tag ?? ""
                     showEditNameModal = false
                 }
                 Spacer()
@@ -1209,6 +1225,7 @@ struct AboutView: View {
                     characterManager.updateCharacter(updatedCharacter)
                     showEditNameModal = false
                 }
+                .disabled(editName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding()

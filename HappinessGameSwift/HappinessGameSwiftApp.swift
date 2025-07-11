@@ -71,7 +71,7 @@ struct MainContainerView: View {
             case .home: return "ホーム"
             case .chara: return "キャラ"
             case .anime: return "アニメ"
-            case .visit: return "訪問"
+            case .visit: return "聖地旅"
             case .card: return "プロダクト"
             }
         }
@@ -452,6 +452,7 @@ struct AnimeContentView: View {
             .environmentObject(animeManager)
         }
     }
+
 }
 
 struct VisitContentView: View {

@@ -155,10 +155,31 @@ struct ProductScreen: View {
             
             if selectedTab == "おすすめ" {
                 // Firebase広告
-                FirebaseAdView(placement: "product")
-                    .padding(.top, 8)
-                
-                Spacer()
+                ScrollView {
+                    VStack(spacing: 0) {
+                        FirebaseAdView(placement: "product")
+                            .padding(.top, 8)
+                        
+                        // おすすめ商品リスト
+                        VStack(spacing: 0) {
+                            ForEach(filteredProducts) { product in
+                                Button(action: {
+                                    selectedProduct = product
+                                }) {
+                                    ProductRow(product: product)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                
+                                Divider()
+                                    .padding(.leading, 16)
+                            }
+                        }
+                        .padding(.top, 16)
+                    }
+                    .padding(.bottom, 100)
+                }
             } else {
                 // 欲しい商品リスト
                 ScrollView {

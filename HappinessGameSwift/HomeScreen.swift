@@ -261,7 +261,7 @@ struct HomeScreen: View {
                     // Characters
                     HStack {
                         FriendListIconView(
-                            images: characterManager.characters.prefix(4).map { char in
+                            images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).map { char in
                                 if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
                             },
                             fallbackSystemName: "person",
@@ -342,7 +342,7 @@ struct HomeScreen: View {
         .fullScreenCover(isPresented: $showListPage) {
             ListPageScreen(
                 selectedTab: initialTab,
-                characters: characterManager.characters,
+                characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
                 animes: animeManager.animes,
                 birthdays: getBirthdayReminderCharacters()
             )

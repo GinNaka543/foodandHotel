@@ -197,6 +197,9 @@ struct AdvertisementRow: View {
                     .font(.caption)
                 Label("\(advertisement.clicks)", systemImage: "hand.tap")
                     .font(.caption)
+                Label("\(Int(advertisement.displayRate))%", systemImage: "percent")
+                    .font(.caption)
+                    .foregroundColor(.orange)
                 Spacer()
                 Text(advertisement.placements.joined(separator: ", "))
                     .font(.caption)
@@ -235,6 +238,7 @@ struct AdvertisementEditView: View {
     @State private var isActive: Bool = true
     @State private var expiresAt: Date = Date().addingTimeInterval(30 * 24 * 60 * 60)
     @State private var hasExpiration: Bool = false
+    @State private var displayRate: Double = 100.0
     
     @Environment(\.dismiss) private var dismiss
     
@@ -362,6 +366,17 @@ struct AdvertisementEditView: View {
                     
                     Toggle("アクティブ", isOn: $isActive)
                     
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("表示率: \(Int(displayRate))%")
+                            .font(.headline)
+                        Slider(value: $displayRate, in: 0...100, step: 5) {
+                            Text("表示率")
+                        }
+                        Text("この広告が表示される確率を設定します（0-100%）")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    
                     Toggle("有効期限を設定", isOn: $hasExpiration)
                     if hasExpiration {
                         DatePicker("有効期限", selection: $expiresAt, displayedComponents: [.date])
@@ -391,6 +406,7 @@ struct AdvertisementEditView: View {
                     linkURL = ad.linkURL
                     selectedPlacements = Set(ad.placements)
                     isActive = ad.isActive
+                    displayRate = ad.displayRate
                     if let expires = ad.expiresAt {
                         expiresAt = expires
                         hasExpiration = true
@@ -418,6 +434,7 @@ struct AdvertisementEditView: View {
             targetCharacters: advertisement?.targetCharacters ?? [],
             targetHashtags: advertisement?.targetHashtags ?? [],
             placements: Array(selectedPlacements),
+            displayRate: displayRate,
             impressions: advertisement?.impressions ?? 0,
             clicks: advertisement?.clicks ?? 0,
             isActive: isActive,

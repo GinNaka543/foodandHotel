@@ -362,15 +362,30 @@ struct FirebaseAdView: View {
                 print("🎯 [FirebaseAdView] ターゲット広告: \(targetAds.count)件")
                 print("📢 [FirebaseAdView] 一般広告: \(generalAds.count)件")
                 
-                // --- 表示枠数の制御 ---
-                let maxAds = placement == "home" ? 2 : (placement == "anime" ? 5 : 1)
+                // --- 確率ベースの広告選択 ---
                 var resultAds: [Advertisement] = []
-                resultAds.append(contentsOf: targetAds.prefix(maxAds))
-                if resultAds.count < maxAds {
-                    let remaining = maxAds - resultAds.count
-                    let filteredGeneral = generalAds.filter { ad in !resultAds.contains(where: { $0.id == ad.id }) }
-                    resultAds.append(contentsOf: filteredGeneral.prefix(remaining))
+                
+                // ターゲット広告を優先的に選択（表示率を考慮）
+                for ad in targetAds {
+                    let probability = ad.displayRate / 100.0
+                    if Double.random(in: 0.0...1.0) <= probability {
+                        resultAds.append(ad)
+                    }
                 }
+                
+                // 一般広告から選択（表示率を考慮）
+                for ad in generalAds {
+                    let probability = ad.displayRate / 100.0
+                    if Double.random(in: 0.0...1.0) <= probability {
+                        resultAds.append(ad)
+                    }
+                }
+                
+                // アニメページは最大5つまで表示
+                if placement == "anime" && resultAds.count > 5 {
+                    resultAds = Array(resultAds.prefix(5))
+                }
+                
                 // ターゲット広告を上に表示するため、配列の順序を調整
                 let targetAdsInResult = resultAds.filter { ad in
                     (ad.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||

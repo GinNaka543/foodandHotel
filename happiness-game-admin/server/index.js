@@ -136,7 +136,8 @@ app.post('/api/advertisements', async (req, res) => {
       targetHashtags,
       expiresAt,
       placements,
-      displayRate
+      displayRate,
+      priority
     } = req.body;
 
     // 既存の広告を取得して重複をチェック
@@ -199,6 +200,7 @@ app.post('/api/advertisements', async (req, res) => {
       targetHashtags: targetHashtags || [],
       placements: placements || [],
       displayRate: displayRate || 100,
+      priority: priority || 5,
       impressions: 0,
       clicks: 0,
       isActive: true,

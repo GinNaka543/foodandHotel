@@ -363,13 +363,13 @@ struct FirebaseAdView: View {
                 print("📢 [FirebaseAdView] 一般広告: \(generalAds.count)件")
                 
                 // --- 確率ベースの広告選択 ---
-                var resultAds: [Advertisement] = []
+                var candidateAds: [Advertisement] = []
                 
                 // ターゲット広告を優先的に選択（表示率を考慮）
                 for ad in targetAds {
                     let probability = ad.displayRate / 100.0
                     if Double.random(in: 0.0...1.0) <= probability {
-                        resultAds.append(ad)
+                        candidateAds.append(ad)
                     }
                 }
                 
@@ -377,25 +377,31 @@ struct FirebaseAdView: View {
                 for ad in generalAds {
                     let probability = ad.displayRate / 100.0
                     if Double.random(in: 0.0...1.0) <= probability {
-                        resultAds.append(ad)
+                        candidateAds.append(ad)
                     }
                 }
                 
-                // アニメページは最大5つまで表示
-                if placement == "anime" && resultAds.count > 5 {
-                    resultAds = Array(resultAds.prefix(5))
+                // 優先度でソート
+                candidateAds.sort { ad1, ad2 in
+                    // まずターゲット広告を優先
+                    let isTarget1 = (ad1.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||
+                                   (ad1.targetCharacters.first(where: { userCharacters.contains($0) }) != nil) ||
+                                   (ad1.targetHashtags.first(where: { userHashtags.contains($0) }) != nil)
+                    let isTarget2 = (ad2.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||
+                                   (ad2.targetCharacters.first(where: { userCharacters.contains($0) }) != nil) ||
+                                   (ad2.targetHashtags.first(where: { userHashtags.contains($0) }) != nil)
+                    
+                    if isTarget1 != isTarget2 {
+                        return isTarget1
+                    }
+                    
+                    // 同じタイプの場合は優先度でソート
+                    return ad1.priority > ad2.priority
                 }
                 
-                // ターゲット広告を上に表示するため、配列の順序を調整
-                let targetAdsInResult = resultAds.filter { ad in
-                    (ad.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||
-                    (ad.targetCharacters.first(where: { userCharacters.contains($0) }) != nil) ||
-                    (ad.targetHashtags.first(where: { userHashtags.contains($0) }) != nil)
-                }
-                let generalAdsInResult = resultAds.filter { ad in
-                    (ad.targetAnimes.isEmpty && ad.targetCharacters.isEmpty && ad.targetHashtags.isEmpty)
-                }
-                self.advertisements = targetAdsInResult + generalAdsInResult
+                // 最大表示数の制限
+                let maxAds = placement == "anime" ? 5 : (placement == "home" ? 10 : Int.max)
+                self.advertisements = Array(candidateAds.prefix(maxAds))
                 
                 print("🎬 [FirebaseAdView] 最終的に表示する広告: \(self.advertisements.count)件")
                 for (index, ad) in self.advertisements.enumerated() {

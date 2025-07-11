@@ -55,7 +55,8 @@ function CreateAd() {
     targetHashtags: [],
     expiresAt: '',
     placements: generalPage ? [generalPage] : [],
-    displayRate: 100
+    displayRate: 100,
+    priority: 5
   });
   
   const [inputValues, setInputValues] = useState({
@@ -78,7 +79,8 @@ function CreateAd() {
             expiresAt: (ad.expiresAt && !isNaN(new Date(ad.expiresAt)))
               ? new Date(ad.expiresAt).toISOString().slice(0, 16)
               : '',
-            displayRate: ad.displayRate || 100
+            displayRate: ad.displayRate || 100,
+            priority: ad.priority || 5
           });
         }
       });
@@ -457,6 +459,51 @@ function CreateAd() {
             </div>
             <div style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.25rem' }}>
               この広告が表示される確率を設定します（0-100%）
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>優先度（1-10）</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <input
+                type="range"
+                name="priority"
+                min="1"
+                max="10"
+                step="1"
+                value={formData.priority}
+                onChange={handleChange}
+                style={{ flex: 1 }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '120px' }}>
+                {[...Array(formData.priority)].map((_, i) => (
+                  <span key={i} style={{ 
+                    color: formData.priority >= 8 ? '#9c27b0' : formData.priority >= 4 ? '#2196f3' : '#ff9800',
+                    fontSize: '1.2rem'
+                  }}>★</span>
+                ))}
+                <span style={{ 
+                  marginLeft: '0.5rem',
+                  padding: '0.5rem',
+                  backgroundColor: formData.priority >= 8 ? '#f3e5f5' : formData.priority >= 4 ? '#e3f2fd' : '#fff3e0',
+                  color: formData.priority >= 8 ? '#9c27b0' : formData.priority >= 4 ? '#2196f3' : '#ff9800',
+                  borderRadius: '4px',
+                  fontWeight: '500',
+                  minWidth: '30px',
+                  textAlign: 'center'
+                }}>
+                  {formData.priority}
+                </span>
+              </div>
+            </div>
+            <div style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              高い優先度の広告が優先的に表示されます
+              <br />
+              ・1-3: ベーシック（オレンジ）
+              <br />
+              ・4-7: スタンダード（青）
+              <br />
+              ・8-10: プレミアム（紫）
             </div>
           </div>
 

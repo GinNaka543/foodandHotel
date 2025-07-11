@@ -167,6 +167,7 @@ function Advertisements() {
                 <th>ターゲット</th>
                 <th>配置場所</th>
                 <th>表示率</th>
+                <th>優先度</th>
                 <th>表示回数</th>
                 <th>クリック数</th>
                 <th>CTR</th>
@@ -216,6 +217,21 @@ function Advertisements() {
                     }}>
                       {ad.displayRate || 100}%
                     </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      {[...Array(ad.priority || 5)].map((_, i) => (
+                        <span key={i} style={{ 
+                          color: ad.priority >= 8 ? '#9c27b0' : ad.priority >= 4 ? '#2196f3' : '#ff9800',
+                          fontSize: '0.875rem'
+                        }}>★</span>
+                      ))}
+                      <span style={{ 
+                        fontSize: '0.75rem', 
+                        color: '#666',
+                        marginLeft: '0.25rem' 
+                      }}>({ad.priority || 5})</span>
+                    </div>
                   </td>
                   <td>{ad.impressions || 0}</td>
                   <td>{ad.clicks || 0}</td>

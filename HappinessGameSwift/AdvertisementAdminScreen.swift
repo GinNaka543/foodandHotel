@@ -158,6 +158,19 @@ struct AdvertisementAdminScreen: View {
 }
 
 struct AdvertisementRow: View {
+    private func priorityColor(for level: Int) -> Color {
+        switch level {
+        case 1...3:
+            return .orange
+        case 4...7:
+            return .blue
+        case 8...10:
+            return .purple
+        default:
+            return .gray
+        }
+    }
+    
     let advertisement: Advertisement
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -200,6 +213,9 @@ struct AdvertisementRow: View {
                 Label("\(Int(advertisement.displayRate))%", systemImage: "percent")
                     .font(.caption)
                     .foregroundColor(.orange)
+                Label("\(advertisement.priority)", systemImage: "star.fill")
+                    .font(.caption)
+                    .foregroundColor(priorityColor(for: advertisement.priority))
                 Spacer()
                 Text(advertisement.placements.joined(separator: ", "))
                     .font(.caption)
@@ -239,6 +255,7 @@ struct AdvertisementEditView: View {
     @State private var expiresAt: Date = Date().addingTimeInterval(30 * 24 * 60 * 60)
     @State private var hasExpiration: Bool = false
     @State private var displayRate: Double = 100.0
+    @State private var priority: Int = 5
     
     @Environment(\.dismiss) private var dismiss
     
@@ -377,6 +394,30 @@ struct AdvertisementEditView: View {
                             .foregroundColor(.gray)
                     }
                     
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("優先度: \(priority)")
+                            .font(.headline)
+                        Slider(value: Binding(
+                            get: { Double(priority) },
+                            set: { priority = Int($0) }
+                        ), in: 1...10, step: 1) {
+                            Text("優先度")
+                        }
+                        HStack(spacing: 8) {
+                            ForEach(1...10, id: \.self) { level in
+                                Text("\(level)")
+                                    .font(.caption)
+                                    .frame(width: 20, height: 20)
+                                    .background(level <= priority ? priorityColor(for: level) : Color.gray.opacity(0.2))
+                                    .foregroundColor(level <= priority ? .white : .gray)
+                                    .clipShape(Circle())
+                            }
+                        }
+                        Text("高い優先度の広告が優先的に表示されます（1-10）")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    
                     Toggle("有効期限を設定", isOn: $hasExpiration)
                     if hasExpiration {
                         DatePicker("有効期限", selection: $expiresAt, displayedComponents: [.date])
@@ -407,6 +448,7 @@ struct AdvertisementEditView: View {
                     selectedPlacements = Set(ad.placements)
                     isActive = ad.isActive
                     displayRate = ad.displayRate
+                    priority = ad.priority
                     if let expires = ad.expiresAt {
                         expiresAt = expires
                         hasExpiration = true
@@ -435,6 +477,7 @@ struct AdvertisementEditView: View {
             targetHashtags: advertisement?.targetHashtags ?? [],
             placements: Array(selectedPlacements),
             displayRate: displayRate,
+            priority: priority,
             impressions: advertisement?.impressions ?? 0,
             clicks: advertisement?.clicks ?? 0,
             isActive: isActive,
@@ -444,6 +487,19 @@ struct AdvertisementEditView: View {
         
         onSave(newAd)
         dismiss()
+    }
+    
+    private func priorityColor(for level: Int) -> Color {
+        switch level {
+        case 1...3:
+            return .orange
+        case 4...7:
+            return .blue
+        case 8...10:
+            return .purple
+        default:
+            return .gray
+        }
     }
     
     private func fetchImageFromURL() {

@@ -90,6 +90,10 @@ struct HomeScreen: View {
         let threeDaysLater = calendar.date(byAdding: .day, value: 3, to: today) ?? today
         
         return characterManager.characters.filter { character in
+            // 名前が空の場合は除外
+            guard !character.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return false
+            }
             // 誕生日の月日を取得
             let birthdayMonth = calendar.component(.month, from: character.birthday)
             let birthdayDay = calendar.component(.day, from: character.birthday)

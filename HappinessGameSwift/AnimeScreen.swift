@@ -1327,400 +1327,266 @@ struct AnimeAboutView: View {
     @Binding var anime: Anime
     @Binding var animes: [Anime]
     let onClose: () -> Void
-    @State private var showEditNameModal = false
-    @State private var showEditReleaseDateModal = false
-    @State private var showEditIconModal = false
-    @State private var editName: String = ""
-    @State private var editHashtag: String = ""
-    @State private var editReleaseDate: Date = Date()
-    @State private var iconPickerItem: PhotosPickerItem? = nil
-    @State private var iconImage: UIImage? = nil
-    @State private var tempIconImage: UIImage? = nil
-    @State private var showAddFieldPopup = false
-    @State private var newFieldName = ""
-    @State private var newFieldValue = ""
-    @State private var showEditFieldPopup = false
-    @State private var editFieldIndex: Int? = nil
-    @State private var editFieldName = ""
-    @State private var editFieldValue = ""
+    @State private var animeDescription: String = ""
+    @State private var editedTitle: String = ""
+    @State private var editedHashtag: String = ""
+    @State private var editedReleaseDate: Date = Date()
+    @State private var editedWatchStatuses: Set<WatchStatus> = []
+    @State private var isEditingProfile: Bool = false
+    @State private var isEditingDescription: Bool = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
-    @State private var showEditWatchStatusModal = false
-    @State private var editWatchStatuses: Set<WatchStatus> = []
     
     var body: some View {
-        GeometryReader { geometry in
-            let currentAnime = animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
-            let nameText = currentAnime.title
-            let releaseDateText = DateFormatter.monthDayEnglish.string(from: currentAnime.releaseDate)
-            
-            ZStack(alignment: .topLeading) {
-                Color(.systemBackground).ignoresSafeArea()
-                Button(action: {
-                    onClose()
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.black)
-                            .font(.system(size: 18, weight: .medium))
-                        Text("Back")
-                            .foregroundColor(.black)
-                            .font(.system(size: 17, weight: .medium))
-                    }
-                }
-                .padding(.top, 24)
-                .padding(.leading, 16)
-                
-                // メインコンテンツ
-                VStack {
-                    Spacer().frame(height: 180 + 50)
-                    ZStack {
-                        if let imageIdentifier = currentAnime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 120, height: 120)
-                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                                .shadow(radius: 8)
-                        } else {
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .fill(Color.black.opacity(0.2))
-                                .frame(width: 120, height: 120)
-                                .shadow(radius: 8)
-                                .overlay(
-                                    Image(systemName: "film")
-                                        .font(.system(size: 50))
-                                        .foregroundColor(.white)
-                                )
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture { showEditIconModal = true }
-                    
-                    // タイトル
-                    Text(nameText)
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.black)
-                        .padding(.top, 20)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .onTapGesture {
-                            editName = currentAnime.title
-                            editHashtag = currentAnime.hashtag
-                            showEditNameModal = true
-                        }
-                    
-                    // 公開日
-                    Text(releaseDateText.uppercased())
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.gray)
-                        .padding(.top, 8)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .onTapGesture {
-                            editReleaseDate = currentAnime.releaseDate
-                            showEditReleaseDateModal = true
-                        }
-                    
-                    // 視聴ステータス
-                    VStack(spacing: 4) {
-                        Text("ステータス")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                        if currentAnime.watchStatuses.isEmpty {
-                            Text("なし")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.gray)
-                        } else {
-                            HStack(spacing: 8) {
-                                ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
-                                    Text(status.rawValue)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue)
-                                        .cornerRadius(12)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .onTapGesture {
-                        editWatchStatuses = Set(currentAnime.watchStatuses)
-                        showEditWatchStatusModal = true
-                    }
-                    
-                    // カスタムフィールド
-                    VStack(spacing: 20) {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // プロフィールセクション
+                    VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Spacer()
-                            Button(action: { showAddFieldPopup = true }) {
-                                Image(systemName: "plus.circle")
-                                    .font(.system(size: 20, weight: .bold))
+                            Text("プロフィール")
+                                .font(.system(size: 20, weight: .bold))
+                            Button(action: { isEditingProfile.toggle() }) {
+                                Image(systemName: isEditingProfile ? "checkmark.circle.fill" : "pencil")
+                                    .font(.system(size: 16))
                                     .foregroundColor(.blue)
                             }
+                            Spacer()
                         }
+                        .padding(.horizontal, 20)
                         .padding(.top, 20)
+                        .padding(.bottom, 16)
                         
-                        ForEach(Array((currentAnime.customFields ?? []).enumerated()), id: \.element.name) { index, field in
-                            HStack {
-                                Text(field.name)
-                                    .font(.system(size: 16, weight: .medium))
-                                Spacer()
-                                Text(field.value.isEmpty ? "入力" : field.value)
-                                    .foregroundColor(field.value.isEmpty ? .gray : .primary)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(maxWidth: 200, alignment: .trailing)
-                                    .lineLimit(nil)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            .padding(.horizontal, 24)
-                            .onTapGesture {
-                                editFieldIndex = index
-                                editFieldName = field.name
-                                editFieldValue = field.value
-                                showEditFieldPopup = true
-                            }
-                        }
-                    }
-                }
-                .frame(width: geometry.size.width)
-            }
-        }
-        .navigationBarHidden(true)
-        // 名前編集モーダル
-        .sheet(isPresented: $showEditNameModal) {
-            VStack(spacing: 20) {
-                Text("タイトルとハッシュタグを編集")
-                    .font(.headline)
-                VStack(spacing: 12) {
-                    TextField("タイトル", text: $editName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    TextField("ハッシュタグ", text: $editHashtag)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                }
-                HStack {
-                    Button("キャンセル") {
-                        showEditNameModal = false
-                    }
-                    Spacer()
-                    Button("保存") {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        updatedAnime.title = editName
-                        updatedAnime.hashtag = editHashtag
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditNameModal = false
-                    }
-                    .disabled(editName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
-        }
-        // 公開日編集モーダル（無効化）
-        // アイコン画像編集モーダル
-        .sheet(isPresented: $showEditIconModal) {
-            ZStack(alignment: .topTrailing) {
-                VStack(spacing: 24) {
-                    Text("アイコンを編集")
-                        .font(.headline)
-                    if let tempIconImage = tempIconImage {
-                        Image(uiImage: tempIconImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 120, height: 120)
-                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    } else if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 120, height: 120)
-                            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    } else {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 120, height: 120)
-                            .shadow(radius: 8)
-                            .overlay(
-                                Image(systemName: "film")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray)
-                            )
-                    }
-                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
-                        Text("画像を選択")
-                            .foregroundColor(.blue)
-                    }
-                }
-                .padding()
-                .background(Color(.systemBackground))
-                .cornerRadius(16)
-                .padding(40)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onChange(of: iconPickerItem) { newValue in
-                    if let newItem = newValue {
-                        Task {
-                            if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
-                                tempIconImage = uiImage
-                                
-                                let fileName = "anime_icon_\(UUID().uuidString).png"
-                                if let imagePath = saveImageToDocuments(uiImage, fileName: fileName) {
-                                    guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                                    var updatedAnime = animes[idx]
-                                    updatedAnime.imageIdentifier = imagePath
-                                    animes[idx] = updatedAnime
-                                    animeManager.updateAnime(updatedAnime)
-                                    animeManager.refreshUI()
-                                }
-                            }
-                        }
-                    }
-                }
-                Button(action: { 
-                    showEditIconModal = false
-                    tempIconImage = nil
-                }) {
-                    Text("閉じる")
-                        .font(.system(size: 18, weight: .regular))
-                        .foregroundColor(.blue)
-                        .padding(.trailing, 16)
-                        .padding(.top, 16)
-                }
-            }
-            .ignoresSafeArea(.container, edges: .top)
-        }
-        // カスタムフィールド追加モーダル
-        .sheet(isPresented: $showAddFieldPopup) {
-            VStack(spacing: 20) {
-                Text("新しい項目を追加")
-                    .font(.headline)
-                TextField("項目名", text: $newFieldName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                TextField("詳細", text: $newFieldValue)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                HStack {
-                    Button("キャンセル") {
-                        showAddFieldPopup = false
-                        newFieldName = ""
-                        newFieldValue = ""
-                    }
-                    Spacer()
-                    Button("追加") {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        if updatedAnime.customFields == nil { updatedAnime.customFields = [] }
-                        updatedAnime.customFields?.append(AnimeCustomField(name: newFieldName, value: newFieldValue))
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showAddFieldPopup = false
-                        newFieldName = ""
-                        newFieldValue = ""
-                    }
-                    .disabled(newFieldName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
-        }
-        // カスタムフィールド編集モーダル
-        .sheet(isPresented: $showEditFieldPopup) {
-            VStack(spacing: 20) {
-                Text("項目を編集")
-                    .font(.headline)
-                TextField("項目名", text: $editFieldName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                TextField("詳細", text: $editFieldValue)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                HStack {
-                    Button("キャンセル") {
-                        showEditFieldPopup = false
-                    }
-                    Spacer()
-                    Button("保存") {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        if let index = editFieldIndex, let fields = updatedAnime.customFields, index < fields.count {
-                            var newFields = fields
-                            newFields[index] = AnimeCustomField(name: editFieldName, value: editFieldValue)
-                            updatedAnime.customFields = newFields
-                        }
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditFieldPopup = false
-                    }
-                }
-            }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
-        }
-        // 視聴ステータス編集モーダル
-        .sheet(isPresented: $showEditWatchStatusModal) {
-            VStack(spacing: 20) {
-                Text("視聴ステータスを選択（複数選択可）")
-                    .font(.headline)
-                VStack(spacing: 12) {
-                    ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
-                        Button(action: {
-                            if editWatchStatuses.contains(status) {
-                                editWatchStatuses.remove(status)
+                        // プロフィール項目
+                        VStack(spacing: 0) {
+                            if isEditingProfile {
+                                editableProfileRow(label: "タイトル", text: $editedTitle)
+                                Divider().padding(.leading, 20)
+                                dateProfileRow(label: "公開日", date: $editedReleaseDate)
+                                Divider().padding(.leading, 20)
+                                editableProfileRow(label: "ハッシュタグ", text: $editedHashtag)
+                                Divider().padding(.leading, 20)
+                                statusSelectionRow(label: "ステータス", statuses: $editedWatchStatuses)
                             } else {
-                                editWatchStatuses.insert(status)
+                                profileRow(label: "タイトル", value: anime.title)
+                                Divider().padding(.leading, 20)
+                                profileRow(label: "公開日", value: DateFormatter.monthDayJapanese.string(from: anime.releaseDate))
+                                Divider().padding(.leading, 20)
+                                profileRow(label: "ハッシュタグ", value: anime.hashtag.isEmpty ? "未設定" : anime.hashtag)
+                                Divider().padding(.leading, 20)
+                                let statusText = anime.watchStatuses.filter { $0 != .none }.map { $0.rawValue }.joined(separator: "、")
+                                profileRow(label: "ステータス", value: statusText.isEmpty ? "未設定" : statusText)
                             }
-                        }) {
-                            HStack {
-                                Text(status.rawValue)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.black)
-                                Spacer()
-                                if editWatchStatuses.contains(status) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.blue)
-                                } else {
-                                    Image(systemName: "circle")
+                        }
+                        .background(Color.white)
+                    }
+                    
+                    // 概要セクション
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("概要")
+                                .font(.system(size: 20, weight: .bold))
+                            Button(action: { 
+                                isEditingDescription.toggle()
+                            }) {
+                                Image(systemName: isEditingDescription ? "checkmark.circle.fill" : "pencil")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.blue)
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 32)
+                        .padding(.bottom, 16)
+                        
+                        // 概要テキスト
+                        if isEditingDescription {
+                            ZStack(alignment: .topLeading) {
+                                if animeDescription.isEmpty {
+                                    Text("概要を入力してください...")
+                                        .font(.system(size: 16))
                                         .foregroundColor(.gray)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 16)
                                 }
+                                
+                                TextEditor(text: $animeDescription)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .frame(minHeight: 200)
+                                    .scrollContentBackground(.hidden)
+                                    .background(Color.clear)
                             }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(editWatchStatuses.contains(status) ? Color.blue.opacity(0.1) : Color(.systemGray6))
+                            .background(Color.white)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                             )
+                            .padding(.horizontal, 20)
+                        } else {
+                            if animeDescription.isEmpty {
+                                Text("概要が未設定です")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                            } else {
+                                Text(animeDescription)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 16)
+                            }
                         }
                     }
-                }
-                HStack(spacing: 20) {
-                    Button("キャンセル") {
-                        showEditWatchStatusModal = false
-                    }
-                    .foregroundColor(.red)
                     
-                    Button("保存") {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        updatedAnime.watchStatuses = Array(editWatchStatuses)
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditWatchStatusModal = false
-                    }
-                    .foregroundColor(.blue)
+                    Spacer(minLength: 50)
                 }
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
+            .background(Color(.systemGray6))
+            .navigationBarTitle("About", displayMode: .inline)
+            .navigationBarItems(
+                leading: Button("閉じる") {
+                    saveAnime()
+                    onClose()
+                }
+            )
+        }
+        .onAppear {
+            loadAnimeDescription()
+            editedTitle = anime.title
+            editedHashtag = anime.hashtag
+            editedReleaseDate = anime.releaseDate
+            editedWatchStatuses = Set(anime.watchStatuses)
+        }
+        .onDisappear {
+            saveAnime()
         }
     }
+    
+    // MARK: - Helper Views
+    private func profileRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
+            Text(value)
+                .font(.system(size: 16))
+                .foregroundColor(.primary)
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+    }
+    
+    private func editableProfileRow(label: String, text: Binding<String>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
+            TextField("未設定", text: text)
+                .font(.system(size: 16))
+                .foregroundColor(.primary)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+    
+    private func dateProfileRow(label: String, date: Binding<Date>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
+            DatePicker("", selection: date, displayedComponents: [.date])
+                .labelsHidden()
+                .environment(\.locale, Locale(identifier: "ja_JP"))
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+    
+    private func statusSelectionRow(label: String, statuses: Binding<Set<WatchStatus>>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
+            
+            HStack(spacing: 8) {
+                ForEach([WatchStatus.watching, .willWatch, .watchAgain, .thisTerm], id: \.self) { status in
+                    Button(action: {
+                        if statuses.wrappedValue.contains(status) {
+                            statuses.wrappedValue.remove(status)
+                        } else {
+                            statuses.wrappedValue.insert(status)
+                        }
+                    }) {
+                        Text(status.rawValue)
+                            .font(.system(size: 14))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(statuses.wrappedValue.contains(status) ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(statuses.wrappedValue.contains(status) ? .white : .primary)
+                            .cornerRadius(8)
+                    }
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+    
+    // MARK: - Helper Methods
+    private func loadAnimeDescription() {
+        // カスタムフィールドから"概要"フィールドを探す
+        if let customFields = anime.customFields,
+           let descriptionField = customFields.first(where: { $0.name == "概要" }) {
+            animeDescription = descriptionField.value
+        }
+    }
+    
+    private func saveAnime() {
+        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+        
+        // 編集中の場合は編集内容を保存
+        var updatedAnime = animes[idx]
+        
+        if isEditingProfile {
+            updatedAnime.title = editedTitle
+            updatedAnime.hashtag = editedHashtag
+            updatedAnime.releaseDate = editedReleaseDate
+            updatedAnime.watchStatuses = Array(editedWatchStatuses)
+        }
+        
+        // 概要をカスタムフィールドに保存
+        if updatedAnime.customFields == nil {
+            updatedAnime.customFields = []
+        }
+        
+        // 既存の"概要"フィールドを更新または新規作成
+        if let index = updatedAnime.customFields?.firstIndex(where: { $0.name == "概要" }) {
+            updatedAnime.customFields?[index].value = animeDescription
+        } else {
+            updatedAnime.customFields?.append(AnimeCustomField(name: "概要", value: animeDescription))
+        }
+        
+        animes[idx] = updatedAnime
+        animeManager.updateAnime(updatedAnime)
+        
+        // Bindingも更新
+        anime = updatedAnime
+    }
 }
-
 struct AddAnimeSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var animes: [Anime]

@@ -198,10 +198,12 @@ struct FirebaseAdView: View {
                         GeometryReader { geometry in
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
+                                    // 広告を二度表示することで無限ループを実現
+                                ForEach(0..<2, id: \.self) { setIndex in
                                     ForEach(advertisements.prefix(5)) { ad in
-                                    Button(action: {
-                                        handleAdClick(ad)
-                                    }) {
+                                        Button(action: {
+                                            handleAdClick(ad)
+                                        }) {
                                     ZStack(alignment: .bottom) {
                                         // 画像
                                         if let url = URL(string: convertGitHubUrl(ad.imageURL)), !ad.imageURL.isEmpty {
@@ -254,10 +256,13 @@ struct FirebaseAdView: View {
                                     .cornerRadius(10)
                                     .clipped()
                                 }
-                                .buttonStyle(PlainButtonStyle())
-                                .onAppear {
-                                    recordImpression(for: ad)
-                                }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .onAppear {
+                                        if setIndex == 0 {
+                                            recordImpression(for: ad)
+                                        }
+                                    }
+                                    }
                                 }
                                 .padding(.horizontal, 16)
                                 .offset(x: scrollOffset)
@@ -477,15 +482,15 @@ struct FirebaseAdView: View {
         scrollOffset = 0
         
         let itemWidth: CGFloat = 260 + 12 // 画像幅 + spacing
-        let maxOffset = -CGFloat(advertisements.count - 1) * itemWidth
+        let totalWidth = CGFloat(advertisements.count) * itemWidth
         
         autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
             withAnimation(.linear(duration: 0.03)) {
                 scrollOffset -= 1
                 
-                // 最後までスクロールしたら最初に戻る
-                if scrollOffset <= maxOffset {
-                    scrollOffset = UIScreen.main.bounds.width
+                // 一セット分スクロールしたら、位置をリセット
+                if scrollOffset <= -totalWidth {
+                    scrollOffset = 0
                 }
             }
         }

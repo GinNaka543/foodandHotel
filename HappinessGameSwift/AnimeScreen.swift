@@ -256,7 +256,8 @@ struct AnimeScreen: View {
                 }
                 // 広告バナー
                 FirebaseAdView(placement: "anime")
-                    .padding(.vertical, 8)
+                    .padding(.top, 8)
+                    .padding(.bottom, 0)
                 
                 ScrollView {
                     VStack(spacing: 0) {

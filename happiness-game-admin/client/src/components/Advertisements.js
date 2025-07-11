@@ -166,6 +166,7 @@ function Advertisements() {
                 <th>説明</th>
                 <th>ターゲット</th>
                 <th>配置場所</th>
+                <th>表示率</th>
                 <th>表示回数</th>
                 <th>クリック数</th>
                 <th>CTR</th>
@@ -203,6 +204,18 @@ function Advertisements() {
                         <span key={p} title={p}>{PLACEMENT_ICONS[p] || p}</span>
                       ))}
                     </div>
+                  </td>
+                  <td>
+                    <span style={{ 
+                      backgroundColor: ad.displayRate === 100 ? '#e8f5e9' : '#fff8e1',
+                      color: ad.displayRate === 100 ? '#2e7d32' : '#f57c00',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.875rem',
+                      fontWeight: '500'
+                    }}>
+                      {ad.displayRate || 100}%
+                    </span>
                   </td>
                   <td>{ad.impressions || 0}</td>
                   <td>{ad.clicks || 0}</td>

@@ -54,7 +54,8 @@ function CreateAd() {
     targetCharacters: [],
     targetHashtags: [],
     expiresAt: '',
-    placements: generalPage ? [generalPage] : []
+    placements: generalPage ? [generalPage] : [],
+    displayRate: 100
   });
   
   const [inputValues, setInputValues] = useState({
@@ -76,7 +77,8 @@ function CreateAd() {
             placements: Array.isArray(ad.placements) ? ad.placements : [],
             expiresAt: (ad.expiresAt && !isNaN(new Date(ad.expiresAt)))
               ? new Date(ad.expiresAt).toISOString().slice(0, 16)
-              : ''
+              : '',
+            displayRate: ad.displayRate || 100
           });
         }
       });
@@ -428,9 +430,39 @@ function CreateAd() {
             />
           </div>
 
+          <div className="form-group">
+            <label>表示率（%）</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <input
+                type="range"
+                name="displayRate"
+                min="0"
+                max="100"
+                step="5"
+                value={formData.displayRate}
+                onChange={handleChange}
+                style={{ flex: 1 }}
+              />
+              <span style={{ 
+                minWidth: '60px',
+                textAlign: 'center',
+                padding: '0.5rem',
+                backgroundColor: formData.displayRate === 100 ? '#e8f5e9' : '#fff8e1',
+                color: formData.displayRate === 100 ? '#2e7d32' : '#f57c00',
+                borderRadius: '4px',
+                fontWeight: '500'
+              }}>
+                {formData.displayRate}%
+              </span>
+            </div>
+            <div style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              この広告が表示される確率を設定します（0-100%）
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
             <button type="submit" className="btn btn-primary">
-              広告を作成
+              {editId ? '広告を更新' : '広告を作成'}
             </button>
             <button type="button" className="btn" onClick={() => navigate('/advertisements')}>
               キャンセル

@@ -6,6 +6,8 @@ const PLACEMENT_OPTIONS = [
   { key: 'home', label: 'ホーム', icon: '🏠' },
   { key: 'character', label: 'キャラ', icon: '👤' },
   { key: 'product', label: 'プロダクト', icon: '📦' },
+  { key: 'visit', label: 'ビジット', icon: '✈️' },
+  { key: 'anime', label: 'アニメ', icon: '🎬' },
 ];
 
 // ImgurページURL→画像直リンク変換関数
@@ -42,7 +44,7 @@ function CreateAd() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const editId = params.get('id');
-  const generalPage = params.get('generalPage'); // 'home' | 'character' | 'product' or null
+  const generalPage = params.get('generalPage'); // 'home' | 'character' | 'product' | 'visit' | 'anime' or null
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -52,7 +54,9 @@ function CreateAd() {
     targetCharacters: [],
     targetHashtags: [],
     expiresAt: '',
-    placements: generalPage ? [generalPage] : []
+    placements: generalPage ? [generalPage] : [],
+    displayRate: 100,
+    priority: 5
   });
   
   const [inputValues, setInputValues] = useState({
@@ -74,7 +78,9 @@ function CreateAd() {
             placements: Array.isArray(ad.placements) ? ad.placements : [],
             expiresAt: (ad.expiresAt && !isNaN(new Date(ad.expiresAt)))
               ? new Date(ad.expiresAt).toISOString().slice(0, 16)
-              : ''
+              : '',
+            displayRate: ad.displayRate || 100,
+            priority: ad.priority || 5
           });
         }
       });
@@ -177,7 +183,11 @@ function CreateAd() {
       navigate('/advertisements');
     } catch (error) {
       console.error('Error creating/updating advertisement:', error);
-      alert('広告の作成/更新に失敗しました。');
+      if (error.response && error.response.data && error.response.data.error) {
+        alert(error.response.data.error);
+      } else {
+        alert('広告の作成/更新に失敗しました。');
+      }
     }
   };
 
@@ -422,9 +432,84 @@ function CreateAd() {
             />
           </div>
 
+          <div className="form-group">
+            <label>表示率（%）</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <input
+                type="range"
+                name="displayRate"
+                min="0"
+                max="100"
+                step="5"
+                value={formData.displayRate}
+                onChange={handleChange}
+                style={{ flex: 1 }}
+              />
+              <span style={{ 
+                minWidth: '60px',
+                textAlign: 'center',
+                padding: '0.5rem',
+                backgroundColor: formData.displayRate === 100 ? '#e8f5e9' : '#fff8e1',
+                color: formData.displayRate === 100 ? '#2e7d32' : '#f57c00',
+                borderRadius: '4px',
+                fontWeight: '500'
+              }}>
+                {formData.displayRate}%
+              </span>
+            </div>
+            <div style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              この広告が表示される確率を設定します（0-100%）
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>優先度（1-10）</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <input
+                type="range"
+                name="priority"
+                min="1"
+                max="10"
+                step="1"
+                value={formData.priority}
+                onChange={handleChange}
+                style={{ flex: 1 }}
+              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '120px' }}>
+                {[...Array(formData.priority)].map((_, i) => (
+                  <span key={i} style={{ 
+                    color: formData.priority >= 8 ? '#9c27b0' : formData.priority >= 4 ? '#2196f3' : '#ff9800',
+                    fontSize: '1.2rem'
+                  }}>★</span>
+                ))}
+                <span style={{ 
+                  marginLeft: '0.5rem',
+                  padding: '0.5rem',
+                  backgroundColor: formData.priority >= 8 ? '#f3e5f5' : formData.priority >= 4 ? '#e3f2fd' : '#fff3e0',
+                  color: formData.priority >= 8 ? '#9c27b0' : formData.priority >= 4 ? '#2196f3' : '#ff9800',
+                  borderRadius: '4px',
+                  fontWeight: '500',
+                  minWidth: '30px',
+                  textAlign: 'center'
+                }}>
+                  {formData.priority}
+                </span>
+              </div>
+            </div>
+            <div style={{ color: '#666', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              高い優先度の広告が優先的に表示されます
+              <br />
+              ・1-3: ベーシック（オレンジ）
+              <br />
+              ・4-7: スタンダード（青）
+              <br />
+              ・8-10: プレミアム（紫）
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
             <button type="submit" className="btn btn-primary">
-              広告を作成
+              {editId ? '広告を更新' : '広告を作成'}
             </button>
             <button type="button" className="btn" onClick={() => navigate('/advertisements')}>
               キャンセル

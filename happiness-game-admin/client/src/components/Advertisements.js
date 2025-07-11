@@ -6,11 +6,15 @@ const PLACEMENT_ICONS = {
   home: '🏠',
   character: '👤',
   product: '📦',
+  visit: '✈️',
+  anime: '🎬',
 };
 const GENERAL_PAGES = [
   { key: 'home', label: 'ホーム', icon: '🏠', max: 2 },
   { key: 'character', label: 'キャラ', icon: '👤', max: 1 },
   { key: 'product', label: 'プロダクト', icon: '📦', max: null },
+  { key: 'visit', label: 'ビジット', icon: '✈️', max: 1 },
+  { key: 'anime', label: 'アニメ', icon: '🎬', max: 5 },
 ];
 
 function Advertisements() {
@@ -162,6 +166,8 @@ function Advertisements() {
                 <th>説明</th>
                 <th>ターゲット</th>
                 <th>配置場所</th>
+                <th>表示率</th>
+                <th>優先度</th>
                 <th>表示回数</th>
                 <th>クリック数</th>
                 <th>CTR</th>
@@ -198,6 +204,33 @@ function Advertisements() {
                       {(ad.placements || []).map(p => (
                         <span key={p} title={p}>{PLACEMENT_ICONS[p] || p}</span>
                       ))}
+                    </div>
+                  </td>
+                  <td>
+                    <span style={{ 
+                      backgroundColor: ad.displayRate === 100 ? '#e8f5e9' : '#fff8e1',
+                      color: ad.displayRate === 100 ? '#2e7d32' : '#f57c00',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '4px',
+                      fontSize: '0.875rem',
+                      fontWeight: '500'
+                    }}>
+                      {ad.displayRate || 100}%
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      {[...Array(ad.priority || 5)].map((_, i) => (
+                        <span key={i} style={{ 
+                          color: ad.priority >= 8 ? '#9c27b0' : ad.priority >= 4 ? '#2196f3' : '#ff9800',
+                          fontSize: '0.875rem'
+                        }}>★</span>
+                      ))}
+                      <span style={{ 
+                        fontSize: '0.75rem', 
+                        color: '#666',
+                        marginLeft: '0.25rem' 
+                      }}>({ad.priority || 5})</span>
                     </div>
                   </td>
                   <td>{ad.impressions || 0}</td>

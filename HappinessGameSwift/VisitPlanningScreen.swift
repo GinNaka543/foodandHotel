@@ -14,6 +14,12 @@ struct VisitPlanningScreen: View {
     @State private var thumbnailData: Data?
     @State private var startTime = Date()
     @State private var editingSpot: VisitSpot?
+    @State private var numberOfDays: Int = 1
+    @State private var selectedDay: Int = 1
+    @State private var showingDayPicker = false
+    @State private var selectedDayForNewSpot: Int = 1
+    @State private var showingCustomDaysPicker = false
+    @State private var customDaysInput: String = ""
     
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -70,14 +76,76 @@ struct VisitPlanningScreen: View {
                                     .font(.system(size: 16))
                             }
                             
-                            // 開始時刻
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("開始時刻")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
-                                DatePicker("", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
-                                    .datePickerStyle(CompactDatePickerStyle())
-                                    .labelsHidden()
+                            // 開始時刻と旅行日数
+                            HStack(spacing: 16) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("開始時刻")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    DatePicker("", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
+                                        .datePickerStyle(CompactDatePickerStyle())
+                                        .labelsHidden()
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("旅行日数")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    
+                                    if numberOfDays <= 7 {
+                                        Menu {
+                                            ForEach(1...7, id: \.self) { days in
+                                                Button("\(days)日間") {
+                                                    numberOfDays = days
+                                                }
+                                            }
+                                            Divider()
+                                            Button("カスタマイズ") {
+                                                showingCustomDaysPicker = true
+                                            }
+                                        } label: {
+                                            HStack {
+                                                Text("\(numberOfDays)日間")
+                                                    .foregroundColor(.black)
+                                                Spacer()
+                                                Image(systemName: "chevron.down")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 36) // DatePickerと同じ高さに
+                                            .padding(.horizontal, 12)
+                                            .background(Color(.systemGray6))
+                                            .cornerRadius(8)
+                                        }
+                                    } else {
+                                        Menu {
+                                            ForEach(1...7, id: \.self) { days in
+                                                Button("\(days)日間") {
+                                                    numberOfDays = days
+                                                }
+                                            }
+                                            Divider()
+                                            Button("カスタマイズ") {
+                                                showingCustomDaysPicker = true
+                                            }
+                                        } label: {
+                                            HStack {
+                                                Text("\(numberOfDays)日間")
+                                                    .foregroundColor(.black)
+                                                Spacer()
+                                                Image(systemName: "chevron.down")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 36) // DatePickerと同じ高さに
+                                            .padding(.horizontal, 12)
+                                            .background(Color(.systemGray6))
+                                            .cornerRadius(8)
+                                        }
+                                    }
+                                }
                             }
                         }
                         .padding(.horizontal, 16)
@@ -132,7 +200,14 @@ struct VisitPlanningScreen: View {
                                 Text("タイムライン")
                                     .font(.system(size: 18, weight: .semibold))
                                 Spacer()
-                                Button(action: { showingAddSpotSheet = true }) {
+                                Button(action: { 
+                                    if numberOfDays > 1 {
+                                        showingDayPicker = true
+                                    } else {
+                                        selectedDayForNewSpot = 1
+                                        showingAddSpotSheet = true
+                                    }
+                                }) {
                                     HStack(spacing: 4) {
                                         Image(systemName: "plus")
                                         Text("追加")
@@ -147,6 +222,28 @@ struct VisitPlanningScreen: View {
                             }
                             .padding(.horizontal, 16)
                             
+                            // 日数が2日以上の場合はタブ表示
+                            if numberOfDays > 1 {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(1...min(numberOfDays, 30), id: \.self) { day in
+                                            Button(action: { selectedDay = day }) {
+                                                Text("Day \(day)")
+                                                    .font(.system(size: 14, weight: selectedDay == day ? .semibold : .medium))
+                                                    .foregroundColor(selectedDay == day ? .white : .black)
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 8)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 20)
+                                                            .fill(selectedDay == day ? Color.blue : Color(.systemGray5))
+                                                    )
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                }
+                            }
+                            
                             if spots.isEmpty {
                                 VStack(spacing: 8) {
                                     Image(systemName: "clock.arrow.circlepath")
@@ -159,23 +256,24 @@ struct VisitPlanningScreen: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 40)
                             } else {
+                                let filteredSpots = spots.filter { $0.dayNumber == selectedDay }
                                 VStack(spacing: 0) {
-                                    ForEach(Array(spots.enumerated()), id: \.element.id) { index, spot in
+                                    ForEach(Array(filteredSpots.enumerated()), id: \.element.id) { index, spot in
                                         TimelineItem(
                                             spot: spot,
                                             index: index,
-                                            totalSpots: spots.count,
+                                            totalSpots: filteredSpots.count,
                                             startTime: startTime,
-                                            previousSpots: Array(spots.prefix(index))
+                                            previousSpots: Array(filteredSpots.prefix(index))
                                         )
                                         .onTapGesture {
                                             editingSpot = spot
                                         }
                                         
-                                        if index < spots.count - 1 {
+                                        if index < filteredSpots.count - 1 {
                                             TransportView(
                                                 from: spot,
-                                                to: spots[index + 1]
+                                                to: filteredSpots[index + 1]
                                             )
                                         }
                                     }
@@ -192,14 +290,6 @@ struct VisitPlanningScreen: View {
                                     Text("概要")
                                         .font(.system(size: 16, weight: .semibold))
                                     Spacer()
-                                }
-                                HStack {
-                                    Label("総移動時間", systemImage: "clock")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
-                                    Spacer()
-                                    Text(formatTotalDuration())
-                                        .font(.system(size: 14, weight: .medium))
                                 }
                                 HStack {
                                     Label("予想費用", systemImage: "yensign.circle")
@@ -260,16 +350,27 @@ struct VisitPlanningScreen: View {
             .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingAddSpotSheet) {
-            AddSpotView(spots: $spots, startTime: startTime, previousSpots: spots)
+            AddSpotView(spots: $spots, startTime: startTime, previousSpots: spots, selectedDay: selectedDayForNewSpot)
+        }
+        .sheet(isPresented: $showingDayPicker) {
+            DayPickerView(numberOfDays: numberOfDays, selectedDay: $selectedDayForNewSpot) {
+                showingDayPicker = false
+                showingAddSpotSheet = true
+            }
         }
         .sheet(item: $editingSpot) { spot in
             EditSpotView(spot: spot, spots: $spots, startTime: startTime)
+        }
+        .sheet(isPresented: $showingCustomDaysPicker) {
+            CustomDaysPickerView(numberOfDays: $numberOfDays)
         }
         .fullScreenCover(isPresented: $showingItinerary) {
             VisitGameScreen(
                 animeName: animeName,
                 duration: formatTotalDuration(),
-                spots: updateSpotTimes()
+                planTitle: planTitle,
+                spots: updateSpotTimes(),
+                numberOfDays: numberOfDays
             )
         }
     }
@@ -293,7 +394,7 @@ struct VisitPlanningScreen: View {
     
     func calculateTotalCost() -> Int {
         spots.reduce(0) { total, spot in
-            total + (spot.transportToNext?.cost ?? 0)
+            total + spot.spotCost + (spot.transportToNext?.cost ?? 0)
         }
     }
     
@@ -318,7 +419,8 @@ struct VisitPlanningScreen: View {
             duration: formatTotalDuration(),
             spots: updateSpotTimes(),
             thumbnailData: thumbnailData,
-            startTime: startTime
+            startTime: startTime,
+            numberOfDays: numberOfDays
         )
         
         var savedPlans = getSavedPlans()
@@ -503,17 +605,140 @@ struct TransportView: View {
     }
 }
 
+struct CustomDaysPickerView: View {
+    @Binding var numberOfDays: Int
+    @State private var selectedDays: Int = 8
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("旅行日数を入力")
+                    .font(.system(size: 18, weight: .semibold))
+                    .padding(.top, 20)
+                
+                HStack {
+                    TextField("8", value: $selectedDays, format: .number)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(width: 100)
+                        .multilineTextAlignment(.center)
+                        .keyboardType(.numberPad)
+                    
+                    Text("日間")
+                        .font(.system(size: 16))
+                }
+                
+                Text("1〜30日間で設定できます")
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+                
+                Spacer()
+                
+                Button(action: {
+                    if selectedDays >= 1 && selectedDays <= 30 {
+                        numberOfDays = selectedDays
+                        dismiss()
+                    }
+                }) {
+                    Text("決定")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(selectedDays >= 1 && selectedDays <= 30 ? Color.blue : Color.gray)
+                        )
+                }
+                .disabled(selectedDays < 1 || selectedDays > 30)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+            .navigationTitle("カスタム日数")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct DayPickerView: View {
+    let numberOfDays: Int
+    @Binding var selectedDay: Int
+    let onSelect: () -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("スポットを追加する日を選択")
+                    .font(.system(size: 18, weight: .semibold))
+                    .padding(.top, 20)
+                
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(1...min(numberOfDays, 30), id: \.self) { day in
+                            Button(action: {
+                                selectedDay = day
+                                dismiss()
+                                onSelect()
+                            }) {
+                                HStack {
+                                    Text("Day \(day)")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(10)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .navigationTitle("日付を選択")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct AddSpotView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var spots: [VisitSpot]
     let startTime: Date
     let previousSpots: [VisitSpot]
+    let selectedDay: Int
     
     @State private var spotName: String = ""
-    @State private var spotAddress: String = ""
-    @State private var nearestStation: String = ""
-    @State private var stayDuration: Int = 60
+    @State private var timeRange: String = ""
+    @State private var startTimeForSpot: Date
+    @State private var endTimeForSpot: Date
+    @State private var activity: String = ""
     @State private var spotNotes: String = ""
+    @State private var spotAddress: String = ""
+    @State private var spotCost: Int = 0
+    @State private var selectedImage: PhotosPickerItem?
+    @State private var spotImage: UIImage?
+    @State private var spotImageData: Data?
     @State private var transportMethod: String = "電車"
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
@@ -521,31 +746,68 @@ struct AddSpotView: View {
     
     let transportMethods = ["電車", "バス", "徒歩", "タクシー"]
     
+    init(spots: Binding<[VisitSpot]>, startTime: Date, previousSpots: [VisitSpot], selectedDay: Int) {
+        self._spots = spots
+        self.startTime = startTime
+        self.previousSpots = previousSpots
+        self.selectedDay = selectedDay
+        
+        // 初期時刻を設定（現在時刻から最も近い30分単位に丸める）
+        let calendar = Calendar.current
+        let now = Date()
+        let minute = calendar.component(.minute, from: now)
+        let roundedMinute = (minute / 30) * 30
+        let baseTime = calendar.date(bySettingHour: calendar.component(.hour, from: now), 
+                                    minute: roundedMinute, 
+                                    second: 0, 
+                                    of: now) ?? now
+        
+        self._startTimeForSpot = State(initialValue: baseTime)
+        self._endTimeForSpot = State(initialValue: calendar.date(byAdding: .hour, value: 1, to: baseTime) ?? baseTime)
+    }
+    
+    var calculatedStayDuration: Int {
+        calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
+    }
+    
+    var formattedTimeRange: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return "\(formatter.string(from: startTimeForSpot))〜\(formatter.string(from: endTimeForSpot))"
+    }
+    
+    var previousSpotEndTime: String? {
+        let daySpots = previousSpots.filter { $0.dayNumber == selectedDay }
+        guard let lastSpot = daySpots.last else { return nil }
+        
+        // timeRangeから終了時刻を抽出
+        let components = lastSpot.timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
+        if components.count == 2 {
+            return components[1].trimmingCharacters(in: .whitespaces)
+        }
+        return nil
+    }
+    
     var body: some View {
         NavigationView {
             Form {
-                Section("スポット情報") {
-                    TextField("スポット名", text: $spotName)
-                    TextField("最寄り駅", text: $nearestStation)
-                    TextField("住所", text: $spotAddress)
-                    
-                    HStack {
-                        Text("滞在時間")
-                        Spacer()
-                        Picker("", selection: $stayDuration) {
-                            ForEach([30, 60, 90, 120], id: \.self) { minutes in
-                                Text("\(minutes)分").tag(minutes)
-                            }
+                // 前のスポットの終了時刻を表示
+                if let endTime = previousSpotEndTime {
+                    Section {
+                        HStack {
+                            Image(systemName: "clock.fill")
+                                .foregroundColor(.blue)
+                            Text("前のスポットの終了時刻: \(endTime)")
+                                .font(.system(size: 14, weight: .medium))
                         }
-                        .pickerStyle(MenuPickerStyle())
+                        .padding(.vertical, 8)
                     }
-                    
-                    TextField("メモ", text: $spotNotes, axis: .vertical)
-                        .lineLimit(2...4)
                 }
                 
+                // 交通手段セクションを上に配置
                 if !previousSpots.isEmpty {
-                    Section("交通機関") {
+                    let lastSpot = previousSpots.filter { $0.dayNumber == selectedDay }.last ?? previousSpots.last
+                    Section("移動手段 - \(lastSpot?.name ?? "前のスポット")から") {
                         Picker("移動手段", selection: $transportMethod) {
                             ForEach(transportMethods, id: \.self) { method in
                                 Text(method).tag(method)
@@ -553,27 +815,131 @@ struct AddSpotView: View {
                         }
                         .pickerStyle(MenuPickerStyle())
                         
-                        HStack {
-                            Text("移動時間")
-                            Spacer()
-                            TextField("分", value: $transportDuration, format: .number)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 60)
-                                .multilineTextAlignment(.trailing)
-                            Text("分")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("どのくらい時間がかかりますか？")
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            HStack {
+                                TextField("30", value: $transportDuration, format: .number)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 60)
+                                    .multilineTextAlignment(.center)
+                                Text("分")
+                                    .font(.system(size: 14))
+                            }
                         }
                         
-                        HStack {
-                            Text("料金")
-                            Spacer()
-                            TextField("円", value: $transportCost, format: .number)
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("交通費はいくらですか？")
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            HStack {
+                                TextField("0", value: $transportCost, format: .number)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 80)
+                                    .multilineTextAlignment(.center)
+                                Text("円")
+                                    .font(.system(size: 14))
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("どのルートを使いますか？（任意）")
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            TextField("例：JR山手線 → 東京メトロ銀座線", text: $transportRoute)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .frame(width: 80)
-                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+                
+                Section("スポット情報 - Day \(selectedDay)") {
+                    TextField("スポット名", text: $spotName)
+                    
+                    // 滞在時間帯選択
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("滞在時間帯")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            DatePicker("", selection: $startTimeForSpot, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .frame(width: 100)
+                            
+                            Text("〜")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                            
+                            DatePicker("", selection: $endTimeForSpot, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .frame(width: 100)
+                        }
+                        
+                        // 計算された滞在時間を表示
+                        let duration = calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
+                        if duration > 0 {
+                            Text("滞在時間: \(duration)分")
+                                .font(.system(size: 12))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    TextField("住所", text: $spotAddress)
+                    
+                    TextField("ここで何をするのか", text: $activity, axis: .vertical)
+                        .lineLimit(2...4)
+                    
+                    TextField("メモ", text: $spotNotes, axis: .vertical)
+                        .lineLimit(2...4)
+                    
+                    // スポット費用
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("このスポットでいくら使いますか？")
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                        HStack {
+                            TextField("0", value: $spotCost, format: .number)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .frame(width: 100)
+                                .multilineTextAlignment(.center)
+                                .keyboardType(.numberPad)
                             Text("円")
+                                .font(.system(size: 14))
                         }
-                        
-                        TextField("経路（例：JR山手線→東京メトロ）", text: $transportRoute)
+                    }
+                    
+                    // 画像選択
+                    PhotosPicker(selection: $selectedImage,
+                               matching: .images,
+                               photoLibrary: .shared()) {
+                        if let spotImage = spotImage {
+                            Image(uiImage: spotImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(8)
+                        } else {
+                            HStack {
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                                Text("スポット画像を選択")
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 100)
+                            .background(Color(.systemGray5))
+                            .cornerRadius(8)
+                        }
+                    }
+                    .onChange(of: selectedImage) { newItem in
+                        Task {
+                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                spotImage = UIImage(data: data)
+                                spotImageData = data
+                            }
+                        }
                     }
                 }
             }
@@ -600,8 +966,12 @@ struct AddSpotView: View {
                             name: spotName,
                             address: spotAddress,
                             notes: spotNotes,
-                            nearestStation: nearestStation,
-                            stayDuration: stayDuration
+                            stayDuration: calculatedStayDuration,
+                            timeRange: formattedTimeRange,
+                            activity: activity,
+                            imageData: spotImageData,
+                            dayNumber: selectedDay,
+                            spotCost: spotCost
                         )
                         spots.append(newSpot)
                         dismiss()
@@ -610,6 +980,32 @@ struct AddSpotView: View {
                 }
             }
         }
+    }
+    
+    func calculateDurationFromTimeRange(_ timeRange: String) -> Int {
+        // 時間帯の形式: "10:00〜11:30" or "10:00~11:30"
+        let components = timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
+        guard components.count == 2 else { return 60 } // デフォルト60分
+        
+        let startTimeStr = components[0].trimmingCharacters(in: .whitespaces)
+        let endTimeStr = components[1].trimmingCharacters(in: .whitespaces)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        
+        guard let startTime = formatter.date(from: startTimeStr),
+              let endTime = formatter.date(from: endTimeStr) else { return 60 }
+        
+        let interval = endTime.timeIntervalSince(startTime)
+        let minutes = Int(interval / 60)
+        
+        return minutes > 0 ? minutes : 60 // 負の値の場合はデフォルト60分
+    }
+    
+    func calculateDurationFromDates(start: Date, end: Date) -> Int {
+        let interval = end.timeIntervalSince(start)
+        let minutes = Int(interval / 60)
+        return minutes > 0 ? minutes : 60 // 負の値の場合はデフォルト60分
     }
 }
 
@@ -624,6 +1020,14 @@ struct EditSpotView: View {
     @State private var nearestStation: String
     @State private var stayDuration: Int
     @State private var spotNotes: String
+    @State private var timeRange: String
+    @State private var startTimeForSpot = Date()
+    @State private var endTimeForSpot = Date()
+    @State private var activity: String
+    @State private var selectedImage: PhotosPickerItem?
+    @State private var spotImage: UIImage?
+    @State private var spotImageData: Data?
+    @State private var spotCost: Int
     
     init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date) {
         self.spot = spot
@@ -634,6 +1038,38 @@ struct EditSpotView: View {
         self._nearestStation = State(initialValue: spot.nearestStation)
         self._stayDuration = State(initialValue: spot.stayDuration)
         self._spotNotes = State(initialValue: spot.notes)
+        self._timeRange = State(initialValue: spot.timeRange)
+        self._activity = State(initialValue: spot.activity)
+        self._spotCost = State(initialValue: spot.spotCost)
+        if let imageData = spot.imageData {
+            self._spotImage = State(initialValue: UIImage(data: imageData))
+            self._spotImageData = State(initialValue: imageData)
+        }
+        
+        // timeRangeから時刻を解析
+        let components = spot.timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
+        if components.count == 2 {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            let startStr = components[0].trimmingCharacters(in: .whitespaces)
+            let endStr = components[1].trimmingCharacters(in: .whitespaces)
+            
+            if let start = formatter.date(from: startStr),
+               let end = formatter.date(from: endStr) {
+                self._startTimeForSpot = State(initialValue: start)
+                self._endTimeForSpot = State(initialValue: end)
+            }
+        }
+    }
+    
+    var calculatedStayDuration: Int {
+        calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
+    }
+    
+    var formattedTimeRange: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return "\(formatter.string(from: startTimeForSpot))〜\(formatter.string(from: endTimeForSpot))"
     }
     
     var body: some View {
@@ -641,22 +1077,92 @@ struct EditSpotView: View {
             Form {
                 Section("スポット情報") {
                     TextField("スポット名", text: $spotName)
-                    TextField("最寄り駅", text: $nearestStation)
+                    
+                    // 滞在時間帯選択
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("滞在時間帯")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            DatePicker("", selection: $startTimeForSpot, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .frame(width: 100)
+                            
+                            Text("〜")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                            
+                            DatePicker("", selection: $endTimeForSpot, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .frame(width: 100)
+                        }
+                        
+                        // 計算された滞在時間を表示
+                        let duration = calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
+                        if duration > 0 {
+                            Text("滞在時間: \(duration)分")
+                                .font(.system(size: 12))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
                     TextField("住所", text: $spotAddress)
                     
-                    HStack {
-                        Text("滞在時間")
-                        Spacer()
-                        Picker("", selection: $stayDuration) {
-                            ForEach([30, 60, 90, 120], id: \.self) { minutes in
-                                Text("\(minutes)分").tag(minutes)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                    }
+                    TextField("ここで何をするのか", text: $activity, axis: .vertical)
+                        .lineLimit(2...4)
                     
                     TextField("メモ", text: $spotNotes, axis: .vertical)
                         .lineLimit(2...4)
+                    
+                    // スポット費用
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("このスポットでいくら使いますか？")
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                        HStack {
+                            TextField("0", value: $spotCost, format: .number)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .frame(width: 100)
+                                .multilineTextAlignment(.center)
+                                .keyboardType(.numberPad)
+                            Text("円")
+                                .font(.system(size: 14))
+                        }
+                    }
+                    
+                    // 画像選択
+                    PhotosPicker(selection: $selectedImage,
+                               matching: .images,
+                               photoLibrary: .shared()) {
+                        if let spotImage = spotImage {
+                            Image(uiImage: spotImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(8)
+                        } else {
+                            HStack {
+                                Image(systemName: "photo")
+                                    .foregroundColor(.gray)
+                                Text("スポット画像を選択")
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 100)
+                            .background(Color(.systemGray5))
+                            .cornerRadius(8)
+                        }
+                    }
+                    .onChange(of: selectedImage) { newItem in
+                        Task {
+                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                spotImage = UIImage(data: data)
+                                spotImageData = data
+                            }
+                        }
+                    }
                 }
                 
                 Section {
@@ -685,13 +1191,43 @@ struct EditSpotView: View {
                             spots[index].name = spotName
                             spots[index].address = spotAddress
                             spots[index].nearestStation = nearestStation
-                            spots[index].stayDuration = stayDuration
+                            spots[index].stayDuration = calculatedStayDuration
                             spots[index].notes = spotNotes
+                            spots[index].timeRange = formattedTimeRange
+                            spots[index].activity = activity
+                            spots[index].imageData = spotImageData
+                            spots[index].spotCost = spotCost
                         }
                         dismiss()
                     }
                 }
             }
         }
+    }
+    
+    func calculateDurationFromTimeRange(_ timeRange: String) -> Int {
+        // 時間帯の形式: "10:00〜11:30" or "10:00~11:30"
+        let components = timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
+        guard components.count == 2 else { return 60 } // デフォルト60分
+        
+        let startTimeStr = components[0].trimmingCharacters(in: .whitespaces)
+        let endTimeStr = components[1].trimmingCharacters(in: .whitespaces)
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        
+        guard let startTime = formatter.date(from: startTimeStr),
+              let endTime = formatter.date(from: endTimeStr) else { return 60 }
+        
+        let interval = endTime.timeIntervalSince(startTime)
+        let minutes = Int(interval / 60)
+        
+        return minutes > 0 ? minutes : 60 // 負の値の場合はデフォルト60分
+    }
+    
+    func calculateDurationFromDates(start: Date, end: Date) -> Int {
+        let interval = end.timeIntervalSince(start)
+        let minutes = Int(interval / 60)
+        return minutes > 0 ? minutes : 60 // 負の値の場合はデフォルト60分
     }
 }

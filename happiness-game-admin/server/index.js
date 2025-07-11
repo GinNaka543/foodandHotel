@@ -135,8 +135,60 @@ app.post('/api/advertisements', async (req, res) => {
       targetCharacters,
       targetHashtags,
       expiresAt,
-      placements
+      placements,
+      displayRate,
+      priority
     } = req.body;
+
+    // 既存の広告を取得して重複をチェック
+    const existingAdsSnapshot = await db.collection('advertisements').where('isActive', '==', true).get();
+    const existingAds = [];
+    existingAdsSnapshot.forEach(doc => {
+      existingAds.push({ id: doc.id, ...doc.data() });
+    });
+
+    // ビジットページのターゲット広告の重複チェック
+    if (placements && placements.includes('visit')) {
+      // ターゲット広告の場合
+      if ((targetAnimes && targetAnimes.length > 0) || 
+          (targetCharacters && targetCharacters.length > 0) || 
+          (targetHashtags && targetHashtags.length > 0)) {
+        
+        for (const ad of existingAds) {
+          if (!ad.placements || !ad.placements.includes('visit')) continue;
+          
+          // 同じアニメをターゲットにしている広告があるかチェック
+          if (targetAnimes && targetAnimes.length > 0 && ad.targetAnimes && ad.targetAnimes.length > 0) {
+            const duplicateAnime = targetAnimes.find(anime => ad.targetAnimes.includes(anime));
+            if (duplicateAnime) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateAnime}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
+          // 同じキャラクターをターゲットにしている広告があるかチェック
+          if (targetCharacters && targetCharacters.length > 0 && ad.targetCharacters && ad.targetCharacters.length > 0) {
+            const duplicateChar = targetCharacters.find(char => ad.targetCharacters.includes(char));
+            if (duplicateChar) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateChar}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
+          // 同じハッシュタグをターゲットにしている広告があるかチェック
+          if (targetHashtags && targetHashtags.length > 0 && ad.targetHashtags && ad.targetHashtags.length > 0) {
+            const duplicateTag = targetHashtags.find(tag => ad.targetHashtags.includes(tag));
+            if (duplicateTag) {
+              return res.status(400).json({ 
+                error: `既に「#${duplicateTag}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+        }
+      }
+    }
 
     const advertisement = {
       title,
@@ -147,6 +199,8 @@ app.post('/api/advertisements', async (req, res) => {
       targetCharacters: targetCharacters || [],
       targetHashtags: targetHashtags || [],
       placements: placements || [],
+      displayRate: displayRate || 100,
+      priority: priority || 5,
       impressions: 0,
       clicks: 0,
       isActive: true,
@@ -180,6 +234,61 @@ app.put('/api/advertisements/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+    
+    // ビジットページのターゲット広告の重複チェック（更新時）
+    if (updateData.placements && updateData.placements.includes('visit') && 
+        updateData.targetAnimes !== undefined && updateData.targetCharacters !== undefined && updateData.targetHashtags !== undefined) {
+      
+      const { targetAnimes, targetCharacters, targetHashtags } = updateData;
+      
+      // ターゲット広告の場合のみチェック
+      if ((targetAnimes && targetAnimes.length > 0) || 
+          (targetCharacters && targetCharacters.length > 0) || 
+          (targetHashtags && targetHashtags.length > 0)) {
+        
+        // 既存の広告を取得（自分自身を除く）
+        const existingAdsSnapshot = await db.collection('advertisements')
+          .where('isActive', '==', true)
+          .get();
+        
+        for (const doc of existingAdsSnapshot.docs) {
+          if (doc.id === id) continue; // 自分自身はスキップ
+          
+          const ad = doc.data();
+          if (!ad.placements || !ad.placements.includes('visit')) continue;
+          
+          // 同じアニメをターゲットにしている広告があるかチェック
+          if (targetAnimes && targetAnimes.length > 0 && ad.targetAnimes && ad.targetAnimes.length > 0) {
+            const duplicateAnime = targetAnimes.find(anime => ad.targetAnimes.includes(anime));
+            if (duplicateAnime) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateAnime}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
+          // 同じキャラクターをターゲットにしている広告があるかチェック
+          if (targetCharacters && targetCharacters.length > 0 && ad.targetCharacters && ad.targetCharacters.length > 0) {
+            const duplicateChar = targetCharacters.find(char => ad.targetCharacters.includes(char));
+            if (duplicateChar) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateChar}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
+          // 同じハッシュタグをターゲットにしている広告があるかチェック
+          if (targetHashtags && targetHashtags.length > 0 && ad.targetHashtags && ad.targetHashtags.length > 0) {
+            const duplicateTag = targetHashtags.find(tag => ad.targetHashtags.includes(tag));
+            if (duplicateTag) {
+              return res.status(400).json({ 
+                error: `既に「#${duplicateTag}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+        }
+      }
+    }
     
     await db.collection('advertisements').doc(id).update({
       ...updateData,

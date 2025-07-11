@@ -210,12 +210,14 @@ public struct ListPageScreen: View {
 
     // 検索フィルタ用プロパティ
     private var filteredCharacters: [Character] {
-        if searchText.isEmpty { return characters }
-        return characters.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        let charactersWithNames = characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        if searchText.isEmpty { return charactersWithNames }
+        return charactersWithNames.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
     private var filteredAnimes: [Anime] {
-        if searchText.isEmpty { return animes }
-        return animes.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+        let animesWithTitles = animes.filter { !$0.title.isEmpty }
+        if searchText.isEmpty { return animesWithTitles }
+        return animesWithTitles.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }
     private var filteredBirthdays: [Character] {
         if searchText.isEmpty { return birthdays }

@@ -4,10 +4,13 @@ struct VisitGameScreen: View {
     @Environment(\.dismiss) var dismiss
     let animeName: String
     let duration: String
+    let planTitle: String
     @State var spots: [VisitSpot]
     @State private var currentSpotIndex = 0
     @State private var showingDetail = false
     @State private var selectedSpot: VisitSpot?
+    @State private var selectedDay: Int = 1
+    let numberOfDays: Int
     
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -23,6 +26,14 @@ struct VisitGameScreen: View {
     
     var completedSpotsCount: Int {
         spots.filter { $0.isCompleted }.count
+    }
+    
+    var filteredSpotsCompletedCount: Int {
+        spots.filter { $0.dayNumber == selectedDay && $0.isCompleted }.count
+    }
+    
+    var filteredSpotsCount: Int {
+        spots.filter { $0.dayNumber == selectedDay }.count
     }
     
     var body: some View {
@@ -42,13 +53,9 @@ struct VisitGameScreen: View {
                     
                     Spacer()
                     
-                    VStack(spacing: 4) {
-                        Text(animeName)
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                        Text(duration)
-                            .font(.system(size: 18, weight: .semibold))
-                    }
+                    Text(planTitle)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.black)
                     
                     Spacer()
                     
@@ -57,10 +64,10 @@ struct VisitGameScreen: View {
                         Circle()
                             .stroke(Color.gray.opacity(0.2), lineWidth: 4)
                         Circle()
-                            .trim(from: 0, to: CGFloat(completedSpotsCount) / CGFloat(spots.count))
+                            .trim(from: 0, to: filteredSpotsCount > 0 ? CGFloat(filteredSpotsCompletedCount) / CGFloat(filteredSpotsCount) : 0)
                             .stroke(Color.green, lineWidth: 4)
                             .rotationEffect(.degrees(-90))
-                        Text("\(completedSpotsCount)/\(spots.count)")
+                        Text("\(filteredSpotsCompletedCount)/\(filteredSpotsCount)")
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .frame(width: 50, height: 50)
@@ -69,10 +76,34 @@ struct VisitGameScreen: View {
                 .padding(.vertical, 12)
                 .background(Color(.systemBackground))
                 
+                // 日数が2日以上の場合はタブ表示
+                if numberOfDays > 1 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(1...min(numberOfDays, 30), id: \.self) { day in
+                                Button(action: { selectedDay = day }) {
+                                    Text("Day \(day)")
+                                        .font(.system(size: 14, weight: selectedDay == day ? .semibold : .medium))
+                                        .foregroundColor(selectedDay == day ? .white : .black)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 20)
+                                                .fill(selectedDay == day ? Color.blue : Color(.systemGray5))
+                                        )
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                    }
+                }
+                
                 ScrollView {
                     VStack(spacing: 0) {
                         // 現在時刻と開始時刻の表示
-                        if let firstSpot = spots.first, let startTime = firstSpot.arrivalTime {
+                        let filteredSpots = spots.filter { $0.dayNumber == selectedDay }
+                        if let firstSpot = filteredSpots.first, let startTime = firstSpot.arrivalTime {
                             HStack {
                                 Image(systemName: "clock.fill")
                                     .foregroundColor(.blue)
@@ -86,7 +117,7 @@ struct VisitGameScreen: View {
                         }
                         
                         // スポットリスト
-                        ForEach(Array(spots.enumerated()), id: \.element.id) { index, spot in
+                        ForEach(Array(filteredSpots.enumerated()), id: \.element.id) { index, spot in
                             VStack(spacing: 0) {
                                 SpotCard(
                                     spot: spot,
@@ -97,28 +128,32 @@ struct VisitGameScreen: View {
                                         showingDetail = true
                                     },
                                     onToggle: {
-                                        toggleSpotCompletion(at: index)
+                                        toggleSpotCompletion(spotId: spot.id)
                                     }
                                 )
                                 
                                 // 交通機関情報
-                                if index < spots.count - 1, let transport = spot.transportToNext {
+                                if index < filteredSpots.count - 1, let transport = spot.transportToNext {
                                     TransportCard(transport: transport)
                                 }
                             }
                         }
                         
                         // 完了メッセージ
-                        if completedSpotsCount == spots.count {
+                        if filteredSpotsCount > 0 && filteredSpotsCompletedCount == filteredSpotsCount {
                             VStack(spacing: 16) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 60))
                                     .foregroundColor(.green)
-                                Text("すべてのスポットを巡りました！")
+                                Text("Day \(selectedDay)のスポットを\nすべて巡りました！")
                                     .font(.system(size: 20, weight: .semibold))
-                                Text("お疲れ様でした")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
+                                if completedSpotsCount == spots.count {
+                                    Text("すべての日程が完了しました\nお疲れ様でした")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.gray)
+                                        .multilineTextAlignment(.center)
+                                }
                             }
                             .padding(.vertical, 40)
                         }
@@ -154,8 +189,10 @@ struct VisitGameScreen: View {
         }
     }
     
-    func toggleSpotCompletion(at index: Int) {
-        spots[index].isCompleted.toggle()
+    func toggleSpotCompletion(spotId: UUID) {
+        if let index = spots.firstIndex(where: { $0.id == spotId }) {
+            spots[index].isCompleted.toggle()
+        }
     }
 }
 
@@ -173,64 +210,88 @@ struct SpotCard: View {
     }()
     
     var body: some View {
-        HStack(spacing: 16) {
-            // チェックボックス
-            Button(action: onToggle) {
-                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 24))
-                    .foregroundColor(isCompleted ? .green : .gray)
+        HStack(spacing: 12) {
+            // スポット画像（タップで詳細表示）
+            ZStack(alignment: .topLeading) {
+                Button(action: onTap) {
+                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 140, height: 100)
+                            .clipped()
+                            .cornerRadius(8)
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray5))
+                            .frame(width: 140, height: 100)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.system(size: 30))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                // 滞在時間バッジ（左上に配置）
+                Text("\(spot.stayDuration)分")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.orange)
+                    )
+                    .padding(.top, 8)
+                    .padding(.leading, 8)
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                // 時刻と名前
-                HStack {
-                    if let arrivalTime = spot.arrivalTime {
-                        Text(timeFormatter.string(from: arrivalTime))
-                            .font(.system(size: 14, weight: .medium))
+                
+            VStack(alignment: .leading, spacing: 6) {
+                // スポット名
+                Text(spot.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+                    .lineLimit(2)
+                    .padding(.top, 15) // 15ピクセル下げる
+                    
+                    // 滞在時間帯
+                    if !spot.timeRange.isEmpty {
+                        Text(spot.timeRange)
+                            .font(.system(size: 12))
                             .foregroundColor(.blue)
                     }
-                    Text(spot.name)
-                        .font(.system(size: 16, weight: .semibold))
-                        .strikethrough(isCompleted)
-                        .foregroundColor(isCompleted ? .gray : .primary)
-                }
-                
-                // 最寄り駅
-                if !spot.nearestStation.isEmpty {
-                    Label(spot.nearestStation, systemImage: "tram")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                }
-                
-                // 滞在時間とメモ
-                HStack {
-                    Label("\(spot.stayDuration)分", systemImage: "clock")
-                        .font(.system(size: 13))
-                        .foregroundColor(.orange)
                     
-                    if !spot.notes.isEmpty {
-                        Text("・")
-                            .foregroundColor(.gray)
-                        Text(spot.notes)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
+                    // 住所情報
+                    if !spot.address.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                            Text(spot.address)
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                                .lineLimit(1)
+                        }
                     }
+                    
+                    Spacer()
                 }
-            }
-            
-            Spacer()
-            
-            // 詳細ボタン
-            Button(action: onTap) {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(.blue)
-            }
+                
+                Spacer()
+                
+                // チェックボックス
+                Button(action: onToggle) {
+                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 24))
+                        .foregroundColor(isCompleted ? .green : .gray)
+                }
         }
-        .padding(16)
-        .background(Color(.systemBackground))
+        .padding(12)
+        .background(Color.white)
         .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
     }
@@ -315,38 +376,24 @@ struct SpotDetailView: View {
                             .font(.system(size: 20, weight: .semibold))
                     }
                     
-                    // 時刻情報
-                    if let arrivalTime = spot.arrivalTime, let departureTime = spot.departureTime {
+                    // 滞在時間帯
+                    if !spot.timeRange.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("時刻")
+                            Text("滞在時間帯")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
-                            HStack(spacing: 16) {
-                                Label("到着: \(timeFormatter.string(from: arrivalTime))", systemImage: "arrow.down.circle")
-                                Label("出発: \(timeFormatter.string(from: departureTime))", systemImage: "arrow.up.circle")
-                            }
-                            .font(.system(size: 16))
-                        }
-                    }
-                    
-                    // 最寄り駅
-                    if !spot.nearestStation.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("最寄り駅")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
-                            Label(spot.nearestStation, systemImage: "tram")
+                            Text(spot.timeRange)
                                 .font(.system(size: 16))
                         }
                     }
                     
-                    // 住所
-                    if !spot.address.isEmpty {
+                    // ここで何をするのか
+                    if !spot.activity.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("住所")
+                            Text("ここで何をするのか")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
-                            Label(spot.address, systemImage: "mappin")
+                            Text(spot.activity)
                                 .font(.system(size: 16))
                         }
                     }
@@ -361,6 +408,17 @@ struct SpotDetailView: View {
                             .foregroundColor(.orange)
                     }
                     
+                    // 住所
+                    if !spot.address.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("住所")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                            Label(spot.address, systemImage: "mappin")
+                                .font(.system(size: 16))
+                        }
+                    }
+                    
                     // メモ
                     if !spot.notes.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -369,6 +427,18 @@ struct SpotDetailView: View {
                                 .foregroundColor(.gray)
                             Text(spot.notes)
                                 .font(.system(size: 16))
+                        }
+                    }
+                    
+                    // スポット費用
+                    if spot.spotCost > 0 {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("費用")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                            Label("¥\(spot.spotCost)", systemImage: "yensign.circle")
+                                .font(.system(size: 16))
+                                .foregroundColor(.blue)
                         }
                     }
                     

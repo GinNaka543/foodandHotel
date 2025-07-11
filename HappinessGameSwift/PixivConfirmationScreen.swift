@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct PixivConfirmationScreen: View {
     let artwork: Artwork

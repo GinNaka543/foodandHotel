@@ -16,11 +16,12 @@ enum ListTab: Int {
 }
 
 // Temporary copy of UserProfile structures until UserProfileScreen.swift is added to project
-struct UserProfile: Codable {
+struct UserProfile: Codable, Equatable {
     var id: String = UUID().uuidString
     var username: String = ""
     var iconImagePath: String?
     var birthday: Date?
+    var animeQuote: String = ""
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
 }
@@ -57,7 +58,7 @@ struct HomeScreen: View {
     
     // キャラクター名を30文字以内で表示する関数
     private func getCharacterNamesText() -> String {
-        let names = characterManager.characters.map { $0.name }
+        let names = characterManager.characters.filter { !$0.name.isEmpty }.map { $0.name }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
             return joinedNames.isEmpty ? "キャラクターが登録されていません" : joinedNames
@@ -89,6 +90,10 @@ struct HomeScreen: View {
         let threeDaysLater = calendar.date(byAdding: .day, value: 3, to: today) ?? today
         
         return characterManager.characters.filter { character in
+            // 名前が空の場合は除外
+            guard !character.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return false
+            }
             // 誕生日の月日を取得
             let birthdayMonth = calendar.component(.month, from: character.birthday)
             let birthdayDay = calendar.component(.day, from: character.birthday)
@@ -143,9 +148,10 @@ struct HomeScreen: View {
                             Text(profileManager.currentUser.username.isEmpty ? "中島 銀星" : profileManager.currentUser.username)
                                 .font(.system(size: 28, weight: .bold))
                                 .foregroundColor(.primary)
-                            Text("Enter a status message")
+                            Text(profileManager.currentUser.animeQuote.isEmpty ? "好きなアニメのセリフを設定" : profileManager.currentUser.animeQuote)
                                 .font(.system(size: 16))
                                 .foregroundColor(.gray)
+                                .lineLimit(2)
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -184,13 +190,15 @@ struct HomeScreen: View {
                 .padding(.top, 24)
                 // ステータスボタン
                 HStack {
-                    Button(action: {}) {
+                    Button(action: {
+                        showingProfile = true
+                    }) {
                         HStack(spacing: 6) {
-                            Image(systemName: "music.note")
-                                .foregroundColor(.green)
-                            Text("Select music")
+                            Image(systemName: "person.circle")
+                                .foregroundColor(.blue)
+                            Text("Profile edit")
                                 .font(.system(size: 14))
-                                .foregroundColor(.green)
+                                .foregroundColor(.blue)
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
@@ -253,7 +261,7 @@ struct HomeScreen: View {
                     // Characters
                     HStack {
                         FriendListIconView(
-                            images: characterManager.characters.prefix(4).map { char in
+                            images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).map { char in
                                 if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
                             },
                             fallbackSystemName: "person",
@@ -267,7 +275,7 @@ struct HomeScreen: View {
                                 .foregroundColor(.gray)
                         }
                         Spacer()
-                        Text("\(characterManager.characters.count)")
+                        Text("\(characterManager.characters.filter { !$0.name.isEmpty }.count)")
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                     }
@@ -308,32 +316,6 @@ struct HomeScreen: View {
                 }
                 .padding(.horizontal, 20)
                 
-                // サービス
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("Recommend")
-                            .font(.system(size: 18, weight: .bold))
-                        Spacer()
-                        Text("See all")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.top, 16)
-                    .padding(.bottom, 4)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 24) {
-                            ForEach(["LINE AI", "Stickers", "Themes", "LINE GIFT", "LINE POINT C", "LINE GAME"], id: \.self) { service in
-                                VStack(spacing: 6) {
-                                    Circle().stroke(Color.gray, lineWidth: 2).frame(width: 36, height: 36)
-                                    Text(service)
-                                        .font(.system(size: 12))
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 8)
-                    }
-                }
-                .padding(.horizontal, 20)
                 // インフォメーションタイトル
                 HStack {
                     Text("Information")
@@ -343,24 +325,24 @@ struct HomeScreen: View {
                 .padding(.top, 16)
                 .padding(.horizontal, 20)
 
-                // 広告バナー（FirebaseAdViewを青豚バナーと同じサイズ・レイアウトで表示）
+                // 広告バナー（1つの広告を表示、高さを1.3倍に）
                 HStack {
                     Spacer()
-                    FirebaseAdView(placement: "home")
-                        .frame(width: 360, height: 189)
+                    FirebaseAdView(placement: "home", adIndex: 0)
+                        .frame(width: 360, height: 245.7) // 189 * 1.3 = 245.7
                         .cornerRadius(10)
                         .clipped()
-                        .padding(.top, 20)
                     Spacer()
                 }
-                // ここに空行を追加しておくことで、Xcodeのキャッシュ対策になる場合があります。
+                .padding(.top, 20)
+                .padding(.bottom, 20)
             }
         }
         .background(Color.white)
         .fullScreenCover(isPresented: $showListPage) {
             ListPageScreen(
                 selectedTab: initialTab,
-                characters: characterManager.characters,
+                characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
                 animes: animeManager.animes,
                 birthdays: getBirthdayReminderCharacters()
             )
@@ -532,7 +514,7 @@ struct UserProfileScreenTemp: View {
     @State private var iconImage: UIImage?
     @State private var birthday = Date()
     @State private var showBirthdayPicker = false
-    @State private var showingSaveAlert = false
+    @State private var animeQuote: String = ""
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -558,11 +540,9 @@ struct UserProfileScreenTemp: View {
                         
                         Spacer()
                         
-                        Button(action: saveProfile) {
-                            Text("保存")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.blue)
-                        }
+                        // 空のスペーサーで右側のバランスを保つ
+                        Spacer()
+                            .frame(width: 44)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -615,6 +595,7 @@ struct UserProfileScreenTemp: View {
                                         if let data = try? await selectedIconItem?.loadTransferable(type: Data.self),
                                            let uiImage = UIImage(data: data) {
                                             iconImage = uiImage
+                                            saveProfile()
                                         }
                                     }
                                 }
@@ -639,6 +620,9 @@ struct UserProfileScreenTemp: View {
                                         .padding(.horizontal, 16)
                                         .background(Color(.systemGray6))
                                         .cornerRadius(8)
+                                        .onChange(of: username) { _ in
+                                            saveProfile()
+                                        }
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.bottom, 24)
@@ -666,6 +650,24 @@ struct UserProfileScreenTemp: View {
                                     }
                                 }
                                 .padding(.horizontal, 16)
+                                .padding(.bottom, 24)
+                                
+                                // アニメのセリフ
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("好きなアニメのセリフ")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    TextField("アニメのセリフを入力", text: $animeQuote)
+                                        .font(.system(size: 16))
+                                        .padding(.vertical, 12)
+                                        .padding(.horizontal, 16)
+                                        .background(Color(.systemGray6))
+                                        .cornerRadius(8)
+                                        .onChange(of: animeQuote) { _ in
+                                            saveProfile()
+                                        }
+                                }
+                                .padding(.horizontal, 16)
                                 .padding(.bottom, 32)
                             }
                         }
@@ -685,6 +687,7 @@ struct UserProfileScreenTemp: View {
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button("完了") {
                                 showBirthdayPicker = false
+                                saveProfile()
                             }
                         }
                     }
@@ -694,13 +697,14 @@ struct UserProfileScreenTemp: View {
         .onAppear {
             loadCurrentProfile()
         }
-        .alert("保存完了", isPresented: $showingSaveAlert) {
-            Button("OK", role: .cancel) { }
+        .onChange(of: profileManager.currentUser) { _ in
+            loadCurrentProfile()
         }
     }
     
     private func loadCurrentProfile() {
         username = profileManager.currentUser.username
+        animeQuote = profileManager.currentUser.animeQuote
         if let bday = profileManager.currentUser.birthday {
             birthday = bday
         }
@@ -709,11 +713,14 @@ struct UserProfileScreenTemp: View {
            let uiImage = UIImage(contentsOfFile: imagePath) {
             iconImage = uiImage
         }
+        
+        print("📱 [Profile] 現在のプロフィール読み込み: username=\(username), animeQuote=\(animeQuote)")
     }
     
     private func saveProfile() {
         profileManager.currentUser.username = username
         profileManager.currentUser.birthday = birthday
+        profileManager.currentUser.animeQuote = animeQuote
         
         // 画像を保存
         if let iconImage = iconImage {
@@ -741,8 +748,6 @@ struct UserProfileScreenTemp: View {
                 }
             }
         }
-        
-        showingSaveAlert = true
     }
 }
 

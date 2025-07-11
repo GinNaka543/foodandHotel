@@ -3,15 +3,37 @@ import UIKit
 
 struct FirebaseAdView: View {
     let placement: String
+    let adIndex: Int // 表示する広告のインデックス
     @State private var advertisements: [Advertisement] = []
     @State private var currentIndex = 0
     @State private var timer: Timer?
     @State private var isLoading = true
+    @State private var scrollOffset: CGFloat = 0
+    @State private var autoScrollTimer: Timer?
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     
-    private func convertedAd() -> Advertisement {
-        var ad = advertisements[currentIndex % advertisements.count]
+    init(placement: String, adIndex: Int = 0) {
+        self.placement = placement
+        self.adIndex = adIndex
+    }
+    
+    private func convertedAd() -> Advertisement? {
+        guard !advertisements.isEmpty else { return nil }
+        
+        // 複数の広告がある場合は、adIndexに基づいて異なる広告を表示
+        let index = advertisements.count > 1 ? (adIndex % advertisements.count) : (currentIndex % advertisements.count)
+        
+        // 広告が1つしかない場合、2つ目のインスタンスはnilを返す
+        if advertisements.count == 1 && adIndex > 0 {
+            return nil
+        }
+        
+        guard index < advertisements.count else { return nil }
+        
+        var ad = advertisements[index]
+        print("🎯 [FirebaseAdView] 広告表示: placement=\(placement), adIndex=\(adIndex), 選択された広告=\(ad.title)")
+        
         // GitHub URLの場合はraw URLに変換
         if ad.imageURL.contains("github.com") && ad.imageURL.contains("/blob/") {
             ad.imageURL = ad.imageURL
@@ -29,8 +51,8 @@ struct FirebaseAdView: View {
                     .frame(height: 60)
                     .frame(maxWidth: .infinity)
             } else if !advertisements.isEmpty {
-                let ad = convertedAd()
-                if placement == "character" {
+                if let ad = convertedAd() {
+                    if placement == "character" {
                     // キャラクターページ: 左テキスト・右画像
                     Button(action: {
                         handleAdClick(ad)
@@ -145,50 +167,172 @@ struct FirebaseAdView: View {
                     .buttonStyle(PlainButtonStyle())
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.leading, -4)
-                } else {
-                    // ホームページ: 画像のみ
-                    Button(action: {
-                        handleAdClick(ad)
-                    }) {
-                        VStack {
-                            if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
-                                let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                    case .failure(let error):
-                                        let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
-                                        Color(.systemGray5)
-                                            .overlay(
-                                                Text("画像エラー")
-                                                    .font(.caption)
-                                                    .foregroundColor(.red)
+                } else if placement == "anime" {
+                    // アニメページ: 横スクロールで最大5つ表示
+                    VStack(alignment: .leading, spacing: 12) {
+                        // セクションタイトル
+                        HStack(spacing: 8) {
+                            // アイコンと背景
+                            ZStack {
+                                Circle()
+                                    .fill(LinearGradient(
+                                        gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ))
+                                    .frame(width: 32, height: 32)
+                                
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+                            }
+                            
+                            Text("今おすすめアニメ")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    // 広告を二度表示することで無限ループを実現
+                                ForEach(0..<2, id: \.self) { setIndex in
+                                    ForEach(advertisements.prefix(5)) { ad in
+                                        Button(action: {
+                                            handleAdClick(ad)
+                                        }) {
+                                    ZStack(alignment: .bottom) {
+                                        // 画像
+                                        if let url = URL(string: convertGitHubUrl(ad.imageURL)), !ad.imageURL.isEmpty {
+                                            AsyncImage(url: url) { phase in
+                                                switch phase {
+                                                case .success(let image):
+                                                    image
+                                                        .resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                case .failure(_):
+                                                    Color(.systemGray5)
+                                                        .overlay(
+                                                            Image(systemName: "photo")
+                                                                .font(.system(size: 30))
+                                                                .foregroundColor(.gray)
+                                                        )
+                                                case .empty:
+                                                    ProgressView()
+                                                @unknown default:
+                                                    Color(.systemGray5)
+                                                }
+                                            }
+                                            .frame(width: 260, height: 144)
+                                            .clipped()
+                                        } else {
+                                            Color(.systemGray5)
+                                                .frame(width: 260, height: 144)
+                                        }
+                                        
+                                        // タイトルオーバーレイ
+                                        VStack {
+                                            Spacer()
+                                            HStack {
+                                                Text(ad.title)
+                                                    .font(.system(size: 14, weight: .semibold))
+                                                    .foregroundColor(.white)
+                                                    .lineLimit(1)
+                                                    .padding(.horizontal, 8)
+                                                    .padding(.vertical, 6)
+                                                Spacer()
+                                            }
+                                            .background(
+                                                // ブラー効果の背景
+                                                VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+                                                    .opacity(0.7)
                                             )
-                                    case .empty:
-                                        let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
-                                        ProgressView()
-                                    @unknown default:
-                                        Color(.systemGray5)
+                                        }
                                     }
-                                }
-                                .frame(width: 360, height: 189)
-                                .cornerRadius(10)
-                                .clipped()
-                            } else {
-                                let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
-                                Color(.systemGray5)
-                                    .frame(width: 360, height: 189)
+                                    .frame(width: 260, height: 144)
                                     .cornerRadius(10)
                                     .clipped()
-                            }
+                                }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .onAppear {
+                                        if setIndex == 0 {
+                                            recordImpression(for: ad)
+                                        }
+                                    }
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                                .offset(x: scrollOffset)
+                                .onAppear {
+                                    startAutoScroll()
+                                }
+                                .onDisappear {
+                                    stopAutoScroll()
+                                }
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { _ in
+                                            // ユーザーがドラッグ中は自動スクロールを停止
+                                            stopAutoScroll()
+                                        }
+                                        .onEnded { _ in
+                                            // ドラッグ終了後、自動スクロールを再開
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                                startAutoScroll()
+                                            }
+                                        }
+                                )
+                        }
                         }
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .padding(.horizontal, 16)
+                } else {
+                    // ホームページ: 画像のみ
+                    // 広告が1つしかない場合や、指定されたインデックスが範囲外の場合は空のビューを返す
+                    if advertisements.count <= 1 && adIndex > 0 {
+                        EmptyView()
+                    } else if adIndex < advertisements.count {
+                        Button(action: {
+                            handleAdClick(ad)
+                        }) {
+                            VStack {
+                                if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
+                                    let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
+                                    AsyncImage(url: url) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                        case .failure(let error):
+                                            let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
+                                            Color(.systemGray5)
+                                                .overlay(
+                                                    Text("画像エラー")
+                                                        .font(.caption)
+                                                        .foregroundColor(.red)
+                                                )
+                                        case .empty:
+                                            let _ = print("⏳ [FirebaseAdView] 画像読み込み中...")
+                                            ProgressView()
+                                        @unknown default:
+                                            Color(.systemGray5)
+                                        }
+                                    }
+                                } else {
+                                    let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
+                                    Color(.systemGray5)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 16)
+                    } else {
+                        EmptyView()
+                    }
+                    }
                 }
             }
         }
@@ -245,25 +389,46 @@ struct FirebaseAdView: View {
                 print("🎯 [FirebaseAdView] ターゲット広告: \(targetAds.count)件")
                 print("📢 [FirebaseAdView] 一般広告: \(generalAds.count)件")
                 
-                // --- 表示枠数の制御 ---
-                let maxAds = (placement == "home") ? 2 : 1
-                var resultAds: [Advertisement] = []
-                resultAds.append(contentsOf: targetAds.prefix(maxAds))
-                if resultAds.count < maxAds {
-                    let remaining = maxAds - resultAds.count
-                    let filteredGeneral = generalAds.filter { ad in !resultAds.contains(where: { $0.id == ad.id }) }
-                    resultAds.append(contentsOf: filteredGeneral.prefix(remaining))
+                // --- 確率ベースの広告選択 ---
+                var candidateAds: [Advertisement] = []
+                
+                // ターゲット広告を優先的に選択（表示率を考慮）
+                for ad in targetAds {
+                    let probability = ad.displayRate / 100.0
+                    if Double.random(in: 0.0...1.0) <= probability {
+                        candidateAds.append(ad)
+                    }
                 }
-                // ターゲット広告を上に表示するため、配列の順序を調整
-                let targetAdsInResult = resultAds.filter { ad in
-                    (ad.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||
-                    (ad.targetCharacters.first(where: { userCharacters.contains($0) }) != nil) ||
-                    (ad.targetHashtags.first(where: { userHashtags.contains($0) }) != nil)
+                
+                // 一般広告から選択（表示率を考慮）
+                for ad in generalAds {
+                    let probability = ad.displayRate / 100.0
+                    if Double.random(in: 0.0...1.0) <= probability {
+                        candidateAds.append(ad)
+                    }
                 }
-                let generalAdsInResult = resultAds.filter { ad in
-                    (ad.targetAnimes.isEmpty && ad.targetCharacters.isEmpty && ad.targetHashtags.isEmpty)
+                
+                // 優先度でソート
+                candidateAds.sort { ad1, ad2 in
+                    // まずターゲット広告を優先
+                    let isTarget1 = (ad1.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||
+                                   (ad1.targetCharacters.first(where: { userCharacters.contains($0) }) != nil) ||
+                                   (ad1.targetHashtags.first(where: { userHashtags.contains($0) }) != nil)
+                    let isTarget2 = (ad2.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||
+                                   (ad2.targetCharacters.first(where: { userCharacters.contains($0) }) != nil) ||
+                                   (ad2.targetHashtags.first(where: { userHashtags.contains($0) }) != nil)
+                    
+                    if isTarget1 != isTarget2 {
+                        return isTarget1
+                    }
+                    
+                    // 同じタイプの場合は優先度でソート
+                    return ad1.priority > ad2.priority
                 }
-                self.advertisements = targetAdsInResult + generalAdsInResult
+                
+                // 最大表示数の制限
+                let maxAds = placement == "anime" ? 5 : (placement == "home" ? 10 : Int.max)
+                self.advertisements = Array(candidateAds.prefix(maxAds))
                 
                 print("🎬 [FirebaseAdView] 最終的に表示する広告: \(self.advertisements.count)件")
                 for (index, ad) in self.advertisements.enumerated() {
@@ -290,5 +455,59 @@ struct FirebaseAdView: View {
     func stopTimer() {
         timer?.invalidate()
         timer = nil
+    }
+    
+    private func recordImpression(for ad: Advertisement) {
+        if let adId = ad.id {
+            FirebaseManager.shared.recordAdImpression(advertisementId: adId)
+        }
+    }
+    
+    private func convertGitHubUrl(_ url: String) -> String {
+        if url.contains("github.com") && url.contains("/blob/") {
+            return url
+                .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
+                .replacingOccurrences(of: "/blob/", with: "/")
+        }
+        return url
+    }
+    
+    private func startAutoScroll() {
+        guard placement == "anime" && advertisements.count > 1 else { return }
+        
+        autoScrollTimer?.invalidate()
+        scrollOffset = 0
+        
+        let itemWidth: CGFloat = 260 + 12 // 画像幅 + spacing
+        let totalWidth = CGFloat(advertisements.count) * itemWidth
+        
+        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
+            withAnimation(.linear(duration: 0.03)) {
+                scrollOffset -= 1
+                
+                // 一セット分スクロールしたら、位置をリセット
+                if scrollOffset <= -totalWidth {
+                    scrollOffset = 0
+                }
+            }
+        }
+    }
+    
+    private func stopAutoScroll() {
+        autoScrollTimer?.invalidate()
+        autoScrollTimer = nil
+    }
+}
+
+// ブラー効果のためのUIViewRepresentable
+struct VisualEffectView: UIViewRepresentable {
+    let effect: UIVisualEffect?
+    
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        return UIVisualEffectView(effect: effect)
+    }
+    
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
+        uiView.effect = effect
     }
 }

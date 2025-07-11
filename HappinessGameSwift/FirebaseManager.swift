@@ -315,6 +315,8 @@ struct Advertisement: Identifiable, Hashable {
     var targetCharacters: [String]
     var targetHashtags: [String]
     var placements: [String]
+    var displayRate: Double = 100.0 // 表示率（0-100%）
+    var priority: Int = 5 // 優先度（1-10）
     var impressions: Int = 0
     var clicks: Int = 0
     var isActive: Bool = true

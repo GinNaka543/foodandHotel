@@ -2,10 +2,13 @@ import Foundation
 import FirebaseCore
 import FirebaseFirestore
 import FirebaseAuth
+import UIKit
 
 class FirebaseManager: ObservableObject {
     static let shared = FirebaseManager()
     private let db = Firestore.firestore()
+    @Published var publicPlans: [VisitPlanModel] = []
+    @Published var userPlans: [VisitPlanModel] = []
     
     private init() {}
     
@@ -301,6 +304,114 @@ class FirebaseManager: ObservableObject {
                 print("✅ クリック記録成功: \(advertisementId)")
             }
         }
+    }
+    
+    // MARK: - Visit Plan Functions
+    
+    // プランを保存（投稿）
+    func saveVisitPlan(_ plan: VisitPlanModel, completion: @escaping (Result<Void, Error>) -> Void) {
+        let planRef = db.collection("visitPlans").document(plan.id)
+        planRef.setData(plan.dictionary) { error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+    
+    // 公開プランを取得（オールタブ用）
+    func fetchPublicPlans(completion: @escaping (Result<[VisitPlanModel], Error>) -> Void) {
+        db.collection("visitPlans")
+            .whereField("isPublic", isEqualTo: true)
+            .order(by: "createdAt", descending: true)
+            .limit(to: 50)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                let plans = snapshot?.documents.compactMap { doc in
+                    VisitPlanModel(dictionary: doc.data())
+                } ?? []
+                
+                self.publicPlans = plans
+                completion(.success(plans))
+            }
+    }
+    
+    // ユーザーのプランを取得（オリジナルタブ用）
+    func fetchUserPlans(userId: String, completion: @escaping (Result<[VisitPlanModel], Error>) -> Void) {
+        db.collection("visitPlans")
+            .whereField("userId", isEqualTo: userId)
+            .order(by: "createdAt", descending: true)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                let plans = snapshot?.documents.compactMap { doc in
+                    VisitPlanModel(dictionary: doc.data())
+                } ?? []
+                
+                self.userPlans = plans
+                completion(.success(plans))
+            }
+    }
+    
+    // プラン購入を記録
+    func recordPlanPurchase(_ purchase: PlanPurchase, completion: @escaping (Result<Void, Error>) -> Void) {
+        // 購入記録を保存
+        let purchaseRef = db.collection("planPurchases").document(purchase.id)
+        purchaseRef.setData(purchase.dictionary) { error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            // プランの購入者リストを更新
+            let planRef = self.db.collection("visitPlans").document(purchase.planId)
+            planRef.updateData([
+                "purchasedBy": FieldValue.arrayUnion([purchase.userId])
+            ]) { error in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+        }
+    }
+    
+    // プラン投稿料金の支払いを記録
+    func recordPlanPostingPayment(_ payment: PlanPostingPayment, completion: @escaping (Result<Void, Error>) -> Void) {
+        let paymentRef = db.collection("planPostingPayments").document(payment.id)
+        paymentRef.setData(payment.dictionary) { error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+    
+    // ユーザーがプランを購入済みかチェック
+    func checkPlanPurchased(userId: String, planId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        db.collection("planPurchases")
+            .whereField("userId", isEqualTo: userId)
+            .whereField("planId", isEqualTo: planId)
+            .limit(to: 1)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                let isPurchased = !(snapshot?.documents.isEmpty ?? true)
+                completion(.success(isPurchased))
+            }
     }
 }
 

@@ -10,15 +10,16 @@ public struct VisitScreen: View {
     @State private var selectedPlan: VisitPlanData?
     @State private var visitAds: [Advertisement] = []
     @StateObject private var firebaseManager = FirebaseManager.shared
+    @State private var publicPlans: [VisitPlanModel] = []
+    @State private var userOriginalPlans: [VisitPlanModel] = []
+    @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? ""
+    @State private var showingPurchaseDialog = false
+    @State private var planToPurchase: VisitPlanModel?
     
     // タブ用
     enum VisitTab: String, CaseIterable {
-        case all = "ALL"
-        case original = "Original"
-        case date = "Date"
-        case animePilgrimage = "Anime pilgrimage"
-        case city = "City"
-        case onsen = "Onsen"
+        case all = "オール"
+        case original = "オリジナル"
     }
     @State private var selectedTab: VisitTab = .all
     @State private var showSearchBar = false
@@ -26,6 +27,218 @@ public struct VisitScreen: View {
     @State private var showingPlanningScreen = false
     
     public var body: some View {
+        mainContent
+            .fullScreenCover(isPresented: $showingPlanningScreen) {
+                VisitPlanningScreen()
+                    .onDisappear {
+                        loadSavedPlans()
+                        loadFirebasePlans()
+                    }
+            }
+            .sheet(isPresented: $showingPurchaseDialog) {
+                if let plan = planToPurchase {
+                    PlanPurchaseView(plan: plan, isPresented: $showingPurchaseDialog)
+                }
+            }
+            .fullScreenCover(isPresented: $showingSelectedPlan) {
+                if let plan = selectedPlan {
+                    VisitGameScreen(
+                        animeName: plan.animeName,
+                        duration: plan.duration,
+                        planTitle: plan.title,
+                        spots: plan.spots,
+                        numberOfDays: plan.numberOfDays
+                    )
+                }
+            }
+            .onAppear {
+                loadSavedPlans()
+                loadVisitAds()
+                loadFirebasePlans()
+            }
+    }
+    
+    @ViewBuilder
+    private func planCard(for plan: VisitPlanModel) -> some View {
+        Button(action: {
+            checkAndShowPlan(plan)
+        }) {
+            VStack(alignment: .leading, spacing: 0) {
+                // サムネイル画像
+                ZStack {
+                    Rectangle()
+                        .fill(Color(.systemGray5))
+                        .frame(height: 233)
+                    
+                    if let thumbnailUrl = plan.thumbnailUrl, !thumbnailUrl.isEmpty {
+                        AsyncImage(url: URL(string: thumbnailUrl)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle())
+                                    .scaleEffect(1.5)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 233)
+                                    .clipped()
+                            case .failure(_):
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.orange)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.system(size: 40))
+                            .foregroundColor(.gray)
+                    }
+                }
+                .frame(height: 233)
+                .clipped()
+                
+                // プラン情報
+                HStack(alignment: .center, spacing: 12) {
+                    Circle()
+                        .fill(Color.blue.opacity(0.2))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "map.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.blue)
+                        )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(plan.title)
+                            .font(.headline)
+                            .foregroundColor(.black)
+                        Text("#\(plan.animeName)")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(plan.duration)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.blue)
+                        Text("\(plan.spots.count)スポット")
+                            .font(.system(size: 10))
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 8)
+    }
+    
+    @ViewBuilder
+    private func adCard(for ad: Advertisement) -> some View {
+        Button(action: {
+            if let url = URL(string: ad.linkURL) {
+                firebaseManager.recordAdClick(advertisementId: ad.id ?? "")
+                UIApplication.shared.open(url)
+            }
+        }) {
+            VStack(alignment: .leading, spacing: 0) {
+                // 広告画像
+                ZStack {
+                    Rectangle()
+                        .fill(Color(.systemGray5))
+                        .frame(height: 233)
+                    
+                    if !ad.imageURL.isEmpty {
+                        AsyncImage(url: URL(string: ad.imageURL)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle())
+                                    .scaleEffect(1.5)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 233)
+                                    .clipped()
+                            case .failure(_):
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.orange)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    } else {
+                        Image(systemName: "megaphone.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.gray)
+                    }
+                }
+                .frame(height: 233)
+                .clipped()
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(ad.title)
+                            .font(.headline)
+                            .foregroundColor(.black)
+                        Text(ad.description)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 8)
+        .onAppear {
+            firebaseManager.recordAdImpression(advertisementId: ad.id ?? "")
+        }
+    }
+    
+    @ViewBuilder
+    private var planListView: some View {
+        let displayPlans = selectedTab == .all ? publicPlans : userOriginalPlans
+        let combinedItems = createCombinedItems(displayPlans)
+        
+        if displayPlans.isEmpty && (selectedTab == .original || visitAds.isEmpty) {
+            VStack(spacing: 16) {
+                Image(systemName: "map")
+                    .font(.system(size: 50))
+                    .foregroundColor(.gray)
+                Text("まだプランがありません")
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                Text("右下のCreateボタンから作成してください")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 100)
+        } else {
+            ForEach(Array(combinedItems.enumerated()), id: \.offset) { index, item in
+                if let plan = item as? VisitPlanModel {
+                    planCard(for: plan)
+                } else if let ad = item as? Advertisement {
+                    adCard(for: ad)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var mainContent: some View {
         NavigationView {
             ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
@@ -94,186 +307,7 @@ public struct VisitScreen: View {
                 // ビジットプラン欄
                 ScrollView {
                     VStack(spacing: 24) {
-                        // 広告とプランを交互に表示
-                        let combinedItems = createCombinedItems()
-                        
-                        if savedPlans.isEmpty && visitAds.isEmpty {
-                            VStack(spacing: 16) {
-                                Image(systemName: "map")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray)
-                                Text("まだプランがありません")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
-                                Text("右下のCreateボタンから作成してください")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 100)
-                        } else {
-                            ForEach(Array(combinedItems.enumerated()), id: \.offset) { index, item in
-                                if let plan = item as? VisitPlanData {
-                                NavigationLink(destination: 
-                                    VisitGameScreen(
-                                        animeName: plan.animeName,
-                                        duration: plan.duration,
-                                        planTitle: plan.title,
-                                        spots: plan.spots,
-                                        numberOfDays: plan.numberOfDays
-                                    )
-                                    .navigationBarHidden(true)
-                                ) {
-                                    VStack(alignment: .leading, spacing: 0) {
-                                        GeometryReader { geometry in
-                                            ZStack {
-                                                RoundedRectangle(cornerRadius: 0)
-                                                    .fill(Color.white)
-                                                    .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
-                                                
-                                                if let thumbnailData = plan.thumbnailData,
-                                                   let uiImage = UIImage(data: thumbnailData) {
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
-                                                } else {
-                                                    Rectangle()
-                                                        .fill(Color(.systemGray5))
-                                                        .overlay(
-                                                            Image(systemName: "photo")
-                                                                .font(.system(size: 40))
-                                                                .foregroundColor(.gray)
-                                                        )
-                                                }
-                                            }
-                                            .frame(width: geometry.size.width, height: 233)
-                                            .clipped()
-                                            .padding(.bottom, 0)
-                                        }
-                                        .frame(height: 233)
-                                        HStack(alignment: .center, spacing: 12) {
-                                            Circle()
-                                                .fill(Color.blue.opacity(0.2))
-                                                .frame(width: 40, height: 40)
-                                                .overlay(
-                                                    Image(systemName: "map.fill")
-                                                        .font(.system(size: 20))
-                                                        .foregroundColor(.blue)
-                                                )
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text(plan.title)
-                                                    .font(.headline)
-                                                    .foregroundColor(.black)
-                                                Text("#\(plan.animeName)")
-                                                    .font(.caption)
-                                                    .foregroundColor(.gray)
-                                            }
-                                            Spacer()
-                                            VStack(alignment: .trailing, spacing: 2) {
-                                                Text(plan.duration)
-                                                    .font(.system(size: 12, weight: .medium))
-                                                    .foregroundColor(.blue)
-                                                Text("\(plan.spots.count)スポット")
-                                                    .font(.system(size: 10))
-                                                    .foregroundColor(.gray)
-                                            }
-                                        }
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                    }
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                .padding(.vertical, 8)
-                                } else if let ad = item as? Advertisement {
-                                    // 広告カード
-                                    Button(action: {
-                                        if let url = URL(string: ad.linkURL) {
-                                            firebaseManager.recordAdClick(advertisementId: ad.id ?? "")
-                                            UIApplication.shared.open(url)
-                                        }
-                                    }) {
-                                        VStack(alignment: .leading, spacing: 0) {
-                                            GeometryReader { geometry in
-                                                ZStack {
-                                                    RoundedRectangle(cornerRadius: 0)
-                                                        .fill(Color.white)
-                                                        .shadow(color: Color.black.opacity(0.06), radius: 4, x: 0, y: 2)
-                                                    
-                                                    AsyncImage(url: URL(string: convertGitHubUrl(ad.imageURL))) { image in
-                                                        image
-                                                            .resizable()
-                                                            .scaledToFill()
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
-                                                    } placeholder: {
-                                                        Rectangle()
-                                                            .fill(Color(.systemGray5))
-                                                            .overlay(
-                                                                Image(systemName: "photo")
-                                                                    .font(.system(size: 40))
-                                                                    .foregroundColor(.gray)
-                                                            )
-                                                    }
-                                                    
-                                                    // 広告インジケーター（削除）
-                                                    // VStack {
-                                                    //     HStack {
-                                                    //         Spacer()
-                                                    //         Text("AD")
-                                                    //             .font(.system(size: 10, weight: .semibold))
-                                                    //             .foregroundColor(.white)
-                                                    //             .padding(.horizontal, 6)
-                                                    //             .padding(.vertical, 2)
-                                                    //             .background(Color.black.opacity(0.6))
-                                                    //             .cornerRadius(4)
-                                                    //             .padding(8)
-                                                    //     }
-                                                    //     Spacer()
-                                                    // }
-                                                }
-                                                .frame(width: geometry.size.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
-                                            }
-                                            .frame(height: 233)
-                                            HStack(alignment: .center, spacing: 12) {
-                                                Circle()
-                                                    .fill(Color.orange.opacity(0.2))
-                                                    .frame(width: 40, height: 40)
-                                                    .overlay(
-                                                        Image(systemName: "megaphone.fill")
-                                                            .font(.system(size: 20))
-                                                            .foregroundColor(.orange)
-                                                    )
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    Text(ad.title)
-                                                        .font(.headline)
-                                                        .foregroundColor(.black)
-                                                        .lineLimit(1)
-                                                    Text(ad.description)
-                                                        .font(.caption)
-                                                        .foregroundColor(.gray)
-                                                        .lineLimit(2)
-                                                }
-                                                Spacer()
-                                                Image(systemName: "chevron.right")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.gray)
-                                            }
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 8)
-                                        }
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .padding(.vertical, 8)
-                                    .onAppear {
-                                        firebaseManager.recordAdImpression(advertisementId: ad.id ?? "")
-                                    }
-                                }
-                            }
-                        }
+                        planListView
                     }
                     .padding(.top, 8)
                 }
@@ -294,17 +328,7 @@ public struct VisitScreen: View {
             .padding(.bottom, 24)
             .padding(.trailing, 20)
         }
-        .fullScreenCover(isPresented: $showingPlanningScreen) {
-            VisitPlanningScreen()
-                .onDisappear {
-                    loadSavedPlans()
-                }
-        }
         .navigationBarHidden(true)
-        }
-        .onAppear {
-            loadSavedPlans()
-            loadVisitAds()
         }
     }
     
@@ -359,8 +383,11 @@ public struct VisitScreen: View {
                 }
                 
                 print("✅ フィルタリング後のビジット広告: \(self.visitAds.count)件")
-                if !self.visitAds.isEmpty {
-                    print("  表示する広告: \(self.visitAds[0].title)")
+                for (index, ad) in self.visitAds.enumerated() {
+                    print("  広告[\(index)]: \(ad.title)")
+                    print("    - 画像URL: \(ad.imageURL.isEmpty ? "空" : ad.imageURL)")
+                    print("    - リンクURL: \(ad.linkURL)")
+                    print("    - 説明: \(ad.description)")
                 }
                 
             case .failure(let error):
@@ -369,16 +396,16 @@ public struct VisitScreen: View {
         }
     }
     
-    func createCombinedItems() -> [Any] {
+    func createCombinedItems(_ plans: [VisitPlanModel]) -> [Any] {
         var items: [Any] = []
         
-        // 広告を最初に追加（存在する場合）
-        if !visitAds.isEmpty {
+        // オールタブの場合のみ広告を表示
+        if selectedTab == .all && !visitAds.isEmpty {
             items.append(visitAds[0])
         }
         
-        // その後にプランを追加
-        items.append(contentsOf: savedPlans)
+        // プランを追加
+        items.append(contentsOf: plans)
         
         return items
     }
@@ -421,6 +448,79 @@ public struct VisitScreen: View {
         }
         
         return Array(Set(hashtags)) // 重複を除去
+    }
+    
+    // Firebaseからプランを読み込む
+    func loadFirebasePlans() {
+        // 公開プランを取得
+        firebaseManager.fetchPublicPlans { result in
+            switch result {
+            case .success(let plans):
+                self.publicPlans = plans
+            case .failure(let error):
+                print("公開プラン取得エラー: \(error)")
+            }
+        }
+        
+        // ユーザーのプランを取得
+        if !currentUserId.isEmpty {
+            firebaseManager.fetchUserPlans(userId: currentUserId) { result in
+                switch result {
+                case .success(let plans):
+                    self.userOriginalPlans = plans
+                case .failure(let error):
+                    print("ユーザープラン取得エラー: \(error)")
+                }
+            }
+        }
+    }
+    
+    // プランの購入状態をチェックして表示
+    func checkAndShowPlan(_ plan: VisitPlanModel) {
+        // 自分のプランか、無料プランの場合は直接表示
+        if plan.userId == currentUserId || plan.price == 0 {
+            showPlanDetail(plan)
+            return
+        }
+        
+        // 購入済みかチェック
+        firebaseManager.checkPlanPurchased(userId: currentUserId, planId: plan.id) { result in
+            switch result {
+            case .success(let isPurchased):
+                if isPurchased {
+                    self.showPlanDetail(plan)
+                } else {
+                    // 購入画面を表示
+                    self.showPurchaseDialog(for: plan)
+                }
+            case .failure(let error):
+                print("購入チェックエラー: \(error)")
+            }
+        }
+    }
+    
+    // プラン詳細を表示
+    func showPlanDetail(_ plan: VisitPlanModel) {
+        // VisitPlanModelをVisitPlanDataに変換
+        let visitPlanData = VisitPlanData(
+            id: UUID(uuidString: plan.id) ?? UUID(),
+            animeName: plan.animeName,
+            title: plan.title,
+            duration: plan.duration,
+            spots: plan.spots,
+            thumbnailData: nil,
+            createdDate: plan.createdDate,
+            startTime: plan.startTime,
+            numberOfDays: plan.numberOfDays
+        )
+        self.selectedPlan = visitPlanData
+        self.showingSelectedPlan = true
+    }
+    
+    // 購入ダイアログを表示
+    func showPurchaseDialog(for plan: VisitPlanModel) {
+        planToPurchase = plan
+        showingPurchaseDialog = true
     }
 }
 

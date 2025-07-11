@@ -20,6 +20,14 @@ struct VisitPlanningScreen: View {
     @State private var selectedDayForNewSpot: Int = 1
     @State private var showingCustomDaysPicker = false
     @State private var customDaysInput: String = ""
+    @State private var planDescription: String = ""
+    @State private var planPrice: Int = 0
+    @State private var isPublic: Bool = false
+    @State private var showingPublishDialog = false
+    @State private var showingPaymentSheet = false
+    @StateObject private var firebaseManager = FirebaseManager.shared
+    @StateObject private var stripeManager = StripePaymentManager.shared
+    @StateObject private var githubManager = GitHubImageManager.shared
     
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -312,42 +320,68 @@ struct VisitPlanningScreen: View {
                 }
                 
                 // 下部のボタン
-                HStack(spacing: 16) {
-                    Button(action: {
-                        savePlan()
-                        dismiss()
-                    }) {
-                        Text("保存")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.blue)
-                            )
+                VStack(spacing: 12) {
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            savePlan()
+                            dismiss()
+                        }) {
+                            Text("下書き保存")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.gray)
+                                )
+                        }
+                        .disabled(planTitle.isEmpty || animeName.isEmpty)
+                        
+                        Button(action: {
+                            showingItinerary = true
+                        }) {
+                            Text("旅程を確認")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.green)
+                                )
+                        }
+                        .disabled(spots.isEmpty)
                     }
-                    .disabled(planTitle.isEmpty || animeName.isEmpty)
                     
                     Button(action: {
-                        showingItinerary = true
+                        showingPublishDialog = true
                     }) {
-                        Text("旅程を確認")
+                        Text("プランを公開")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.green)
+                                    .fill(Color.purple)
                             )
                     }
-                    .disabled(spots.isEmpty)
+                    .disabled(planTitle.isEmpty || animeName.isEmpty || spots.isEmpty)
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+        }
+        .sheet(isPresented: $showingPublishDialog) {
+            PublishPlanDialog(
+                planTitle: planTitle,
+                planDescription: $planDescription,
+                planPrice: $planPrice,
+                onPublish: { publishPlan() },
+                onCancel: { showingPublishDialog = false }
+            )
         }
         .sheet(isPresented: $showingAddSpotSheet) {
             AddSpotView(spots: $spots, startTime: startTime, previousSpots: spots, selectedDay: selectedDayForNewSpot)
@@ -437,6 +471,79 @@ struct VisitPlanningScreen: View {
             return []
         }
         return plans
+    }
+    
+    func publishPlan() {
+        // 支払い処理を開始
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        stripeManager.payForPlanPosting(userId: userId) { result in
+            switch result {
+            case .success(let payment):
+                // 支払い成功後、プランをFirebaseに保存
+                self.uploadPlanToFirebase(payment: payment)
+            case .failure(let error):
+                print("支払いエラー: \(error)")
+            }
+        }
+    }
+    
+    func uploadPlanToFirebase(payment: PlanPostingPayment) {
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // 画像をGitHubにアップロード
+        var thumbnailUrl: String?
+        let group = DispatchGroup()
+        
+        if let thumbnailImage = thumbnailImage {
+            group.enter()
+            githubManager.uploadImage(thumbnailImage, fileName: "plan_\(UUID().uuidString)") { result in
+                switch result {
+                case .success(let url):
+                    thumbnailUrl = url
+                case .failure(let error):
+                    print("画像アップロードエラー: \(error)")
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: DispatchQueue.main, execute: {
+            // Firebaseにプランを保存
+            let plan = VisitPlanModel(
+                id: UUID().uuidString,
+                userId: userId,
+                animeName: self.animeName,
+                title: self.planTitle,
+                description: self.planDescription,
+                duration: self.formatTotalDuration(),
+                spots: self.updateSpotTimes(),
+                thumbnailUrl: thumbnailUrl,
+                price: self.planPrice,
+                createdDate: Date(),
+                startTime: self.startTime,
+                numberOfDays: self.numberOfDays,
+                totalCost: self.calculateTotalCost(),
+                isPublic: true,
+                purchasedBy: [],
+                createdAt: Date(),
+                updatedAt: Date()
+            )
+            
+            self.firebaseManager.saveVisitPlan(plan) { result in
+                switch result {
+                case .success:
+                    // 支払い記録を保存
+                    self.firebaseManager.recordPlanPostingPayment(payment) { _ in
+                        DispatchQueue.main.async {
+                            self.dismiss()
+                        }
+                    }
+                case .failure(let error):
+                    print("プラン保存エラー: \(error)")
+                }
+            }
+        })
     }
 }
 

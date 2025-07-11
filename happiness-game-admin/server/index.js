@@ -354,6 +354,207 @@ app.get('/api/extract-image', async (req, res) => {
   }
 });
 
+// GitHubリポジトリ管理のエンドポイント
+// リポジトリ一覧を取得
+app.get('/api/github-repositories', async (req, res) => {
+  try {
+    const settingsDoc = await db.collection('githubSettings').doc('repositories').get();
+    if (!settingsDoc.exists) {
+      return res.json({ repositories: [], activeRepoId: null });
+    }
+    const data = settingsDoc.data();
+    res.json({
+      repositories: data.repositories || [],
+      activeRepoId: data.activeRepoId || null
+    });
+  } catch (error) {
+    console.error('リポジトリ取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 新規リポジトリを追加
+app.post('/api/github-repositories', async (req, res) => {
+  try {
+    const { owner, name, token, branch, basePath } = req.body;
+    
+    if (!owner || !name || !token) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+
+    const newRepo = {
+      id: Date.now().toString(),
+      owner,
+      name,
+      token,
+      branch: branch || 'main',
+      basePath: basePath || 'visit-plans',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      isActive: true,
+      currentSize: 0,
+      maxSize: 10737418240, // 10GB
+      imageCount: 0
+    };
+
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    const settingsDoc = await settingsRef.get();
+    
+    if (settingsDoc.exists) {
+      const data = settingsDoc.data();
+      const repositories = data.repositories || [];
+      repositories.push(newRepo);
+      
+      await settingsRef.update({
+        repositories,
+        activeRepoId: data.activeRepoId || newRepo.id
+      });
+    } else {
+      await settingsRef.set({
+        repositories: [newRepo],
+        activeRepoId: newRepo.id
+      });
+    }
+
+    res.json({ success: true, repository: newRepo });
+  } catch (error) {
+    console.error('リポジトリ追加エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// リポジトリを更新
+app.put('/api/github-repositories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { owner, name, token, branch, basePath } = req.body;
+    
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    const settingsDoc = await settingsRef.get();
+    
+    if (!settingsDoc.exists) {
+      return res.status(404).json({ error: 'リポジトリ設定が見つかりません' });
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    const repoIndex = repositories.findIndex(r => r.id === id);
+    
+    if (repoIndex === -1) {
+      return res.status(404).json({ error: 'リポジトリが見つかりません' });
+    }
+    
+    repositories[repoIndex] = {
+      ...repositories[repoIndex],
+      owner,
+      name,
+      token,
+      branch,
+      basePath
+    };
+    
+    await settingsRef.update({ repositories });
+    res.json({ success: true, repository: repositories[repoIndex] });
+  } catch (error) {
+    console.error('リポジトリ更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// リポジトリを削除
+app.delete('/api/github-repositories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    const settingsDoc = await settingsRef.get();
+    
+    if (!settingsDoc.exists) {
+      return res.status(404).json({ error: 'リポジトリ設定が見つかりません' });
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    const filteredRepos = repositories.filter(r => r.id !== id);
+    
+    if (data.activeRepoId === id && filteredRepos.length > 0) {
+      // 削除されたリポジトリがアクティブだった場合、別のリポジトリをアクティブに
+      data.activeRepoId = filteredRepos[0].id;
+    }
+    
+    await settingsRef.update({
+      repositories: filteredRepos,
+      activeRepoId: data.activeRepoId === id ? (filteredRepos[0]?.id || null) : data.activeRepoId
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('リポジトリ削除エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// アクティブリポジトリを切り替え
+app.post('/api/github-repositories/:id/activate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    await settingsRef.update({ activeRepoId: id });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('アクティブ化エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// リポジトリ容量を更新
+app.post('/api/github-repositories/refresh-capacity', async (req, res) => {
+  try {
+    const settingsDoc = await db.collection('githubSettings').doc('repositories').get();
+    if (!settingsDoc.exists) {
+      return res.status(404).json({ error: 'リポジトリ設定が見つかりません' });
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    
+    // 各リポジトリの容量をGitHub APIから取得
+    const updatedRepos = await Promise.all(repositories.map(async (repo) => {
+      try {
+        const response = await axios.get(
+          `https://api.github.com/repos/${repo.owner}/${repo.name}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${repo.token}`,
+              'Accept': 'application/vnd.github.v3+json'
+            }
+          }
+        );
+        
+        return {
+          ...repo,
+          currentSize: response.data.size * 1024, // KBをバイトに変換
+          usagePercentage: (response.data.size * 1024 / repo.maxSize) * 100
+        };
+      } catch (error) {
+        console.error(`リポジトリ ${repo.owner}/${repo.name} の容量取得エラー:`, error.message);
+        return repo;
+      }
+    }));
+    
+    await db.collection('githubSettings').doc('repositories').update({
+      repositories: updatedRepos,
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    res.json({ success: true, repositories: updatedRepos });
+  } catch (error) {
+    console.error('容量更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 統計情報を取得
 app.get('/api/statistics', async (req, res) => {
   try {

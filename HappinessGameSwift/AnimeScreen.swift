@@ -204,12 +204,15 @@ struct AnimeScreen: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                HStack {
-                    Button(action: {
-                        showMenu.toggle()
-                    }) {
+        ZStack {
+            ZStack(alignment: .bottom) {
+                VStack(spacing: 0) {
+                    HStack {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showMenu.toggle()
+                            }
+                        }) {
                         Image(systemName: "line.horizontal.3")
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.black)
@@ -296,6 +299,14 @@ struct AnimeScreen: View {
             })
             .environmentObject(animeManager)
         }
+        
+        // サイドメニューをオーバーレイ
+        if showMenu {
+            SideMenuView(isShowing: $showMenu)
+                .transition(.move(edge: .leading))
+                .zIndex(1)
+        }
+    }
     }
 }
 

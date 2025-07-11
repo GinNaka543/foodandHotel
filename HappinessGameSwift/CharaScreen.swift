@@ -179,36 +179,39 @@ struct CharaScreen: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                HStack {
-                    // 左上メニューボタン
-                    Button(action: {
-                        showMenu.toggle()
-                    }) {
-                        Image(systemName: "line.horizontal.3")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.black)
-                    }
-                    Spacer()
-                    // 右上＋ボタン
-                    Button(action: { showAddSheet = true }) {
-                        Text("キャラを追加")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+        ZStack {
+            ZStack(alignment: .bottom) {
+                VStack(spacing: 0) {
+                    HStack {
+                        // 左上メニューボタン
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showMenu.toggle()
+                            }
+                        }) {
+                            Image(systemName: "line.horizontal.3")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                        Spacer()
+                        // 右上＋ボタン
+                        Button(action: { showAddSheet = true }) {
+                            Text("キャラを追加")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
-                            .cornerRadius(20)
+                                .cornerRadius(20)
+                        }
                     }
-                }
-                .padding(.horizontal, 16)
+                    .padding(.horizontal, 16)
                 .padding(.top, 12)
                 // 検索バー
                 HStack {
@@ -277,6 +280,14 @@ struct CharaScreen: View {
             })
             .environmentObject(characterManager)
         }
+        
+        // サイドメニューをオーバーレイ
+        if showMenu {
+            SideMenuView(isShowing: $showMenu)
+                .transition(.move(edge: .leading))
+                .zIndex(1)
+        }
+    }
     }
     // UserDefaults保存・読込
     private func saveCharacters() {

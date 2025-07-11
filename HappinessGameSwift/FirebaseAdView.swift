@@ -8,6 +8,8 @@ struct FirebaseAdView: View {
     @State private var currentIndex = 0
     @State private var timer: Timer?
     @State private var isLoading = true
+    @State private var scrollOffset: CGFloat = 0
+    @State private var autoScrollTimer: Timer?
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     
@@ -193,9 +195,10 @@ struct FirebaseAdView: View {
                         }
                         .padding(.horizontal, 16)
                         
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(advertisements.prefix(5)) { ad in
+                        GeometryReader { geometry in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(advertisements.prefix(5)) { ad in
                                     Button(action: {
                                         handleAdClick(ad)
                                     }) {
@@ -255,9 +258,31 @@ struct FirebaseAdView: View {
                                 .onAppear {
                                     recordImpression(for: ad)
                                 }
+                                }
+                                .padding(.horizontal, 16)
+                                .offset(x: scrollOffset)
+                                .onAppear {
+                                    startAutoScroll()
+                                }
+                                .onDisappear {
+                                    stopAutoScroll()
+                                }
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { _ in
+                                            // ユーザーがドラッグ中は自動スクロールを停止
+                                            stopAutoScroll()
+                                        }
+                                        .onEnded { _ in
+                                            // ドラッグ終了後、自動スクロールを再開
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                                startAutoScroll()
+                                            }
+                                        }
+                                )
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .frame(height: 144)
                         }
                     }
                 } else {
@@ -443,6 +468,32 @@ struct FirebaseAdView: View {
                 .replacingOccurrences(of: "/blob/", with: "/")
         }
         return url
+    }
+    
+    private func startAutoScroll() {
+        guard placement == "anime" && advertisements.count > 1 else { return }
+        
+        autoScrollTimer?.invalidate()
+        scrollOffset = 0
+        
+        let itemWidth: CGFloat = 260 + 12 // 画像幅 + spacing
+        let maxOffset = -CGFloat(advertisements.count - 1) * itemWidth
+        
+        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
+            withAnimation(.linear(duration: 0.03)) {
+                scrollOffset -= 1
+                
+                // 最後までスクロールしたら最初に戻る
+                if scrollOffset <= maxOffset {
+                    scrollOffset = UIScreen.main.bounds.width
+                }
+            }
+        }
+    }
+    
+    private func stopAutoScroll() {
+        autoScrollTimer?.invalidate()
+        autoScrollTimer = nil
     }
 }
 

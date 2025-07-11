@@ -1019,9 +1019,42 @@ struct AboutView: View {
                 .font(.system(size: 16))
                 .foregroundColor(.secondary)
                 .frame(width: 120, alignment: .leading)
-            DatePicker("", selection: date, displayedComponents: [.date])
-                .labelsHidden()
-                .environment(\.locale, Locale(identifier: "ja_JP"))
+            
+            // 月と日のみ選択できるPicker
+            HStack {
+                Picker("月", selection: Binding(
+                    get: { Calendar.current.component(.month, from: date.wrappedValue) },
+                    set: { newMonth in
+                        let components = Calendar.current.dateComponents([.year, .month, .day], from: date.wrappedValue)
+                        if let newDate = Calendar.current.date(from: DateComponents(year: components.year, month: newMonth, day: components.day)) {
+                            date.wrappedValue = newDate
+                        }
+                    }
+                )) {
+                    ForEach(1...12, id: \.self) { month in
+                        Text("\(month)月").tag(month)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                
+                Picker("日", selection: Binding(
+                    get: { Calendar.current.component(.day, from: date.wrappedValue) },
+                    set: { newDay in
+                        let components = Calendar.current.dateComponents([.year, .month, .day], from: date.wrappedValue)
+                        if let newDate = Calendar.current.date(from: DateComponents(year: components.year, month: components.month, day: newDay)) {
+                            date.wrappedValue = newDate
+                        }
+                    }
+                )) {
+                    let month = Calendar.current.component(.month, from: date.wrappedValue)
+                    let daysInMonth = Calendar.current.range(of: .day, in: .month, for: date.wrappedValue)?.count ?? 30
+                    ForEach(1...daysInMonth, id: \.self) { day in
+                        Text("\(day)日").tag(day)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+            }
+            
             Spacer()
         }
         .padding(.horizontal, 20)

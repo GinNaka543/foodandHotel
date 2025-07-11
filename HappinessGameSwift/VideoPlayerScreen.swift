@@ -150,39 +150,39 @@ struct VideoPlayerScreen: View {
                                         Button(action: {
                                             selectedVideo = relatedVideo
                                         }) {
-                                            HStack(spacing: 12) {
+                                            HStack(spacing: 16) {
                                                 if let thumbnailData = relatedVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
-                                                        .frame(width: 120, height: 68)
+                                                        .frame(width: 160, height: 90)
                                                         .clipShape(RoundedRectangle(cornerRadius: 8))
                                                 } else if let youtubeThumbnailURL = relatedVideo.youtubeThumbnailURL {
                                                     AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
                                                         image
                                                             .resizable()
                                                             .aspectRatio(contentMode: .fill)
-                                                            .frame(width: 120, height: 68)
+                                                            .frame(width: 160, height: 90)
                                                             .clipShape(RoundedRectangle(cornerRadius: 8))
                                                     } placeholder: {
                                                         RoundedRectangle(cornerRadius: 8)
                                                             .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: 120, height: 68)
+                                                            .frame(width: 160, height: 90)
                                                             .overlay(ProgressView())
                                                     }
                                                 } else {
                                                     RoundedRectangle(cornerRadius: 8)
                                                         .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: 120, height: 68)
+                                                        .frame(width: 160, height: 90)
                                                 }
                                                 VStack(alignment: .leading, spacing: 4) {
                                                     Text(relatedVideo.title)
-                                                        .font(.system(size: 14, weight: .medium))
-                                                        .foregroundColor(.white)
+                                                        .font(.system(size: 16, weight: .semibold))
+                                                        .foregroundColor(.black)
                                                         .lineLimit(2)
                                                         .multilineTextAlignment(.leading)
                                                     Text("#" + (relatedVideo.tags.isEmpty ? "nakajimaginsei" : relatedVideo.tags.joined(separator: " #")))
-                                                        .font(.system(size: 12))
+                                                        .font(.system(size: 14))
                                                         .foregroundColor(.gray)
                                                         .lineLimit(1)
                                                 }

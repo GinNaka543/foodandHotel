@@ -1362,15 +1362,11 @@ struct AnimeAboutView: View {
                             if isEditingProfile {
                                 editableProfileRow(label: "タイトル", text: $editedTitle)
                                 Divider().padding(.leading, 20)
-                                dateProfileRow(label: "公開日", date: $editedReleaseDate)
-                                Divider().padding(.leading, 20)
                                 editableProfileRow(label: "ハッシュタグ", text: $editedHashtag)
                                 Divider().padding(.leading, 20)
                                 statusSelectionRow(label: "ステータス", statuses: $editedWatchStatuses)
                             } else {
                                 profileRow(label: "タイトル", value: anime.title)
-                                Divider().padding(.leading, 20)
-                                profileRow(label: "公開日", value: DateFormatter.monthDayJapanese.string(from: anime.releaseDate))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: "ハッシュタグ", value: anime.hashtag.isEmpty ? "未設定" : anime.hashtag)
                                 Divider().padding(.leading, 20)
@@ -1564,7 +1560,6 @@ struct AnimeAboutView: View {
         if isEditingProfile {
             updatedAnime.title = editedTitle
             updatedAnime.hashtag = editedHashtag
-            updatedAnime.releaseDate = editedReleaseDate
             updatedAnime.watchStatuses = Array(editedWatchStatuses)
         }
         

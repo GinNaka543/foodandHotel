@@ -15,6 +15,8 @@ public struct VisitScreen: View {
     @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? ""
     @State private var showingPurchaseDialog = false
     @State private var planToPurchase: VisitPlanModel?
+    @State private var showNavigationMenu = false
+    @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
     enum VisitTab: String, CaseIterable {
@@ -244,7 +246,11 @@ public struct VisitScreen: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Button(action: { /* メニュー表示など */ }) {
+                    Button(action: { 
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showNavigationMenu = true
+                        }
+                    }) {
                         Image(systemName: "line.horizontal.3")
                             .font(.system(size: 28, weight: .regular))
                             .foregroundColor(.black)
@@ -329,6 +335,15 @@ public struct VisitScreen: View {
             .padding(.trailing, 20)
         }
         .navigationBarHidden(true)
+        .overlay(
+            Group {
+                if showNavigationMenu {
+                    NavigationMenuView(isPresented: $showNavigationMenu)
+                        .transition(.opacity)
+                        .zIndex(2)
+                }
+            }
+        )
         }
     }
     

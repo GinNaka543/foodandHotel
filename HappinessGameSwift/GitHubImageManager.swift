@@ -46,6 +46,16 @@ class GitHubImageManager: ObservableObject {
     
     // 画像をGitHubにアップロード
     func uploadImage(_ image: UIImage, fileName: String, completion: @escaping (Result<String, Error>) -> Void) {
+        uploadImage(image, fileName: fileName, type: "visit-plan", completion: completion)
+    }
+    
+    // キャラクターランキング用の画像アップロード
+    func uploadCharacterRankingImage(_ image: UIImage, fileName: String, completion: @escaping (Result<String, Error>) -> Void) {
+        uploadImage(image, fileName: fileName, type: "character-ranking", completion: completion)
+    }
+    
+    // 画像をGitHubにアップロード（内部メソッド）
+    private func uploadImage(_ image: UIImage, fileName: String, type: String, completion: @escaping (Result<String, Error>) -> Void) {
         // リポジトリ設定を再読み込み
         loadRepositorySettings()
         
@@ -60,7 +70,8 @@ class GitHubImageManager: ObservableObject {
         }
         
         let base64String = imageData.base64EncodedString()
-        let path = "\(repo.basePath)/\(fileName).jpg"
+        let folderPath = type == "character-ranking" ? "character-rankings" : repo.basePath
+        let path = "\(folderPath)/\(fileName).jpg"
         
         let url = URL(string: "https://api.github.com/repos/\(repo.owner)/\(repo.name)/contents/\(path)")!
         var request = URLRequest(url: url)
@@ -68,8 +79,9 @@ class GitHubImageManager: ObservableObject {
         request.setValue("Bearer \(repo.token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
+        let messageText = type == "character-ranking" ? "Upload character ranking image" : "Upload visit plan image"
         let body: [String: Any] = [
-            "message": "Upload visit plan image: \(fileName)",
+            "message": "\(messageText): \(fileName)",
             "content": base64String,
             "branch": repo.branch
         ]
@@ -97,12 +109,12 @@ class GitHubImageManager: ObservableObject {
                 let imageUrl = "https://raw.githubusercontent.com/\(repo.owner)/\(repo.name)/\(repo.branch)/\(path)"
                 
                 // アップロード記録を保存
-                self.recordImageUpload(repo: repo, fileName: fileName, path: path, size: Int64(imageData.count))
+                self.recordImageUpload(repo: repo, fileName: fileName, path: path, size: Int64(imageData.count), type: type)
                 
                 completion(.success(imageUrl))
             } else if httpResponse.statusCode == 422 {
                 // ファイルが既に存在する場合は更新
-                self.updateImage(repo: repo, imageData: imageData, path: path, completion: completion)
+                self.updateImage(repo: repo, imageData: imageData, path: path, type: type, completion: completion)
             } else {
                 completion(.failure(NSError(domain: "GitHubImageManager", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Upload failed with status: \(httpResponse.statusCode)"])))
             }
@@ -110,7 +122,7 @@ class GitHubImageManager: ObservableObject {
     }
     
     // 既存の画像を更新
-    private func updateImage(repo: GitHubRepository, imageData: Data, path: String, completion: @escaping (Result<String, Error>) -> Void) {
+    private func updateImage(repo: GitHubRepository, imageData: Data, path: String, type: String = "visit-plan", completion: @escaping (Result<String, Error>) -> Void) {
         // まず現在のファイル情報を取得
         let getUrl = URL(string: "https://api.github.com/repos/\(repo.owner)/\(repo.name)/contents/\(path)")!
         var getRequest = URLRequest(url: getUrl)
@@ -170,7 +182,7 @@ class GitHubImageManager: ObservableObject {
     }
     
     // 画像アップロード記録を保存
-    private func recordImageUpload(repo: GitHubRepository, fileName: String, path: String, size: Int64) {
+    private func recordImageUpload(repo: GitHubRepository, fileName: String, path: String, size: Int64, type: String = "visit-plan") {
         let record = GitHubImageRecord(
             id: UUID().uuidString,
             fileName: fileName,
@@ -179,7 +191,7 @@ class GitHubImageManager: ObservableObject {
             size: size,
             uploadedAt: Date(),
             uploadedBy: UserDefaults.standard.string(forKey: "userId") ?? "",
-            type: "visit-plan"
+            type: type
         )
         
         // Firebaseに記録を保存

@@ -48,6 +48,8 @@ struct ProductScreen: View {
     @StateObject private var productManager = ProductManager()
     @StateObject private var wishlistManager = WishlistManager()
     @State private var showMenu = false
+    @State private var showNavigationMenu = false
+    @EnvironmentObject var mainTab: MainTabSelection
     @State private var searchText = ""
     @State private var selectedProduct: Product?
     @State private var showingAdminPanel = false
@@ -68,7 +70,9 @@ struct ProductScreen: View {
             // ヘッダー
             HStack {
                 Button(action: {
-                    showMenu.toggle()
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showNavigationMenu = true
+                    }
                 }) {
                     Image(systemName: "line.horizontal.3")
                         .font(.system(size: 28, weight: .bold))
@@ -222,6 +226,15 @@ struct ProductScreen: View {
         .sheet(isPresented: $showAddWishlistItem) {
             AddWishlistItemView(wishlistManager: wishlistManager)
         }
+        .overlay(
+            Group {
+                if showNavigationMenu {
+                    NavigationMenuView(isPresented: $showNavigationMenu)
+                        .transition(.opacity)
+                        .zIndex(2)
+                }
+            }
+        )
     }
 }
 

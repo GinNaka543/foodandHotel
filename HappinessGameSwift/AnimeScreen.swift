@@ -175,6 +175,7 @@ struct AnimeScreen: View {
     @State private var selectedTab: AnimeTab = .all
     @State private var selectedAnime: Anime? = nil
     @State private var showMenu = false
+    @State private var showNavigationMenu = false
     @EnvironmentObject var mainTab: MainTabSelection
     
     enum AnimeTab: String, CaseIterable {
@@ -210,7 +211,7 @@ struct AnimeScreen: View {
                     HStack {
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                showMenu.toggle()
+                                showNavigationMenu = true
                             }
                         }) {
                         Image(systemName: "line.horizontal.3")
@@ -307,6 +308,15 @@ struct AnimeScreen: View {
                 .zIndex(1)
         }
     }
+    .overlay(
+        Group {
+            if showNavigationMenu {
+                NavigationMenuView(isPresented: $showNavigationMenu)
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
+        }
+    )
     }
 }
 
@@ -1356,7 +1366,7 @@ struct AnimeAboutView: View {
     @State private var showEditSelection: Bool = false
     @State private var showIconPicker: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
-    @State private var newIconImage: UIImage? = nil
+    @State private var newIconImage: UIImage?
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
     
@@ -1722,12 +1732,12 @@ struct AnimeAboutView: View {
     
     // アイコン保存機能
     private func saveNewIcon() {
-        guard let newIconImage = newIconImage,
+        guard let iconImage = newIconImage,
               let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
         
         // 画像をDocumentsディレクトリに保存
         let fileName = "anime_icon_\(UUID().uuidString).png"
-        if let savedPath = saveImageToDocuments(newIconImage, fileName: fileName) {
+        if let savedPath = saveImageToDocuments(iconImage, fileName: fileName) {
             var updatedAnime = animes[idx]
             
             // 古いアイコンを削除

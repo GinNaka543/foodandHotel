@@ -11,8 +11,19 @@ const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.url.includes('/custom-rankings')) {
+    console.log('=== DEBUG: Custom Rankings Request ===');
+    console.log('URL:', req.url);
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+    console.log('=====================================');
+  }
+  next();
+});
 
 // Firebase Admin初期化
 // 開発環境用の設定
@@ -586,6 +597,250 @@ app.get('/api/statistics', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+// カスタムランキング管理API
+// カスタムランキング一覧取得
+app.get('/api/custom-rankings', async (req, res) => {
+  try {
+    const rankingsSnapshot = await db.collection('customRankings').get();
+    const rankings = [];
+    
+    for (const doc of rankingsSnapshot.docs) {
+      const rankingData = doc.data();
+      
+      // 各ランキングのアイテムを取得
+      const itemsSnapshot = await db.collection('customRankings')
+        .doc(doc.id)
+        .collection('items')
+        .orderBy('rank')
+        .get();
+      
+      const items = itemsSnapshot.docs.map(itemDoc => ({
+        id: itemDoc.id,
+        ...itemDoc.data()
+      }));
+      
+      rankings.push({
+        id: doc.id,
+        ...rankingData,
+        items: items
+      });
+    }
+    
+    res.json(rankings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキング作成
+app.post('/api/custom-rankings', async (req, res) => {
+  try {
+    const { title, displayProbability, isActive } = req.body;
+    
+    const newRanking = {
+      title,
+      displayProbability,
+      isActive,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    const docRef = await db.collection('customRankings').add(newRanking);
+    res.json({ id: docRef.id, ...newRanking });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキング更新
+app.put('/api/custom-rankings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = {
+      ...req.body,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    await db.collection('customRankings').doc(id).update(updates);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキング削除
+app.delete('/api/custom-rankings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // アイテムも含めて削除
+    const itemsSnapshot = await db.collection('customRankings')
+      .doc(id)
+      .collection('items')
+      .get();
+    
+    const batch = db.batch();
+    
+    // アイテムを削除
+    itemsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // ランキング本体を削除
+    batch.delete(db.collection('customRankings').doc(id));
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキングアイテム追加
+app.post('/api/custom-rankings/:rankingId/items', async (req, res) => {
+  try {
+    const { rankingId } = req.params;
+    const { rank, characterId, characterName, characterImagePath, githubImageUrl } = req.body;
+    
+    console.log('Received ranking item data:', { rank, characterId, characterName, characterImagePath, githubImageUrl });
+    console.log('githubImageUrl value:', githubImageUrl);
+    console.log('githubImageUrl type:', typeof githubImageUrl);
+    
+    // 既存の同じランクのアイテムを削除
+    const existingItemSnapshot = await db.collection('customRankings')
+      .doc(rankingId)
+      .collection('items')
+      .where('rank', '==', rank)
+      .get();
+    
+    const batch = db.batch();
+    
+    // 既存アイテム削除
+    existingItemSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // 新しいアイテム追加
+    const newItemRef = db.collection('customRankings')
+      .doc(rankingId)
+      .collection('items')
+      .doc();
+    
+    const itemData = {
+      rank,
+      characterId: characterId || null,
+      characterName,
+      characterImageURL: characterImagePath || null,  // レガシーデータ用
+      customImageURL: githubImageUrl || null,         // GitHub URL用
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    console.log('Saving item data:', itemData);
+    console.log('itemData.characterImageURL:', itemData.characterImageURL);
+    console.log('itemData.customImageURL:', itemData.customImageURL);
+    batch.set(newItemRef, itemData);
+    
+    await batch.commit();
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキングアイテム削除
+app.delete('/api/custom-rankings/:rankingId/items/:rank', async (req, res) => {
+  try {
+    const { rankingId, rank } = req.params;
+    
+    const itemSnapshot = await db.collection('customRankings')
+      .doc(rankingId)
+      .collection('items')
+      .where('rank', '==', parseInt(rank))
+      .get();
+    
+    const batch = db.batch();
+    itemSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// キャラクター一覧取得
+app.get('/api/characters', async (req, res) => {
+  try {
+    const charactersSnapshot = await db.collection('userCharacters').get();
+    const charactersMap = new Map();
+    
+    charactersSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.name && !charactersMap.has(data.name)) {
+        charactersMap.set(data.name, {
+          id: doc.id,
+          name: data.name,
+          tag: data.tag || '',
+          imageIdentifier: data.imageIdentifier || null
+        });
+      }
+    });
+    
+    const characters = Array.from(charactersMap.values());
+    res.json(characters);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GitHub画像アップロード処理
+async function uploadImageToGitHub(base64Data, fileName, folderPath) {
+  try {
+    // リポジトリ設定を取得
+    const settingsDoc = await db.collection('githubSettings').doc('repositories').get();
+    if (!settingsDoc.exists) {
+      throw new Error('GitHubリポジトリ設定が見つかりません');
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    const activeRepo = repositories.find(r => r.id === data.activeRepoId);
+    
+    if (!activeRepo) {
+      throw new Error('アクティブなリポジトリが見つかりません');
+    }
+    
+    const path = `${folderPath}/${fileName}.jpg`;
+    const url = `https://api.github.com/repos/${activeRepo.owner}/${activeRepo.name}/contents/${path}`;
+    
+    const response = await axios.put(url, {
+      message: `Upload character ranking image: ${fileName}`,
+      content: base64Data,
+      branch: activeRepo.branch
+    }, {
+      headers: {
+        'Authorization': `Bearer ${activeRepo.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.status === 201 || response.status === 200) {
+      return {
+        url: `https://raw.githubusercontent.com/${activeRepo.owner}/${activeRepo.name}/${activeRepo.branch}/${path}`,
+        path: path
+      };
+    } else {
+      throw new Error(`GitHub API エラー: ${response.status}`);
+    }
+  } catch (error) {
+    throw new Error(`画像アップロードエラー: ${error.message}`);
+  }
+}
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

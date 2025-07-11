@@ -143,6 +143,141 @@ class FirebaseManager: ObservableObject {
         */
     }
     
+    // キャラクターランキングデータを取得（レガシー用）
+    func fetchCharacterRankings(completion: @escaping (Result<[CharacterRanking], Error>) -> Void) {
+        print("🔥 キャラクターランキング取得開始")
+        
+        db.collection("characterRankings")
+            .order(by: "rank")
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ ランキング取得エラー: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ ランキングデータなし")
+                    completion(.success([]))
+                    return
+                }
+                
+                print("[DEBUG] 取得ランキング数: \(documents.count)")
+                var rankings: [CharacterRanking] = []
+                
+                for doc in documents {
+                    let data = doc.data()
+                    
+                    guard let rank = data["rank"] as? Int,
+                          let characterName = data["characterName"] as? String,
+                          let characterIdString = data["characterId"] as? String,
+                          let characterId = UUID(uuidString: characterIdString) else {
+                        print("⚠️ 不正なランキングデータ: \(doc.documentID)")
+                        continue
+                    }
+                    
+                    let ranking = CharacterRanking(
+                        characterId: characterId,
+                        rank: rank,
+                        characterName: characterName,
+                        characterImagePath: data["characterImagePath"] as? String
+                    )
+                    
+                    rankings.append(ranking)
+                    print("[DEBUG] ランキング追加: \(rank)位 \(characterName)")
+                }
+                
+                print("✅ ランキング取得完了: \(rankings.count)件")
+                completion(.success(rankings))
+            }
+    }
+    
+    // キャラクターランキングデータを保存
+    func saveCharacterRanking(_ ranking: CharacterRanking, completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🔥 キャラクターランキング保存開始: \(ranking.rank)位 \(ranking.characterName)")
+        
+        // 既存の同じランクのデータを削除してから新規作成
+        db.collection("characterRankings")
+            .whereField("rank", isEqualTo: ranking.rank)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("❌ 既存ランキング取得エラー: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                let batch = self.db.batch()
+                
+                // 既存データ削除
+                if let documents = snapshot?.documents {
+                    for doc in documents {
+                        batch.deleteDocument(doc.reference)
+                    }
+                }
+                
+                // 新しいランキングデータ追加
+                let newRankingRef = self.db.collection("characterRankings").document()
+                let rankingData: [String: Any] = [
+                    "characterId": ranking.characterId.uuidString,
+                    "rank": ranking.rank,
+                    "characterName": ranking.characterName,
+                    "characterImagePath": ranking.characterImagePath ?? "",
+                    "createdAt": Timestamp(date: Date()),
+                    "updatedAt": Timestamp(date: Date())
+                ]
+                
+                batch.setData(rankingData, forDocument: newRankingRef)
+                
+                // バッチ実行
+                batch.commit { error in
+                    if let error = error {
+                        print("❌ ランキング保存エラー: \(error)")
+                        completion(.failure(error))
+                    } else {
+                        print("✅ ランキング保存成功: \(ranking.rank)位 \(ranking.characterName)")
+                        completion(.success(()))
+                    }
+                }
+            }
+    }
+    
+    // キャラクターランキングを削除
+    func deleteCharacterRanking(rank: Int, completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🔥 キャラクターランキング削除開始: \(rank)位")
+        
+        db.collection("characterRankings")
+            .whereField("rank", isEqualTo: rank)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    print("❌ ランキング削除エラー: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                let batch = self.db.batch()
+                
+                if let documents = snapshot?.documents {
+                    for doc in documents {
+                        batch.deleteDocument(doc.reference)
+                    }
+                }
+                
+                batch.commit { error in
+                    if let error = error {
+                        print("❌ ランキング削除エラー: \(error)")
+                        completion(.failure(error))
+                    } else {
+                        print("✅ ランキング削除成功: \(rank)位")
+                        completion(.success(()))
+                    }
+                }
+            }
+    }
+    
     // 広告を取得（プレースメント指定）
     func fetchAds(for placement: String, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
         print("🔥 広告取得開始: placement=\(placement)")
@@ -411,6 +546,116 @@ class FirebaseManager: ObservableObject {
                 
                 let isPurchased = !(snapshot?.documents.isEmpty ?? true)
                 completion(.success(isPurchased))
+            }
+    }
+    
+    // MARK: - Custom Rankings Functions
+    
+    // アクティブなカスタムランキングを取得
+    func fetchActiveCustomRankings(completion: @escaping (Result<[CustomRanking], Error>) -> Void) {
+        print("🔥 [FirebaseManager] fetchActiveCustomRankings開始")
+        db.collection("customRankings")
+            .whereField("isActive", isEqualTo: true)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ [FirebaseManager] customRankings取得エラー: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ [FirebaseManager] customRankingsドキュメントなし")
+                    completion(.success([]))
+                    return
+                }
+                
+                print("🔥 [FirebaseManager] アクティブなcustomRankings数: \(documents.count)")
+                
+                var rankings: [CustomRanking] = []
+                let group = DispatchGroup()
+                
+                for doc in documents {
+                    group.enter()
+                    let data = doc.data()
+                    print("🔥 [FirebaseManager] 処理中のランキング: \(doc.documentID)")
+                    
+                    guard let title = data["title"] as? String,
+                          let displayProbability = data["displayProbability"] as? Double,
+                          let isActive = data["isActive"] as? Bool,
+                          let createdAt = (data["createdAt"] as? Timestamp)?.dateValue(),
+                          let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() else {
+                        print("⚠️ [FirebaseManager] 必須フィールドが不足: \(doc.documentID)")
+                        group.leave()
+                        continue
+                    }
+                    
+                    print("🔥 [FirebaseManager] ランキング情報: \(title), 確率: \(displayProbability)")
+                    
+                    // このランキングのアイテムを取得
+                    self.fetchCustomRankingItems(rankingId: doc.documentID) { result in
+                        switch result {
+                        case .success(let items):
+                            print("🔥 [FirebaseManager] アイテム取得成功: \(items.count)件")
+                            let ranking = CustomRanking(
+                                id: doc.documentID,
+                                title: title,
+                                displayProbability: displayProbability,
+                                isActive: isActive,
+                                createdAt: createdAt,
+                                updatedAt: updatedAt,
+                                items: items
+                            )
+                            rankings.append(ranking)
+                        case .failure(let error):
+                            print("❌ [FirebaseManager] ランキングアイテム取得エラー: \(error)")
+                        }
+                        group.leave()
+                    }
+                }
+                
+                group.notify(queue: .main) {
+                    print("🔥 [FirebaseManager] 全ランキング取得完了: \(rankings.count)件")
+                    completion(.success(rankings))
+                }
+            }
+    }
+    
+    // カスタムランキングのアイテムを取得
+    private func fetchCustomRankingItems(rankingId: String, completion: @escaping (Result<[CustomRankingItem], Error>) -> Void) {
+        print("🔥 [FirebaseManager] fetchCustomRankingItems開始: rankingId=\(rankingId)")
+        db.collection("customRankings").document(rankingId).collection("items")
+            .order(by: "rank")
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ [FirebaseManager] items取得エラー: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                print("🔥 [FirebaseManager] items数: \(snapshot?.documents.count ?? 0)")
+                let items = snapshot?.documents.compactMap { doc -> CustomRankingItem? in
+                    let data = doc.data()
+                    
+                    guard let rank = data["rank"] as? Int,
+                          let characterName = data["characterName"] as? String else {
+                        return nil
+                    }
+                    
+                    let characterImageURL = data["characterImageURL"] as? String
+                    let customImageURL = data["customImageURL"] as? String
+                    let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                    
+                    return CustomRankingItem(
+                        id: doc.documentID,
+                        rank: rank,
+                        characterName: characterName,
+                        characterImageURL: characterImageURL,
+                        customImageURL: customImageURL,
+                        createdAt: createdAt
+                    )
+                } ?? []
+                
+                completion(.success(items))
             }
     }
 }

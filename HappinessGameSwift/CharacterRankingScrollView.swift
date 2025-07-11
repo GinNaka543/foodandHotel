@@ -7,9 +7,10 @@ struct CharacterRankingScrollView: View {
     @State private var rankings: [CharacterRanking] = []
     @State private var characterAds: [Advertisement] = []
     @State private var isLoading = true
+    @State private var rankingTitle: String = "Popular Character Ranking"
     @State private var scrollOffset: CGFloat = 0
     @State private var autoScrollTimer: Timer?
-    @State private var rankingTitle: String = "Popular Character Ranking"
+    @State private var isDragging = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -24,10 +25,10 @@ struct CharacterRankingScrollView: View {
             
             // ランキングスクロールビュー
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: 4) { // spacingを8→4に変更
                     // ランキングを2セット表示して無限ループを実現
                     ForEach(0..<2, id: \.self) { setIndex in
-                        ForEach(allDisplayItems.prefix(10)) { item in
+                        ForEach(allDisplayItems) { item in
                             switch item {
                             case .ranking(let ranking):
                                 CharacterRankingCard(ranking: ranking)
@@ -48,39 +49,47 @@ struct CharacterRankingScrollView: View {
                 .gesture(
                     DragGesture()
                         .onChanged { _ in
-                            // ユーザーがドラッグ中は自動スクロールを停止
+                            isDragging = true
                             stopAutoScroll()
                         }
                         .onEnded { _ in
-                            // ドラッグ終了後、自動スクロールを再開
+                            isDragging = false
+                            // 3秒後に自動スクロールを再開
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                startAutoScroll()
+                                if !isDragging {
+                                    startAutoScroll()
+                                }
                             }
                         }
                 )
             }
         }
         .onAppear {
-            loadRankings()
             loadCharacterAds()
             customRankingManager.loadActiveRankings()
+        }
+        .onReceive(customRankingManager.$selectedRanking) { selectedRanking in
+            print("🔍 selectedRankingが変更されました: \(selectedRanking?.title ?? "なし")")
+            if selectedRanking != nil {
+                loadRankings()
+            }
+        }
+        .onReceive(customRankingManager.$activeRankings) { activeRankings in
+            print("🔍 activeRankingsが変更されました: \(activeRankings.count)件")
+            // activeRankingsが更新された後、少し待ってからloadRankingsを実行
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                loadRankings()
+            }
         }
     }
     
     private var allDisplayItems: [DisplayItem] {
         var items: [DisplayItem] = []
         
-        // 1-7位のランキングを順番に追加
+        // 1-7位のランキングを順番に追加（広告なし）
         for rank in 1...7 {
             if let ranking = rankings.first(where: { $0.rank == rank }) {
                 items.append(.ranking(ranking))
-            }
-            
-            // 3位と6位の後に広告を挿入
-            if rank == 3 || rank == 6 {
-                if let ad = getAdForPosition(rank) {
-                    items.append(.advertisement(ad))
-                }
             }
         }
         
@@ -88,33 +97,65 @@ struct CharacterRankingScrollView: View {
     }
     
     private func loadRankings() {
+        print("🔍 [CharacterRankingScrollView] loadRankings開始")
+        print("🔍 カスタムランキング数: \(customRankingManager.activeRankings.count)")
+        print("🔍 選択されたランキング: \(customRankingManager.selectedRanking?.title ?? "なし")")
+        
         // カスタムランキングがある場合はそれを使用
         if let currentRanking = customRankingManager.selectedRanking {
+            print("🔍 カスタムランキング使用: \(currentRanking.title)")
+            print("🔍 アイテム数: \(currentRanking.items?.count ?? 0)")
+            
+            // アイテムが空の場合は通常のランキングを使用
+            guard let items = currentRanking.items, !items.isEmpty else {
+                print("🔍 カスタムランキングのアイテムが空、通常のランキングを取得")
+                loadDefaultRankings()
+                return
+            }
+            
             // カスタムランキングのタイトルを設定
             self.rankingTitle = currentRanking.title
             
             // CustomRankingItemをCharacterRankingに変換
-            self.rankings = (currentRanking.items ?? []).map { item in
-                CharacterRanking(
+            self.rankings = items.map { item in
+                print("🔍   - Rank \(item.rank): \(item.characterName)")
+                print("🔍     画像URL: \(item.customImageURL ?? item.characterImageURL ?? "なし")")
+                
+                return CharacterRanking(
                     characterId: UUID(),
                     rank: item.rank,
                     characterName: item.characterName,
                     characterImagePath: item.customImageURL ?? item.characterImageURL
                 )
             }
+            print("🔍 変換後のランキング数: \(self.rankings.count)")
             self.isLoading = false
         } else {
-            // カスタムランキングがない場合は従来のランキングを使用
-            firebaseManager.fetchCharacterRankings { result in
-                switch result {
-                case .success(let fetchedRankings):
-                    self.rankings = fetchedRankings
-                    self.rankingTitle = "Popular Character Ranking"
-                    self.isLoading = false
-                case .failure(let error):
-                    print("ランキング取得エラー: \(error)")
-                    self.isLoading = false
+            print("🔍 カスタムランキングなし、通常のランキングを取得")
+            // 少し待ってから再度チェック
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if let currentRanking = self.customRankingManager.selectedRanking {
+                    print("🔍 遅延チェックでカスタムランキング発見: \(currentRanking.title)")
+                    self.loadRankings()
+                } else {
+                    print("🔍 遅延チェックでもカスタムランキングなし、通常のランキングを取得")
+                    self.loadDefaultRankings()
                 }
+            }
+        }
+    }
+    
+    private func loadDefaultRankings() {
+        firebaseManager.fetchCharacterRankings { result in
+            switch result {
+            case .success(let fetchedRankings):
+                print("🔍 通常ランキング取得成功: \(fetchedRankings.count)件")
+                self.rankings = fetchedRankings
+                self.rankingTitle = "Popular Character Ranking"
+                self.isLoading = false
+            case .failure(let error):
+                print("❌ ランキング取得エラー: \(error)")
+                self.isLoading = false
             }
         }
     }
@@ -146,13 +187,18 @@ struct CharacterRankingScrollView: View {
     private func startAutoScroll() {
         stopAutoScroll()
         
-        let totalWidth = CGFloat(allDisplayItems.count) * 96 // 84 + 12 spacing
+        let itemWidth: CGFloat = 71 // 67 (width) + 4 (spacing)
+        let totalWidth = CGFloat(allDisplayItems.count) * itemWidth
         
-        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
-            withAnimation(.linear(duration: 0.03)) {
-                scrollOffset -= 1
-                if scrollOffset <= -totalWidth {
-                    scrollOffset = 0
+        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { _ in
+            if !isDragging {
+                withAnimation(.linear(duration: 0.02)) {
+                    scrollOffset -= 0.5 // ゆっくりとした速度
+                    
+                    // 1セット分スクロールしたらリセット
+                    if scrollOffset <= -totalWidth {
+                        scrollOffset = 0
+                    }
                 }
             }
         }
@@ -183,21 +229,85 @@ enum DisplayItem: Identifiable {
 struct CharacterRankingCard: View {
     let ranking: CharacterRanking
     
+    private func convertGitHubUrl(_ url: String) -> String {
+        if url.contains("github.com") && url.contains("/blob/") {
+            return url
+                .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
+                .replacingOccurrences(of: "/blob/", with: "/")
+        }
+        return url
+    }
+    
     var body: some View {
         VStack(spacing: 8) {
             // 丸いアイコン
             ZStack {
-                if let imagePath = ranking.characterImagePath,
-                   let image = UIImage(contentsOfFile: imagePath) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+                if let imagePath = ranking.characterImagePath, !imagePath.isEmpty {
+                    // GitHub URLかローカルパスかを判定
+                    if imagePath.starts(with: "http://") || imagePath.starts(with: "https://") {
+                        // URLの場合はAsyncImageを使用
+                        AsyncImage(url: URL(string: convertGitHubUrl(imagePath))) { phase in
+                            switch phase {
+                            case .success(let image):
+                                GeometryReader { geometry in
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 67, height: 67)
+                                        .clipShape(RoundedRectangle(cornerRadius: 16)) // 丸から角丸四角形へ
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(rankColor, lineWidth: 2.5)
+                                        )
+                                }
+                                .frame(width: 67, height: 67)
+                            case .failure(_), .empty:
+                                // プレースホルダー
+                                Circle()
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(width: 67, height: 67)
+                                    .overlay(
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 28))
+                                            .foregroundColor(.gray)
+                                    )
+                                    .overlay(
+                                        Circle()
+                                            .stroke(rankColor, lineWidth: 2.5)
+                                    )
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    } else if let image = UIImage(contentsOfFile: imagePath) {
+                        // ローカルファイルの場合
+                        GeometryReader { geometry in
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 67, height: 67)
+                                .clipShape(RoundedRectangle(cornerRadius: 16)) // 丸から角丸四角形へ
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(rankColor, lineWidth: 2.5)
+                                )
+                        }
                         .frame(width: 67, height: 67)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle()
-                                .stroke(rankColor, lineWidth: 2.5)
-                        )
+                    } else {
+                        // プレースホルダー
+                        Circle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(width: 67, height: 67)
+                            .overlay(
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(.gray)
+                            )
+                            .overlay(
+                                Circle()
+                                    .stroke(rankColor, lineWidth: 2.5)
+                            )
+                    }
                 } else {
                     // プレースホルダー
                     Circle()
@@ -214,17 +324,6 @@ struct CharacterRankingCard: View {
                         )
                 }
                 
-                // 順位バッジ
-                ZStack {
-                    Circle()
-                        .fill(rankColor)
-                        .frame(width: 26, height: 26)
-                    
-                    Text("\(ranking.rank)")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                .offset(x: 25, y: -25)
             }
             
             // キャラクター名
@@ -245,7 +344,7 @@ struct CharacterRankingCard: View {
         case 2:
             return Color(red: 0.75, green: 0.75, blue: 0.75) // 銀色
         case 3:
-            return Color.yellow // 黄色
+            return Color(red: 0.8, green: 0.5, blue: 0.2) // 銅色
         default:
             return Color.blue // 青色
         }
@@ -272,9 +371,9 @@ struct CharacterRankingAdCard: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
                                     .frame(width: 67, height: 67)
-                                    .clipShape(Circle())
+                                    .clipShape(RoundedRectangle(cornerRadius: 16)) // 丸から角丸四角形へ
                                     .overlay(
-                                        Circle()
+                                        RoundedRectangle(cornerRadius: 16)
                                             .stroke(Color.blue, lineWidth: 2.5)
                                     )
                             case .failure(_):

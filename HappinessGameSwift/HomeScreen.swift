@@ -146,10 +146,10 @@ struct HomeScreen: View {
                     }) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(profileManager.currentUser.username.isEmpty ? "中島 銀星" : profileManager.currentUser.username)
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.system(size: 25, weight: .bold)) // 28 * 0.9 ≒ 25
                                 .foregroundColor(.primary)
                             Text(profileManager.currentUser.animeQuote.isEmpty ? "好きなアニメのセリフを設定" : profileManager.currentUser.animeQuote)
-                                .font(.system(size: 16))
+                                .font(.system(size: 14)) // 16 * 0.9 ≒ 14
                                 .foregroundColor(.gray)
                                 .lineLimit(2)
                         }

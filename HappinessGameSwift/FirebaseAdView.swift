@@ -10,6 +10,7 @@ struct FirebaseAdView: View {
     @State private var isLoading = true
     @State private var scrollOffset: CGFloat = 0
     @State private var autoScrollTimer: Timer?
+    @State private var isDragging = false
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     
@@ -69,7 +70,6 @@ struct FirebaseAdView: View {
                                     .foregroundColor(.secondary)
                                     .lineLimit(2)
                             }
-                            .padding(.leading, 12)
                             Spacer()
                             if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
                                 let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
@@ -107,6 +107,7 @@ struct FirebaseAdView: View {
                             }
                         }
                         .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
                     }
                     .buttonStyle(PlainButtonStyle())
                 } else if placement == "product" {
@@ -196,10 +197,10 @@ struct FirebaseAdView: View {
                         .padding(.horizontal, 16)
                         
                         ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    // 広告を二度表示することで無限ループを実現
+                            HStack(spacing: 12) {
+                                // 広告を2セット表示して無限ループを実現
                                 ForEach(0..<2, id: \.self) { setIndex in
-                                    ForEach(advertisements.prefix(5)) { ad in
+                                    ForEach(advertisements) { ad in
                                         Button(action: {
                                             handleAdClick(ad)
                                         }) {
@@ -257,10 +258,11 @@ struct FirebaseAdView: View {
                                 }
                                     .buttonStyle(PlainButtonStyle())
                                     .onAppear {
-                                        if setIndex == 0 {
+                                        if setIndex == 0 { // 最初のセットでのみインプレッションを記録
                                             recordImpression(for: ad)
                                         }
                                     }
+                                        }
                                     }
                                 }
                                 .padding(.horizontal, 16)
@@ -274,17 +276,19 @@ struct FirebaseAdView: View {
                                 .gesture(
                                     DragGesture()
                                         .onChanged { _ in
-                                            // ユーザーがドラッグ中は自動スクロールを停止
+                                            isDragging = true
                                             stopAutoScroll()
                                         }
                                         .onEnded { _ in
-                                            // ドラッグ終了後、自動スクロールを再開
+                                            isDragging = false
+                                            // 3秒後に自動スクロールを再開
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                startAutoScroll()
+                                                if !isDragging {
+                                                    startAutoScroll()
+                                                }
                                             }
                                         }
                                 )
-                        }
                         }
                     }
                 } else {
@@ -475,19 +479,20 @@ struct FirebaseAdView: View {
     private func startAutoScroll() {
         guard placement == "anime" && advertisements.count > 1 else { return }
         
-        autoScrollTimer?.invalidate()
-        scrollOffset = 0
+        stopAutoScroll()
         
-        let itemWidth: CGFloat = 260 + 12 // 画像幅 + spacing
+        let itemWidth: CGFloat = 272 // 260 (width) + 12 (spacing)
         let totalWidth = CGFloat(advertisements.count) * itemWidth
         
-        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
-            withAnimation(.linear(duration: 0.03)) {
-                scrollOffset -= 1
-                
-                // 一セット分スクロールしたら、位置をリセット
-                if scrollOffset <= -totalWidth {
-                    scrollOffset = 0
+        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { _ in
+            if !isDragging {
+                withAnimation(.linear(duration: 0.02)) {
+                    scrollOffset -= 0.8 // 少し速めの速度
+                    
+                    // 1セット分スクロールしたらリセット
+                    if scrollOffset <= -totalWidth {
+                        scrollOffset = 0
+                    }
                 }
             }
         }

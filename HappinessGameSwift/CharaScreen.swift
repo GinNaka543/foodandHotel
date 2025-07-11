@@ -87,6 +87,63 @@ struct CustomField: Hashable, Codable {
     var value: String
 }
 
+// キャラクターランキング用構造体
+struct CharacterRanking: Identifiable, Codable {
+    var id = UUID()
+    var characterId: UUID
+    var rank: Int // 1-7位
+    var characterName: String // 表示用
+    var characterImagePath: String? // 表示用
+    
+    init(characterId: UUID, rank: Int, characterName: String, characterImagePath: String? = nil) {
+        self.characterId = characterId
+        self.rank = rank
+        self.characterName = characterName
+        self.characterImagePath = characterImagePath
+    }
+}
+
+// キャラクターランキング管理クラス
+class CharacterRankingManager: ObservableObject {
+    @Published var rankings: [CharacterRanking] = []
+    
+    init() {
+        loadRankings()
+    }
+    
+    func loadRankings() {
+        if let data = UserDefaults.standard.data(forKey: "characterRankings"),
+           let decoded = try? JSONDecoder().decode([CharacterRanking].self, from: data) {
+            rankings = decoded.sorted { $0.rank < $1.rank }
+        }
+    }
+    
+    func saveRankings() {
+        if let data = try? JSONEncoder().encode(rankings) {
+            UserDefaults.standard.set(data, forKey: "characterRankings")
+        }
+    }
+    
+    func updateRanking(characterId: UUID, rank: Int, characterName: String, characterImagePath: String?) {
+        if let index = rankings.firstIndex(where: { $0.rank == rank }) {
+            rankings[index] = CharacterRanking(characterId: characterId, rank: rank, characterName: characterName, characterImagePath: characterImagePath)
+        } else {
+            rankings.append(CharacterRanking(characterId: characterId, rank: rank, characterName: characterName, characterImagePath: characterImagePath))
+        }
+        rankings.sort { $0.rank < $1.rank }
+        saveRankings()
+    }
+    
+    func removeRanking(rank: Int) {
+        rankings.removeAll { $0.rank == rank }
+        saveRankings()
+    }
+    
+    func getRanking(for rank: Int) -> CharacterRanking? {
+        return rankings.first { $0.rank == rank }
+    }
+}
+
 struct Character: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var imageIdentifier: String? // PhotoライブラリのassetIdentifier
@@ -164,6 +221,8 @@ struct CharaScreen: View {
     @State private var searchText = ""
     @State private var selectedCharacter: Character? = nil
     @State private var showMenu = false
+    @State private var showRankingAdmin = false
+    @State private var showNavigationMenu = false
     @EnvironmentObject var mainTab: MainTabSelection
     
     var filteredCharacters: [Character] {
@@ -186,7 +245,7 @@ struct CharaScreen: View {
                         // 左上メニューボタン
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                showMenu.toggle()
+                                showNavigationMenu = true
                             }
                         }) {
                             Image(systemName: "line.horizontal.3")
@@ -235,10 +294,10 @@ struct CharaScreen: View {
                 .frame(height: 38)
                 .padding(.horizontal, 12)
                 .padding(.top, 8)
-                // 広告バナー（検索バーと同じ幅に）
-                SimpleAdBannerView()
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                // 広告バナー
+                FirebaseAdView(placement: "character")
+                    .padding(.top, 8)
+                    .padding(.bottom, 0)
                 // キャラリストのみスクロール
                 ScrollView {
                     VStack(spacing: 0) {
@@ -262,6 +321,9 @@ struct CharaScreen: View {
         }) {
             AddCharacterSheet(characters: $characterManager.characters)
                 .environmentObject(characterManager)
+        }
+        .sheet(isPresented: $showRankingAdmin) {
+            CharacterRankingAdminView()
         }
         .fullScreenCover(item: $selectedCharacter) { character in
             CharacterDetailView(character: Binding(
@@ -288,6 +350,15 @@ struct CharaScreen: View {
                 .zIndex(1)
         }
     }
+    .overlay(
+        Group {
+            if showNavigationMenu {
+                NavigationMenuView(isPresented: $showNavigationMenu)
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
+        }
+    )
     }
     // UserDefaults保存・読込
     private func saveCharacters() {
@@ -843,7 +914,7 @@ struct AboutView: View {
     @State private var showEditSelection: Bool = false
     @State private var showIconPicker: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
-    @State private var newIconImage: UIImage? = nil
+    @State private var newIconImage: UIImage?
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var characterManager: CharacterManager
 
@@ -1185,7 +1256,7 @@ struct AboutView: View {
                         }
                     }
                 )) {
-                    let month = Calendar.current.component(.month, from: date.wrappedValue)
+                    let _ = Calendar.current.component(.month, from: date.wrappedValue)
                     let daysInMonth = Calendar.current.range(of: .day, in: .month, for: date.wrappedValue)?.count ?? 30
                     ForEach(1...daysInMonth, id: \.self) { day in
                         Text("\(day)日").tag(day)
@@ -1243,12 +1314,12 @@ struct AboutView: View {
     
     // アイコン保存機能
     private func saveNewIcon() {
-        guard let newIconImage = newIconImage,
+        guard let iconImage = newIconImage,
               let idx = characters.firstIndex(where: { $0.id == characterId }) else { return }
         
         // 画像をDocumentsディレクトリに保存
         let fileName = "character_icon_\(UUID().uuidString).png"
-        if let savedPath = saveImageToDocuments(newIconImage, fileName: fileName) {
+        if let savedPath = saveImageToDocuments(iconImage, fileName: fileName) {
             var updatedCharacter = characters[idx]
             
             // 古いアイコンを削除
@@ -1339,6 +1410,429 @@ struct AutoSizingTextEditor: UIViewRepresentable {
     }
 }
 // --- ここまで追加 ---
+
+
+// キャラクターランキング行ビュー
+struct CharacterRankingRow: View {
+    let ranking: CharacterRanking
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 順位表示
+            ZStack {
+                Circle()
+                    .fill(rankColor)
+                    .frame(width: 24, height: 24)
+                Text("\(ranking.rank)")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            
+            // キャラクターアイコン
+            if let imagePath = ranking.characterImagePath,
+               let image = UIImage(contentsOfFile: imagePath) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 40, height: 40)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.gray)
+                    )
+            }
+            
+            // キャラクター名
+            VStack(alignment: .leading, spacing: 2) {
+                Text(ranking.characterName)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+                    .lineLimit(1)
+                Text("\(ranking.rank)位")
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(Color(.systemGray6))
+        .cornerRadius(8)
+    }
+    
+    private var rankColor: Color {
+        switch ranking.rank {
+        case 1:
+            return Color.yellow
+        case 2:
+            return Color.gray
+        case 3:
+            return Color.orange
+        default:
+            return Color.blue
+        }
+    }
+}
+
+// キャラクター広告行ビュー
+struct CharacterAdRow: View {
+    let ad: Advertisement
+    @StateObject private var firebaseManager = FirebaseManager.shared
+    
+    var body: some View {
+        Button(action: {
+            if let url = URL(string: ad.linkURL) {
+                firebaseManager.recordAdClick(advertisementId: ad.id ?? "")
+                UIApplication.shared.open(url)
+            }
+        }) {
+            HStack(spacing: 12) {
+                // 広告アイコン
+                AsyncImage(url: URL(string: ad.imageURL)) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 40, height: 40)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "megaphone.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.gray)
+                        )
+                }
+                
+                // 広告テキスト
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ad.title)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                    Text(ad.description)
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                        .lineLimit(2)
+                }
+                
+                Spacer()
+                
+                // 広告マーク
+                Text("AD")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.blue)
+                    .cornerRadius(4)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onAppear {
+            firebaseManager.recordAdImpression(advertisementId: ad.id ?? "")
+        }
+    }
+}
+
+// キャラクターランキング管理画面
+struct CharacterRankingAdminView: View {
+    @Environment(\.dismiss) var dismiss
+    @StateObject private var rankingManager = CharacterRankingManager()
+    @StateObject private var characterManager = CharacterManager()
+    @State private var selectedRank: Int = 1
+    @State private var selectedCharacter: Character? = nil
+    @State private var showingCharacterPicker = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // タイトル
+                HStack {
+                    Text("キャラクターランキング管理")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.black)
+                    Spacer()
+                    Button("閉じる") {
+                        dismiss()
+                    }
+                    .foregroundColor(.blue)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 20)
+                
+                // ランキング設定リスト
+                ScrollView {
+                    VStack(spacing: 16) {
+                        ForEach(1...7, id: \.self) { rank in
+                            RankingSettingRow(
+                                rank: rank,
+                                currentRanking: rankingManager.getRanking(for: rank),
+                                onTap: {
+                                    selectedRank = rank
+                                    showingCharacterPicker = true
+                                },
+                                onRemove: {
+                                    rankingManager.removeRanking(rank: rank)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                
+                Spacer()
+            }
+            .background(Color(.systemGray6))
+        }
+        .sheet(isPresented: $showingCharacterPicker) {
+            CharacterPickerView(
+                characters: characterManager.characters,
+                selectedRank: selectedRank,
+                onSelect: { character in
+                    rankingManager.updateRanking(
+                        characterId: character.id,
+                        rank: selectedRank,
+                        characterName: character.name,
+                        characterImagePath: character.imageIdentifier
+                    )
+                    showingCharacterPicker = false
+                }
+            )
+        }
+    }
+}
+
+// ランキング設定行ビュー
+struct RankingSettingRow: View {
+    let rank: Int
+    let currentRanking: CharacterRanking?
+    let onTap: () -> Void
+    let onRemove: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // 順位表示
+            ZStack {
+                Circle()
+                    .fill(rankColor)
+                    .frame(width: 32, height: 32)
+                Text("\(rank)")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            
+            // キャラクター情報
+            if let ranking = currentRanking {
+                HStack(spacing: 12) {
+                    // キャラクターアイコン
+                    if let imagePath = ranking.characterImagePath,
+                       let image = UIImage(contentsOfFile: imagePath) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 40, height: 40)
+                            .overlay(
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                    
+                    // キャラクター名
+                    Text(ranking.characterName)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.black)
+                    
+                    Spacer()
+                    
+                    // 削除ボタン
+                    Button(action: onRemove) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.red)
+                    }
+                }
+            } else {
+                Text("キャラクターを選択してください")
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 1)
+        .onTapGesture {
+            onTap()
+        }
+    }
+    
+    private var rankColor: Color {
+        switch rank {
+        case 1:
+            return Color.yellow
+        case 2:
+            return Color.gray
+        case 3:
+            return Color.orange
+        default:
+            return Color.blue
+        }
+    }
+}
+
+// キャラクター選択ビュー
+struct CharacterPickerView: View {
+    @Environment(\.dismiss) var dismiss
+    let characters: [Character]
+    let selectedRank: Int
+    let onSelect: (Character) -> Void
+    @State private var searchText = ""
+    
+    var filteredCharacters: [Character] {
+        if searchText.isEmpty {
+            return characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        }
+        return characters.filter {
+            !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            $0.name.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // タイトル
+                HStack {
+                    Text("\(selectedRank)位のキャラクターを選択")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.black)
+                    Spacer()
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                    .foregroundColor(.blue)
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 10)
+                
+                // 検索バー
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    TextField("キャラクターを検索", text: $searchText)
+                        .textFieldStyle(PlainTextFieldStyle())
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
+                
+                // キャラクターリスト
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(filteredCharacters) { character in
+                            CharacterPickerRow(
+                                character: character,
+                                onSelect: {
+                                    onSelect(character)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                
+                Spacer()
+            }
+            .background(Color(.systemGray6))
+        }
+    }
+}
+
+// キャラクター選択行ビュー
+struct CharacterPickerRow: View {
+    let character: Character
+    let onSelect: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // キャラクターアイコン
+            if let imageIdentifier = character.imageIdentifier,
+               let image = UIImage(contentsOfFile: imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 50, height: 50)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 50, height: 50)
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 25))
+                            .foregroundColor(.gray)
+                    )
+            }
+            
+            // キャラクター情報
+            VStack(alignment: .leading, spacing: 4) {
+                Text(character.name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.black)
+                Text("#\(character.tag)")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            // 選択ボタン
+            Button("選択") {
+                onSelect()
+            }
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.blue)
+            .cornerRadius(6)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 1)
+    }
+}
 
 // 文字列をn文字ごとに分割するchunked拡張を追加
 extension String {

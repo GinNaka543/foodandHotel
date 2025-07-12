@@ -84,6 +84,7 @@ struct ArtworkScreen: View {
     @State private var deletingArtworkID: UUID? = nil
     @State private var albums: [ArtworkAlbum] = []
     @State private var selectedAlbum: ArtworkAlbum? = nil
+    @State private var showFullscreenImage = false
     
     // Enum to manage sheet presentations
     enum SheetType: Identifiable {
@@ -415,70 +416,112 @@ struct ArtworkScreen: View {
                 }
                 .padding(32)
             case .artworkDetail(let artwork):
-            ZStack(alignment: .bottomTrailing) {
-                VStack(spacing: 0) {
-                    // ヘッダー
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            showEditMenu = true
-                        }) {
-                            Text("編集")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.blue)
+            GeometryReader { geometry in
+                ZStack {
+                    // メインコンテンツ
+                    VStack(spacing: 0) {
+                        // ヘッダー
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                showEditMenu = true
+                            }) {
+                                Text("編集")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.trailing, 20)
                         }
-                        .padding(.trailing, 20)
+                        .padding(.top, 20)
+                        .padding(.bottom, 10)
+                        
+                        // 中央配置のコンテンツ
+                        GeometryReader { innerGeometry in
+                            ScrollView {
+                                VStack(spacing: 24) {
+                                    Spacer(minLength: 20)
+                                    
+                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(maxWidth: min(innerGeometry.size.width - 40, 600))
+                                            .frame(maxHeight: innerGeometry.size.height * 0.6)
+                                            .cornerRadius(24)
+                                            .onTapGesture {
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    showFullscreenImage = true
+                                                }
+                                            }
+                                    } else if let pixivURL = artwork.pixivURL {
+                                        PixivThumbnailView(pixivURL: pixivURL)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(maxWidth: min(innerGeometry.size.width - 40, 600))
+                                            .frame(maxHeight: innerGeometry.size.height * 0.6)
+                                            .cornerRadius(24)
+                                            .onTapGesture {
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    showFullscreenImage = true
+                                                }
+                                            }
+                                    } else {
+                                        Text("画像データがありません")
+                                            .foregroundColor(.gray)
+                                            .padding()
+                                    }
+                                    
+                                    VStack(spacing: 16) {
+                                        Text("タイトル: \(artwork.title)")
+                                            .font(.headline)
+                                        Text("タグ: \(artwork.tags.joined(separator: ", "))")
+                                            .font(.subheadline)
+                                        Text("ID: \(artwork.id.uuidString.prefix(8))")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                    .padding(.horizontal, 20)
+                                    
+                                    Spacer(minLength: 100) // 閉じるボタンのためのスペース
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: innerGeometry.size.height)
+                            }
+                        }
                     }
-                    .padding(.top, 20)
-                    .padding(.bottom, 10)
-                    
-                    VStack(spacing: 24) {
-                    Spacer()
-                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxWidth: .infinity, maxHeight: 400)
-                            .clipped()
-                            .cornerRadius(24)
-                    } else if let pixivURL = artwork.pixivURL {
-                        PixivThumbnailView(pixivURL: pixivURL)
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxWidth: .infinity, maxHeight: 400)
-                            .clipped()
-                            .cornerRadius(24)
-                    } else {
-                        Text("画像データがありません")
-                            .foregroundColor(.gray)
+                    // 下部に閉じるボタン（安全な位置に配置）
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                activeSheet = nil
+                            }) {
+                                Text("閉じる")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 32)
+                                    .padding(.vertical, 10)
+                                    .background(Color.black)
+                                    .cornerRadius(10)
+                                    .shadow(radius: 4)
+                            }
+                            Spacer()
+                        }
+                        .padding(.bottom, geometry.safeAreaInsets.bottom > 0 ? geometry.safeAreaInsets.bottom : 30)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white.opacity(0),
+                                    Color.white.opacity(0.9),
+                                    Color.white
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 120)
+                            .allowsHitTesting(false)
+                        )
                     }
-                    VStack(spacing: 16) {
-                        Text("タイトル: \(artwork.title)")
-                            .font(.headline)
-                        Text("タグ: \(artwork.tags.joined(separator: ", "))")
-                            .font(.subheadline)
-                        Text("ID: \(artwork.id.uuidString.prefix(8))")
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                    }
-                    Spacer()
-                    }
-                }
-                // 下部に閉じるボタン（中央揃え）
-                VStack {
-                    Spacer()
-                    Button(action: {
-                        activeSheet = nil
-                    }) {
-                        Text("閉じる")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 10)
-                            .background(Color.black)
-                            .cornerRadius(10)
-                    }
-                    .padding(.bottom, 30)
-                }
                 // --- カスタムダイアログ ---
                 if showEditMenu {
                     Color.black.opacity(0.25)
@@ -690,7 +733,51 @@ struct ArtworkScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
                 // --- END カスタムダイアログ ---
+                
+                // 全画面画像表示
+                if showFullscreenImage {
+                    ZStack {
+                        // 背景を真っ暗に
+                        Color.black
+                            .edgesIgnoringSafeArea(.all)
+                        
+                        // 画像
+                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .edgesIgnoringSafeArea(.all)
+                        } else if let pixivURL = artwork.pixivURL {
+                            PixivThumbnailView(pixivURL: pixivURL)
+                                .aspectRatio(contentMode: .fit)
+                                .edgesIgnoringSafeArea(.all)
+                        }
+                        
+                        // 閉じるボタン（×）
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showFullscreenImage = false
+                                    }
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(.white)
+                                        .background(Color.black.opacity(0.5))
+                                        .clipShape(Circle())
+                                }
+                                .padding(.top, 50)
+                                .padding(.trailing, 20)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                }
             }
+            } // GeometryReader
             }
         }
         .sheet(isPresented: $showTagInput) {

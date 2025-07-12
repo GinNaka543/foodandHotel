@@ -9,6 +9,7 @@ struct VideoPlayerScreen: View {
     let allVideos: [MemoryVideo]
     var onSave: ((String, [String]) -> Void)? = nil // タイトル・タグ保存用
     var onDelete: (() -> Void)? = nil // 削除用
+    var onThumbnailUpdate: ((Data?) -> Void)? = nil // サムネイル更新用
     @Environment(\.presentationMode) var presentationMode
     @State private var player: AVPlayer?
     @State private var isPlaying = false
@@ -23,6 +24,7 @@ struct VideoPlayerScreen: View {
     @State private var showDeleteAlert = false
     @State private var showFullscreen = false
     @State private var showExpandButton = false
+    @State private var showThumbnailPicker = false
     // フルスクリーン用
     @State private var fullscreenShowControls = true
     @State private var fullscreenPlayer: AVPlayer? = nil
@@ -33,7 +35,14 @@ struct VideoPlayerScreen: View {
             VStack {
                 Spacer()
                 VStack(spacing: 20) {
-                    if let thumbnailURL = video.youtubeThumbnailURL {
+                    // カスタムサムネイルを優先して表示
+                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: 300)
+                            .cornerRadius(12)
+                    } else if let thumbnailURL = video.youtubeThumbnailURL {
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
                             image
                                 .resizable()
@@ -46,6 +55,10 @@ struct VideoPlayerScreen: View {
                                 .frame(height: 200)
                                 .overlay(ProgressView())
                         }
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 200)
                     }
                     
                     Text(video.title)
@@ -254,6 +267,18 @@ struct VideoPlayerScreen: View {
                 .background(Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)
+                Button("サムネイルを変更") {
+                    showMenuSheet = false
+                    // 少し遅延させてからサムネイルピッカーを表示
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        showThumbnailPicker = true
+                    }
+                }
+                .font(.headline)
+                .padding()
+                .background(Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(10)
                 Button("動画を削除") {
                     print("[DEBUG] 動画を削除ボタンが押されました")
                     showDeleteAlert = true
@@ -281,6 +306,18 @@ struct VideoPlayerScreen: View {
                     secondaryButton: .cancel(Text("キャンセル"))
                 )
             }
+        }
+        .sheet(isPresented: $showThumbnailPicker) {
+            ThumbnailPickerView(
+                video: video,
+                onSave: { newThumbnailData in
+                    onThumbnailUpdate?(newThumbnailData)
+                    showThumbnailPicker = false
+                },
+                onCancel: {
+                    showThumbnailPicker = false
+                }
+            )
         }
         }
     }

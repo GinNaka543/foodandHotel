@@ -80,6 +80,7 @@ struct ArtworkScreen: View {
     @State private var showEditTags = false
     @State private var editText = ""
     @State private var showDeleteAlert = false
+    @State private var showEditMenu = false
     @State private var deletingArtworkID: UUID? = nil
     @State private var albums: [ArtworkAlbum] = []
     @State private var selectedAlbum: ArtworkAlbum? = nil
@@ -182,13 +183,23 @@ struct ArtworkScreen: View {
                                         selectedAlbum = album
                                     }) {
                                         VStack(alignment: .leading, spacing: 0) {
-                                            if let firstArtwork = album.videos.first, let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                            if let firstArtwork = album.videos.first {
                                                 GeometryReader { geometry in
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
+                                                    if let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } else if let pixivURL = firstArtwork.pixivURL {
+                                                        PixivThumbnailView(pixivURL: pixivURL)
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } else {
+                                                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                    }
                                                 }
                                                 .frame(height: 233)
                                             } else {
@@ -248,22 +259,41 @@ struct ArtworkScreen: View {
                         ScrollView {
                             VStack(spacing: 32) {
                                 ForEach(artworks, id: \.id) { artwork in
-                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                                        VStack(alignment: .leading, spacing: 0) {
-                                            GeometryReader { geometry in
-                                                ZStack {
-                                                    Color.white
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        GeometryReader { geometry in
+                                            ZStack {
+                                                Color.white
+                                                // ローカル画像またはPixiv URL対応
+                                                if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .scaledToFill()
                                                         .frame(width: geometry.size.width, height: 233)
                                                         .clipped()
+                                                } else if let pixivURL = artwork.pixivURL {
+                                                    PixivThumbnailView(pixivURL: pixivURL)
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                } else {
+                                                    Rectangle()
+                                                        .fill(Color.gray.opacity(0.2))
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .overlay(
+                                                            VStack {
+                                                                Image(systemName: "photo")
+                                                                    .font(.largeTitle)
+                                                                    .foregroundColor(.gray)
+                                                                Text("画像なし")
+                                                                    .foregroundColor(.gray)
+                                                            }
+                                                        )
                                                 }
-                                                .frame(width: geometry.size.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
                                             }
-                                            .frame(height: 233)
+                                            .frame(width: geometry.size.width, height: 233)
+                                            .clipped()
+                                            .padding(.bottom, 0)
+                                        }
+                                        .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
                                                 if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                                                     Image(uiImage: image)
@@ -299,7 +329,6 @@ struct ArtworkScreen: View {
                                         .onTapGesture {
                                             activeSheet = .artworkDetail(artwork)
                                         }
-                                    }
                                 }
                             }
                             .padding(.top, 8)
@@ -342,11 +371,19 @@ struct ArtworkScreen: View {
         .sheet(item: $activeSheet) { sheetType in
             switch sheetType {
             case .addPhoto:
-                AddPhotoView(selectedImage: $selectedImage, photoTitle: $photoTitle, photoTags: $photoTags) {
-                    if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
-                        saveArtwork()
+                AddPhotoView(
+                    selectedImage: $selectedImage, 
+                    photoTitle: $photoTitle, 
+                    photoTags: $photoTags,
+                    onSave: {
+                        if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                            saveArtwork()
+                        }
+                    },
+                    onPixivSave: { pixivURL, title, imageURL, tags in
+                        savePixivArtwork(pixivURL: pixivURL, title: title, imageURL: imageURL, tags: tags)
                     }
-                }
+                )
             case .tagInput:
                 VStack(spacing: 24) {
                     Text("表示したいタグを入力")
@@ -379,11 +416,33 @@ struct ArtworkScreen: View {
                 .padding(32)
             case .artworkDetail(let artwork):
             ZStack(alignment: .bottomTrailing) {
-                VStack(spacing: 24) {
+                VStack(spacing: 0) {
+                    // ヘッダー
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showEditMenu = true
+                        }) {
+                            Text("編集")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.trailing, 20)
+                    }
+                    .padding(.top, 20)
+                    .padding(.bottom, 10)
+                    
+                    VStack(spacing: 24) {
                     Spacer()
                     if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                         Image(uiImage: uiImage)
                             .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: .infinity, maxHeight: 400)
+                            .clipped()
+                            .cornerRadius(24)
+                    } else if let pixivURL = artwork.pixivURL {
+                        PixivThumbnailView(pixivURL: pixivURL)
                             .aspectRatio(contentMode: .fit)
                             .frame(maxWidth: .infinity, maxHeight: 400)
                             .clipped()
@@ -393,36 +452,19 @@ struct ArtworkScreen: View {
                             .foregroundColor(.gray)
                     }
                     VStack(spacing: 16) {
-                        HStack(spacing: 8) {
-                            Text("タイトル: \(artwork.title)")
-                                .font(.headline)
-                            Button(action: {
-                                editText = artwork.title
-                                showEditTitle = true
-                            }) {
-                                Image(systemName: "pencil")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        HStack(spacing: 8) {
-                            Text("タグ: \(artwork.tags.joined(separator: ", "))")
-                                .font(.subheadline)
-                            Button(action: {
-                                editText = artwork.tags.joined(separator: ",")
-                                showEditTags = true
-                            }) {
-                                Image(systemName: "pencil")
-                                    .foregroundColor(.blue)
-                            }
-                        }
+                        Text("タイトル: \(artwork.title)")
+                            .font(.headline)
+                        Text("タグ: \(artwork.tags.joined(separator: ", "))")
+                            .font(.subheadline)
                         Text("ID: \(artwork.id.uuidString.prefix(8))")
                             .font(.caption)
                             .foregroundColor(.gray)
                     }
                     Spacer()
+                    }
                 }
-                // 右下に閉じるボタンとゴミ箱ボタンを横並びで配置
-                HStack(spacing: 24) {
+                // 下部に閉じるボタン（中央揃え）
+                VStack {
                     Spacer()
                     Button(action: {
                         activeSheet = nil
@@ -435,20 +477,87 @@ struct ArtworkScreen: View {
                             .background(Color.black)
                             .cornerRadius(10)
                     }
-                    .padding(.trailing, 78)
-                    Button(action: {
-                        deletingArtworkID = artwork.id
-                        showDeleteAlert = true
-                    }) {
-                        Image(systemName: "trash")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(.black)
-                    }
+                    .padding(.bottom, 30)
                 }
-                .padding([.bottom, .trailing], 24)
                 // --- カスタムダイアログ ---
+                if showEditMenu {
+                    Color.black.opacity(0.25)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            showEditMenu = false
+                        }
+                    VStack(spacing: 20) {
+                        Text("編集する項目を選択")
+                            .font(.headline)
+                            .padding(.top, 20)
+                        
+                        VStack(spacing: 16) {
+                            Button(action: {
+                                editText = artwork.title
+                                showEditMenu = false
+                                showEditTitle = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "pencil")
+                                    Text("タイトルを編集")
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(10)
+                            }
+                            .foregroundColor(.primary)
+                            
+                            Button(action: {
+                                editText = artwork.tags.joined(separator: ",")
+                                showEditMenu = false
+                                showEditTags = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "tag")
+                                    Text("タグを編集")
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(10)
+                            }
+                            .foregroundColor(.primary)
+                            
+                            Button(action: {
+                                deletingArtworkID = artwork.id
+                                showEditMenu = false
+                                showDeleteAlert = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "trash")
+                                    Text("画像を削除")
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color.red.opacity(0.1))
+                                .cornerRadius(10)
+                            }
+                            .foregroundColor(.red)
+                        }
+                        .padding(.horizontal, 20)
+                        
+                        Button(action: {
+                            showEditMenu = false
+                        }) {
+                            Text("キャンセル")
+                                .foregroundColor(.blue)
+                                .padding(.vertical, 10)
+                        }
+                        .padding(.bottom, 20)
+                    }
+                    .background(Color.white)
+                    .cornerRadius(18)
+                    .shadow(radius: 16)
+                    .frame(maxWidth: 340)
+                    .padding(.horizontal, 32)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                }
                 if showEditTitle {
                     Color.black.opacity(0.25)
                         .edgesIgnoringSafeArea(.all)
@@ -651,6 +760,29 @@ struct ArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         selectedImage = nil
+        photoTitle = ""
+        photoTags = ""
+        activeSheet = nil
+    }
+    
+    private func savePixivArtwork(pixivURL: String, title: String, imageURL: String?, tags: String) {
+        let tagsArray = tags.isEmpty ? [] : tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        
+        let newArtwork = Artwork(
+            id: UUID(),
+            characterId: character.id,
+            imagePath: nil,  // Pixiv作品は画像パスではなくURLを使用
+            title: title,
+            tags: tagsArray,
+            createdAt: Date(),
+            pixivURL: pixivURL,
+            twitterURL: nil
+        )
+        
+        artworks.insert(newArtwork, at: 0)
+        saveArtworksToUserDefaults()
+        
+        // フォームをリセット
         photoTitle = ""
         photoTags = ""
         activeSheet = nil

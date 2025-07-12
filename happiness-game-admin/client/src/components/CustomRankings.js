@@ -60,15 +60,18 @@ function convertGitHubUrl(url) {
 
 // 画像を動的に読み込むコンポーネント
 const RankingItemAvatar = ({ item }) => {
-  // 画像URLを取得して変換
-  const imageUrl = item.customImagePath || item.characterImagePath;
+  const [imageError, setImageError] = React.useState(false);
+  
+  // 画像URLを取得して変換（正しいフィールド名を使用）
+  const imageUrl = item.customImageURL || item.characterImageURL || item.characterImagePath;
   const convertedUrl = imageUrl ? convertGitHubUrl(imageUrl) : '';
   
   console.log('Avatar for', item.characterName, '- Original URL:', imageUrl);
   console.log('Avatar for', item.characterName, '- Converted URL:', convertedUrl);
   console.log('Full item data:', item);
 
-  if (convertedUrl) {
+  // 画像URLが存在し、まだエラーが発生していない場合
+  if (convertedUrl && !imageError) {
     return (
       <img
         src={convertedUrl}
@@ -82,13 +85,13 @@ const RankingItemAvatar = ({ item }) => {
         }}
         onError={(e) => {
           console.error('Image failed to load:', e.target.src);
-          // フォールバックとしてAvatarを表示
-          e.target.style.display = 'none';
+          setImageError(true);
         }}
       />
     );
   }
 
+  // フォールバック表示
   return (
     <Avatar style={{ width: 40, height: 40 }}>
       {item.characterName ? item.characterName.charAt(0) : '?'}

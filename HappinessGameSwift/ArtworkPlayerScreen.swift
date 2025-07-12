@@ -26,22 +26,39 @@ struct ArtworkPlayerScreen: View {
                                 .background(Color.black)
                                 .padding(.top, -10)
                         } else if let pixivURL = artwork.pixivURL {
-                            VStack {
-                                Image(systemName: "photo")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray.opacity(0.5))
-                                Text("Pixiv作品")
-                                    .font(.headline)
-                                    .foregroundColor(.gray)
-                                Text(pixivURL)
-                                    .font(.caption)
-                                    .foregroundColor(.gray.opacity(0.7))
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                    .padding(.horizontal)
+                            ZStack {
+                                PixivThumbnailView(pixivURL: pixivURL)
+                                    .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                                    .clipped()
+                                
+                                // Pixivリンクを表示する小さなオーバーレイ
+                                VStack {
+                                    Spacer()
+                                    HStack {
+                                        Spacer()
+                                        Button(action: {
+                                            if let url = URL(string: pixivURL) {
+                                                UIApplication.shared.open(url)
+                                            }
+                                        }) {
+                                            HStack(spacing: 4) {
+                                                Image(systemName: "link")
+                                                    .font(.caption)
+                                                Text("Pixiv")
+                                                    .font(.caption)
+                                            }
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color.black.opacity(0.7))
+                                            .cornerRadius(8)
+                                        }
+                                        .padding(.trailing, 12)
+                                        .padding(.bottom, 8)
+                                    }
+                                }
                             }
                             .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
-                            .background(Color.gray.opacity(0.1))
                         } else {
                             Color.gray.opacity(0.2)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)

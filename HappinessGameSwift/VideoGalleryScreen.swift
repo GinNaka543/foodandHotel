@@ -734,16 +734,17 @@ struct VideoGalleryScreen: View {
             id: UUID(),
             characterId: character.id,
             videoPath: "",
-            thumbnailData: nil,
+            thumbnailData: selectedThumbnailData, // カスタムサムネイルデータを使用
             title: title,
             tags: tagArray,
             date: Date(),
             youtubeURL: url,
-            youtubeThumbnailURL: thumbnailURL
+            youtubeThumbnailURL: thumbnailURL == "custom" ? nil : thumbnailURL // customの場合はnilにする
         )
         
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        selectedThumbnailData = nil // リセット
         showAddSheet = false
     }
     

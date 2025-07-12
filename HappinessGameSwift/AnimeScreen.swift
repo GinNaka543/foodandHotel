@@ -479,13 +479,23 @@ struct AnimeArtworkScreen: View {
                                         selectedAlbum = album
                                     }) {
                                         VStack(alignment: .leading, spacing: 0) {
-                                            if let firstArtwork = album.videos.first, let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                            if let firstArtwork = album.videos.first {
                                                 GeometryReader { geometry in
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .scaledToFill()
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
+                                                    if let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } else if let pixivURL = firstArtwork.pixivURL {
+                                                        PixivThumbnailView(pixivURL: pixivURL)
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } else {
+                                                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                    }
                                                 }
                                                 .frame(height: 233)
                                             } else {
@@ -545,21 +555,30 @@ struct AnimeArtworkScreen: View {
                         ScrollView {
                             VStack(spacing: 32) {
                                 ForEach(artworks, id: \ .id) { artwork in
-                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                                        VStack(alignment: .leading, spacing: 0) {
-                                            GeometryReader { geometry in
-                                                ZStack {
-                                                    Color.white
+                                    VStack(alignment: .leading, spacing: 0) {
+                                        GeometryReader { geometry in
+                                            ZStack {
+                                                Color.white
+                                                if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .scaledToFill()
                                                         .frame(width: geometry.size.width, height: 233)
                                                         .clipped()
+                                                } else if let pixivURL = artwork.pixivURL {
+                                                    PixivThumbnailView(pixivURL: pixivURL)
+                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .clipped()
+                                                } else {
+                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: geometry.size.width, height: 233)
                                                 }
-                                                .frame(width: geometry.size.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
                                             }
+                                            .frame(width: geometry.size.width, height: 233)
+                                            .clipped()
+                                            .padding(.bottom, 0)
+                                        }
                                             .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
                                                 if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
@@ -587,15 +606,14 @@ struct AnimeArtworkScreen: View {
                                                         .foregroundColor(.gray)
                                                 }
                                                 Spacer()
-                                            }
-                                            .padding(.top, 8)
-                                            .padding(.leading, 8)
                                         }
-                                        .padding(.vertical, 8)
-                                        .contentShape(Rectangle())
-                                        .onTapGesture {
-                                            activeSheet = .artworkDetail(artwork)
-                                        }
+                                        .padding(.top, 8)
+                                        .padding(.leading, 8)
+                                    }
+                                    .padding(.vertical, 8)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        activeSheet = .artworkDetail(artwork)
                                     }
                                 }
                             }
@@ -639,11 +657,19 @@ struct AnimeArtworkScreen: View {
         .sheet(item: $activeSheet) { sheetType in
             switch sheetType {
             case .addPhoto:
-                AddPhotoView(selectedImage: $selectedImage, photoTitle: $photoTitle, photoTags: $photoTags) {
-                    if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
-                        saveArtwork()
+                AddPhotoView(
+                    selectedImage: $selectedImage, 
+                    photoTitle: $photoTitle, 
+                    photoTags: $photoTags,
+                    onSave: {
+                        if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                            saveArtwork()
+                        }
+                    },
+                    onPixivSave: { pixivURL, title, imageURL, tags in
+                        savePixivArtwork(pixivURL: pixivURL, title: title, imageURL: imageURL, tags: tags)
                     }
-                }
+                )
             case .tagInput:
                 VStack(spacing: 24) {
                     Text("表示したいタグを入力")
@@ -896,6 +922,33 @@ struct AnimeArtworkScreen: View {
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
         print("[DEBUG] AnimeArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
+    }
+    
+    private func savePixivArtwork(pixivURL: String, title: String, imageURL: String?, tags: String) {
+        print("[DEBUG] savePixivArtwork開始 - URL: \(pixivURL), title: \(title), tags: \(tags)")
+        let tagsArray = tags.isEmpty ? [] : tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+        
+        let newArtwork = Artwork(
+            id: UUID(),
+            characterId: anime.id,
+            imagePath: nil,  // Pixiv作品は画像パスではなくURLを使用
+            title: title,
+            tags: tagsArray,
+            createdAt: Date(),
+            pixivURL: pixivURL,
+            twitterURL: nil
+        )
+        
+        print("[DEBUG] 新しいPixivアートワーク作成 - ID: \(newArtwork.id)")
+        artworks.insert(newArtwork, at: 0)
+        print("[DEBUG] artworks配列に追加 - 現在の総数: \(artworks.count)")
+        saveArtworksToUserDefaults()
+        print("[DEBUG] UserDefaultsに保存完了")
+        
+        // フォームをリセット
+        photoTitle = ""
+        photoTags = ""
+        activeSheet = nil
     }
 }
 

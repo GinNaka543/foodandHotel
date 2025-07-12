@@ -100,7 +100,11 @@ struct VideoGalleryScreen: View {
                 Spacer()
             }
             // Uploadボタン（右端に揃える）
-            Button(action: { showAddSheet = true }) {
+            Button(action: { 
+                videoTitle = ""
+                videoTags = ""
+                showAddSheet = true 
+            }) {
                 Text("Upload")
                     .font(.headline)
                     .foregroundColor(.white)

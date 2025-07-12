@@ -113,8 +113,15 @@ const CustomRankings = () => {
   const [newRanking, setNewRanking] = useState({
     title: '',
     displayProbability: 0.5,
-    isActive: true
+    isActive: true,
+    imageURL: ''
   });
+  const [rankingImagePreviewUrl, setRankingImagePreviewUrl] = useState('');
+  
+  // ランキング編集用のstate
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [editingRanking, setEditingRanking] = useState(null);
+  const [editRankingImagePreviewUrl, setEditRankingImagePreviewUrl] = useState('');
 
   useEffect(() => {
     fetchRankings();
@@ -130,6 +137,28 @@ const CustomRankings = () => {
     const convertedUrl = convertGitHubUrl(githubImageUrl);
     setImagePreviewUrl(convertedUrl);
   }, [githubImageUrl]);
+
+  // ランキング画像プレビューURL更新
+  useEffect(() => {
+    if (!newRanking.imageURL) {
+      setRankingImagePreviewUrl('');
+      return;
+    }
+    // GitHub URLを自動変換してプレビュー
+    const convertedUrl = convertGitHubUrl(newRanking.imageURL);
+    setRankingImagePreviewUrl(convertedUrl);
+  }, [newRanking.imageURL]);
+
+  // 編集ランキング画像プレビューURL更新
+  useEffect(() => {
+    if (!editingRanking?.imageURL) {
+      setEditRankingImagePreviewUrl('');
+      return;
+    }
+    // GitHub URLを自動変換してプレビュー
+    const convertedUrl = convertGitHubUrl(editingRanking.imageURL);
+    setEditRankingImagePreviewUrl(convertedUrl);
+  }, [editingRanking?.imageURL]);
 
   const fetchRankings = async () => {
     try {
@@ -216,6 +245,40 @@ const CustomRankings = () => {
         fetchRankings();
       } else {
         setError('ランキング削除に失敗しました');
+      }
+    } catch (error) {
+      setError('エラーが発生しました');
+    }
+  };
+
+  // ランキング編集保存
+  const handleSaveEditRanking = async () => {
+    if (!editingRanking?.title.trim()) {
+      setError('ランキングタイトルを入力してください');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/custom-rankings/${editingRanking.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: editingRanking.title,
+          imageURL: editingRanking.imageURL,
+          displayProbability: editingRanking.displayProbability,
+          isActive: editingRanking.isActive
+        })
+      });
+
+      if (response.ok) {
+        setSuccess('ランキングを更新しました');
+        setOpenEditDialog(false);
+        setEditingRanking(null);
+        fetchRankings();
+      } else {
+        setError('ランキング更新に失敗しました');
       }
     } catch (error) {
       setError('エラーが発生しました');
@@ -368,13 +431,25 @@ const CustomRankings = () => {
                     </Box>
                     <Box>
                       <IconButton
+                        title="ランキングを編集"
+                        color="primary"
+                        onClick={() => {
+                          setEditingRanking({ ...ranking });
+                          setOpenEditDialog(true);
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        title="キャラクターを編集"
+                        color="secondary"
                         onClick={() => {
                           setSelectedRanking(ranking);
                           setOpenItemDialog(true);
                           setSelectedRank(1);
                         }}
                       >
-                        <EditIcon />
+                        <StarIcon />
                       </IconButton>
                       <IconButton
                         color="error"
@@ -499,17 +574,29 @@ const CustomRankings = () => {
                     }
                   </TableCell>
                   <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        const newProbability = 1 / rankings.filter(r => r.isActive).length;
-                        rankings.filter(r => r.isActive).forEach(r => {
-                          handleUpdateRanking(r.id, { displayProbability: newProbability });
-                        });
-                      }}
-                    >
-                      <SaveIcon />
-                    </IconButton>
+                    <Box display="flex" gap={1} justifyContent="center">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => {
+                          setEditingRanking({ ...ranking });
+                          setOpenEditDialog(true);
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          const newProbability = 1 / rankings.filter(r => r.isActive).length;
+                          rankings.filter(r => r.isActive).forEach(r => {
+                            handleUpdateRanking(r.id, { displayProbability: newProbability });
+                          });
+                        }}
+                      >
+                        <SaveIcon />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
@@ -532,6 +619,43 @@ const CustomRankings = () => {
             placeholder="例: 鬼滅の刃人気キャラランキング"
             style={{ marginBottom: 20 }}
           />
+          
+          <TextField
+            margin="dense"
+            label="ランキング画像URL（GitHub）"
+            fullWidth
+            value={newRanking.imageURL}
+            onChange={(e) => setNewRanking({ ...newRanking, imageURL: e.target.value })}
+            placeholder="GitHub blob URLを入力（自動でraw URLに変換されます）"
+            style={{ marginBottom: 10 }}
+          />
+          
+          {newRanking.imageURL && (
+            <Button
+              variant="outlined"
+              onClick={() => setNewRanking({ ...newRanking, imageURL: convertGitHubUrl(newRanking.imageURL) })}
+              style={{ marginBottom: 10 }}
+            >
+              GitHubリンクを修正
+            </Button>
+          )}
+          
+          {rankingImagePreviewUrl && (
+            <Box sx={{ textAlign: 'center', marginBottom: 2 }}>
+              <Typography variant="body2" gutterBottom>ランキング画像プレビュー:</Typography>
+              <img 
+                src={rankingImagePreviewUrl} 
+                alt="ランキング画像プレビュー" 
+                style={{ 
+                  maxWidth: '200px', 
+                  maxHeight: '200px', 
+                  objectFit: 'cover',
+                  border: '2px solid #ddd',
+                  borderRadius: '8px'
+                }}
+              />
+            </Box>
+          )}
           
           <Typography gutterBottom>
             表示確率: {(newRanking.displayProbability * 100).toFixed(0)}%
@@ -559,6 +683,87 @@ const CustomRankings = () => {
         <DialogActions>
           <Button onClick={() => setOpenDialog(false)}>キャンセル</Button>
           <Button onClick={handleCreateRanking} variant="contained">作成</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ランキング編集ダイアログ */}
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>ランキング編集</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="ランキングタイトル"
+            fullWidth
+            value={editingRanking?.title || ''}
+            onChange={(e) => setEditingRanking({ ...editingRanking, title: e.target.value })}
+            placeholder="例: 鬼滅の刃人気キャラランキング"
+            style={{ marginBottom: 20 }}
+          />
+          
+          <TextField
+            margin="dense"
+            label="ランキング画像URL（GitHub）"
+            fullWidth
+            value={editingRanking?.imageURL || ''}
+            onChange={(e) => setEditingRanking({ ...editingRanking, imageURL: e.target.value })}
+            placeholder="GitHub blob URLを入力（自動でraw URLに変換されます）"
+            style={{ marginBottom: 10 }}
+          />
+          
+          {editingRanking?.imageURL && (
+            <Button
+              variant="outlined"
+              onClick={() => setEditingRanking({ ...editingRanking, imageURL: convertGitHubUrl(editingRanking.imageURL) })}
+              style={{ marginBottom: 10 }}
+            >
+              GitHubリンクを修正
+            </Button>
+          )}
+          
+          {editRankingImagePreviewUrl && (
+            <Box sx={{ textAlign: 'center', marginBottom: 2 }}>
+              <Typography variant="body2" gutterBottom>ランキング画像プレビュー:</Typography>
+              <img 
+                src={editRankingImagePreviewUrl} 
+                alt="ランキング画像プレビュー" 
+                style={{ 
+                  maxWidth: '200px', 
+                  maxHeight: '200px', 
+                  objectFit: 'cover',
+                  border: '2px solid #ddd',
+                  borderRadius: '8px'
+                }}
+              />
+            </Box>
+          )}
+          
+          <Typography gutterBottom>
+            表示確率: {((editingRanking?.displayProbability || 0) * 100).toFixed(0)}%
+          </Typography>
+          <Slider
+            value={editingRanking?.displayProbability || 0}
+            onChange={(e, value) => setEditingRanking({ ...editingRanking, displayProbability: value })}
+            min={0}
+            max={1}
+            step={0.05}
+            valueLabelDisplay="auto"
+            valueLabelFormat={(value) => `${(value * 100).toFixed(0)}%`}
+          />
+          
+          <FormControlLabel
+            control={
+              <Switch
+                checked={editingRanking?.isActive || false}
+                onChange={(e) => setEditingRanking({ ...editingRanking, isActive: e.target.checked })}
+              />
+            }
+            label="アクティブにする"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEditDialog(false)}>キャンセル</Button>
+          <Button onClick={handleSaveEditRanking} variant="contained">保存</Button>
         </DialogActions>
       </Dialog>
 

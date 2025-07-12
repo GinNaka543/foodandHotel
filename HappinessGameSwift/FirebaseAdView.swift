@@ -10,7 +10,7 @@ struct FirebaseAdView: View {
     @State private var isLoading = true
     @State private var scrollOffset: CGFloat = 0
     @State private var autoScrollTimer: Timer?
-    @State private var isDragging = false
+    @State private var scrollSpeed: CGFloat = 0.8
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     
@@ -193,13 +193,29 @@ struct FirebaseAdView: View {
                                 .foregroundColor(.black)
                             
                             Spacer()
+                            
+                            Button(action: {
+                                // Navigate to anime ranking page
+                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                   let window = windowScene.windows.first,
+                                   let rootViewController = window.rootViewController {
+                                    let animeRankingView = AnimeRankingScreen()
+                                    let hostingController = UIHostingController(rootView: animeRankingView)
+                                    hostingController.modalPresentationStyle = .fullScreen
+                                    rootViewController.present(hostingController, animated: true)
+                                }
+                            }) {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .padding(.horizontal, 16)
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
-                                // 広告を2セット表示して無限ループを実現
-                                ForEach(0..<2, id: \.self) { setIndex in
+                                // 広告を3セット表示して無限ループを実現
+                                ForEach(0..<3, id: \.self) { setIndex in
                                     ForEach(advertisements) { ad in
                                         Button(action: {
                                             handleAdClick(ad)
@@ -269,26 +285,17 @@ struct FirebaseAdView: View {
                                 .offset(x: scrollOffset)
                                 .onAppear {
                                     startAutoScroll()
+                                    // 定期的に自動スクロール状態をチェック
+                                    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+                                        if autoScrollTimer == nil {
+                                            startAutoScroll()
+                                        }
+                                    }
                                 }
                                 .onDisappear {
                                     stopAutoScroll()
                                 }
-                                .gesture(
-                                    DragGesture()
-                                        .onChanged { _ in
-                                            isDragging = true
-                                            stopAutoScroll()
-                                        }
-                                        .onEnded { _ in
-                                            isDragging = false
-                                            // 3秒後に自動スクロールを再開
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                if !isDragging {
-                                                    startAutoScroll()
-                                                }
-                                            }
-                                        }
-                                )
+                                // ユーザー操作時も自動スクロールを止めない
                         }
                     }
                 } else {
@@ -430,9 +437,8 @@ struct FirebaseAdView: View {
                     return ad1.priority > ad2.priority
                 }
                 
-                // 最大表示数の制限
-                let maxAds = placement == "anime" ? 5 : (placement == "home" ? 10 : Int.max)
-                self.advertisements = Array(candidateAds.prefix(maxAds))
+                // 制限なしで全ての広告を表示
+                self.advertisements = candidateAds
                 
                 print("🎬 [FirebaseAdView] 最終的に表示する広告: \(self.advertisements.count)件")
                 for (index, ad) in self.advertisements.enumerated() {
@@ -485,12 +491,13 @@ struct FirebaseAdView: View {
         let totalWidth = CGFloat(advertisements.count) * itemWidth
         
         autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { _ in
-            if !isDragging {
-                withAnimation(.linear(duration: 0.02)) {
-                    scrollOffset -= 0.8 // 少し速めの速度
-                    
-                    // 1セット分スクロールしたらリセット
-                    if scrollOffset <= -totalWidth {
+            withAnimation(.linear(duration: 0.02)) {
+                scrollOffset -= scrollSpeed // 可変速度
+                
+                // 1セット分スクロールしたらシームレスにリセット（アニメーションなし）
+                if scrollOffset <= -totalWidth {
+                    // アニメーションを一時停止してリセット
+                    withAnimation(.none) {
                         scrollOffset = 0
                     }
                 }

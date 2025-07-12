@@ -258,13 +258,13 @@ struct AnimeScreen: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                 }
-                // 広告バナー
-                FirebaseAdView(placement: "anime")
-                    .padding(.top, 8)
-                    .padding(.bottom, 0)
                 
                 ScrollView {
                     VStack(spacing: 0) {
+                        // 広告バナーをアニメ一覧と一緒にスクロール
+                        FirebaseAdView(placement: "anime")
+                            .padding(.top, 8)
+                            .padding(.bottom, 0)
                         ForEach(filteredAnimes, id: \.id) { anime in
                             Button(action: {
                                 selectedAnime = anime

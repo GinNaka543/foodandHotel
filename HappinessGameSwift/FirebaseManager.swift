@@ -589,6 +589,8 @@ class FirebaseManager: ObservableObject {
                         continue
                     }
                     
+                    let imageURL = data["imageURL"] as? String
+                    
                     print("🔥 [FirebaseManager] ランキング情報: \(title), 確率: \(displayProbability)")
                     
                     // このランキングのアイテムを取得
@@ -603,6 +605,7 @@ class FirebaseManager: ObservableObject {
                                 isActive: isActive,
                                 createdAt: createdAt,
                                 updatedAt: updatedAt,
+                                imageURL: imageURL,
                                 items: items
                             )
                             rankings.append(ranking)

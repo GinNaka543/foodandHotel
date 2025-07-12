@@ -8,6 +8,7 @@ struct CustomRanking: Codable, Identifiable {
     let isActive: Bool
     let createdAt: Date
     let updatedAt: Date
+    let imageURL: String?
     var items: [CustomRankingItem]?
     
     enum CodingKeys: String, CodingKey {
@@ -17,6 +18,7 @@ struct CustomRanking: Codable, Identifiable {
         case isActive
         case createdAt
         case updatedAt
+        case imageURL
         case items
     }
 }
@@ -97,6 +99,7 @@ class CustomRankingManager: ObservableObject {
                     print("🔍 [CustomRankingManager] アクティブランキング取得成功: \(rankings.count)件")
                     for ranking in rankings {
                         print("🔍   - \(ranking.title): アイテム数=\(ranking.items?.count ?? 0)")
+                        print("🔍   - imageURL: \(ranking.imageURL ?? "なし")")
                     }
                     self.activeRankings = rankings
                     self.selectRandomRanking()

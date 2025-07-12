@@ -637,12 +637,13 @@ app.get('/api/custom-rankings', async (req, res) => {
 // カスタムランキング作成
 app.post('/api/custom-rankings', async (req, res) => {
   try {
-    const { title, displayProbability, isActive } = req.body;
+    const { title, displayProbability, isActive, imageURL } = req.body;
     
     const newRanking = {
       title,
       displayProbability,
       isActive,
+      imageURL: imageURL || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };

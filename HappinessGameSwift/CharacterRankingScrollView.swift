@@ -8,16 +8,24 @@ struct CharacterRankingScrollView: View {
     @State private var characterAds: [Advertisement] = []
     @State private var isLoading = true
     @State private var rankingTitle: String = "Popular Character Ranking"
-    @State private var scrollOffset: CGFloat = 0
-    @State private var autoScrollTimer: Timer?
-    @State private var isDragging = false
+    @State private var scrollSpeed: CGFloat = 0.8
+    @State private var showRankingSelection = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // セクションタイトル
             HStack {
-                Text(rankingTitle)
-                    .font(.system(size: 19, weight: .bold))
+                HStack(spacing: 8) {
+                    Text(rankingTitle)
+                        .font(.system(size: 19, weight: .bold))
+                    Button(action: {
+                        showRankingSelection = true
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.gray)
+                    }
+                }
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -26,60 +34,49 @@ struct CharacterRankingScrollView: View {
             // ランキングスクロールビュー
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) { // spacingを8→4に変更
-                    // ランキングを2セット表示して無限ループを実現
-                    ForEach(0..<2, id: \.self) { setIndex in
-                        ForEach(allDisplayItems) { item in
-                            switch item {
-                            case .ranking(let ranking):
-                                CharacterRankingCard(ranking: ranking)
-                            case .advertisement(let ad):
-                                CharacterRankingAdCard(ad: ad)
-                            }
+                    // 1セット分のみ表示
+                    ForEach(allDisplayItems) { item in
+                        switch item {
+                        case .ranking(let ranking):
+                            CharacterRankingCard(ranking: ranking)
+                        case .advertisement(let ad):
+                            CharacterRankingAdCard(ad: ad)
                         }
                     }
                 }
                 .padding(.horizontal, 16)
-                .offset(x: scrollOffset)
                 .onAppear {
-                    startAutoScroll()
+                    loadCharacterAds()
+                    customRankingManager.loadActiveRankings()
+                    // データ読み込み後に自動スクロールを開始
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        loadRankings()
+                    }
                 }
-                .onDisappear {
-                    stopAutoScroll()
+                .onReceive(customRankingManager.$selectedRanking) { selectedRanking in
+                    print("🔍 selectedRankingが変更されました: \(selectedRanking?.title ?? "なし")")
+                    if selectedRanking != nil {
+                        loadRankings()
+                        // データが読み込まれたら自動スクロール開始
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            loadRankings()
+                        }
+                    }
                 }
-                .gesture(
-                    DragGesture()
-                        .onChanged { _ in
-                            isDragging = true
-                            stopAutoScroll()
-                        }
-                        .onEnded { _ in
-                            isDragging = false
-                            // 3秒後に自動スクロールを再開
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                if !isDragging {
-                                    startAutoScroll()
-                                }
-                            }
-                        }
-                )
+                .onReceive(customRankingManager.$activeRankings) { activeRankings in
+                    print("🔍 activeRankingsが変更されました: \(activeRankings.count)件")
+                    // activeRankingsが更新された後、少し待ってからloadRankingsを実行
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        loadRankings()
+                    }
+                }
             }
         }
-        .onAppear {
-            loadCharacterAds()
-            customRankingManager.loadActiveRankings()
-        }
-        .onReceive(customRankingManager.$selectedRanking) { selectedRanking in
-            print("🔍 selectedRankingが変更されました: \(selectedRanking?.title ?? "なし")")
-            if selectedRanking != nil {
-                loadRankings()
-            }
-        }
-        .onReceive(customRankingManager.$activeRankings) { activeRankings in
-            print("🔍 activeRankingsが変更されました: \(activeRankings.count)件")
-            // activeRankingsが更新された後、少し待ってからloadRankingsを実行
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                loadRankings()
-            }
+        .sheet(isPresented: $showRankingSelection) {
+            RankingSelectionView(
+                customRankingManager: customRankingManager,
+                currentRankingTitle: rankingTitle
+            )
         }
     }
     
@@ -183,30 +180,205 @@ struct CharacterRankingScrollView: View {
         }
         return nil
     }
+}
+
+// ランキング選択ビュー
+struct RankingSelectionView: View {
+    @ObservedObject var customRankingManager: CustomRankingManager
+    let currentRankingTitle: String
+    @Environment(\.dismiss) var dismiss
     
-    private func startAutoScroll() {
-        stopAutoScroll()
-        
-        let itemWidth: CGFloat = 71 // 67 (width) + 4 (spacing)
-        let totalWidth = CGFloat(allDisplayItems.count) * itemWidth
-        
-        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { _ in
-            if !isDragging {
-                withAnimation(.linear(duration: 0.02)) {
-                    scrollOffset -= 0.5 // ゆっくりとした速度
+    var body: some View {
+        VStack(spacing: 0) {
+            // ヘッダー
+            HStack {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 24, weight: .medium))
+                        .foregroundColor(.black)
+                }
+                
+                Spacer()
+                
+                Text("ランキング選択")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                
+                Spacer()
+                
+                // 空のスペーサーで右側のバランスを保つ
+                Spacer()
+                    .frame(width: 44)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.white)
+            .shadow(color: Color.black.opacity(0.05), radius: 1, x: 0, y: 1)
+            
+            ScrollView {
+                VStack(spacing: 16) {
+                    // デフォルトランキング
+                    Button(action: {
+                        customRankingManager.selectedRanking = nil
+                        dismiss()
+                    }) {
+                        ZStack(alignment: .bottom) {
+                            // デフォルト背景画像
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue, Color.purple]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .frame(height: 144)
+                            .overlay(
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.white.opacity(0.3))
+                            )
+                            
+                            // タイトルオーバーレイ
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Popular Character Ranking")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .lineLimit(1)
+                                        Text("デフォルトランキング")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.white.opacity(0.8))
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                    if currentRankingTitle == "Popular Character Ranking" {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                            }
+                            .background(
+                                VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+                                    .opacity(0.7)
+                            )
+                        }
+                        .frame(maxWidth: .infinity)
+                        .cornerRadius(10)
+                        .clipped()
+                    }
+                    .buttonStyle(PlainButtonStyle())
                     
-                    // 1セット分スクロールしたらリセット
-                    if scrollOffset <= -totalWidth {
-                        scrollOffset = 0
+                    // カスタムランキング
+                    ForEach(customRankingManager.activeRankings) { ranking in
+                        Button(action: {
+                            customRankingManager.selectedRanking = ranking
+                            dismiss()
+                        }) {
+                            ZStack(alignment: .bottom) {
+                                // ランキング画像
+                                if let imageURL = ranking.imageURL, !imageURL.isEmpty {
+                                    let convertedURL = convertGitHubUrl(imageURL)
+                                    let _ = print("🖼️ [RankingSelection] ランキング: \(ranking.title)")
+                                    let _ = print("🖼️ [RankingSelection] 元URL: \(imageURL)")
+                                    let _ = print("🖼️ [RankingSelection] 変換後URL: \(convertedURL)")
+                                    AsyncImage(url: URL(string: convertedURL)) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            image
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(height: 144)
+                                                .clipped()
+                                        case .failure(let error):
+                                            let _ = print("❌ [RankingSelection] 画像読み込み失敗: \(error)")
+                                            Color(.systemGray5)
+                                                .frame(height: 144)
+                                                .overlay(
+                                                    Image(systemName: "photo")
+                                                        .font(.system(size: 30))
+                                                        .foregroundColor(.gray)
+                                                )
+                                        case .empty:
+                                            let _ = print("⏳ [RankingSelection] 画像読み込み中...")
+                                            Color(.systemGray5)
+                                                .frame(height: 144)
+                                                .overlay(
+                                                    Image(systemName: "photo")
+                                                        .font(.system(size: 30))
+                                                        .foregroundColor(.gray)
+                                                )
+                                        @unknown default:
+                                            Color(.systemGray5)
+                                                .frame(height: 144)
+                                        }
+                                    }
+                                } else {
+                                    let _ = print("⚠️ [RankingSelection] ランキング '\(ranking.title)' に画像URLなし")
+                                    Color(.systemGray5)
+                                        .frame(height: 144)
+                                        .overlay(
+                                            Image(systemName: "list.star")
+                                                .font(.system(size: 30))
+                                                .foregroundColor(.gray)
+                                        )
+                                }
+                                
+                                // タイトルオーバーレイ
+                                VStack {
+                                    Spacer()
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(ranking.title)
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.white)
+                                                .lineLimit(1)
+                                            Text("\(ranking.items?.count ?? 0)キャラクター")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .lineLimit(1)
+                                        }
+                                        Spacer()
+                                        if currentRankingTitle == ranking.title {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                                }
+                                .background(
+                                    VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
+                                        .opacity(0.7)
+                                )
+                            }
+                            .frame(maxWidth: .infinity)
+                            .cornerRadius(10)
+                            .clipped()
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
             }
         }
+        .background(Color.white)
     }
     
-    private func stopAutoScroll() {
-        autoScrollTimer?.invalidate()
-        autoScrollTimer = nil
+    private func convertGitHubUrl(_ url: String) -> String {
+        if url.contains("github.com") && url.contains("/blob/") {
+            return url
+                .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
+                .replacingOccurrences(of: "/blob/", with: "/")
+        }
+        return url
     }
 }
 
@@ -249,18 +421,15 @@ struct CharacterRankingCard: View {
                         AsyncImage(url: URL(string: convertGitHubUrl(imagePath))) { phase in
                             switch phase {
                             case .success(let image):
-                                GeometryReader { geometry in
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 67, height: 67)
-                                        .clipShape(RoundedRectangle(cornerRadius: 16)) // 丸から角丸四角形へ
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(rankColor, lineWidth: 2.5)
-                                        )
-                                }
-                                .frame(width: 67, height: 67)
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 67, height: 67)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(rankGradient, lineWidth: 2.5)
+                                    )
                             case .failure(_), .empty:
                                 // プレースホルダー
                                 Circle()
@@ -273,7 +442,7 @@ struct CharacterRankingCard: View {
                                     )
                                     .overlay(
                                         Circle()
-                                            .stroke(rankColor, lineWidth: 2.5)
+                                            .stroke(rankGradient, lineWidth: 2.5)
                                     )
                             @unknown default:
                                 EmptyView()
@@ -281,18 +450,15 @@ struct CharacterRankingCard: View {
                         }
                     } else if let image = UIImage(contentsOfFile: imagePath) {
                         // ローカルファイルの場合
-                        GeometryReader { geometry in
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 67, height: 67)
-                                .clipShape(RoundedRectangle(cornerRadius: 16)) // 丸から角丸四角形へ
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(rankColor, lineWidth: 2.5)
-                                )
-                        }
-                        .frame(width: 67, height: 67)
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 67, height: 67)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(rankGradient, lineWidth: 2.5)
+                            )
                     } else {
                         // プレースホルダー
                         Circle()
@@ -305,7 +471,7 @@ struct CharacterRankingCard: View {
                             )
                             .overlay(
                                 Circle()
-                                    .stroke(rankColor, lineWidth: 2.5)
+                                    .stroke(rankGradient, lineWidth: 2.5)
                             )
                     }
                 } else {
@@ -320,10 +486,21 @@ struct CharacterRankingCard: View {
                         )
                         .overlay(
                             Circle()
-                                .stroke(rankColor, lineWidth: 2.5)
+                                .stroke(rankGradient, lineWidth: 2.5)
                         )
                 }
                 
+                // 順位バッジ
+                ZStack {
+                    Circle()
+                        .fill(rankGradient)
+                        .frame(width: 26, height: 26)
+                    
+                    Text("\(ranking.rank)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                .offset(x: 25, y: -25)
             }
             
             // キャラクター名
@@ -337,16 +514,52 @@ struct CharacterRankingCard: View {
         .frame(width: 84)
     }
     
-    private var rankColor: Color {
+    private var rankGradient: LinearGradient {
         switch ranking.rank {
         case 1:
-            return Color(red: 1.0, green: 0.84, blue: 0) // 金色
+            // 金色グラデーション
+            return LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 1.0, green: 0.9, blue: 0.3),
+                    Color(red: 1.0, green: 0.84, blue: 0),
+                    Color(red: 0.9, green: 0.7, blue: 0)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case 2:
-            return Color(red: 0.75, green: 0.75, blue: 0.75) // 銀色
+            // 銀色グラデーション
+            return LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.9, green: 0.9, blue: 0.9),
+                    Color(red: 0.75, green: 0.75, blue: 0.75),
+                    Color(red: 0.6, green: 0.6, blue: 0.6)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case 3:
-            return Color(red: 0.8, green: 0.5, blue: 0.2) // 銅色
+            // 銅色グラデーション
+            return LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.9, green: 0.6, blue: 0.3),
+                    Color(red: 0.8, green: 0.5, blue: 0.2),
+                    Color(red: 0.7, green: 0.4, blue: 0.1)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         default:
-            return Color.blue // 青色
+            // 青色グラデーション
+            return LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.2, green: 0.5, blue: 1.0),
+                    Color(red: 0.1, green: 0.4, blue: 0.9),
+                    Color(red: 0, green: 0.3, blue: 0.8)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         }
     }
 }

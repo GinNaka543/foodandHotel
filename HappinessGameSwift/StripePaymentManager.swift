@@ -153,6 +153,59 @@ class StripePaymentManager: ObservableObject {
             completion(.success(()))
         }
     }
+    
+    // ポイントを購入する
+    func purchasePoints(userId: String, package: PointPackage, completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🔥 [StripePaymentManager] purchasePoints開始: userId=\(userId), points=\(package.points), price=\(package.price)")
+        
+        let url = URL(string: "\(baseURL)/create-payment-intent")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "amount": package.price,
+            "currency": "jpy",
+            "userId": userId,
+            "points": package.points,
+            "type": "point_purchase"
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let clientSecret = json["clientSecret"] as? String else {
+                completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
+                return
+            }
+            
+            // 支払い処理を実行（実際のアプリではStripe SDKを使用）
+            DispatchQueue.main.async {
+                self.processPayment(clientSecret: clientSecret) { result in
+                    switch result {
+                    case .success:
+                        print("✅ [StripePaymentManager] ポイント購入決済成功")
+                        completion(.success(()))
+                    case .failure(let error):
+                        print("❌ [StripePaymentManager] ポイント購入決済エラー: \(error)")
+                        completion(.failure(error))
+                    }
+                }
+            }
+        }.resume()
+    }
 }
 
 // Stripeバックエンドとの通信用モデル

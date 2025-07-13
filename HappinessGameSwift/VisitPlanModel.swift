@@ -11,6 +11,7 @@ struct VisitPlanModel: Codable {
     let spots: [VisitSpot]
     let thumbnailUrl: String? // GitHub画像URL
     let price: Int // プラン価格（円）
+    let budget: Int // プラン予算（円）
     let createdDate: Date
     let startTime: Date
     let numberOfDays: Int
@@ -22,7 +23,7 @@ struct VisitPlanModel: Codable {
     
     // 標準的な初期化子
     init(id: String, userId: String, animeName: String, title: String, description: String,
-         duration: String, spots: [VisitSpot], thumbnailUrl: String?, price: Int,
+         duration: String, spots: [VisitSpot], thumbnailUrl: String?, price: Int, budget: Int,
          createdDate: Date, startTime: Date, numberOfDays: Int, totalCost: Int,
          isPublic: Bool, purchasedBy: [String], createdAt: Date, updatedAt: Date) {
         self.id = id
@@ -34,6 +35,7 @@ struct VisitPlanModel: Codable {
         self.spots = spots
         self.thumbnailUrl = thumbnailUrl
         self.price = price
+        self.budget = budget
         self.createdDate = createdDate
         self.startTime = startTime
         self.numberOfDays = numberOfDays
@@ -76,6 +78,7 @@ struct VisitPlanModel: Codable {
             },
             "thumbnailUrl": thumbnailUrl ?? "",
             "price": price,
+            "budget": budget,
             "startTime": startTime.timeIntervalSince1970,
             "numberOfDays": numberOfDays,
             "totalCost": totalCost,
@@ -114,6 +117,7 @@ struct VisitPlanModel: Codable {
         self.duration = duration
         self.thumbnailUrl = dictionary["thumbnailUrl"] as? String
         self.price = price
+        self.budget = dictionary["budget"] as? Int ?? 0
         self.startTime = Date(timeIntervalSince1970: startTimeTimestamp)
         self.numberOfDays = numberOfDays
         self.totalCost = totalCost

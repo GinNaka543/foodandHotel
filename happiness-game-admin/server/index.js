@@ -16,11 +16,13 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
 // Debug middleware to log all requests
 app.use((req, res, next) => {
-  if (req.method === 'POST' && req.url.includes('/custom-rankings')) {
-    console.log('=== DEBUG: Custom Rankings Request ===');
-    console.log('URL:', req.url);
-    console.log('Body:', JSON.stringify(req.body, null, 2));
-    console.log('=====================================');
+  if (req.method === 'POST') {
+    if (req.url.includes('/custom-rankings') || req.url.includes('/admin/add-points')) {
+      console.log(`=== DEBUG: ${req.url} Request ===`);
+      console.log('URL:', req.url);
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+      console.log('=====================================');
+    }
   }
   next();
 });
@@ -69,6 +71,14 @@ app.get('/api/users', async (req, res) => {
       } catch (error) {
         console.log(`ユーザー ${user.id} の声優データ取得エラー:`, error.message);
         user.favoriteVoiceActors = [];
+      }
+      // ユーザーポイントを取得
+      try {
+        const pointsSnapshot = await db.collection('userPoints').doc(user.id).get();
+        user.points = pointsSnapshot.exists ? pointsSnapshot.data().points : 0;
+      } catch (error) {
+        console.log(`ユーザー ${user.id} のポイントデータ取得エラー:`, error.message);
+        user.points = 0;
       }
       // ハッシュタグ（userAnimes, userCharacters両方から集約）
       const animeTags = animesSnapshot.docs.map(a => a.data().hashtag).filter(Boolean);
@@ -1185,6 +1195,107 @@ async function uploadImageToGitHub(base64Data, fileName, folderPath) {
     throw new Error(`画像アップロードエラー: ${error.message}`);
   }
 }
+
+// 管理者用ポイント追加API
+app.post('/api/admin/add-points', async (req, res) => {
+  try {
+    const { userId, amount, type, description } = req.body;
+    
+    if (!userId || !amount || !description) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+    
+    if (amount <= 0) {
+      return res.status(400).json({ error: 'ポイント数は正の数である必要があります' });
+    }
+    
+    // ユーザーの現在のポイントを取得
+    const userPointsRef = db.collection('userPoints').doc(userId);
+    const userPointsDoc = await userPointsRef.get();
+    
+    let currentPoints = 0;
+    if (userPointsDoc.exists) {
+      currentPoints = userPointsDoc.data().points || 0;
+    }
+    
+    // ポイントを更新
+    const newPoints = currentPoints + amount;
+    const pointsData = {
+      userId: userId,
+      points: newPoints,
+      totalEarned: admin.firestore.FieldValue.increment(amount),
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (!userPointsDoc.exists) {
+      pointsData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+      pointsData.totalEarned = amount;
+      pointsData.totalSpent = 0;
+    }
+    
+    await userPointsRef.set(pointsData, { merge: true });
+    
+    // 取引履歴を記録
+    const transactionRef = db.collection('pointTransactions').doc();
+    await transactionRef.set({
+      id: transactionRef.id,
+      userId: userId,
+      amount: amount,
+      type: type || 'admin_grant',
+      description: description,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    console.log(`管理者がユーザー ${userId} に ${amount} ポイントを付与しました`);
+    
+    res.json({ 
+      success: true, 
+      newPoints: newPoints,
+      message: `${amount}ポイントを追加しました` 
+    });
+    
+  } catch (error) {
+    console.error('ポイント追加エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ユーザーのポイント情報を取得
+app.get('/api/users/:userId/points', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const userPointsDoc = await db.collection('userPoints').doc(userId).get();
+    
+    if (!userPointsDoc.exists) {
+      return res.json({ points: 0, transactions: [] });
+    }
+    
+    const pointsData = userPointsDoc.data();
+    
+    // 取引履歴も取得
+    const transactionsSnapshot = await db.collection('pointTransactions')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get();
+    
+    const transactions = transactionsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate()
+    }));
+    
+    res.json({
+      points: pointsData.points || 0,
+      transactions: transactions
+    });
+    
+  } catch (error) {
+    console.error('ポイント情報取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

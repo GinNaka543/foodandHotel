@@ -32,11 +32,32 @@ class UserProfileManager: ObservableObject {
     private let userDefaultsKey = "currentUserProfile"
     
     init() {
+        // まずローカルから読み込み
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
            let user = try? JSONDecoder().decode(UserProfile.self, from: data) {
             self.currentUser = user
         } else {
             self.currentUser = UserProfile()
+        }
+        
+        // ログイン済みの場合はFirebaseから最新データを取得
+        if let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty {
+            loadFromFirebase(userId: userId)
+        }
+    }
+    
+    func loadFromFirebase(userId: String) {
+        FirebaseManager.shared.loadUserProfile(userId: userId) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let profile):
+                    self.currentUser = profile
+                    self.saveProfile()
+                    print("✅ Firebaseからプロフィール読み込み成功")
+                case .failure(let error):
+                    print("❌ Firebaseからプロフィール読み込みエラー: \(error)")
+                }
+            }
         }
     }
     
@@ -50,12 +71,14 @@ class UserProfileManager: ObservableObject {
 
 struct HomeScreen: View {
     @EnvironmentObject var mainTab: MainTabSelection
+    @EnvironmentObject var authManager: AuthenticationManager
     @State private var showListPage = false
     @State private var initialTab: ListTab = .chara
     @StateObject private var characterManager = CharacterManager()
     @StateObject private var animeManager = AnimeManager()
     @StateObject private var profileManager = UserProfileManager()
     @State private var showingProfile = false
+    @State private var showingPoints = false
     
     // キャラクター名を30文字以内で表示する関数
     private func getCharacterNamesText() -> String {
@@ -206,6 +229,23 @@ struct HomeScreen: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(16)
                     }
+                    
+                    Button(action: {
+                        showingPoints = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "star.circle")
+                                .foregroundColor(.purple)
+                            Text("Points")
+                                .font(.system(size: 14))
+                                .foregroundColor(.purple)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(16)
+                    }
+                    
                     Spacer()
                 }
                 .padding(.horizontal, 20)
@@ -359,6 +399,9 @@ struct HomeScreen: View {
             // Temporary inline UserProfileScreen until file is added to project
             UserProfileScreenTemp()
                 .environmentObject(profileManager)
+        }
+        .sheet(isPresented: $showingPoints) {
+            PointsView()
         }
         .onAppear {
             characterManager.loadCharacters()
@@ -517,6 +560,7 @@ struct HomeScreen_Previews: PreviewProvider {
 // Temporary UserProfileScreen implementation until UserProfileScreen.swift is added to project
 struct UserProfileScreenTemp: View {
     @EnvironmentObject var profileManager: UserProfileManager
+    @EnvironmentObject var authManager: AuthenticationManager
     @State private var username: String = ""
     @State private var selectedIconItem: PhotosPickerItem?
     @State private var iconImage: UIImage?
@@ -677,6 +721,54 @@ struct UserProfileScreenTemp: View {
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.bottom, 32)
+                            }
+                            
+                            // ログアウトボタン
+                            VStack(spacing: 16) {
+                                Divider()
+                                    .padding(.horizontal, 16)
+                                
+                                Button(action: {
+                                    dismiss()
+                                    // 少し遅延させてからログアウト
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        authManager.logout()
+                                    }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                                            .foregroundColor(.red)
+                                        Text("ログアウト")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.red)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                }
+                                
+                                // ユーザーID表示
+                                if let userId = UserDefaults.standard.string(forKey: "userId") {
+                                    HStack {
+                                        Text("ユーザーID:")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                        Text(userId)
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.gray)
+                                        Spacer()
+                                        Button(action: {
+                                            UIPasteboard.general.string = userId
+                                            // コピー成功のフィードバック
+                                        }) {
+                                            Image(systemName: "doc.on.doc")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 16)
+                                }
                             }
                         }
                     }

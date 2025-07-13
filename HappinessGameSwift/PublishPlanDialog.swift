@@ -4,10 +4,17 @@ struct PublishPlanDialog: View {
     let planTitle: String
     @Binding var planDescription: String
     @Binding var planPrice: Int
+    @Binding var planBudget: Int
     let onPublish: () -> Void
     let onCancel: () -> Void
     
     @State private var showingPaymentInfo = false
+    @State private var userPoints: Int = 0
+    @State private var isLoadingPoints = true
+    @State private var showingPurchaseSheet = false
+    @State private var errorMessage = ""
+    
+    private let publicationCost = 5000 // 5,000ポイント
     
     var body: some View {
         NavigationView {
@@ -34,21 +41,45 @@ struct PublishPlanDialog: View {
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.purple)
                             
-                            Text("プランを公開するには1,000円の料金がかかります")
+                            Text("プランを公開するには5,000ポイントが必要です")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             
-                            HStack {
-                                Text("公開料金:")
-                                    .font(.system(size: 14))
-                                Spacer()
-                                Text("¥1,000")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.purple)
+                            VStack(spacing: 12) {
+                                HStack {
+                                    Text("公開料金:")
+                                        .font(.system(size: 14))
+                                    Spacer()
+                                    Text("5,000ポイント")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.purple)
+                                }
+                                .padding()
+                                .background(Color.purple.opacity(0.1))
+                                .cornerRadius(12)
+                                
+                                // 現在のポイント表示
+                                HStack {
+                                    Text("現在のポイント:")
+                                        .font(.system(size: 14))
+                                    Spacer()
+                                    if isLoadingPoints {
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                    } else {
+                                        Text("\(userPoints)ポイント")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(userPoints >= publicationCost ? .green : .red)
+                                    }
+                                }
+                                
+                                if !isLoadingPoints && userPoints < publicationCost {
+                                    Text("ポイントが不足しています。あと\(publicationCost - userPoints)ポイント必要です。")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.red)
+                                        .padding(.top, 4)
+                                }
                             }
-                            .padding()
-                            .background(Color.purple.opacity(0.1))
-                            .cornerRadius(12)
                         }
                         
                         Divider()
@@ -92,6 +123,24 @@ struct PublishPlanDialog: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(.gray)
                             }
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("予算")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                                HStack {
+                                    TextField("0", value: $planBudget, format: .number)
+                                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                                        .frame(width: 120)
+                                        .keyboardType(.numberPad)
+                                    Text("円")
+                                        .font(.system(size: 16))
+                                    Spacer()
+                                }
+                                Text("※ このプランにかかる大体の予算を入力してください（必須）")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.red)
+                            }
                         }
                         
                         Divider()
@@ -117,30 +166,87 @@ struct PublishPlanDialog: View {
                 
                 // 公開ボタン
                 VStack(spacing: 12) {
-                    Button(action: {
-                        showingPaymentInfo = true
-                        onPublish()
-                    }) {
-                        HStack {
-                            Image(systemName: "creditcard")
-                            Text("¥1,000を支払って公開")
+                    if userPoints >= publicationCost {
+                        // ポイントが足りている場合
+                        Button(action: {
+                            if planBudget <= 0 {
+                                errorMessage = "予算を入力してください"
+                                return
+                            }
+                            onPublish()
+                        }) {
+                            HStack {
+                                Image(systemName: "checkmark.circle")
+                                Text("5,000ポイントで公開")
+                            }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.purple)
+                            )
                         }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.purple)
-                        )
+                        .disabled(planBudget <= 0)
+                    } else {
+                        // ポイントが不足している場合
+                        Button(action: {
+                            showingPurchaseSheet = true
+                        }) {
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                Text("ポイントを購入")
+                            }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.orange)
+                            )
+                        }
                     }
                     
-                    Text("Stripeで安全に決済されます")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                    if !errorMessage.isEmpty {
+                        Text(errorMessage)
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
+            }
+        }
+        .onAppear {
+            loadUserPoints()
+        }
+        .sheet(isPresented: $showingPurchaseSheet) {
+            PointPurchaseView(
+                onPurchaseComplete: {
+                    loadUserPoints()
+                }
+            )
+        }
+    }
+    
+    private func loadUserPoints() {
+        guard let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty else {
+            isLoadingPoints = false
+            return
+        }
+        
+        FirebaseManager.shared.getUserPoints(userId: userId) { result in
+            DispatchQueue.main.async {
+                isLoadingPoints = false
+                switch result {
+                case .success(let pointsModel):
+                    userPoints = pointsModel.points
+                case .failure(let error):
+                    print("ポイント取得エラー: \(error)")
+                    userPoints = 0
+                }
             }
         }
     }

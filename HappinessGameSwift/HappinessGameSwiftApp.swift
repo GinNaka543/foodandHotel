@@ -5,12 +5,28 @@ class MainTabSelection: ObservableObject {
     @Published var selectedTab: MainContainerView.Tab = .home
 }
 
+class AuthenticationManager: ObservableObject {
+    @Published var isLoggedIn: Bool = UserDefaults.standard.bool(forKey: "isLoggedIn")
+    
+    func login() {
+        isLoggedIn = true
+    }
+    
+    func logout() {
+        UserDefaults.standard.removeObject(forKey: "userId")
+        UserDefaults.standard.removeObject(forKey: "username")
+        UserDefaults.standard.removeObject(forKey: "isLoggedIn")
+        isLoggedIn = false
+    }
+}
+
 @main
 struct HappinessGameSwiftApp: App {
     @StateObject private var mainTab = MainTabSelection()
     @StateObject private var characterManager = CharacterManager()
     @StateObject private var animeManager = AnimeManager()
     @StateObject private var productManager = ProductManager()
+    @StateObject private var authManager = AuthenticationManager()
     
     init() {
         FirebaseApp.configure()
@@ -19,15 +35,24 @@ struct HappinessGameSwiftApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainContainerView()
-                .environmentObject(mainTab)
-                .environmentObject(characterManager)
-                .environmentObject(animeManager)
-                .environmentObject(productManager)
-                .onAppear {
-                    // 開発用: サンプル画像を自動生成
-                    createSampleImagesIfNeeded()
-                }
+            if authManager.isLoggedIn {
+                MainContainerView()
+                    .environmentObject(mainTab)
+                    .environmentObject(characterManager)
+                    .environmentObject(animeManager)
+                    .environmentObject(productManager)
+                    .environmentObject(authManager)
+                    .onAppear {
+                        // 開発用: サンプル画像を自動生成
+                        createSampleImagesIfNeeded()
+                        // ユーザーIDを確認
+                        if let userId = UserDefaults.standard.string(forKey: "userId") {
+                            print("✅ ログイン済み: userId=\(userId)")
+                        }
+                    }
+            } else {
+                AuthSelectionView(authManager: authManager)
+            }
         }
     }
     

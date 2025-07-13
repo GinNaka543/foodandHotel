@@ -12,6 +12,71 @@ class FirebaseManager: ObservableObject {
     
     private init() {}
     
+    // ユーザー認証を確認
+    func verifyUser(username: String, userId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        print("🔥 [FirebaseManager] verifyUser開始: username=\(username), userId=\(userId)")
+        
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ [FirebaseManager] ユーザー確認エラー: \(error)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let document = snapshot, document.exists,
+                  let data = document.data(),
+                  let storedUsername = data["username"] as? String else {
+                print("⚠️ [FirebaseManager] ユーザーが見つかりません")
+                completion(.success(false))
+                return
+            }
+            
+            // ユーザー名が一致するか確認
+            let isValid = storedUsername == username
+            print(isValid ? "✅ ユーザー認証成功" : "❌ ユーザー名が一致しません")
+            completion(.success(isValid))
+        }
+    }
+    
+    // ユーザープロファイルをFirebaseから読み込み
+    func loadUserProfile(userId: String, completion: @escaping (Result<UserProfile, Error>) -> Void) {
+        print("🔥 [FirebaseManager] loadUserProfile開始: userId=\(userId)")
+        
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ [FirebaseManager] プロフィール読み込みエラー: \(error)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let document = snapshot, document.exists,
+                  let data = document.data() else {
+                print("⚠️ [FirebaseManager] プロフィールが見つかりません")
+                completion(.failure(NSError(domain: "FirebaseManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "プロフィールが見つかりません"])))
+                return
+            }
+            
+            let username = data["username"] as? String ?? ""
+            let birthday = (data["birthday"] as? Timestamp)?.dateValue()
+            let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+            let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue() ?? Date()
+            let favoriteVoiceActors = data["favoriteVoiceActors"] as? [String] ?? []
+            
+            let profile = UserProfile(
+                id: userId,
+                username: username,
+                birthday: birthday,
+                animeQuote: "", // Firebaseに保存されていない場合は空文字
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                favoriteVoiceActors: favoriteVoiceActors
+            )
+            
+            print("✅ [FirebaseManager] プロフィール読み込み成功: \(username)")
+            completion(.success(profile))
+        }
+    }
+    
     // ユーザープロファイルをFirebaseに保存
     func saveUserProfile(_ profile: UserProfile, completion: @escaping (Result<Void, Error>) -> Void) {
         print("🔥 Firebase保存開始: ユーザーID=\(profile.id), ユーザー名=\(profile.username)")
@@ -701,6 +766,177 @@ class FirebaseManager: ObservableObject {
                 
                 completion(.success(items))
             }
+    }
+    
+    // MARK: - Points Management Functions
+    
+    // ユーザーのポイント情報を取得
+    func getUserPoints(userId: String, completion: @escaping (Result<UserPointsModel, Error>) -> Void) {
+        print("🔥 [FirebaseManager] getUserPoints開始: userId=\(userId)")
+        
+        db.collection("userPoints").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ [FirebaseManager] ポイント取得エラー: \(error)")
+                completion(.failure(error))
+                return
+            }
+            
+            guard let document = snapshot, document.exists,
+                  let data = document.data() else {
+                print("⚠️ [FirebaseManager] ポイントデータなし、初期値を作成")
+                // ポイントデータがない場合は初期値を作成
+                let initialPoints = UserPointsModel(
+                    userId: userId,
+                    points: 0
+                )
+                completion(.success(initialPoints))
+                return
+            }
+            
+            let points = data["points"] as? Int ?? 0
+            
+            let userPoints = UserPointsModel(
+                userId: userId,
+                points: points
+            )
+            
+            print("✅ [FirebaseManager] ポイント取得成功: \(points)pt")
+            completion(.success(userPoints))
+        }
+    }
+    
+    // ユーザーにポイントを追加
+    func addPointsToUser(userId: String, points: Int, description: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🔥 [FirebaseManager] addPointsToUser開始: userId=\(userId), points=\(points)")
+        
+        let batch = db.batch()
+        
+        // ユーザーポイントを更新
+        let userPointsRef = db.collection("userPoints").document(userId)
+        batch.setData([
+            "userId": userId,
+            "points": FieldValue.increment(Int64(points)),
+            "totalEarned": FieldValue.increment(Int64(points)),
+            "lastUpdated": FieldValue.serverTimestamp()
+        ], forDocument: userPointsRef, merge: true)
+        
+        // 取引履歴を追加
+        let transactionRef = db.collection("pointTransactions").document()
+        let transactionData: [String: Any] = [
+            "id": transactionRef.documentID,
+            "userId": userId,
+            "amount": points,
+            "type": "purchase",
+            "description": description,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        batch.setData(transactionData, forDocument: transactionRef)
+        
+        // バッチ実行
+        batch.commit { error in
+            if let error = error {
+                print("❌ [FirebaseManager] ポイント追加エラー: \(error)")
+                completion(.failure(error))
+            } else {
+                print("✅ [FirebaseManager] ポイント追加成功: \(points)pt")
+                completion(.success(()))
+            }
+        }
+    }
+    
+    // ユーザーのポイント取引履歴を取得
+    func getPointTransactions(userId: String, completion: @escaping (Result<[PointTransactionModel], Error>) -> Void) {
+        print("🔥 [FirebaseManager] getPointTransactions開始: userId=\(userId)")
+        
+        db.collection("pointTransactions")
+            .whereField("userId", isEqualTo: userId)
+            .order(by: "createdAt", descending: true)
+            .limit(to: 50)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ [FirebaseManager] 取引履歴取得エラー: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                let transactions = snapshot?.documents.compactMap { doc -> PointTransactionModel? in
+                    let data = doc.data()
+                    
+                    guard let id = data["id"] as? String,
+                          let userId = data["userId"] as? String,
+                          let amount = data["amount"] as? Int,
+                          let type = data["type"] as? String,
+                          let description = data["description"] as? String,
+                          let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() else {
+                        return nil
+                    }
+                    
+                    return PointTransactionModel(
+                        id: id,
+                        userId: userId,
+                        amount: amount,
+                        type: PointTransactionModel.TransactionType(rawValue: type) ?? .purchase,
+                        description: description,
+                        createdAt: createdAt
+                    )
+                } ?? []
+                
+                print("✅ [FirebaseManager] 取引履歴取得成功: \(transactions.count)件")
+                completion(.success(transactions))
+            }
+    }
+    
+    // ポイントを使用（減算）
+    func usePoints(userId: String, points: Int, description: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🔥 [FirebaseManager] usePoints開始: userId=\(userId), points=\(points)")
+        
+        // 現在のポイントを確認
+        getUserPoints(userId: userId) { result in
+            switch result {
+            case .success(let userPoints):
+                if userPoints.points < points {
+                    completion(.failure(NSError(domain: "FirebaseManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "ポイントが不足しています"])))
+                    return
+                }
+                
+                let batch = self.db.batch()
+                
+                // ユーザーポイントを更新
+                let userPointsRef = self.db.collection("userPoints").document(userId)
+                batch.setData([
+                    "userId": userId,
+                    "points": FieldValue.increment(Int64(-points)),
+                    "totalSpent": FieldValue.increment(Int64(points)),
+                    "lastUpdated": FieldValue.serverTimestamp()
+                ], forDocument: userPointsRef, merge: true)
+                
+                // 取引履歴を追加
+                let transactionRef = self.db.collection("pointTransactions").document()
+                let transactionData: [String: Any] = [
+                    "id": transactionRef.documentID,
+                    "userId": userId,
+                    "amount": -points,
+                    "type": "usage",
+                    "description": description,
+                    "createdAt": FieldValue.serverTimestamp()
+                ]
+                batch.setData(transactionData, forDocument: transactionRef)
+                
+                // バッチ実行
+                batch.commit { error in
+                    if let error = error {
+                        print("❌ [FirebaseManager] ポイント使用エラー: \(error)")
+                        completion(.failure(error))
+                    } else {
+                        print("✅ [FirebaseManager] ポイント使用成功: \(points)pt")
+                        completion(.success(()))
+                    }
+                }
+                
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
     }
 }
 

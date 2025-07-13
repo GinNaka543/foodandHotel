@@ -22,7 +22,9 @@ struct VisitPlanningScreen: View {
     @State private var customDaysInput: String = ""
     @State private var planDescription: String = ""
     @State private var planPrice: Int = 0
+    @State private var planBudget: Int = 0
     @State private var isPublic: Bool = false
+    @State private var showingPublicationChoice = false
     @State private var showingPublishDialog = false
     @State private var showingPaymentSheet = false
     @StateObject private var firebaseManager = FirebaseManager.shared
@@ -352,7 +354,7 @@ struct VisitPlanningScreen: View {
                         }
                         
                         Button(action: {
-                            showingPublishDialog = true
+                            showingPublicationChoice = true
                         }) {
                             Text("プランを確定")
                                 .font(.system(size: 17, weight: .semibold))
@@ -372,11 +374,28 @@ struct VisitPlanningScreen: View {
             }
             .navigationBarHidden(true)
         }
+        .sheet(isPresented: $showingPublicationChoice) {
+            PlanPublicationChoiceView(
+                planTitle: planTitle,
+                onPrivate: { 
+                    isPublic = false
+                    showingPublicationChoice = false
+                    savePlanPrivately()
+                },
+                onPublic: { 
+                    isPublic = true
+                    showingPublicationChoice = false
+                    showingPublishDialog = true
+                },
+                onCancel: { showingPublicationChoice = false }
+            )
+        }
         .sheet(isPresented: $showingPublishDialog) {
             PublishPlanDialog(
                 planTitle: planTitle,
                 planDescription: $planDescription,
                 planPrice: $planPrice,
+                planBudget: $planBudget,
                 onPublish: { publishPlan() },
                 onCancel: { showingPublishDialog = false }
             )
@@ -471,7 +490,18 @@ struct VisitPlanningScreen: View {
         return plans
     }
     
+    func savePlanPrivately() {
+        // プライベートプランとして保存（支払い不要）
+        uploadPlanToFirebase(payment: nil, isPublic: false)
+    }
+    
     func publishPlan() {
+        // 予算チェック
+        guard planBudget > 0 else {
+            // エラー表示
+            return
+        }
+        
         // 支払い処理を開始
         let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
         
@@ -479,14 +509,14 @@ struct VisitPlanningScreen: View {
             switch result {
             case .success(let payment):
                 // 支払い成功後、プランをFirebaseに保存
-                self.uploadPlanToFirebase(payment: payment)
+                self.uploadPlanToFirebase(payment: payment, isPublic: true)
             case .failure(let error):
                 print("支払いエラー: \(error)")
             }
         }
     }
     
-    func uploadPlanToFirebase(payment: PlanPostingPayment) {
+    func uploadPlanToFirebase(payment: PlanPostingPayment?, isPublic: Bool) {
         let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
         
         // 画像をGitHubにアップロード
@@ -518,11 +548,12 @@ struct VisitPlanningScreen: View {
                 spots: self.updateSpotTimes(),
                 thumbnailUrl: thumbnailUrl,
                 price: self.planPrice,
+                budget: self.planBudget,
                 createdDate: Date(),
                 startTime: self.startTime,
                 numberOfDays: self.numberOfDays,
                 totalCost: self.calculateTotalCost(),
-                isPublic: true,
+                isPublic: isPublic,
                 purchasedBy: [],
                 createdAt: Date(),
                 updatedAt: Date()
@@ -531,8 +562,15 @@ struct VisitPlanningScreen: View {
             self.firebaseManager.saveVisitPlan(plan) { result in
                 switch result {
                 case .success:
-                    // 支払い記録を保存
-                    self.firebaseManager.recordPlanPostingPayment(payment) { _ in
+                    if let payment = payment {
+                        // 支払い記録を保存（パブリックプランの場合のみ）
+                        self.firebaseManager.recordPlanPostingPayment(payment) { _ in
+                            DispatchQueue.main.async {
+                                self.dismiss()
+                            }
+                        }
+                    } else {
+                        // プライベートプランの場合はそのまま閉じる
                         DispatchQueue.main.async {
                             self.dismiss()
                         }
@@ -558,6 +596,7 @@ struct VisitPlanningScreen: View {
             spots: updateSpotTimes(),
             thumbnailUrl: nil,
             price: 0,
+            budget: calculateTotalCost(), // 下書きの場合は総費用を予算として設定
             createdDate: Date(),
             startTime: startTime,
             numberOfDays: numberOfDays,

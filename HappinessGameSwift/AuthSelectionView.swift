@@ -21,8 +21,8 @@ struct AuthSelectionView: View {
                         .scaledToFit()
                         .frame(height: 240)
                     
-                    Text("アニメの好きを形にしよう！")
-                        .font(.system(size: 16))
+                    Text("僕だけの推しギャラリー！")
+                        .font(.system(size: 20))
                         .foregroundColor(.gray)
                 }
                 .padding(.top, 100) // ロゴを上部に配置

@@ -62,6 +62,14 @@ app.get('/api/users', async (req, res) => {
       // userCharactersから取得
       const charactersSnapshot = await db.collection('userCharacters').where('userId', '==', user.id).get();
       user.favoriteCharacters = charactersSnapshot.docs.map(c => c.data().name || c.data().characterId);
+      // userVoiceActorsから取得
+      try {
+        const voiceActorsSnapshot = await db.collection('userVoiceActors').where('userId', '==', user.id).get();
+        user.favoriteVoiceActors = voiceActorsSnapshot.docs.map(va => va.data().name || va.data().voiceActorId);
+      } catch (error) {
+        console.log(`ユーザー ${user.id} の声優データ取得エラー:`, error.message);
+        user.favoriteVoiceActors = [];
+      }
       // ハッシュタグ（userAnimes, userCharacters両方から集約）
       const animeTags = animesSnapshot.docs.map(a => a.data().hashtag).filter(Boolean);
       const characterTags = charactersSnapshot.docs.map(c => c.data().tag).filter(Boolean);
@@ -74,11 +82,11 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// 特定のアニメ/キャラクター/タグでユーザーを検索
+// 特定のアニメ/キャラクター/声優/タグでユーザーを検索
 app.get('/api/users/search', async (req, res) => {
   try {
-    const { all, anime, character, hashtag } = req.query;
-    console.log('検索条件:', { all, anime, character, hashtag });
+    const { all, anime, character, voiceActor, hashtag } = req.query;
+    console.log('検索条件:', { all, anime, character, voiceActor, hashtag });
     const usersSnapshot = await db.collection('users').get();
     const users = [];
     for (const doc of usersSnapshot.docs) {
@@ -89,6 +97,14 @@ app.get('/api/users/search', async (req, res) => {
       // userCharactersから取得
       const charactersSnapshot = await db.collection('userCharacters').where('userId', '==', user.id).get();
       user.favoriteCharacters = charactersSnapshot.docs.map(c => c.data().name || c.data().characterId);
+      // userVoiceActorsから取得
+      try {
+        const voiceActorsSnapshot = await db.collection('userVoiceActors').where('userId', '==', user.id).get();
+        user.favoriteVoiceActors = voiceActorsSnapshot.docs.map(va => va.data().name || va.data().voiceActorId);
+      } catch (error) {
+        console.log(`ユーザー ${user.id} の声優データ取得エラー:`, error.message);
+        user.favoriteVoiceActors = [];
+      }
       // ハッシュタグ（userAnimes, userCharacters両方から集約）
       const animeTags = animesSnapshot.docs.map(a => a.data().hashtag).filter(Boolean);
       const characterTags = charactersSnapshot.docs.map(c => c.data().tag).filter(Boolean);
@@ -97,17 +113,19 @@ app.get('/api/users/search', async (req, res) => {
       console.log('ユーザー:', user.username || user.id);
       console.log('  favoriteAnimes:', user.favoriteAnimes);
       console.log('  favoriteCharacters:', user.favoriteCharacters);
+      console.log('  favoriteVoiceActors:', user.favoriteVoiceActors);
       console.log('  hashtags:', user.hashtags);
       // 検索条件に合致するか
       let match = true;
       
-      // 全てで検索（ユーザー名、キャラクター、アニメ、ハッシュタグを含む）
+      // 全てで検索（ユーザー名、キャラクター、アニメ、声優、ハッシュタグを含む）
       if (all) {
         const searchTerm = all.toLowerCase();
         const userMatch = 
           (user.username && user.username.toLowerCase().includes(searchTerm)) ||
           (user.favoriteAnimes && user.favoriteAnimes.some(anime => anime && anime.toLowerCase().includes(searchTerm))) ||
           (user.favoriteCharacters && user.favoriteCharacters.some(char => char && char.toLowerCase().includes(searchTerm))) ||
+          (user.favoriteVoiceActors && user.favoriteVoiceActors.some(va => va && va.toLowerCase().includes(searchTerm))) ||
           (user.hashtags && user.hashtags.some(tag => tag && tag.toLowerCase().includes(searchTerm)));
         
         if (!userMatch) match = false;
@@ -120,6 +138,10 @@ app.get('/api/users/search', async (req, res) => {
       if (character) {
         const charStr = (user.favoriteCharacters || []).filter(c => !!c && isNaN(c)).join(' ').toLowerCase();
         if (!charStr.includes(character.toLowerCase())) match = false;
+      }
+      if (voiceActor) {
+        const vaStr = (user.favoriteVoiceActors || []).filter(v => !!v).join(' ').toLowerCase();
+        if (!vaStr.includes(voiceActor.toLowerCase())) match = false;
       }
       if (hashtag) {
         const tagStr = (user.hashtags || []).filter(h => !!h).join(' ').toLowerCase();
@@ -144,6 +166,7 @@ app.post('/api/advertisements', async (req, res) => {
       linkURL,
       targetAnimes,
       targetCharacters,
+      targetVoiceActors,
       targetHashtags,
       expiresAt,
       placements,
@@ -163,6 +186,7 @@ app.post('/api/advertisements', async (req, res) => {
       // ターゲット広告の場合
       if ((targetAnimes && targetAnimes.length > 0) || 
           (targetCharacters && targetCharacters.length > 0) || 
+          (targetVoiceActors && targetVoiceActors.length > 0) ||
           (targetHashtags && targetHashtags.length > 0)) {
         
         for (const ad of existingAds) {
@@ -188,6 +212,16 @@ app.post('/api/advertisements', async (req, res) => {
             }
           }
           
+          // 同じ声優をターゲットにしている広告があるかチェック
+          if (targetVoiceActors && targetVoiceActors.length > 0 && ad.targetVoiceActors && ad.targetVoiceActors.length > 0) {
+            const duplicateVA = targetVoiceActors.find(va => ad.targetVoiceActors.includes(va));
+            if (duplicateVA) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateVA}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
           // 同じハッシュタグをターゲットにしている広告があるかチェック
           if (targetHashtags && targetHashtags.length > 0 && ad.targetHashtags && ad.targetHashtags.length > 0) {
             const duplicateTag = targetHashtags.find(tag => ad.targetHashtags.includes(tag));
@@ -208,6 +242,7 @@ app.post('/api/advertisements', async (req, res) => {
       linkURL,
       targetAnimes: targetAnimes || [],
       targetCharacters: targetCharacters || [],
+      targetVoiceActors: targetVoiceActors || [],
       targetHashtags: targetHashtags || [],
       placements: placements || [],
       displayRate: displayRate || 100,
@@ -248,13 +283,15 @@ app.put('/api/advertisements/:id', async (req, res) => {
     
     // ビジットページのターゲット広告の重複チェック（更新時）
     if (updateData.placements && updateData.placements.includes('visit') && 
-        updateData.targetAnimes !== undefined && updateData.targetCharacters !== undefined && updateData.targetHashtags !== undefined) {
+        updateData.targetAnimes !== undefined && updateData.targetCharacters !== undefined && 
+        updateData.targetVoiceActors !== undefined && updateData.targetHashtags !== undefined) {
       
-      const { targetAnimes, targetCharacters, targetHashtags } = updateData;
+      const { targetAnimes, targetCharacters, targetVoiceActors, targetHashtags } = updateData;
       
       // ターゲット広告の場合のみチェック
       if ((targetAnimes && targetAnimes.length > 0) || 
           (targetCharacters && targetCharacters.length > 0) || 
+          (targetVoiceActors && targetVoiceActors.length > 0) ||
           (targetHashtags && targetHashtags.length > 0)) {
         
         // 既存の広告を取得（自分自身を除く）
@@ -284,6 +321,16 @@ app.put('/api/advertisements/:id', async (req, res) => {
             if (duplicateChar) {
               return res.status(400).json({ 
                 error: `既に「${duplicateChar}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
+          // 同じ声優をターゲットにしている広告があるかチェック
+          if (targetVoiceActors && targetVoiceActors.length > 0 && ad.targetVoiceActors && ad.targetVoiceActors.length > 0) {
+            const duplicateVA = targetVoiceActors.find(va => ad.targetVoiceActors.includes(va));
+            if (duplicateVA) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateVA}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
               });
             }
           }
@@ -566,34 +613,330 @@ app.post('/api/github-repositories/refresh-capacity', async (req, res) => {
   }
 });
 
+// 類似度を計算する関数（Levenshtein距離）
+function levenshteinDistance(str1, str2) {
+  const matrix = [];
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[str2.length][str1.length];
+}
+
+// 類似名をグループ化する関数
+function groupSimilarNames(names, threshold = 0.8) {
+  const groups = {};
+  const processed = new Set();
+  
+  names.forEach(name => {
+    if (processed.has(name)) return;
+    
+    const group = [name];
+    processed.add(name);
+    
+    names.forEach(otherName => {
+      if (processed.has(otherName) || name === otherName) return;
+      
+      const distance = levenshteinDistance(name.toLowerCase(), otherName.toLowerCase());
+      const similarity = 1 - distance / Math.max(name.length, otherName.length);
+      
+      if (similarity >= threshold) {
+        group.push(otherName);
+        processed.add(otherName);
+      }
+    });
+    
+    // 最も短い名前を代表名とする（通常は正しい名前）
+    const representative = group.reduce((shortest, current) => 
+      current.length < shortest.length ? current : shortest
+    );
+    
+    groups[representative] = group;
+  });
+  
+  return groups;
+}
+
+// シンプルなテストエンドポイント
+app.get('/api/debug/test', (req, res) => {
+  console.log('🧪 テストエンドポイントがアクセスされました');
+  res.json({ 
+    message: 'テスト成功', 
+    timestamp: new Date().toISOString(),
+    server: 'running'
+  });
+});
+
+// デバッグ用：指定コレクションの内容を確認
+app.get('/api/debug/collections', async (req, res) => {
+  try {
+    console.log('🔍 デバッグ: コレクション確認開始');
+    
+    const result = {};
+    
+    // 主要なコレクションを手動で確認
+    const collectionNames = ['users', 'userAnimes', 'userCharacters', 'userVoiceActors', 'advertisements', 'customRankings'];
+    
+    for (const collectionName of collectionNames) {
+      try {
+        console.log(`🔍 ${collectionName}コレクション確認中...`);
+        const snapshot = await db.collection(collectionName).get();
+        result[collectionName] = {
+          count: snapshot.docs.length,
+          samples: snapshot.docs.slice(0, 3).map(doc => ({
+            id: doc.id,
+            data: doc.data()
+          }))
+        };
+        console.log(`🔍 ${collectionName}: ${snapshot.docs.length}件`);
+      } catch (collectionError) {
+        console.error(`🔍 ${collectionName}エラー:`, collectionError);
+        result[collectionName] = {
+          error: collectionError.message,
+          count: 0,
+          samples: []
+        };
+      }
+    }
+    
+    console.log('🔍 コレクション詳細:', result);
+    res.json(result);
+  } catch (error) {
+    console.error('🔍 デバッグエラー:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // 統計情報を取得
 app.get('/api/statistics', async (req, res) => {
   try {
-    // 開発環境用のダミーデータ
+    console.log('📊 統計情報取得開始');
     const usersSnapshot = await db.collection('users').get();
     const adsSnapshot = await db.collection('advertisements').get();
-    const animeStats = {
-      'アニメ1': 2,
-      'アニメ2': 2,
-      'アニメ3': 2
-    };
-    const characterStats = {
-      'キャラクター1': 1,
-      'キャラクター2': 1
-    };
-    const hashtagStats = {
-      '#ハッシュタグ1': 1,
-      '#ハッシュタグ2': 1
-    };
+    
+    // 全てのアニメとキャラクターの名前を収集
+    const allAnimeNames = [];
+    const allCharacterNames = [];
+    const allVoiceActors = [];
+    const allHashtags = [];
+    
+    // userAnimesとuserCharactersから全データを取得
+    console.log('📊 userAnimesから取得中...');
+    const animesSnapshot = await db.collection('userAnimes').get();
+    console.log(`📊 userAnimesコレクション: ${animesSnapshot.docs.length}件のドキュメント`);
+    
+    animesSnapshot.docs.forEach((doc, index) => {
+      const data = doc.data();
+      console.log(`📊 userAnimes[${index}]:`, {
+        docId: doc.id,
+        title: data.title,
+        hashtag: data.hashtag,
+        userId: data.userId,
+        allFields: Object.keys(data)
+      });
+      
+      if (data.title && data.title.trim()) {
+        allAnimeNames.push(data.title.trim());
+        console.log(`📊 アニメ名追加: "${data.title.trim()}"`);
+      } else {
+        console.log('📊 アニメ名なし:', data.title);
+      }
+      
+      if (data.hashtag && data.hashtag.trim()) {
+        allHashtags.push(data.hashtag.trim());
+      }
+    });
+    
+    console.log('📊 userCharactersから取得中...');
+    const charactersSnapshot = await db.collection('userCharacters').get();
+    console.log(`📊 userCharactersコレクション: ${charactersSnapshot.docs.length}件のドキュメント`);
+    
+    charactersSnapshot.docs.forEach((doc, index) => {
+      const data = doc.data();
+      console.log(`📊 userCharacters[${index}]:`, {
+        docId: doc.id,
+        name: data.name,
+        tag: data.tag,
+        userId: data.userId,
+        allFields: Object.keys(data)
+      });
+      
+      if (data.name && data.name.trim()) {
+        allCharacterNames.push(data.name.trim());
+        console.log(`📊 キャラ名追加: "${data.name.trim()}"`);
+      } else {
+        console.log('📊 キャラ名なし:', data.name);
+      }
+      
+      if (data.tag && data.tag.trim()) {
+        allHashtags.push(data.tag.trim());
+      }
+    });
+    
+    console.log('📊 userVoiceActorsから取得中...');
+    try {
+      const voiceActorsSnapshot = await db.collection('userVoiceActors').get();
+      console.log(`📊 userVoiceActorsコレクション: ${voiceActorsSnapshot.docs.length}件のドキュメント`);
+      
+      voiceActorsSnapshot.docs.forEach((doc, index) => {
+        const data = doc.data();
+        console.log(`📊 userVoiceActors[${index}]:`, {
+          docId: doc.id,
+          name: data.name,
+          userId: data.userId,
+          allFields: Object.keys(data)
+        });
+        
+        if (data.name && data.name.trim()) {
+          allVoiceActors.push(data.name.trim());
+          console.log(`📊 声優名追加: "${data.name.trim()}"`);
+        } else {
+          console.log('📊 声優名なし:', data.name);
+        }
+      });
+    } catch (error) {
+      console.log('📊 userVoiceActorsコレクション取得エラー:', error.message);
+      console.log('📊 声優データなしで続行');
+    }
+    
+    console.log(`📊 収集完了: アニメ${allAnimeNames.length}件, キャラクター${allCharacterNames.length}件, 声優${allVoiceActors.length}件, ハッシュタグ${allHashtags.length}件`);
+    console.log('📊 全アニメ名リスト:', allAnimeNames);
+    console.log('📊 全キャラ名リスト:', allCharacterNames);
+    console.log('📊 全声優名リスト:', allVoiceActors);
+    console.log('📊 全ハッシュタグリスト:', allHashtags);
+    
+    // 重複除去前後の確認
+    const uniqueAnimeNames = [...new Set(allAnimeNames)];
+    const uniqueCharacterNames = [...new Set(allCharacterNames)];
+    const uniqueVoiceActors = [...new Set(allVoiceActors)];
+    console.log('📊 重複除去後アニメ名:', uniqueAnimeNames);
+    console.log('📊 重複除去後キャラ名:', uniqueCharacterNames);
+    console.log('📊 重複除去後声優名:', uniqueVoiceActors);
+    
+    // 類似名をグループ化
+    const animeGroups = groupSimilarNames(uniqueAnimeNames);
+    const characterGroups = groupSimilarNames(uniqueCharacterNames);
+    const voiceActorGroups = groupSimilarNames(uniqueVoiceActors);
+    
+    console.log('📊 アニメグループ化結果:', animeGroups);
+    console.log('📊 キャラグループ化結果:', characterGroups);
+    console.log('📊 声優グループ化結果:', voiceActorGroups);
+    
+    // 統計を集計
+    const animeStats = {};
+    const characterStats = {};
+    const voiceActorStats = {};
+    const hashtagStats = {};
+    
+    // アニメ統計
+    Object.entries(animeGroups).forEach(([representative, variants]) => {
+      let count = 0;
+      console.log(`📊 アニメ処理中: 代表名="${representative}", バリエーション:`, variants);
+      variants.forEach(variant => {
+        const variantCount = allAnimeNames.filter(name => name === variant).length;
+        count += variantCount;
+        console.log(`📊   - "${variant}": ${variantCount}件`);
+      });
+      if (count > 0) {
+        animeStats[representative] = count;
+        console.log(`📊 アニメ統計追加: "${representative}" = ${count}件`);
+      }
+    });
+    
+    // キャラクター統計
+    Object.entries(characterGroups).forEach(([representative, variants]) => {
+      let count = 0;
+      console.log(`📊 キャラ処理中: 代表名="${representative}", バリエーション:`, variants);
+      variants.forEach(variant => {
+        const variantCount = allCharacterNames.filter(name => name === variant).length;
+        count += variantCount;
+        console.log(`📊   - "${variant}": ${variantCount}件`);
+      });
+      if (count > 0) {
+        characterStats[representative] = count;
+        console.log(`📊 キャラ統計追加: "${representative}" = ${count}件`);
+      }
+    });
+    
+    // 声優統計
+    Object.entries(voiceActorGroups).forEach(([representative, variants]) => {
+      let count = 0;
+      console.log(`📊 声優処理中: 代表名="${representative}", バリエーション:`, variants);
+      variants.forEach(variant => {
+        const variantCount = allVoiceActors.filter(name => name === variant).length;
+        count += variantCount;
+        console.log(`📊   - "${variant}": ${variantCount}件`);
+      });
+      if (count > 0) {
+        voiceActorStats[representative] = count;
+        console.log(`📊 声優統計追加: "${representative}" = ${count}件`);
+      }
+    });
+    
+    // ハッシュタグ統計
+    allHashtags.forEach(tag => {
+      const formattedTag = tag.startsWith('#') ? tag : `#${tag}`;
+      hashtagStats[formattedTag] = (hashtagStats[formattedTag] || 0) + 1;
+    });
+    
+    // データがない場合の対処
+    if (Object.keys(animeStats).length === 0 && Object.keys(characterStats).length === 0) {
+      console.log('📊 データなし - サンプルデータを返す');
+      return res.json({
+        totalUsers: usersSnapshot.size,
+        totalAds: adsSnapshot.size,
+        animeStats: {
+          'データなし': 0
+        },
+        characterStats: {
+          'データなし': 0
+        },
+        voiceActorStats: {
+          'データなし': 0
+        },
+        hashtagStats: {
+          '#データなし': 0
+        }
+      });
+    }
+    
+    console.log('📊 最終統計結果:');
+    console.log('📊 animeStats:', animeStats);
+    console.log('📊 characterStats:', characterStats);
+    console.log('📊 voiceActorStats:', voiceActorStats);
+    console.log('📊 hashtagStats:', hashtagStats);
+    console.log('📊 統計サマリー:', {
+      animeCount: Object.keys(animeStats).length,
+      characterCount: Object.keys(characterStats).length,
+      voiceActorCount: Object.keys(voiceActorStats).length,
+      hashtagCount: Object.keys(hashtagStats).length
+    });
     
     res.json({
       totalUsers: usersSnapshot.size,
       totalAds: adsSnapshot.size,
       animeStats,
       characterStats,
+      voiceActorStats,
       hashtagStats
     });
   } catch (error) {
+    console.error('📊 統計取得エラー:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -7,6 +7,7 @@ function Users() {
     all: '',
     anime: '',
     character: '',
+    voiceActor: '',
     hashtag: ''
   });
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,16 @@ function Users() {
     setLoading(true);
     try {
       const response = await axios.get('/api/users');
-      setUsers(response.data);
+      // Deduplicate users by ID, keeping the most recent one
+      const usersMap = new Map();
+      response.data.forEach(user => {
+        if (!usersMap.has(user.id) || 
+            (user.updatedAt && (!usersMap.get(user.id).updatedAt || 
+             new Date(user.updatedAt) > new Date(usersMap.get(user.id).updatedAt)))) {
+          usersMap.set(user.id, user);
+        }
+      });
+      setUsers(Array.from(usersMap.values()));
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -35,10 +45,20 @@ function Users() {
       if (searchParams.all) params.append('all', searchParams.all);
       if (searchParams.anime) params.append('anime', searchParams.anime);
       if (searchParams.character) params.append('character', searchParams.character);
+      if (searchParams.voiceActor) params.append('voiceActor', searchParams.voiceActor);
       if (searchParams.hashtag) params.append('hashtag', searchParams.hashtag);
       
       const response = await axios.get(`/api/users/search?${params}`);
-      setUsers(response.data);
+      // Deduplicate users by ID, keeping the most recent one
+      const usersMap = new Map();
+      response.data.forEach(user => {
+        if (!usersMap.has(user.id) || 
+            (user.updatedAt && (!usersMap.get(user.id).updatedAt || 
+             new Date(user.updatedAt) > new Date(usersMap.get(user.id).updatedAt)))) {
+          usersMap.set(user.id, user);
+        }
+      });
+      setUsers(Array.from(usersMap.values()));
     } catch (error) {
       console.error('Error searching users:', error);
     }
@@ -69,7 +89,7 @@ function Users() {
           <input
             type="text"
             name="all"
-            placeholder="全てで検索（ユーザー名、キャラクター、アニメ、ハッシュタグ）"
+            placeholder="全てで検索（ユーザー名、キャラクター、アニメ、声優、ハッシュタグ）"
             value={searchParams.all}
             onChange={handleInputChange}
           />
@@ -89,6 +109,13 @@ function Users() {
           />
           <input
             type="text"
+            name="voiceActor"
+            placeholder="声優名で検索"
+            value={searchParams.voiceActor}
+            onChange={handleInputChange}
+          />
+          <input
+            type="text"
             name="hashtag"
             placeholder="ハッシュタグで検索"
             value={searchParams.hashtag}
@@ -96,7 +123,7 @@ function Users() {
           />
           <button type="submit" className="btn btn-primary">検索</button>
           <button type="button" className="btn" onClick={() => {
-            setSearchParams({ all: '', anime: '', character: '', hashtag: '' });
+            setSearchParams({ all: '', anime: '', character: '', voiceActor: '', hashtag: '' });
             fetchAllUsers();
           }}>
             リセット
@@ -114,6 +141,7 @@ function Users() {
                 <th>ユーザー名</th>
                 <th>お気に入りアニメ</th>
                 <th>お気に入りキャラクター</th>
+                <th>お気に入り声優</th>
                 <th>ハッシュタグ</th>
               </tr>
             </thead>
@@ -132,6 +160,13 @@ function Users() {
                     <div className="scroll-x-cell">
                       {(user.favoriteCharacters || []).map(character => (
                         <span key={character} className="tag">{character}</span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="scroll-x-cell">
+                      {(user.favoriteVoiceActors || []).map(voiceActor => (
+                        <span key={voiceActor} className="tag">{voiceActor}</span>
                       ))}
                     </div>
                   </td>

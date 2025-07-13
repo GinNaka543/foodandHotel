@@ -32,7 +32,7 @@ class FirebaseManager: ObservableObject {
         }
         
         print("🔥 Firebase書き込みデータ: \(userData)")
-        userRef.setData(userData) { error in
+        userRef.setData(userData, merge: true) { error in
             if let error = error {
                 print("❌ Firebase書き込みエラー: \(error)")
                 completion(.failure(error))
@@ -54,13 +54,19 @@ class FirebaseManager: ObservableObject {
            let characters = try? JSONDecoder().decode([Character].self, from: charactersData) {
             
             print("🔥 キャラクター保存開始: \(characters.count)件")
+            // Collect voice actors
+            var voiceActors = Set<String>()
             for character in characters {
+                if !character.voiceActor.isEmpty {
+                    voiceActors.insert(character.voiceActor)
+                }
                 let characterRef = db.collection("userCharacters").document("\(userId)_\(character.id)")
                 let characterData: [String: Any] = [
                     "userId": userId,
                     "characterId": character.id.uuidString,
                     "name": character.name,
                     "tag": character.tag,
+                    "voiceActor": character.voiceActor,
                     "anime": "", // character.anime is not available in current Character struct
                     "createdAt": Timestamp(date: Date()), // character.createdAt is not available
                     "updatedAt": Timestamp(date: Date())  // character.updatedAt is not available
@@ -71,6 +77,40 @@ class FirebaseManager: ObservableObject {
                         print("❌ キャラクター保存エラー \(character.name): \(error)")
                     } else {
                         print("✅ キャラクター保存成功: \(character.name)")
+                    }
+                }
+            }
+            
+            // Save voice actors to user profile
+            if !voiceActors.isEmpty {
+                let voiceActorsRef = db.collection("users").document(userId)
+                voiceActorsRef.updateData([
+                    "favoriteVoiceActors": Array(voiceActors)
+                ]) { error in
+                    if let error = error {
+                        print("❌ 声優データ保存エラー: \(error)")
+                    } else {
+                        print("✅ 声優データ保存成功: \(voiceActors)")
+                    }
+                }
+                
+                // Save voice actors to userVoiceActors collection
+                for (index, voiceActor) in voiceActors.enumerated() {
+                    let voiceActorRef = db.collection("userVoiceActors").document("\(userId)_\(index)")
+                    let voiceActorData: [String: Any] = [
+                        "userId": userId,
+                        "voiceActorId": UUID().uuidString,
+                        "name": voiceActor,
+                        "createdAt": Timestamp(date: Date()),
+                        "updatedAt": Timestamp(date: Date())
+                    ]
+                    
+                    voiceActorRef.setData(voiceActorData, merge: true) { error in
+                        if let error = error {
+                            print("❌ userVoiceActors保存エラー \(voiceActor): \(error)")
+                        } else {
+                            print("✅ userVoiceActors保存成功: \(voiceActor)")
+                        }
                     }
                 }
             }
@@ -314,6 +354,7 @@ class FirebaseManager: ObservableObject {
                         linkURL: data["linkURL"] as? String ?? "",
                         targetAnimes: data["targetAnimes"] as? [String] ?? [],
                         targetCharacters: data["targetCharacters"] as? [String] ?? [],
+                        targetVoiceActors: data["targetVoiceActors"] as? [String] ?? [],
                         targetHashtags: data["targetHashtags"] as? [String] ?? [],
                         placements: data["placements"] as? [String] ?? [],
                         impressions: data["impressions"] as? Int ?? 0,
@@ -672,6 +713,7 @@ struct Advertisement: Identifiable, Hashable {
     var linkURL: String
     var targetAnimes: [String]
     var targetCharacters: [String]
+    var targetVoiceActors: [String]
     var targetHashtags: [String]
     var placements: [String]
     var displayRate: Double = 100.0 // 表示率（0-100%）

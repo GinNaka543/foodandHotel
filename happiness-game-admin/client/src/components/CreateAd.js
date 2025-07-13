@@ -52,6 +52,7 @@ function CreateAd() {
     linkURL: '',
     targetAnimes: [],
     targetCharacters: [],
+    targetVoiceActors: [],
     targetHashtags: [],
     expiresAt: '',
     placements: generalPage ? [generalPage] : [],
@@ -62,6 +63,7 @@ function CreateAd() {
   const [inputValues, setInputValues] = useState({
     anime: '',
     character: '',
+    voiceActor: '',
     hashtag: ''
   });
 
@@ -167,6 +169,9 @@ function CreateAd() {
     }
     if (inputValues.character.trim() && !updatedFormData.targetCharacters.includes(inputValues.character.trim())) {
       updatedFormData.targetCharacters = [...updatedFormData.targetCharacters, inputValues.character.trim()];
+    }
+    if (inputValues.voiceActor.trim() && !updatedFormData.targetVoiceActors.includes(inputValues.voiceActor.trim())) {
+      updatedFormData.targetVoiceActors = [...updatedFormData.targetVoiceActors, inputValues.voiceActor.trim()];
     }
     if (inputValues.hashtag.trim() && !updatedFormData.targetHashtags.includes(inputValues.hashtag.trim())) {
       updatedFormData.targetHashtags = [...updatedFormData.targetHashtags, inputValues.hashtag.trim()];
@@ -334,6 +339,36 @@ function CreateAd() {
               </div>
 
               <div className="form-group">
+                <label>ターゲット声優</label>
+                <div className="tag-input">
+                  <input
+                    type="text"
+                    name="voiceActor"
+                    value={inputValues.voiceActor}
+                    onChange={handleInputChange}
+                    placeholder="声優名を入力"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addItem('voiceActor');
+                      }
+                    }}
+                  />
+                  <button type="button" className="btn btn-primary" onClick={() => addItem('voiceActor')}>
+                    追加
+                  </button>
+                </div>
+                <div className="tag-list">
+                  {formData.targetVoiceActors.map(voiceActor => (
+                    <div key={voiceActor} className="tag-item">
+                      {voiceActor}
+                      <button type="button" onClick={() => removeItem('voiceActor', voiceActor)}>×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group">
                 <label>ターゲットハッシュタグ</label>
                 <div className="tag-input">
                   <input
@@ -418,7 +453,7 @@ function CreateAd() {
 
           {/* ターゲット指定なしの場合の案内 */}
           <div style={{ margin: '1rem 0', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px', color: '#333', fontSize: '0.97rem' }}>
-            <b>「ターゲットアニメ」「ターゲットキャラクター」「ターゲットタグ」を全て空欄にすると、この広告は「一般広告（全ユーザー向け）」として作成されます。</b>
+            <b>「ターゲットアニメ」「ターゲットキャラクター」「ターゲット声優」「ターゲットタグ」を全て空欄にすると、この広告は「一般広告（全ユーザー向け）」として作成されます。</b>
             {generalPage && <div style={{ marginTop: 4 }}>※この広告は「{PLACEMENT_OPTIONS.find(opt => opt.key === generalPage)?.label}ページ」専用の一般広告です。</div>}
           </div>
 

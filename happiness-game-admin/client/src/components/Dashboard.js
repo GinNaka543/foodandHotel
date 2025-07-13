@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function Dashboard() {
   const [statistics, setStatistics] = useState({
@@ -11,8 +7,10 @@ function Dashboard() {
     totalAds: 0,
     animeStats: {},
     characterStats: {},
+    voiceActorStats: {},
     hashtagStats: {}
   });
+  const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
     fetchStatistics();
@@ -20,53 +18,120 @@ function Dashboard() {
 
   const fetchStatistics = async () => {
     try {
+      console.log('🎯 統計データ取得開始');
       const response = await axios.get('/api/statistics');
+      console.log('🎯 サーバーから受信したデータ:', response.data);
+      console.log('🎯 animeStats:', response.data.animeStats);
+      console.log('🎯 characterStats:', response.data.characterStats);
+      console.log('🎯 voiceActorStats:', response.data.voiceActorStats);
+      console.log('🎯 hashtagStats:', response.data.hashtagStats);
       setStatistics(response.data);
     } catch (error) {
       console.error('Error fetching statistics:', error);
     }
   };
 
-  const prepareChartData = (data, label, color) => {
-    const sorted = Object.entries(data)
+  const getTop10List = (data) => {
+    if (!data || typeof data !== 'object') return [];
+    return Object.entries(data)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10);
-
-    return {
-      labels: sorted.map(([key]) => key),
-      datasets: [
-        {
-          label: label,
-          data: sorted.map(([, value]) => value),
-          backgroundColor: color,
-          borderColor: color,
-          borderWidth: 1,
-        },
-      ],
-    };
   };
 
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: 'トップ10',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
+  const testConnection = async () => {
+    try {
+      console.log('🧪 サーバー接続テスト開始');
+      const response = await axios.get('/api/debug/test');
+      console.log('🧪 テスト成功:', response.data);
+      alert(`サーバー接続成功: ${response.data.message}`);
+    } catch (error) {
+      console.error('🧪 接続テストエラー:', error);
+      alert(`サーバー接続エラー: ${error.message}`);
+    }
+  };
+
+  const fetchDebugInfo = async () => {
+    try {
+      console.log('🔍 デバッグ情報取得開始');
+      console.log('🔍 リクエストURL: /api/debug/collections');
+      
+      const response = await axios.get('/api/debug/collections');
+      console.log('🔍 レスポンス成功:', response.status);
+      console.log('🔍 デバッグ情報:', response.data);
+      setDebugInfo(response.data);
+      alert('デバッグ情報を取得しました。コンソールログを確認してください。');
+    } catch (error) {
+      console.error('🔍 デバッグ情報取得エラー:', error);
+      console.error('🔍 エラー詳細:', error.response?.data);
+      alert(`デバッグ情報の取得に失敗しました: ${error.message}`);
+      setDebugInfo({ error: error.message, details: error.response?.data });
+    }
   };
 
   return (
     <div className="dashboard">
-      <h2>ダッシュボード</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2>ダッシュボード</h2>
+        <div>
+          <button 
+            onClick={testConnection}
+            style={{ 
+              padding: '0.5rem 1rem', 
+              backgroundColor: '#4caf50', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              marginRight: '0.5rem',
+              cursor: 'pointer'
+            }}
+          >
+            🧪 接続テスト
+          </button>
+          <button 
+            onClick={fetchDebugInfo}
+            style={{ 
+              padding: '0.5rem 1rem', 
+              backgroundColor: '#ff9800', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              marginRight: '0.5rem',
+              cursor: 'pointer'
+            }}
+          >
+            🔍 デバッグ情報を取得
+          </button>
+          <button 
+            onClick={fetchStatistics}
+            style={{ 
+              padding: '0.5rem 1rem', 
+              backgroundColor: '#2196f3', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            🔄 データ再読み込み
+          </button>
+        </div>
+      </div>
+
+      {debugInfo && (
+        <div style={{ 
+          backgroundColor: '#f5f5f5', 
+          padding: '1rem', 
+          borderRadius: '8px', 
+          marginBottom: '2rem',
+          fontFamily: 'monospace',
+          fontSize: '12px',
+          maxHeight: '300px',
+          overflow: 'auto'
+        }}>
+          <h4>🔍 Firebase コレクション デバッグ情報</h4>
+          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
+        </div>
+      )}
       
       <div className="dashboard-grid">
         <div className="stat-card">
@@ -85,34 +150,124 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="chart-container">
+      <div className="list-container">
         <h3>人気アニメ トップ10</h3>
-        {Object.keys(statistics.animeStats).length > 0 && (
-          <Bar 
-            data={prepareChartData(statistics.animeStats, 'ユーザー数', 'rgba(54, 162, 235, 0.6)')} 
-            options={chartOptions} 
-          />
-        )}
+        <table className="ranking-table">
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>アニメ名</th>
+              <th>ユーザー数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {getTop10List(statistics.animeStats).length > 0 ? (
+              getTop10List(statistics.animeStats).map(([anime, count], index) => (
+                <tr key={anime}>
+                  <td>{index + 1}</td>
+                  <td>{anime}</td>
+                  <td>{count}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" style={{ textAlign: 'center', color: '#666' }}>
+                  データが見つかりませんでした
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      <div className="chart-container">
+      <div className="list-container">
         <h3>人気キャラクター トップ10</h3>
-        {Object.keys(statistics.characterStats).length > 0 && (
-          <Bar 
-            data={prepareChartData(statistics.characterStats, 'ユーザー数', 'rgba(255, 99, 132, 0.6)')} 
-            options={chartOptions} 
-          />
-        )}
+        <table className="ranking-table">
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>キャラクター名</th>
+              <th>ユーザー数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {getTop10List(statistics.characterStats).length > 0 ? (
+              getTop10List(statistics.characterStats).map(([character, count], index) => (
+                <tr key={character}>
+                  <td>{index + 1}</td>
+                  <td>{character}</td>
+                  <td>{count}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" style={{ textAlign: 'center', color: '#666' }}>
+                  データが見つかりませんでした
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
-      <div className="chart-container">
+      <div className="list-container">
+        <h3>人気声優 トップ10</h3>
+        <table className="ranking-table">
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>声優名</th>
+              <th>ユーザー数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {getTop10List(statistics.voiceActorStats).length > 0 ? (
+              getTop10List(statistics.voiceActorStats).map(([voiceActor, count], index) => (
+                <tr key={voiceActor}>
+                  <td>{index + 1}</td>
+                  <td>{voiceActor}</td>
+                  <td>{count}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" style={{ textAlign: 'center', color: '#666' }}>
+                  データが見つかりませんでした
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="list-container">
         <h3>人気ハッシュタグ トップ10</h3>
-        {Object.keys(statistics.hashtagStats).length > 0 && (
-          <Bar 
-            data={prepareChartData(statistics.hashtagStats, 'ユーザー数', 'rgba(75, 192, 192, 0.6)')} 
-            options={chartOptions} 
-          />
-        )}
+        <table className="ranking-table">
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>ハッシュタグ</th>
+              <th>ユーザー数</th>
+            </tr>
+          </thead>
+          <tbody>
+            {getTop10List(statistics.hashtagStats).length > 0 ? (
+              getTop10List(statistics.hashtagStats).map(([hashtag, count], index) => (
+                <tr key={hashtag}>
+                  <td>{index + 1}</td>
+                  <td>{hashtag}</td>
+                  <td>{count}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" style={{ textAlign: 'center', color: '#666' }}>
+                  データが見つかりませんでした
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

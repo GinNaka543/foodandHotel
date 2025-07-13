@@ -24,6 +24,7 @@ struct UserProfile: Codable, Equatable {
     var animeQuote: String = ""
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
+    var favoriteVoiceActors: [String] = []
 }
 
 class UserProfileManager: ObservableObject {

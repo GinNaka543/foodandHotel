@@ -476,6 +476,7 @@ struct AddCharacterSheet: View {
     @EnvironmentObject private var characterManager: CharacterManager
     @State private var name = ""
     @State private var tag = ""
+    @State private var voiceActor = ""
     @State private var birthday = Date()
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var image: UIImage? = nil
@@ -525,6 +526,7 @@ struct AddCharacterSheet: View {
                     }
                     TextField("名前", text: $name)
                     TextField("タグ", text: $tag)
+                    TextField("声優", text: $voiceActor)
                 }
                 Section {
                     // --- ここから月日Picker ---
@@ -560,7 +562,7 @@ struct AddCharacterSheet: View {
                         let fileName = "icon_\(UUID().uuidString).png"
                         imageIdentifier = saveImageToDocuments(image, fileName: fileName)
                     }
-                    let newChar = Character(id: UUID(), imageIdentifier: imageIdentifier, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: "", customFields: nil)
+                    let newChar = Character(id: UUID(), imageIdentifier: imageIdentifier, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
                     // CharacterManagerのみを使用して追加（重複を防ぐ）
                     characterManager.addCharacter(newChar)
                     dismiss()

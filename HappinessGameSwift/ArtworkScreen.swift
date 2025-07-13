@@ -85,6 +85,9 @@ struct ArtworkScreen: View {
     @State private var albums: [ArtworkAlbum] = []
     @State private var selectedAlbum: ArtworkAlbum? = nil
     @State private var showFullscreenImage = false
+    @State private var showPixivRedirect = false
+    @State private var pixivRedirectURL: String = ""
+    @State private var pixivRedirectArtwork: Artwork? = nil
     
     // Enum to manage sheet presentations
     enum SheetType: Identifiable {
@@ -189,13 +192,12 @@ struct ArtworkScreen: View {
                                                     if let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                                         Image(uiImage: uiImage)
                                                             .resizable()
-                                                            .scaledToFill()
+                                                            .aspectRatio(contentMode: .fit)
                                                             .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
                                                     } else if let pixivURL = firstArtwork.pixivURL {
                                                         PixivThumbnailView(pixivURL: pixivURL)
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
+                                                            .frame(width: geometry.size.width)
+                                                            .aspectRatio(contentMode: .fit)
                                                     } else {
                                                         RoundedRectangle(cornerRadius: 0, style: .continuous)
                                                             .fill(Color.gray.opacity(0.3))
@@ -268,13 +270,12 @@ struct ArtworkScreen: View {
                                                 if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
-                                                        .scaledToFill()
+                                                        .aspectRatio(contentMode: .fit)
                                                         .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
                                                 } else if let pixivURL = artwork.pixivURL {
                                                     PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
+                                                        .frame(width: geometry.size.width)
+                                                        .aspectRatio(contentMode: .fit)
                                                 } else {
                                                     Rectangle()
                                                         .fill(Color.gray.opacity(0.2))
@@ -328,7 +329,13 @@ struct ArtworkScreen: View {
                                         .padding(.vertical, 8)
                                         .contentShape(Rectangle())
                                         .onTapGesture {
-                                            activeSheet = .artworkDetail(artwork)
+                                            if let pixivURL = artwork.pixivURL {
+                                                pixivRedirectURL = pixivURL
+                                                pixivRedirectArtwork = artwork
+                                                showPixivRedirect = true
+                                            } else {
+                                                activeSheet = .artworkDetail(artwork)
+                                            }
                                         }
                                 }
                             }
@@ -368,6 +375,28 @@ struct ArtworkScreen: View {
         }
         .onAppear {
             loadArtworks()
+        }
+        .fullScreenCover(isPresented: $showPixivRedirect) {
+            PixivRedirectView(
+                pixivURL: pixivRedirectURL,
+                artwork: pixivRedirectArtwork,
+                onEdit: { newTitle, newTags in
+                    if let artwork = pixivRedirectArtwork,
+                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                        artworks[idx].title = newTitle
+                        artworks[idx].tags = newTags
+                        saveArtworksToUserDefaults()
+                    }
+                },
+                onDelete: {
+                    if let artwork = pixivRedirectArtwork,
+                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                        artworks.remove(at: idx)
+                        saveArtworksToUserDefaults()
+                    }
+                    showPixivRedirect = false
+                }
+            )
         }
         .sheet(item: $activeSheet) { sheetType in
             switch sheetType {
@@ -460,9 +489,9 @@ struct ArtworkScreen: View {
                                             .frame(maxHeight: innerGeometry.size.height * 0.6)
                                             .cornerRadius(24)
                                             .onTapGesture {
-                                                withAnimation(.easeInOut(duration: 0.3)) {
-                                                    showFullscreenImage = true
-                                                }
+                                                pixivRedirectURL = pixivURL
+                                                pixivRedirectArtwork = artwork
+                                                showPixivRedirect = true
                                             }
                                     } else {
                                         Text("画像データがありません")
@@ -746,11 +775,11 @@ struct ArtworkScreen: View {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .edgesIgnoringSafeArea(.all)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else if let pixivURL = artwork.pixivURL {
-                            PixivThumbnailView(pixivURL: pixivURL)
+                            PixivFullscreenView(pixivURL: pixivURL)
                                 .aspectRatio(contentMode: .fit)
-                                .edgesIgnoringSafeArea(.all)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                         
                         // 閉じるボタン（×）
@@ -776,6 +805,9 @@ struct ArtworkScreen: View {
                     }
                     .transition(.opacity)
                 }
+            }
+            .fullScreenCover(isPresented: $showPixivRedirect) {
+                PixivRedirectView(pixivURL: pixivRedirectURL)
             }
             } // GeometryReader
             }

@@ -44,13 +44,14 @@ struct VisitSpot: Identifiable, Codable {
     var timeRange: String = ""
     var activity: String = ""
     var imageData: Data?
+    var imagesData: [Data]? // 複数画像対応
     var dayNumber: Int = 1
     var spotCost: Int = 0
     
     init(id: UUID = UUID(), name: String, address: String = "", notes: String = "", event: SpotEvent? = nil, 
          nearestStation: String = "", arrivalTime: Date? = nil, departureTime: Date? = nil,
          stayDuration: Int = 60, transportToNext: TransportInfo? = nil, timeRange: String = "", 
-         activity: String = "", imageData: Data? = nil, dayNumber: Int = 1, spotCost: Int = 0) {
+         activity: String = "", imageData: Data? = nil, imagesData: [Data]? = nil, dayNumber: Int = 1, spotCost: Int = 0) {
         self.id = id
         self.name = name
         self.address = address
@@ -64,6 +65,7 @@ struct VisitSpot: Identifiable, Codable {
         self.timeRange = timeRange
         self.activity = activity
         self.imageData = imageData
+        self.imagesData = imagesData
         self.dayNumber = dayNumber
         self.spotCost = spotCost
     }

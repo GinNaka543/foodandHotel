@@ -330,10 +330,9 @@ struct AnimeRow: View {
             if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFill()
+                    .aspectRatio(contentMode: .fit)
                     .frame(width: 183, height: 99)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .clipped()
             } else {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.gray.opacity(0.3))
@@ -378,8 +377,13 @@ struct AnimeArtworkScreen: View {
     @State private var editText = ""
     @State private var showDeleteAlert = false
     @State private var deletingArtworkID: UUID? = nil
+    @State private var showEditMenu = false
     @State private var albums: [ArtworkAlbum] = []
     @State private var selectedAlbum: ArtworkAlbum? = nil
+    @State private var showFullscreenImage = false
+    @State private var showPixivRedirect = false
+    @State private var pixivRedirectURL: String = ""
+    @State private var pixivRedirectArtwork: Artwork? = nil
     
     // Enum to manage sheet presentations
     enum SheetType: Identifiable {
@@ -484,13 +488,13 @@ struct AnimeArtworkScreen: View {
                                                     if let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                                         Image(uiImage: uiImage)
                                                             .resizable()
-                                                            .scaledToFill()
+                                                            .aspectRatio(contentMode: .fit)
                                                             .frame(width: geometry.size.width, height: 233)
                                                             .clipped()
                                                     } else if let pixivURL = firstArtwork.pixivURL {
                                                         PixivThumbnailView(pixivURL: pixivURL)
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
+                                                            .frame(width: geometry.size.width)
+                                                            .aspectRatio(contentMode: .fit)
                                                     } else {
                                                         RoundedRectangle(cornerRadius: 0, style: .continuous)
                                                             .fill(Color.gray.opacity(0.3))
@@ -562,13 +566,13 @@ struct AnimeArtworkScreen: View {
                                                 if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
-                                                        .scaledToFill()
+                                                        .aspectRatio(contentMode: .fit)
                                                         .frame(width: geometry.size.width, height: 233)
                                                         .clipped()
                                                 } else if let pixivURL = artwork.pixivURL {
                                                     PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
+                                                        .frame(width: geometry.size.width)
+                                                        .aspectRatio(contentMode: .fit)
                                                 } else {
                                                     RoundedRectangle(cornerRadius: 0, style: .continuous)
                                                         .fill(Color.gray.opacity(0.3))
@@ -613,7 +617,13 @@ struct AnimeArtworkScreen: View {
                                     .padding(.vertical, 8)
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        activeSheet = .artworkDetail(artwork)
+                                        if let pixivURL = artwork.pixivURL {
+                                            pixivRedirectURL = pixivURL
+                                            pixivRedirectArtwork = artwork
+                                            showPixivRedirect = true
+                                        } else {
+                                            activeSheet = .artworkDetail(artwork)
+                                        }
                                     }
                                 }
                             }
@@ -653,6 +663,28 @@ struct AnimeArtworkScreen: View {
         }
         .onAppear {
             loadArtworks()
+        }
+        .fullScreenCover(isPresented: $showPixivRedirect) {
+            PixivRedirectView(
+                pixivURL: pixivRedirectURL,
+                artwork: pixivRedirectArtwork,
+                onEdit: { newTitle, newTags in
+                    if let artwork = pixivRedirectArtwork,
+                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                        artworks[idx].title = newTitle
+                        artworks[idx].tags = newTags
+                        saveArtworksToUserDefaults()
+                    }
+                },
+                onDelete: {
+                    if let artwork = pixivRedirectArtwork,
+                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                        artworks.remove(at: idx)
+                        saveArtworksToUserDefaults()
+                    }
+                    showPixivRedirect = false
+                }
+            )
         }
         .sheet(item: $activeSheet) { sheetType in
             switch sheetType {
@@ -701,76 +733,179 @@ struct AnimeArtworkScreen: View {
                 }
                 .padding(32)
             case .artworkDetail(let artwork):
-            ZStack(alignment: .bottomTrailing) {
-                VStack(spacing: 24) {
-                    Spacer()
-                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxWidth: .infinity, maxHeight: 400)
-                            .clipped()
-                            .cornerRadius(24)
-                    } else {
-                        Text("画像データがありません")
-                            .foregroundColor(.gray)
+            GeometryReader { geometry in
+                ZStack {
+                    // メインコンテンツ
+                    VStack(spacing: 0) {
+                        // ヘッダー
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                showEditMenu = true
+                            }) {
+                                Text("編集")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.blue)
+                            }
+                            .padding(.trailing, 20)
+                        }
+                        .padding(.top, 20)
+                        .padding(.bottom, 10)
+                        
+                        // 中央配置のコンテンツ
+                        GeometryReader { innerGeometry in
+                            ScrollView {
+                                VStack(spacing: 24) {
+                                    Spacer(minLength: 20)
+                                    
+                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(maxWidth: min(innerGeometry.size.width - 40, 600))
+                                            .frame(maxHeight: innerGeometry.size.height * 0.6)
+                                            .cornerRadius(24)
+                                            .onTapGesture {
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    showFullscreenImage = true
+                                                }
+                                            }
+                                    } else if let pixivURL = artwork.pixivURL {
+                                        PixivThumbnailView(pixivURL: pixivURL)
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(maxWidth: min(innerGeometry.size.width - 40, 600))
+                                            .frame(maxHeight: innerGeometry.size.height * 0.6)
+                                            .cornerRadius(24)
+                                            .onTapGesture {
+                                                pixivRedirectURL = pixivURL
+                                                pixivRedirectArtwork = artwork
+                                                showPixivRedirect = true
+                                            }
+                                    } else {
+                                        Text("画像データがありません")
+                                            .foregroundColor(.gray)
+                                            .padding()
+                                    }
+                                    
+                                    VStack(spacing: 16) {
+                                        Text("タイトル: \(artwork.title)")
+                                            .font(.headline)
+                                        Text("タグ: \(artwork.tags.joined(separator: ", "))")
+                                            .font(.subheadline)
+                                        Text("ID: \(artwork.id.uuidString.prefix(8))")
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
+                                    .padding(.horizontal, 20)
+                                    
+                                    Spacer(minLength: 100) // 閉じるボタンのためのスペース
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: innerGeometry.size.height)
+                            }
+                        }
                     }
-                    VStack(spacing: 16) {
-                        HStack(spacing: 8) {
-                            Text("タイトル: \(artwork.title)")
+                    // 下部に閉じるボタン（安全な位置に配置）
+                    VStack {
+                        Spacer()
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                activeSheet = nil
+                            }) {
+                                Text("閉じる")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 32)
+                                    .padding(.vertical, 12)
+                                    .background(Color.black)
+                                    .cornerRadius(10)
+                            }
+                            Spacer()
+                        }
+                        .padding(.bottom, max(geometry.safeAreaInsets.bottom, 60))
+                    }
+                    
+                    // 編集メニュー
+                    if showEditMenu {
+                        Color.black.opacity(0.25)
+                            .edgesIgnoringSafeArea(.all)
+                            .onTapGesture {
+                                showEditMenu = false
+                            }
+                        
+                        VStack(spacing: 20) {
+                            Text("編集する項目を選択")
                                 .font(.headline)
-                            Button(action: {
-                                editText = artwork.title
-                                showEditTitle = true
-                            }) {
-                                Image(systemName: "pencil")
-                                    .foregroundColor(.blue)
+                                .padding(.top, 20)
+                            
+                            VStack(spacing: 16) {
+                                Button(action: {
+                                    editText = artwork.title
+                                    showEditMenu = false
+                                    showEditTitle = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "pencil")
+                                        Text("タイトルを編集")
+                                        Spacer()
+                                    }
+                                    .padding()
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(10)
+                                }
+                                .foregroundColor(.primary)
+                                
+                                Button(action: {
+                                    editText = artwork.tags.joined(separator: ",")
+                                    showEditMenu = false
+                                    showEditTags = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "tag")
+                                        Text("タグを編集")
+                                        Spacer()
+                                    }
+                                    .padding()
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(10)
+                                }
+                                .foregroundColor(.primary)
+                                
+                                Button(action: {
+                                    deletingArtworkID = artwork.id
+                                    showEditMenu = false
+                                    showDeleteAlert = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "trash")
+                                        Text("画像を削除")
+                                        Spacer()
+                                    }
+                                    .padding()
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(10)
+                                }
+                                .foregroundColor(.red)
                             }
-                        }
-                        HStack(spacing: 8) {
-                            Text("タグ: \(artwork.tags.joined(separator: ", "))")
-                                .font(.subheadline)
+                            .padding(.horizontal, 20)
+                            
                             Button(action: {
-                                editText = artwork.tags.joined(separator: ",")
-                                showEditTags = true
+                                showEditMenu = false
                             }) {
-                                Image(systemName: "pencil")
+                                Text("キャンセル")
                                     .foregroundColor(.blue)
+                                    .padding(.vertical, 10)
                             }
+                            .padding(.bottom, 20)
                         }
-                        Text("ID: \(artwork.id.uuidString.prefix(8))")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                        .background(Color.white)
+                        .cornerRadius(20)
+                        .shadow(radius: 20)
+                        .frame(maxWidth: 300)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    Spacer()
-                }
-                // 右下に閉じるボタンとゴミ箱ボタンを横並びで配置
-                HStack(spacing: 24) {
-                    Spacer()
-                    Button(action: {
-                        activeSheet = nil
-                    }) {
-                        Text("閉じる")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 10)
-                            .background(Color.black)
-                            .cornerRadius(10)
-                    }
-                    .padding(.trailing, 78)
-                    Button(action: {
-                        deletingArtworkID = artwork.id
-                        showDeleteAlert = true
-                    }) {
-                        Image(systemName: "trash")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                            .foregroundColor(.black)
-                    }
-                }
-                .padding([.bottom, .trailing], 24)
+                    
                 // --- カスタムダイアログ ---
                 if showEditTitle {
                     Color.black.opacity(0.25)
@@ -860,6 +995,99 @@ struct AnimeArtworkScreen: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 }
                 // --- END カスタムダイアログ ---
+                
+                // 全画面画像表示
+                if showFullscreenImage {
+                    ZStack {
+                        // 背景を真っ暗に
+                        Color.black
+                            .edgesIgnoringSafeArea(.all)
+                        
+                        // 画像
+                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else if let pixivURL = artwork.pixivURL {
+                            PixivFullscreenView(pixivURL: pixivURL)
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                        
+                        // 閉じるボタン
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showFullscreenImage = false
+                                    }
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(.white)
+                                        .background(Color.black.opacity(0.5))
+                                        .clipShape(Circle())
+                                }
+                                .padding(.top, 50)
+                                .padding(.trailing, 20)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .fullScreenCover(isPresented: $showPixivRedirect) {
+                PixivRedirectView(pixivURL: pixivRedirectURL)
+            }
+            } // GeometryReader
+            
+            // showEditTags dialog
+            if showEditTags {
+                Color.black.opacity(0.25)
+                    .edgesIgnoringSafeArea(.all)
+                VStack(spacing: 20) {
+                    Text("タグを編集")
+                        .font(.headline)
+                        .padding(.top, 12)
+                    TextField("タグ（カンマ区切り）", text: $editText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.system(size: 18))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                    HStack(spacing: 24) {
+                        Button(action: { showEditTags = false }) {
+                            Text("キャンセル")
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                        }
+                        Button(action: {
+                            if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                let newTags = editText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                                artworks[idx] = Artwork(id: artworks[idx].id, characterId: artworks[idx].characterId, imagePath: artworks[idx].imagePath, title: artworks[idx].title, tags: newTags, createdAt: artworks[idx].createdAt, pixivURL: artworks[idx].pixivURL, twitterURL: artworks[idx].twitterURL)
+                                saveArtworksToUserDefaults()
+                            }
+                            showEditTags = false
+                        }) {
+                            Text("保存")
+                                .foregroundColor(.blue)
+                                .fontWeight(.bold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
+                }
+                .background(Color.white)
+                .cornerRadius(18)
+                .shadow(radius: 16)
+                .frame(maxWidth: 340)
+                .padding(.horizontal, 32)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
             }
         }
@@ -1112,7 +1340,7 @@ struct AnimeVideoScreen: View {
                                                 GeometryReader { geometry in
                                                     Image(uiImage: uiImage)
                                                         .resizable()
-                                                        .scaledToFill()
+                                                        .aspectRatio(contentMode: .fit)
                                                         .frame(width: geometry.size.width, height: 233)
                                                         .clipped()
                                                 }
@@ -1172,7 +1400,7 @@ struct AnimeVideoScreen: View {
                                             if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
                                                 Image(uiImage: uiImage)
                                                     .resizable()
-                                                    .scaledToFill()
+                                                    .aspectRatio(contentMode: .fit)
                                                     .frame(width: 183, height: 109)
                                                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                     .clipped()
@@ -1180,7 +1408,7 @@ struct AnimeVideoScreen: View {
                                                 AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
                                                     image
                                                         .resizable()
-                                                        .scaledToFill()
+                                                        .aspectRatio(contentMode: .fit)
                                                         .frame(width: 183, height: 109)
                                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                         .clipped()
@@ -1228,13 +1456,19 @@ struct AnimeVideoScreen: View {
                             }
                         }
                         .fullScreenCover(item: $selectedVideo) { video in
-                            VStack {
-                                Text("Video Player")
-                                    .font(.title)
-                                Text("VideoPlayerScreen.swiftをプロジェクトに追加してください")
-                                    .foregroundColor(.gray)
-                                    .padding()
-                            }
+                            VideoPlayerScreen(
+                                video: video,
+                                character: nil,
+                                anime: anime,
+                                allVideos: videos,
+                                onDelete: {
+                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                        videos.remove(at: idx)
+                                        saveVideosToUserDefaults()
+                                    }
+                                    selectedVideo = nil
+                                }
+                            )
                         }
                     }
                 }
@@ -1971,7 +2205,6 @@ struct AnimeDetailView: View {
         GeometryReader { geometry in
             let currentAnime = animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
             let titleText = currentAnime.title
-            let dateText = DateFormatter.monthDayEnglish.string(from: currentAnime.releaseDate)
             ZStack(alignment: .topLeading) {
                 // 背景画像
                 if let imagePath = currentAnime.backgroundImagePath,
@@ -1979,7 +2212,7 @@ struct AnimeDetailView: View {
                     GeometryReader { geo in
                         Image(uiImage: uiImage)
                             .resizable()
-                            .aspectRatio(contentMode: .fill)
+                            .aspectRatio(contentMode: .fit)
                             .frame(width: geo.size.width, height: geo.size.height)
                             .clipped()
                     }
@@ -2025,7 +2258,7 @@ struct AnimeDetailView: View {
                         if let imageIdentifier = currentAnime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
                             Image(uiImage: image)
                                 .resizable()
-                                .aspectRatio(contentMode: .fill)
+                                .aspectRatio(contentMode: .fit)
                                 .frame(width: 120, height: 120)
                                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                                 .shadow(radius: 8)

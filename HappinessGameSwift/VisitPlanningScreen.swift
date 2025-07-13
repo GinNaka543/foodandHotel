@@ -878,9 +878,9 @@ struct AddSpotView: View {
     @State private var spotNotes: String = ""
     @State private var spotAddress: String = ""
     @State private var spotCost: Int = 0
-    @State private var selectedImage: PhotosPickerItem?
-    @State private var spotImage: UIImage?
-    @State private var spotImageData: Data?
+    @State private var selectedImages: [PhotosPickerItem] = []
+    @State private var spotImages: [UIImage] = []
+    @State private var spotImagesData: [Data] = []
     @State private var transportMethod: String = "電車"
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
@@ -1051,35 +1051,74 @@ struct AddSpotView: View {
                         }
                     }
                     
-                    // 画像選択
-                    PhotosPicker(selection: $selectedImage,
-                               matching: .images,
-                               photoLibrary: .shared()) {
-                        if let spotImage = spotImage {
-                            Image(uiImage: spotImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 150)
-                                .clipped()
-                                .cornerRadius(8)
-                        } else {
+                    // 画像選択（複数対応）
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("スポット画像")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        // 選択済み画像の表示
+                        if !spotImages.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(Array(spotImages.enumerated()), id: \.offset) { index, image in
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: image)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 120)
+                                                .clipped()
+                                                .cornerRadius(8)
+                                            
+                                            // 削除ボタン
+                                            Button(action: {
+                                                spotImages.remove(at: index)
+                                                spotImagesData.remove(at: index)
+                                            }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 20))
+                                                    .foregroundColor(.white)
+                                                    .background(Color.black.opacity(0.7))
+                                                    .clipShape(Circle())
+                                            }
+                                            .padding(4)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 4)
+                            }
+                        }
+                        
+                        // 画像追加ボタン
+                        PhotosPicker(selection: $selectedImages,
+                                   maxSelectionCount: 10,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
                             HStack {
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                                Text("スポット画像を選択")
-                                    .foregroundColor(.gray)
+                                Image(systemName: "plus")
+                                    .foregroundColor(.blue)
+                                Text("画像を追加（最大10枚）")
+                                    .foregroundColor(.blue)
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 100)
-                            .background(Color(.systemGray5))
+                            .frame(height: 50)
+                            .background(Color.blue.opacity(0.1))
                             .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue, lineWidth: 1)
+                            )
                         }
-                    }
-                    .onChange(of: selectedImage) { newItem in
-                        Task {
-                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                spotImage = UIImage(data: data)
-                                spotImageData = data
+                        .onChange(of: selectedImages) { newItems in
+                            Task {
+                                for item in newItems {
+                                    if let data = try? await item.loadTransferable(type: Data.self),
+                                       let image = UIImage(data: data) {
+                                        spotImages.append(image)
+                                        spotImagesData.append(data)
+                                    }
+                                }
+                                selectedImages.removeAll() // 選択をクリア
                             }
                         }
                     }
@@ -1111,7 +1150,8 @@ struct AddSpotView: View {
                             stayDuration: calculatedStayDuration,
                             timeRange: formattedTimeRange,
                             activity: activity,
-                            imageData: spotImageData,
+                            imageData: spotImagesData.first, // 後方互換性のため最初の画像を設定
+                            imagesData: spotImagesData.isEmpty ? nil : spotImagesData,
                             dayNumber: selectedDay,
                             spotCost: spotCost
                         )

@@ -457,6 +457,7 @@ struct SpotDetailView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
             }
             .navigationTitle("スポット詳細")

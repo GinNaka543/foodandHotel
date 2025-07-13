@@ -8,10 +8,8 @@ struct AuthSelectionView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                Spacer()
-                
                 // ロゴとタイトル
-                VStack(spacing: 24) {
+                VStack(spacing: -22) { // -22 to move text 30px closer (8 - 30 = -22)
                     Image("icon")
                         .resizable()
                         .scaledToFit()
@@ -21,12 +19,13 @@ struct AuthSelectionView: View {
                     Image("ログインロゴ")
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 80)
+                        .frame(height: 240)
                     
-                    Text("アニメの記録や管理を楽しもう！")
+                    Text("アニメの好きを形にしよう！")
                         .font(.system(size: 16))
                         .foregroundColor(.gray)
                 }
+                .padding(.top, 100) // ロゴを上部に配置
                 
                 Spacer()
                 

@@ -35,7 +35,7 @@ struct LoginScreenView: View {
                 .padding(.top, 16)
                 
                 ScrollView {
-                    VStack(spacing: 40) {
+                    VStack(spacing: 30) {
                         // ロゴ
                         VStack(spacing: 16) {
                             Image("icon")
@@ -47,9 +47,9 @@ struct LoginScreenView: View {
                             Image("ログインロゴ")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 50)
+                                .frame(height: 150)
                         }
-                        .padding(.top, 40)
+                        .padding(.top, -100) // 20 - 120 = -100 to move 120px up
                         
                         // フォーム
                         VStack(spacing: 24) {

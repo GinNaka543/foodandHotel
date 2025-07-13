@@ -1087,9 +1087,13 @@ struct AboutView: View {
             .background(Color(.systemGray6))
             .navigationBarTitle("About", displayMode: .inline)
             .navigationBarItems(
-                leading: Button("閉じる") {
+                leading: Button(action: {
                     saveCharacter()
                     onClose()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.black)
+                        .font(.system(size: 20, weight: .bold))
                 },
                 trailing: Button(action: {
                     if isEditingProfile || isEditingDescription {
@@ -1103,7 +1107,12 @@ struct AboutView: View {
                     }
                 }) {
                     Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
-                        .foregroundColor(.blue)
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
+                        .background(Color.black)
+                        .cornerRadius(8)
                 }
             )
         }

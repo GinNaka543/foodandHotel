@@ -27,6 +27,8 @@ struct VisitPlanningScreen: View {
     @State private var showingPublicationChoice = false
     @State private var showingPublishDialog = false
     @State private var showingPaymentSheet = false
+    @State private var showingPublicationConfirmation = false
+    @State private var showValidationErrors = false
     @StateObject private var firebaseManager = FirebaseManager.shared
     @StateObject private var stripeManager = StripePaymentManager.shared
     @StateObject private var githubManager = GitHubImageManager.shared
@@ -354,7 +356,11 @@ struct VisitPlanningScreen: View {
                         }
                         
                         Button(action: {
-                            showingPublicationChoice = true
+                            if planTitle.isEmpty || animeName.isEmpty || spots.isEmpty {
+                                showValidationErrors = true
+                            } else {
+                                showingPublicationChoice = true
+                            }
                         }) {
                             Text("プランを確定")
                                 .font(.system(size: 17, weight: .semibold))
@@ -367,6 +373,30 @@ struct VisitPlanningScreen: View {
                                 )
                         }
                         .disabled(planTitle.isEmpty || animeName.isEmpty || spots.isEmpty)
+                .padding(.horizontal)
+                
+                // 記載漏れの警告表示（ボタンクリック後のみ）
+                if showValidationErrors {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if animeName.isEmpty {
+                            Label("アニメ名を入力してください", systemImage: "exclamationmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
+                        }
+                        if planTitle.isEmpty {
+                            Label("プランタイトルを入力してください", systemImage: "exclamationmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
+                        }
+                        if spots.isEmpty {
+                            Label("スポットを追加してください", systemImage: "exclamationmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -396,8 +426,18 @@ struct VisitPlanningScreen: View {
                 planDescription: $planDescription,
                 planPrice: $planPrice,
                 planBudget: $planBudget,
-                onPublish: { publishPlan() },
+                onPublish: { 
+                    showingPublishDialog = false
+                    showingPublicationConfirmation = true
+                },
                 onCancel: { showingPublishDialog = false }
+            )
+        }
+        .sheet(isPresented: $showingPublicationConfirmation) {
+            PlanPublicationConfirmationView(
+                planTitle: planTitle,
+                onConfirm: { publishPlan() },
+                onCancel: { showingPublicationConfirmation = false }
             )
         }
         .sheet(isPresented: $showingAddSpotSheet) {
@@ -421,8 +461,24 @@ struct VisitPlanningScreen: View {
                 duration: formatTotalDuration(),
                 planTitle: planTitle,
                 spots: updateSpotTimes(),
-                numberOfDays: numberOfDays
+                numberOfDays: numberOfDays,
+                startTime: startTime
             )
+        }
+        .onChange(of: planTitle) { _ in
+            if !planTitle.isEmpty && !animeName.isEmpty && !spots.isEmpty {
+                showValidationErrors = false
+            }
+        }
+        .onChange(of: animeName) { _ in
+            if !planTitle.isEmpty && !animeName.isEmpty && !spots.isEmpty {
+                showValidationErrors = false
+            }
+        }
+        .onChange(of: spots) { _ in
+            if !planTitle.isEmpty && !animeName.isEmpty && !spots.isEmpty {
+                showValidationErrors = false
+            }
         }
     }
     
@@ -498,34 +554,48 @@ struct VisitPlanningScreen: View {
     func publishPlan() {
         // 予算チェック
         guard planBudget > 0 else {
-            // エラー表示
+            print("予算が設定されていません")
             return
         }
         
-        // 支払い処理を開始
-        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? {
+            let newId = UUID().uuidString
+            UserDefaults.standard.set(newId, forKey: "userId")
+            return newId
+        }()
+        let publicationCost = 5000
         
-        stripeManager.payForPlanPosting(userId: userId) { result in
+        // 5000ポイントを消費
+        firebaseManager.usePoints(userId: userId, points: publicationCost, description: "プラン公開", completion: { result in
             switch result {
-            case .success(let payment):
-                // 支払い成功後、プランをFirebaseに保存
-                self.uploadPlanToFirebase(payment: payment, isPublic: true)
+            case .success:
+                print("ポイント消費成功: \(publicationCost)ポイント")
+                // ポイント消費成功後、プランをFirebaseに保存
+                self.uploadPlanToFirebase(payment: nil, isPublic: true)
             case .failure(let error):
-                print("支払いエラー: \(error)")
+                print("ポイント消費エラー: \(error)")
+                // エラー処理（ポイント不足など）
+                DispatchQueue.main.async {
+                    self.showingPublicationConfirmation = false
+                }
             }
-        }
+        })
     }
     
     func uploadPlanToFirebase(payment: PlanPostingPayment?, isPublic: Bool) {
-        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? {
+            let newId = UUID().uuidString
+            UserDefaults.standard.set(newId, forKey: "userId")
+            return newId
+        }()
         
-        // 画像をGitHubにアップロード
+        // 画像をGitHubにアップロード（公開プランの場合のみ）
         var thumbnailUrl: String?
         let group = DispatchGroup()
         
-        if let thumbnailImage = thumbnailImage {
+        if isPublic && thumbnailImage != nil {
             group.enter()
-            githubManager.uploadImage(thumbnailImage, fileName: "plan_\(UUID().uuidString)") { result in
+            githubManager.uploadImage(thumbnailImage!, fileName: "plan_\(UUID().uuidString)") { result in
                 switch result {
                 case .success(let url):
                     thumbnailUrl = url
@@ -537,7 +607,7 @@ struct VisitPlanningScreen: View {
         }
         
         group.notify(queue: DispatchQueue.main, execute: {
-            // Firebaseにプランを保存
+            // プランデータを作成
             let plan = VisitPlanModel(
                 id: UUID().uuidString,
                 userId: userId,
@@ -559,19 +629,29 @@ struct VisitPlanningScreen: View {
                 updatedAt: Date()
             )
             
-            self.firebaseManager.saveVisitPlan(plan) { result in
-                switch result {
-                case .success:
-                    if let payment = payment {
-                        // 支払い記録を保存（パブリックプランの場合のみ）
-                        self.firebaseManager.recordPlanPostingPayment(payment) { _ in
+            print("🔍 [DEBUG] 保存するプランデータ:")
+            print("  - id: \(plan.id)")
+            print("  - userId: \(plan.userId)")
+            print("  - title: \(plan.title)")
+            print("  - isPublic: \(plan.isPublic)")
+            
+            if isPublic {
+                // 公開プランはFirebaseに保存
+                self.firebaseManager.saveVisitPlan(plan) { result in
+                    switch result {
+                    case .success:
+                        print("✅ 公開プラン保存成功: \(plan.title)")
+                        if let payment = payment {
+                            // 支払い記録を保存
+                            self.firebaseManager.recordPlanPostingPayment(payment) { _ in
                             DispatchQueue.main.async {
                                 self.dismiss()
                             }
                         }
                     } else {
-                        // プライベートプランの場合はそのまま閉じる
+                        // プライベートプランまたは公開プランの場合はそのまま閉じる
                         DispatchQueue.main.async {
+                            self.showingPublicationConfirmation = false
                             self.dismiss()
                         }
                     }
@@ -579,11 +659,47 @@ struct VisitPlanningScreen: View {
                     print("プラン保存エラー: \(error)")
                 }
             }
+            } else {
+                // 非公開プランはローカルに保存
+                // 既存のプランを読み込む
+                var plans = self.getSavedPlans()
+                
+                // VisitPlanModelからVisitPlanDataへ変換
+                var planData = VisitPlanData(
+                    id: UUID(uuidString: plan.id) ?? UUID(),
+                    animeName: plan.animeName,
+                    title: plan.title,
+                    duration: plan.duration,
+                    spots: plan.spots,
+                    thumbnailData: self.thumbnailImage?.jpegData(compressionQuality: 0.8),
+                    createdDate: plan.createdDate,
+                    startTime: plan.startTime,
+                    numberOfDays: plan.numberOfDays
+                )
+                planData.totalCost = plan.totalCost
+                
+                // 新しいプランを先頭に追加（最新順）
+                plans.insert(planData, at: 0)
+                
+                // UserDefaultsに保存
+                if let encodedData = try? JSONEncoder().encode(plans) {
+                    UserDefaults.standard.set(encodedData, forKey: "visitPlans")
+                    print("✅ 非公開プラン保存成功: \(plan.title)")
+                    
+                    DispatchQueue.main.async {
+                        self.dismiss()
+                    }
+                }
+            }
         })
     }
     
     func saveDraft() {
-        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? {
+            let newId = UUID().uuidString
+            UserDefaults.standard.set(newId, forKey: "userId")
+            return newId
+        }()
         
         // 下書きプランを作成（isPublicをfalseに設定）
         let plan = VisitPlanModel(
@@ -611,6 +727,7 @@ struct VisitPlanningScreen: View {
         firebaseManager.saveVisitPlan(plan) { result in
             switch result {
             case .success:
+                print("下書き保存成功: \(plan.title)")
                 DispatchQueue.main.async {
                     self.dismiss()
                 }
@@ -917,9 +1034,14 @@ struct AddSpotView: View {
     @State private var spotNotes: String = ""
     @State private var spotAddress: String = ""
     @State private var spotCost: Int = 0
-    @State private var selectedImages: [PhotosPickerItem] = []
-    @State private var spotImages: [UIImage] = []
-    @State private var spotImagesData: [Data] = []
+    // サムネイル画像用
+    @State private var selectedThumbnailItem: PhotosPickerItem?
+    @State private var spotThumbnailImage: UIImage?
+    @State private var spotThumbnailData: Data?
+    // 詳細画像用
+    @State private var selectedDetailImages: [PhotosPickerItem] = []
+    @State private var spotDetailImages: [UIImage] = []
+    @State private var spotDetailImagesData: [Data] = []
     @State private var transportMethod: String = "電車"
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
@@ -1090,17 +1212,77 @@ struct AddSpotView: View {
                         }
                     }
                     
-                    // 画像選択（複数対応）
+                    // サムネイル画像選択
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("スポット画像")
+                        Text("サムネイル画像（メイン画像）")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
-                        // 選択済み画像の表示
-                        if !spotImages.isEmpty {
+                        // サムネイル画像の表示
+                        PhotosPicker(selection: $selectedThumbnailItem,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
+                            if let spotThumbnailImage = spotThumbnailImage {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: spotThumbnailImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 200, height: 120)
+                                        .clipped()
+                                        .cornerRadius(8)
+                                    
+                                    // 削除ボタン
+                                    Button(action: {
+                                        self.spotThumbnailImage = nil
+                                        self.spotThumbnailData = nil
+                                        self.selectedThumbnailItem = nil
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.white)
+                                            .background(Color.black.opacity(0.7))
+                                            .clipShape(Circle())
+                                    }
+                                    .padding(4)
+                                }
+                            } else {
+                                HStack {
+                                    Image(systemName: "photo")
+                                        .foregroundColor(.blue)
+                                    Text("サムネイルを選択")
+                                        .foregroundColor(.blue)
+                                }
+                                .frame(width: 200, height: 120)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.blue, lineWidth: 1)
+                                )
+                            }
+                        }
+                        .onChange(of: selectedThumbnailItem) { newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    spotThumbnailImage = image
+                                    spotThumbnailData = data
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 詳細画像選択（予約情報などのスクショ）
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("詳細画像（予約情報・地図など）")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        // 選択済み詳細画像の表示
+                        if !spotDetailImages.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    ForEach(Array(spotImages.enumerated()), id: \.offset) { index, image in
+                                    ForEach(Array(spotDetailImages.enumerated()), id: \.offset) { index, image in
                                         ZStack(alignment: .topTrailing) {
                                             Image(uiImage: image)
                                                 .resizable()
@@ -1111,8 +1293,8 @@ struct AddSpotView: View {
                                             
                                             // 削除ボタン
                                             Button(action: {
-                                                spotImages.remove(at: index)
-                                                spotImagesData.remove(at: index)
+                                                spotDetailImages.remove(at: index)
+                                                spotDetailImagesData.remove(at: index)
                                             }) {
                                                 Image(systemName: "xmark.circle.fill")
                                                     .font(.system(size: 20))
@@ -1128,15 +1310,15 @@ struct AddSpotView: View {
                             }
                         }
                         
-                        // 画像追加ボタン
-                        PhotosPicker(selection: $selectedImages,
+                        // 詳細画像追加ボタン
+                        PhotosPicker(selection: $selectedDetailImages,
                                    maxSelectionCount: 10,
                                    matching: .images,
                                    photoLibrary: .shared()) {
                             HStack {
                                 Image(systemName: "plus")
                                     .foregroundColor(.blue)
-                                Text("画像を追加（最大10枚）")
+                                Text("詳細画像を追加（最大10枚）")
                                     .foregroundColor(.blue)
                             }
                             .frame(maxWidth: .infinity)
@@ -1148,16 +1330,16 @@ struct AddSpotView: View {
                                     .stroke(Color.blue, lineWidth: 1)
                             )
                         }
-                        .onChange(of: selectedImages) { newItems in
+                        .onChange(of: selectedDetailImages) { newItems in
                             Task {
                                 for item in newItems {
                                     if let data = try? await item.loadTransferable(type: Data.self),
                                        let image = UIImage(data: data) {
-                                        spotImages.append(image)
-                                        spotImagesData.append(data)
+                                        spotDetailImages.append(image)
+                                        spotDetailImagesData.append(data)
                                     }
                                 }
-                                selectedImages.removeAll() // 選択をクリア
+                                selectedDetailImages.removeAll() // 選択をクリア
                             }
                         }
                     }
@@ -1189,8 +1371,8 @@ struct AddSpotView: View {
                             stayDuration: calculatedStayDuration,
                             timeRange: formattedTimeRange,
                             activity: activity,
-                            imageData: spotImagesData.first, // 後方互換性のため最初の画像を設定
-                            imagesData: spotImagesData.isEmpty ? nil : spotImagesData,
+                            imageData: spotThumbnailData, // サムネイル画像
+                            detailImagesData: spotDetailImagesData.isEmpty ? nil : spotDetailImagesData, // 詳細画像
                             dayNumber: selectedDay,
                             spotCost: spotCost
                         )
@@ -1245,9 +1427,14 @@ struct EditSpotView: View {
     @State private var startTimeForSpot = Date()
     @State private var endTimeForSpot = Date()
     @State private var activity: String
-    @State private var selectedImage: PhotosPickerItem?
-    @State private var spotImage: UIImage?
-    @State private var spotImageData: Data?
+    // サムネイル画像用
+    @State private var selectedThumbnailItem: PhotosPickerItem?
+    @State private var spotThumbnailImage: UIImage?
+    @State private var spotThumbnailData: Data?
+    // 詳細画像用
+    @State private var selectedDetailImages: [PhotosPickerItem] = []
+    @State private var spotDetailImages: [UIImage] = []
+    @State private var spotDetailImagesData: [Data] = []
     @State private var spotCost: Int
     
     init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date) {
@@ -1262,9 +1449,17 @@ struct EditSpotView: View {
         self._timeRange = State(initialValue: spot.timeRange)
         self._activity = State(initialValue: spot.activity)
         self._spotCost = State(initialValue: spot.spotCost)
+        // サムネイル画像の初期化
         if let imageData = spot.imageData {
-            self._spotImage = State(initialValue: UIImage(data: imageData))
-            self._spotImageData = State(initialValue: imageData)
+            self._spotThumbnailImage = State(initialValue: UIImage(data: imageData))
+            self._spotThumbnailData = State(initialValue: imageData)
+        }
+        
+        // 詳細画像の初期化
+        if let detailImagesData = spot.detailImagesData {
+            let images = detailImagesData.compactMap { UIImage(data: $0) }
+            self._spotDetailImages = State(initialValue: images)
+            self._spotDetailImagesData = State(initialValue: detailImagesData)
         }
         
         // timeRangeから時刻を解析
@@ -1352,35 +1547,129 @@ struct EditSpotView: View {
                         }
                     }
                     
-                    // 画像選択
-                    PhotosPicker(selection: $selectedImage,
-                               matching: .images,
-                               photoLibrary: .shared()) {
-                        if let spotImage = spotImage {
-                            Image(uiImage: spotImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(height: 150)
-                                .clipped()
+                    // サムネイル画像選択
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("サムネイル画像（メイン画像）")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        PhotosPicker(selection: $selectedThumbnailItem,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
+                            if let spotThumbnailImage = spotThumbnailImage {
+                                ZStack(alignment: .topTrailing) {
+                                    Image(uiImage: spotThumbnailImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(height: 150)
+                                        .clipped()
+                                        .cornerRadius(8)
+                                    
+                                    // 削除ボタン
+                                    Button(action: {
+                                        self.spotThumbnailImage = nil
+                                        self.spotThumbnailData = nil
+                                        self.selectedThumbnailItem = nil
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.white)
+                                            .background(Color.black.opacity(0.7))
+                                            .clipShape(Circle())
+                                    }
+                                    .padding(4)
+                                }
+                            } else {
+                                HStack {
+                                    Image(systemName: "photo")
+                                        .foregroundColor(.gray)
+                                    Text("サムネイルを選択")
+                                        .foregroundColor(.gray)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 100)
+                                .background(Color(.systemGray5))
                                 .cornerRadius(8)
-                        } else {
-                            HStack {
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                                Text("スポット画像を選択")
-                                    .foregroundColor(.gray)
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 100)
-                            .background(Color(.systemGray5))
-                            .cornerRadius(8)
+                        }
+                        .onChange(of: selectedThumbnailItem) { newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                    spotThumbnailImage = UIImage(data: data)
+                                    spotThumbnailData = data
+                                }
+                            }
                         }
                     }
-                    .onChange(of: selectedImage) { newItem in
-                        Task {
-                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                spotImage = UIImage(data: data)
-                                spotImageData = data
+                    
+                    // 詳細画像選択
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("詳細画像（予約情報・地図など）")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        // 選択済み詳細画像の表示
+                        if !spotDetailImages.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(Array(spotDetailImages.enumerated()), id: \.offset) { index, image in
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: image)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 100, height: 100)
+                                                .clipped()
+                                                .cornerRadius(8)
+                                            
+                                            // 削除ボタン
+                                            Button(action: {
+                                                spotDetailImages.remove(at: index)
+                                                spotDetailImagesData.remove(at: index)
+                                            }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(.white)
+                                                    .background(Color.black.opacity(0.7))
+                                                    .clipShape(Circle())
+                                            }
+                                            .padding(2)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 4)
+                            }
+                        }
+                        
+                        // 詳細画像追加ボタン
+                        PhotosPicker(selection: $selectedDetailImages,
+                                   maxSelectionCount: 10,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
+                            HStack {
+                                Image(systemName: "plus")
+                                    .foregroundColor(.blue)
+                                Text("詳細画像を追加")
+                                    .foregroundColor(.blue)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue, lineWidth: 1)
+                            )
+                        }
+                        .onChange(of: selectedDetailImages) { newItems in
+                            Task {
+                                for item in newItems {
+                                    if let data = try? await item.loadTransferable(type: Data.self),
+                                       let image = UIImage(data: data) {
+                                        spotDetailImages.append(image)
+                                        spotDetailImagesData.append(data)
+                                    }
+                                }
+                                selectedDetailImages.removeAll()
                             }
                         }
                     }
@@ -1416,7 +1705,8 @@ struct EditSpotView: View {
                             spots[index].notes = spotNotes
                             spots[index].timeRange = formattedTimeRange
                             spots[index].activity = activity
-                            spots[index].imageData = spotImageData
+                            spots[index].imageData = spotThumbnailData
+                            spots[index].detailImagesData = spotDetailImagesData.isEmpty ? nil : spotDetailImagesData
                             spots[index].spotCost = spotCost
                         }
                         dismiss()

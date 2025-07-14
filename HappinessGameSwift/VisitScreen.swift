@@ -6,13 +6,14 @@ import UIKit
 
 public struct VisitScreen: View {
     @State private var savedPlans: [VisitPlanData] = []
-    @State private var showingSelectedPlan = false
     @State private var selectedPlan: VisitPlanData?
     @State private var visitAds: [Advertisement] = []
     @StateObject private var firebaseManager = FirebaseManager.shared
     @State private var publicPlans: [VisitPlanModel] = []
     @State private var userOriginalPlans: [VisitPlanModel] = []
-    @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? ""
+    @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+    @State private var showingDeleteConfirmation = false
+    @State private var planToDelete: VisitPlanModel?
     @State private var showingPurchaseDialog = false
     @State private var planToPurchase: VisitPlanModel?
     @State private var showNavigationMenu = false
@@ -33,6 +34,7 @@ public struct VisitScreen: View {
             .fullScreenCover(isPresented: $showingPlanningScreen) {
                 VisitPlanningScreen()
                     .onDisappear {
+                        print("プランニング画面が閉じられました - データを再読み込みします")
                         loadSavedPlans()
                         loadFirebasePlans()
                     }
@@ -42,18 +44,33 @@ public struct VisitScreen: View {
                     PlanPurchaseView(plan: plan, isPresented: $showingPurchaseDialog)
                 }
             }
-            .fullScreenCover(isPresented: $showingSelectedPlan) {
-                if let plan = selectedPlan {
-                    VisitGameScreen(
-                        animeName: plan.animeName,
-                        duration: plan.duration,
-                        planTitle: plan.title,
-                        spots: plan.spots,
-                        numberOfDays: plan.numberOfDays
-                    )
+            .alert("プランを削除しますか？", isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
+                Button("削除", role: .destructive) {
+                    deleteOriginalPlan(plan)
                 }
+                Button("キャンセル", role: .cancel) { }
+            } message: { plan in
+                Text("「\(plan.title)」を削除します。この操作は取り消せません。")
+            }
+            .fullScreenCover(item: $selectedPlan) { plan in
+                VisitGameScreen(
+                    animeName: plan.animeName,
+                    duration: plan.duration,
+                    planTitle: plan.title,
+                    spots: plan.spots,
+                    numberOfDays: plan.numberOfDays,
+                    startTime: plan.startTime
+                )
             }
             .onAppear {
+                // userIdが設定されていない場合は新しいUUIDを生成
+                if currentUserId.isEmpty || UserDefaults.standard.string(forKey: "userId") == nil {
+                    let newUserId = UUID().uuidString
+                    UserDefaults.standard.set(newUserId, forKey: "userId")
+                    currentUserId = newUserId
+                    print("DEBUG: 新しいユーザーIDを生成しました: \(newUserId)")
+                }
+                
                 loadSavedPlans()
                 loadVisitAds()
                 loadFirebasePlans()
@@ -93,6 +110,15 @@ public struct VisitScreen: View {
                                 EmptyView()
                             }
                         }
+                    } else if let savedPlan = savedPlans.first(where: { $0.id.uuidString == plan.id }), 
+                              let thumbnailData = savedPlan.thumbnailData,
+                              let uiImage = UIImage(data: thumbnailData) {
+                        // ローカルプランのサムネイル画像を表示
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 233)
+                            .clipped()
                     } else {
                         Image(systemName: "photo")
                             .font(.system(size: 40))
@@ -121,13 +147,28 @@ public struct VisitScreen: View {
                             .foregroundColor(.gray)
                     }
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(plan.duration)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.blue)
-                        Text("\(plan.spots.count)スポット")
-                            .font(.system(size: 10))
-                            .foregroundColor(.gray)
+                    // オリジナルプランの場合は削除ボタンを表示
+                    if selectedTab == .original {
+                        Button(action: {
+                            planToDelete = plan
+                            showingDeleteConfirmation = true
+                        }) {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.gray)
+                                .frame(width: 32, height: 32)
+                                .background(Color.gray.opacity(0.1))
+                                .clipShape(Circle())
+                        }
+                    } else {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(plan.duration)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.blue)
+                            Text("\(plan.spots.count)スポット")
+                                .font(.system(size: 10))
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
                 .padding(.horizontal, 12)
@@ -185,9 +226,14 @@ public struct VisitScreen: View {
                 
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(ad.title)
-                            .font(.headline)
-                            .foregroundColor(.black)
+                        HStack(spacing: 6) {
+                            Image(systemName: "megaphone.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                            Text(ad.title)
+                                .font(.headline)
+                                .foregroundColor(.black)
+                        }
                         Text(ad.description)
                             .font(.caption)
                             .foregroundColor(.gray)
@@ -213,6 +259,11 @@ public struct VisitScreen: View {
     private var planListView: some View {
         let displayPlans = selectedTab == .all ? publicPlans : userOriginalPlans
         let combinedItems = createCombinedItems(displayPlans)
+        
+        let _ = print("🔍 [DEBUG] planListView - selectedTab: \(selectedTab.rawValue)")
+        let _ = print("🔍 [DEBUG] planListView - publicPlans.count: \(publicPlans.count)")
+        let _ = print("🔍 [DEBUG] planListView - userOriginalPlans.count: \(userOriginalPlans.count)")
+        let _ = print("🔍 [DEBUG] planListView - displayPlans.count: \(displayPlans.count)")
         
         if displayPlans.isEmpty && (selectedTab == .original || visitAds.isEmpty) {
             VStack(spacing: 16) {
@@ -357,6 +408,31 @@ public struct VisitScreen: View {
         do {
             let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
             savedPlans = plans
+            
+            // VisitPlanDataからVisitPlanModelへ変換（最新順にソート）
+            userOriginalPlans = plans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+                VisitPlanModel(
+                    id: plan.id.uuidString,
+                    userId: currentUserId,
+                    animeName: plan.animeName,
+                    title: plan.title,
+                    description: "", // ローカルプランにはdescriptionがない
+                    duration: plan.duration,
+                    spots: plan.spots,
+                    thumbnailUrl: nil, // ローカルプランはサムネイルURLを持たない
+                    price: 0, // ローカルプランは無料
+                    budget: plan.totalCost,
+                    createdDate: plan.createdDate,
+                    startTime: plan.startTime,
+                    numberOfDays: plan.numberOfDays,
+                    totalCost: plan.totalCost,
+                    isPublic: false, // ローカルプランは非公開
+                    purchasedBy: [],
+                    createdAt: plan.createdDate,
+                    updatedAt: plan.createdDate
+                )
+            }
+            
             print("DEBUG: \(plans.count)個のプランを読み込みました")
             for plan in plans {
                 print("DEBUG: プラン: \(plan.title), スポット数: \(plan.spots.count)")
@@ -467,33 +543,33 @@ public struct VisitScreen: View {
     
     // Firebaseからプランを読み込む
     func loadFirebasePlans() {
+        print("DEBUG: loadFirebasePlans開始 - currentUserId: \(currentUserId)")
+        
         // 公開プランを取得
         firebaseManager.fetchPublicPlans { result in
             switch result {
             case .success(let plans):
+                print("DEBUG: 公開プラン取得成功: \(plans.count)件")
                 self.publicPlans = plans
             case .failure(let error):
                 print("公開プラン取得エラー: \(error)")
             }
         }
         
-        // ユーザーのプランを取得
-        if !currentUserId.isEmpty {
-            firebaseManager.fetchUserPlans(userId: currentUserId) { result in
-                switch result {
-                case .success(let plans):
-                    self.userOriginalPlans = plans
-                case .failure(let error):
-                    print("ユーザープラン取得エラー: \(error)")
-                }
-            }
-        }
+        // ユーザーのプランはローカルから読み込むため、Firebaseからの取得は不要
+        // loadSavedPlans()でuserOriginalPlansに設定される
     }
     
     // プランの購入状態をチェックして表示
     func checkAndShowPlan(_ plan: VisitPlanModel) {
+        print("DEBUG: checkAndShowPlan開始")
+        print("  - plan.userId: \(plan.userId)")
+        print("  - currentUserId: \(currentUserId)")
+        print("  - plan.price: \(plan.price)")
+        
         // 自分のプランか、無料プランの場合は直接表示
         if plan.userId == currentUserId || plan.price == 0 {
+            print("  → 自分のプランまたは無料プラン。直接表示します。")
             showPlanDetail(plan)
             return
         }
@@ -517,25 +593,49 @@ public struct VisitScreen: View {
     // プラン詳細を表示
     func showPlanDetail(_ plan: VisitPlanModel) {
         // VisitPlanModelをVisitPlanDataに変換
-        let visitPlanData = VisitPlanData(
+        // ローカルプランの場合はthumbnailDataを含める
+        let thumbnailData = savedPlans.first(where: { $0.id.uuidString == plan.id })?.thumbnailData
+        
+        var visitPlanData = VisitPlanData(
             id: UUID(uuidString: plan.id) ?? UUID(),
             animeName: plan.animeName,
             title: plan.title,
             duration: plan.duration,
             spots: plan.spots,
-            thumbnailData: nil,
+            thumbnailData: thumbnailData,
             createdDate: plan.createdDate,
             startTime: plan.startTime,
             numberOfDays: plan.numberOfDays
         )
+        visitPlanData.totalCost = plan.totalCost
+        
         self.selectedPlan = visitPlanData
-        self.showingSelectedPlan = true
+        print("DEBUG: showPlanDetail - selectedPlan設定完了")
+        print("  - id: \(visitPlanData.id)")
+        print("  - title: \(visitPlanData.title)")
+        print("  - spots count: \(visitPlanData.spots.count)")
+        print("  - selectedPlan設定済み")
     }
     
     // 購入ダイアログを表示
     func showPurchaseDialog(for plan: VisitPlanModel) {
         planToPurchase = plan
         showingPurchaseDialog = true
+    }
+    
+    func deleteOriginalPlan(_ plan: VisitPlanModel) {
+        // savedPlansから削除
+        if let index = savedPlans.firstIndex(where: { $0.id.uuidString == plan.id }) {
+            savedPlans.remove(at: index)
+            
+            // UserDefaultsに保存
+            if let encodedData = try? JSONEncoder().encode(savedPlans) {
+                UserDefaults.standard.set(encodedData, forKey: "visitPlans")
+            }
+            
+            // userOriginalPlansから削除
+            userOriginalPlans.removeAll(where: { $0.id == plan.id })
+        }
     }
 }
 

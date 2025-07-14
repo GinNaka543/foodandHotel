@@ -11,6 +11,7 @@ struct VisitGameScreen: View {
     @State private var selectedSpot: VisitSpot?
     @State private var selectedDay: Int = 1
     let numberOfDays: Int
+    let startTime: Date
     
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -185,8 +186,21 @@ struct VisitGameScreen: View {
             .navigationBarHidden(true)
         }
         .sheet(item: $selectedSpot) { spot in
-            SpotDetailView(spot: spot)
+            if let index = spots.firstIndex(where: { $0.id == spot.id }) {
+                SpotDetailView(spot: $spots[index], spots: $spots, startTime: startTime)
+            }
         }
+        .onAppear {
+            print("DEBUG: VisitGameScreen表示")
+            print("  - planTitle: \(planTitle)")
+            print("  - animeName: \(animeName)")
+            print("  - spots count: \(spots.count)")
+            print("  - numberOfDays: \(numberOfDays)")
+            if spots.isEmpty {
+                print("⚠️ WARNING: spotsが空です！")
+            }
+        }
+        .background(Color(.systemBackground))
     }
     
     func toggleSpotCompletion(spotId: UUID) {
@@ -355,7 +369,12 @@ struct TransportCard: View {
 
 struct SpotDetailView: View {
     @Environment(\.dismiss) var dismiss
-    let spot: VisitSpot
+    @Binding var spot: VisitSpot
+    @Binding var spots: [VisitSpot]
+    let startTime: Date
+    @State private var selectedImageData: Data? = nil
+    @State private var showingFullScreenImage = false
+    @State private var showingEditSheet = false
     
     let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -367,6 +386,17 @@ struct SpotDetailView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    // サムネイル画像
+                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 200)
+                            .clipped()
+                            .cornerRadius(12)
+                    }
+                    
                     // スポット名
                     VStack(alignment: .leading, spacing: 8) {
                         Text("スポット名")
@@ -442,6 +472,33 @@ struct SpotDetailView: View {
                         }
                     }
                     
+                    // 詳細画像（予約情報など）
+                    if let detailImagesData = spot.detailImagesData, !detailImagesData.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("詳細画像")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(Array(detailImagesData.enumerated()), id: \.offset) { index, imageData in
+                                        if let uiImage = UIImage(data: imageData) {
+                                            Image(uiImage: uiImage)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(height: 150)
+                                                .cornerRadius(8)
+                                                .onTapGesture {
+                                                    selectedImageData = imageData
+                                                    showingFullScreenImage = true
+                                                }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     // 地図を開くボタン
                     if !spot.address.isEmpty {
                         Button(action: {
@@ -463,6 +520,11 @@ struct SpotDetailView: View {
             .navigationTitle("スポット詳細")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("編集") {
+                        showingEditSheet = true
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("閉じる") {
                         dismiss()
@@ -470,12 +532,96 @@ struct SpotDetailView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showingFullScreenImage) {
+            if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
+                FullScreenImageView(image: uiImage, isPresented: $showingFullScreenImage)
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            EditSpotView(spot: spot, spots: $spots, startTime: startTime)
+        }
     }
     
     func openInMaps(address: String) {
         let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         if let url = URL(string: "maps://?q=\(encodedAddress)") {
             UIApplication.shared.open(url)
+        }
+    }
+}
+
+struct FullScreenImageView: View {
+    let image: UIImage
+    @Binding var isPresented: Bool
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+    
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .scaleEffect(scale)
+                .offset(offset)
+                .gesture(
+                    MagnificationGesture()
+                        .onChanged { value in
+                            let delta = value / lastScale
+                            lastScale = value
+                            scale = min(max(scale * delta, 1), 4)
+                        }
+                        .onEnded { _ in
+                            lastScale = 1.0
+                            if scale < 1 {
+                                withAnimation {
+                                    scale = 1
+                                    offset = .zero
+                                }
+                            }
+                        }
+                )
+                .simultaneousGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            offset = CGSize(
+                                width: lastOffset.width + value.translation.width,
+                                height: lastOffset.height + value.translation.height
+                            )
+                        }
+                        .onEnded { _ in
+                            lastOffset = offset
+                        }
+                )
+                .onTapGesture(count: 2) {
+                    withAnimation {
+                        if scale > 1 {
+                            scale = 1
+                            offset = .zero
+                            lastOffset = .zero
+                        } else {
+                            scale = 2
+                        }
+                    }
+                }
+            
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: { isPresented = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                    .padding()
+                }
+                Spacer()
+            }
         }
     }
 }

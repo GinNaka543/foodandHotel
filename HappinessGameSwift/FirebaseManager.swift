@@ -585,19 +585,37 @@ class FirebaseManager: ObservableObject {
     
     // ユーザーのプランを取得（オリジナルタブ用）
     func fetchUserPlans(userId: String, completion: @escaping (Result<[VisitPlanModel], Error>) -> Void) {
+        print("🔍 [DEBUG] fetchUserPlans開始 - userId: \(userId)")
         db.collection("visitPlans")
             .whereField("userId", isEqualTo: userId)
             .order(by: "createdAt", descending: true)
             .getDocuments { snapshot, error in
                 if let error = error {
+                    print("❌ [DEBUG] fetchUserPlans失敗: \(error)")
                     completion(.failure(error))
                     return
                 }
                 
-                let plans = snapshot?.documents.compactMap { doc in
-                    VisitPlanModel(dictionary: doc.data())
+                print("🔍 [DEBUG] fetchUserPlans - 取得ドキュメント数: \(snapshot?.documents.count ?? 0)")
+                
+                let plans: [VisitPlanModel] = snapshot?.documents.compactMap { doc in
+                    let data = doc.data()
+                    print("🔍 [DEBUG] ドキュメントデータ: id=\(doc.documentID)")
+                    print("  - userId: \(data["userId"] as? String ?? "nil")")
+                    print("  - title: \(data["title"] as? String ?? "nil")")
+                    print("  - isPublic: \(data["isPublic"] as? Bool ?? false)")
+                    
+                    let plan = VisitPlanModel(dictionary: data)
+                    if let planObj = plan {
+                        print("  - 変換後プラン: \(planObj.title), isPublic: \(planObj.isPublic)")
+                        return planObj
+                    } else {
+                        print("  - プラン変換失敗")
+                        return nil
+                    }
                 } ?? []
                 
+                print("🔍 [DEBUG] fetchUserPlans - 変換後プラン数: \(plans.count)")
                 self.userPlans = plans
                 completion(.success(plans))
             }

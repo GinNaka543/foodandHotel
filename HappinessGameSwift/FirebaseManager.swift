@@ -753,6 +753,7 @@ class FirebaseManager: ObservableObject {
                     
                     let characterImageURL = data["characterImageURL"] as? String
                     let customImageURL = data["customImageURL"] as? String
+                    let externalLink = data["externalLink"] as? String
                     let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
                     
                     return CustomRankingItem(
@@ -761,6 +762,7 @@ class FirebaseManager: ObservableObject {
                         characterName: characterName,
                         characterImageURL: characterImageURL,
                         customImageURL: customImageURL,
+                        externalLink: externalLink,
                         createdAt: createdAt
                     )
                 } ?? []

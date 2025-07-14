@@ -1056,9 +1056,9 @@ app.delete('/api/custom-rankings/:id', async (req, res) => {
 app.post('/api/custom-rankings/:rankingId/items', async (req, res) => {
   try {
     const { rankingId } = req.params;
-    const { rank, characterId, characterName, characterImagePath, githubImageUrl } = req.body;
+    const { rank, characterId, characterName, characterImagePath, githubImageUrl, externalLink } = req.body;
     
-    console.log('Received ranking item data:', { rank, characterId, characterName, characterImagePath, githubImageUrl });
+    console.log('Received ranking item data:', { rank, characterId, characterName, characterImagePath, githubImageUrl, externalLink });
     console.log('githubImageUrl value:', githubImageUrl);
     console.log('githubImageUrl type:', typeof githubImageUrl);
     
@@ -1088,6 +1088,7 @@ app.post('/api/custom-rankings/:rankingId/items', async (req, res) => {
       characterName,
       characterImageURL: characterImagePath || null,  // レガシーデータ用
       customImageURL: githubImageUrl || null,         // GitHub URL用
+      externalLink: externalLink || null,             // 外部リンク
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     };
     

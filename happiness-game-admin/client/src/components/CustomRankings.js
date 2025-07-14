@@ -111,6 +111,7 @@ const CustomRankings = () => {
   const [githubImageUrl, setGithubImageUrl] = useState('');
   const [customCharacterName, setCustomCharacterName] = useState('');
   const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [externalLink, setExternalLink] = useState('');
   
   // 新規ランキング作成用のstate
   const [newRanking, setNewRanking] = useState({
@@ -309,7 +310,8 @@ const CustomRankings = () => {
         characterId: null,
         characterName: customCharacterName,
         characterImagePath: null,
-        githubImageUrl: convertedUrl
+        githubImageUrl: convertedUrl,
+        externalLink: externalLink
       };
       
       console.log('Sending request data:', requestData);
@@ -360,6 +362,7 @@ const CustomRankings = () => {
     setGithubImageUrl('');
     setCustomCharacterName('');
     setImagePreviewUrl('');
+    setExternalLink('');
   };
 
 
@@ -840,6 +843,22 @@ const CustomRankings = () => {
                 />
               </Box>
             )}
+          </Box>
+          
+          <Box marginBottom={2}>
+            <Typography variant="h6" gutterBottom>
+              外部リンク（任意）
+            </Typography>
+            <TextField
+              fullWidth
+              placeholder="https://... (アプリでタップ時に開くURL)"
+              value={externalLink}
+              onChange={(e) => setExternalLink(e.target.value)}
+              InputProps={{
+                startAdornment: <LinkIcon style={{ marginRight: 8, color: '#999' }} />
+              }}
+              helperText="アプリでキャラクターをタップした時に開くURLを入力してください"
+            />
           </Box>
         </DialogContent>
         <DialogActions>

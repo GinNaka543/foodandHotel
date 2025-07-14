@@ -1297,6 +1297,105 @@ app.get('/api/users/:userId/points', async (req, res) => {
   }
 });
 
+// キャラクターランキングAPI
+app.get('/api/character-rankings', async (req, res) => {
+  try {
+    const rankingsSnapshot = await db.collection('characterRankings').get();
+    const rankings = rankingsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    res.json(rankings);
+  } catch (error) {
+    console.error('ランキング取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/character-rankings', async (req, res) => {
+  try {
+    const { characterId, rank, characterName, characterImagePath, imageFile, externalLink } = req.body;
+    
+    // 既存の同じランクのランキングを削除
+    const existingSnapshot = await db.collection('characterRankings')
+      .where('rank', '==', rank)
+      .get();
+    
+    const batch = db.batch();
+    existingSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // 新しいランキングを追加
+    const newRankingRef = db.collection('characterRankings').doc();
+    const rankingData = {
+      characterId,
+      rank,
+      characterName,
+      characterImagePath,
+      externalLink: externalLink || '',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    batch.set(newRankingRef, rankingData);
+    await batch.commit();
+    
+    res.json({ success: true, id: newRankingRef.id });
+  } catch (error) {
+    console.error('ランキング設定エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/character-rankings/:rank', async (req, res) => {
+  try {
+    const rank = parseInt(req.params.rank);
+    
+    const snapshot = await db.collection('characterRankings')
+      .where('rank', '==', rank)
+      .get();
+    
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('ランキング削除エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/character-rankings/update-link', async (req, res) => {
+  try {
+    const { rank, externalLink } = req.body;
+    
+    const snapshot = await db.collection('characterRankings')
+      .where('rank', '==', rank)
+      .get();
+    
+    if (snapshot.empty) {
+      return res.status(404).json({ error: 'ランキングが見つかりません' });
+    }
+    
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.update(doc.ref, {
+        externalLink: externalLink || '',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('リンク更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

@@ -41,6 +41,7 @@ const CharacterRanking = () => {
   const [success, setSuccess] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [externalLinks, setExternalLinks] = useState({});
 
   useEffect(() => {
     fetchRankings();
@@ -53,6 +54,14 @@ const CharacterRanking = () => {
       if (response.ok) {
         const data = await response.json();
         setRankings(data);
+        // 既存のexternalLinkを取得
+        const links = {};
+        data.forEach(ranking => {
+          if (ranking.externalLink) {
+            links[ranking.rank] = ranking.externalLink;
+          }
+        });
+        setExternalLinks(links);
       }
     } catch (error) {
       console.error('ランキング取得エラー:', error);
@@ -112,7 +121,8 @@ const CharacterRanking = () => {
           rank,
           characterName: character.name,
           characterImagePath: character.imageIdentifier,
-          imageFile: imageFile
+          imageFile: imageFile,
+          externalLink: externalLinks[rank] || ''
         })
       });
 
@@ -143,6 +153,39 @@ const CharacterRanking = () => {
         fetchRankings();
       } else {
         setError('ランキング削除に失敗しました');
+      }
+    } catch (error) {
+      setError('エラーが発生しました');
+    }
+    setLoading(false);
+  };
+
+  const updateExternalLink = async (rank) => {
+    setLoading(true);
+    try {
+      const ranking = getRankingForPosition(rank);
+      if (!ranking) {
+        setError('ランキングが存在しません');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch('/api/character-rankings/update-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          rank: rank,
+          externalLink: externalLinks[rank] || ''
+        })
+      });
+
+      if (response.ok) {
+        setSuccess(`${rank}位のリンクを更新しました`);
+        fetchRankings();
+      } else {
+        setError('リンク更新に失敗しました');
       }
     } catch (error) {
       setError('エラーが発生しました');
@@ -234,7 +277,7 @@ const CharacterRanking = () => {
                         >
                           {ranking.characterName.charAt(0)}
                         </Avatar>
-                        <Box>
+                        <Box flex={1}>
                           <Typography variant="h6">
                             {ranking.characterName}
                           </Typography>
@@ -243,6 +286,15 @@ const CharacterRanking = () => {
                           </Typography>
                         </Box>
                       </Box>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        label="外部リンク"
+                        placeholder="https://..."
+                        value={externalLinks[rank] || ''}
+                        onChange={(e) => setExternalLinks({...externalLinks, [rank]: e.target.value})}
+                        style={{ marginBottom: 12 }}
+                      />
                       <Box display="flex" gap={1}>
                         <Button
                           variant="outlined"
@@ -253,6 +305,14 @@ const CharacterRanking = () => {
                           }}
                         >
                           変更
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          onClick={() => updateExternalLink(rank)}
+                          disabled={loading}
+                        >
+                          リンク保存
                         </Button>
                         <IconButton
                           size="small"

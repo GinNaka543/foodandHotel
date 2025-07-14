@@ -158,6 +158,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     var seichi: String // 聖地
     var height: String // 身長
     var customFields: [CustomField]? // カスタムフィールド
+    var externalLink: String? // 外部リンク（人気キャラランキング用）
 
     static func == (lhs: Character, rhs: Character) -> Bool {
         lhs.id == rhs.id
@@ -430,7 +431,7 @@ struct CharacterRow: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -604,7 +605,7 @@ struct CharacterDetailView: View {
             
             // 背景画像 or グラデーション
             if let backgroundPath = currentCharacter.backgroundImagePath,
-               let bgImage = UIImage(contentsOfFile: backgroundPath) {
+               let bgImage = loadImageFromPath(backgroundPath) {
                 GeometryReader { geo in
                     Image(uiImage: bgImage)
                         .resizable()
@@ -658,7 +659,7 @@ struct CharacterDetailView: View {
                     Spacer().frame(height: 180)
                     // アイコン
                     ZStack {
-                        if let imageIdentifier = currentCharacter.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                        if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                             Image(uiImage: image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
@@ -767,7 +768,7 @@ struct CharacterDetailView: View {
                                         .aspectRatio(contentMode: .fill)
                                         .frame(width: 150, height: 150)
                                         .clipShape(Circle())
-                                } else if let imageIdentifier = currentCharacter.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                } else if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                     Image(uiImage: image)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
@@ -850,7 +851,7 @@ struct CharacterDetailView: View {
             let currentCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
             if let backgroundPath = currentCharacter.backgroundImagePath {
                 print("[DEBUG] 背景画像パス: \(backgroundPath)")
-                if UIImage(contentsOfFile: backgroundPath) != nil {
+                if loadImageFromPath(backgroundPath) != nil {
                     print("[DEBUG] 背景画像読み込み成功")
                 } else {
                     print("[DEBUG] 背景画像読み込み失敗: \(backgroundPath)")
@@ -863,25 +864,7 @@ struct CharacterDetailView: View {
 }
 
 // Helper functions
-func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
-    guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-        return nil
-    }
-    
-    let fileURL = documentsDirectory.appendingPathComponent(fileName)
-    
-    guard let data = image.pngData() else {
-        return nil
-    }
-    
-    do {
-        try data.write(to: fileURL)
-        return fileURL.path
-    } catch {
-        print("Error saving image: \(error)")
-        return nil
-    }
-}
+// 注: saveImageToDocuments関数はImageUtils.swiftに移動しました
 
 extension DateFormatter {
     static let monthDayEnglish: DateFormatter = {
@@ -938,7 +921,7 @@ struct AboutView: View {
                             Button(action: {
                                 showIconPicker = true
                             }) {
-                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                     Image(uiImage: image)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
@@ -1349,24 +1332,7 @@ struct AboutView: View {
         iconPickerItem = nil
     }
     
-    // 画像をDocumentsディレクトリに保存
-    private func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
-        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
-        
-        let fileManager = FileManager.default
-        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-        guard let documentsURL = urls.first else { return nil }
-        
-        let fileURL = documentsURL.appendingPathComponent(fileName)
-        
-        do {
-            try data.write(to: fileURL)
-            return fileURL.path
-        } catch {
-            print("画像保存エラー: \(error)")
-            return nil
-        }
-    }
+    // 注: saveImageToDocuments関数はImageUtils.swiftのものを使用します
 }
 
 // --- 追加: 高さ自動調整＆空行削除付きTextEditor ---
@@ -1441,7 +1407,7 @@ struct CharacterRankingRow: View {
             
             // キャラクターアイコン
             if let imagePath = ranking.characterImagePath,
-               let image = UIImage(contentsOfFile: imagePath) {
+               let image = loadImageFromPath(imagePath) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -1569,6 +1535,7 @@ struct CharacterRankingAdminView: View {
     @State private var selectedRank: Int = 1
     @State private var selectedCharacter: Character? = nil
     @State private var showingCharacterPicker = false
+    @State private var rankingLinks: [Int: String] = [:]
     
     var body: some View {
         NavigationView {
@@ -1595,12 +1562,26 @@ struct CharacterRankingAdminView: View {
                             RankingSettingRow(
                                 rank: rank,
                                 currentRanking: rankingManager.getRanking(for: rank),
+                                linkText: Binding(
+                                    get: { rankingLinks[rank] ?? "" },
+                                    set: { rankingLinks[rank] = $0 }
+                                ),
                                 onTap: {
                                     selectedRank = rank
                                     showingCharacterPicker = true
                                 },
                                 onRemove: {
                                     rankingManager.removeRanking(rank: rank)
+                                    rankingLinks[rank] = nil
+                                },
+                                onLinkSave: { link in
+                                    // リンクを保存
+                                    if let ranking = rankingManager.getRanking(for: rank),
+                                       let character = characterManager.characters.first(where: { $0.id == ranking.characterId }) {
+                                        var updatedCharacter = character
+                                        updatedCharacter.externalLink = link.isEmpty ? nil : link
+                                        characterManager.updateCharacter(updatedCharacter)
+                                    }
                                 }
                             )
                         }
@@ -1611,6 +1592,16 @@ struct CharacterRankingAdminView: View {
                 Spacer()
             }
             .background(Color(.systemGray6))
+        }
+        .onAppear {
+            // 既存のリンクを読み込む
+            for rank in 1...7 {
+                if let ranking = rankingManager.getRanking(for: rank),
+                   let character = characterManager.characters.first(where: { $0.id == ranking.characterId }),
+                   let link = character.externalLink {
+                    rankingLinks[rank] = link
+                }
+            }
         }
         .sheet(isPresented: $showingCharacterPicker) {
             CharacterPickerView(
@@ -1634,62 +1625,98 @@ struct CharacterRankingAdminView: View {
 struct RankingSettingRow: View {
     let rank: Int
     let currentRanking: CharacterRanking?
+    @Binding var linkText: String
     let onTap: () -> Void
     let onRemove: () -> Void
+    let onLinkSave: (String) -> Void
+    @FocusState private var isLinkFieldFocused: Bool
     
     var body: some View {
-        HStack(spacing: 12) {
-            // 順位表示
-            ZStack {
-                Circle()
-                    .fill(rankColor)
-                    .frame(width: 32, height: 32)
-                Text("\(rank)")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                // 順位表示
+                ZStack {
+                    Circle()
+                        .fill(rankColor)
+                        .frame(width: 32, height: 32)
+                    Text("\(rank)")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                
+                // キャラクター情報
+                if let ranking = currentRanking {
+                    HStack(spacing: 12) {
+                        // キャラクターアイコン
+                        if let imagePath = ranking.characterImagePath,
+                           let image = loadImageFromPath(imagePath) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 40, height: 40)
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 40, height: 40)
+                                .overlay(
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.gray)
+                                )
+                        }
+                        
+                        // キャラクター名
+                        Text(ranking.characterName)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.black)
+                        
+                        Spacer()
+                        
+                        // 削除ボタン
+                        Button(action: onRemove) {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.red)
+                        }
+                    }
+                } else {
+                    Text("キャラクターを選択してください")
+                        .font(.system(size: 16))
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+            }
+            .onTapGesture {
+                if currentRanking == nil {
+                    onTap()
+                }
             }
             
-            // キャラクター情報
-            if let ranking = currentRanking {
-                HStack(spacing: 12) {
-                    // キャラクターアイコン
-                    if let imagePath = ranking.characterImagePath,
-                       let image = UIImage(contentsOfFile: imagePath) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
-                            .clipShape(Circle())
-                    } else {
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 40, height: 40)
-                            .overlay(
-                                Image(systemName: "person.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.gray)
-                            )
+            // リンク入力フィールド（キャラクターが選択されている場合のみ表示）
+            if currentRanking != nil {
+                HStack {
+                    Text("リンク:")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                    
+                    TextField("https://example.com", text: $linkText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .focused($isLinkFieldFocused)
+                        .onSubmit {
+                            onLinkSave(linkText)
+                        }
+                    
+                    Button("保存") {
+                        onLinkSave(linkText)
+                        isLinkFieldFocused = false
                     }
-                    
-                    // キャラクター名
-                    Text(ranking.characterName)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
-                    
-                    Spacer()
-                    
-                    // 削除ボタン
-                    Button(action: onRemove) {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.red)
-                    }
+                    .font(.system(size: 14))
+                    .foregroundColor(.blue)
                 }
-            } else {
-                Text("キャラクターを選択してください")
-                    .font(.system(size: 16))
-                    .foregroundColor(.gray)
-                Spacer()
+                .padding(.horizontal, 4)
             }
         }
         .padding(.horizontal, 16)
@@ -1697,9 +1724,6 @@ struct RankingSettingRow: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 1)
-        .onTapGesture {
-            onTap()
-        }
     }
     
     private var rankColor: Color {
@@ -1797,7 +1821,7 @@ struct CharacterPickerRow: View {
         HStack(spacing: 12) {
             // キャラクターアイコン
             if let imageIdentifier = character.imageIdentifier,
-               let image = UIImage(contentsOfFile: imageIdentifier) {
+               let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -1909,7 +1933,7 @@ struct EditBackgroundView: View {
                                 .clipped()
                                 .cornerRadius(12)
                         } else if let imagePath = character.backgroundImagePath,
-                                  let uiImage = UIImage(contentsOfFile: imagePath) {
+                                  let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)

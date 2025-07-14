@@ -31,6 +31,8 @@ struct HappinessGameSwiftApp: App {
     init() {
         FirebaseApp.configure()
         cleanupLargeUserDefaultsEntries()
+        // 画像パスの移行処理を実行
+        ImageMigrationHelper.shared.migrateAllImagePaths()
     }
     
     var body: some Scene {

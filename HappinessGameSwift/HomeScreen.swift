@@ -187,7 +187,7 @@ struct HomeScreen: View {
                         showingProfile = true
                     }) {
                         if let imagePath = profileManager.currentUser.iconImagePath,
-                           let uiImage = UIImage(contentsOfFile: imagePath) {
+                           let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
@@ -274,7 +274,7 @@ struct HomeScreen: View {
                         HStack {
                             FriendListIconView(
                                 images: getBirthdayReminderCharacters().prefix(4).map { char in
-                                    if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                                    if let path = char.imageIdentifier, let img = loadImageFromPath(path) { return img } else { return nil }
                                 },
                                 fallbackSystemName: "person",
                                 color: Color.gray.opacity(0.3)
@@ -303,7 +303,7 @@ struct HomeScreen: View {
                     HStack {
                         FriendListIconView(
                             images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).map { char in
-                                if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                                if let path = char.imageIdentifier, let img = loadImageFromPath(path) { return img } else { return nil }
                             },
                             fallbackSystemName: "person",
                             color: Color.gray.opacity(0.3)
@@ -331,7 +331,7 @@ struct HomeScreen: View {
                     HStack {
                         FriendListIconView(
                             images: animeManager.animes.prefix(4).map { anime in
-                                if let path = anime.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                                if let path = anime.imageIdentifier, let img = loadImageFromPath(path) { return img } else { return nil }
                             },
                             fallbackSystemName: "film",
                             color: Color.gray.opacity(0.3)
@@ -614,7 +614,7 @@ struct UserProfileScreenTemp: View {
                                                 .frame(width: 100, height: 100)
                                                 .clipShape(Circle())
                                         } else if let imagePath = profileManager.currentUser.iconImagePath,
-                                                  let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                  let uiImage = loadImageFromPath(imagePath) {
                                             Image(uiImage: uiImage)
                                                 .resizable()
                                                 .scaledToFill()
@@ -810,7 +810,7 @@ struct UserProfileScreenTemp: View {
         }
         
         if let imagePath = profileManager.currentUser.iconImagePath,
-           let uiImage = UIImage(contentsOfFile: imagePath) {
+           let uiImage = loadImageFromPath(imagePath) {
             iconImage = uiImage
         }
         

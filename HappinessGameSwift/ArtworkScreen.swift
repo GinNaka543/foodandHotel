@@ -189,7 +189,7 @@ struct ArtworkScreen: View {
                                         VStack(alignment: .leading, spacing: 0) {
                                             if let firstArtwork = album.videos.first {
                                                 GeometryReader { geometry in
-                                                    if let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                    if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                         Image(uiImage: uiImage)
                                                             .resizable()
                                                             .aspectRatio(contentMode: .fit)
@@ -267,7 +267,7 @@ struct ArtworkScreen: View {
                                             ZStack {
                                                 Color.white
                                                 // ローカル画像またはPixiv URL対応
-                                                if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fit)
@@ -297,7 +297,7 @@ struct ArtworkScreen: View {
                                         }
                                         .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
-                                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                                     Image(uiImage: image)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
@@ -470,7 +470,7 @@ struct ArtworkScreen: View {
                                 VStack(spacing: 24) {
                                     Spacer(minLength: 20)
                                     
-                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                    if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                         Image(uiImage: uiImage)
                                             .resizable()
                                             .aspectRatio(contentMode: .fit)
@@ -771,7 +771,7 @@ struct ArtworkScreen: View {
                             .edgesIgnoringSafeArea(.all)
                         
                         // 画像
-                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                        if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)

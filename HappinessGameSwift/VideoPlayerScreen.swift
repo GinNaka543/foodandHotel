@@ -328,7 +328,11 @@ struct VideoPlayerScreen: View {
             return
         }
         
-        let videoURL = URL(fileURLWithPath: video.videoPath)
+        guard let videoURL = loadVideoURLFromPath(video.videoPath) else {
+            print("動画ファイルが見つかりません: \(video.videoPath)")
+            return
+        }
+        
         player = AVPlayer(url: videoURL)
         
         // 動画の長さを取得

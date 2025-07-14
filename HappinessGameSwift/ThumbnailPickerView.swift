@@ -163,7 +163,10 @@ struct ThumbnailPickerView: View {
     private func generateThumbnails() async {
         guard video.youtubeURL == nil else { return }
         
-        let url = URL(fileURLWithPath: video.videoPath)
+        guard let url = loadVideoURLFromPath(video.videoPath) else {
+            print("動画ファイルが見つかりません: \(video.videoPath)")
+            return
+        }
         let asset = AVURLAsset(url: url)
         let imageGenerator = AVAssetImageGenerator(asset: asset)
         imageGenerator.appliesPreferredTrackTransform = true

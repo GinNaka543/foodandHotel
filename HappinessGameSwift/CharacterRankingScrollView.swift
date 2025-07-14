@@ -400,6 +400,7 @@ enum DisplayItem: Identifiable {
 // キャラクターランキングカード
 struct CharacterRankingCard: View {
     let ranking: CharacterRanking
+    @StateObject private var characterManager = CharacterManager()
     
     private func convertGitHubUrl(_ url: String) -> String {
         if url.contains("github.com") && url.contains("/blob/") {
@@ -512,6 +513,15 @@ struct CharacterRankingCard: View {
                 .frame(width: 67)
         }
         .frame(width: 84)
+        .onTapGesture {
+            // キャラクターのリンクがある場合は開く
+            if let character = characterManager.characters.first(where: { $0.id == ranking.characterId }),
+               let link = character.externalLink,
+               !link.isEmpty,
+               let url = URL(string: link) {
+                UIApplication.shared.open(url)
+            }
+        }
     }
     
     private var rankGradient: LinearGradient {

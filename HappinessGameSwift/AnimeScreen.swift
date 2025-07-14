@@ -327,7 +327,7 @@ struct AnimeRow: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -485,7 +485,7 @@ struct AnimeArtworkScreen: View {
                                         VStack(alignment: .leading, spacing: 0) {
                                             if let firstArtwork = album.videos.first {
                                                 GeometryReader { geometry in
-                                                    if let imagePath = firstArtwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                    if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                         Image(uiImage: uiImage)
                                                             .resizable()
                                                             .aspectRatio(contentMode: .fit)
@@ -563,7 +563,7 @@ struct AnimeArtworkScreen: View {
                                         GeometryReader { geometry in
                                             ZStack {
                                                 Color.white
-                                                if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fit)
@@ -585,7 +585,7 @@ struct AnimeArtworkScreen: View {
                                         }
                                             .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
-                                                if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                                if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                                     Image(uiImage: image)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
@@ -758,7 +758,7 @@ struct AnimeArtworkScreen: View {
                                 VStack(spacing: 24) {
                                     Spacer(minLength: 20)
                                     
-                                    if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                    if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                         Image(uiImage: uiImage)
                                             .resizable()
                                             .aspectRatio(contentMode: .fit)
@@ -1004,7 +1004,7 @@ struct AnimeArtworkScreen: View {
                             .edgesIgnoringSafeArea(.all)
                         
                         // 画像
-                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                        if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
@@ -1198,7 +1198,7 @@ struct AnimeVideoRowView: View {
                     .cornerRadius(20)
             }
             HStack(alignment: .center, spacing: 12) {
-                if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -1573,14 +1573,23 @@ struct AnimeVideoScreen: View {
         let fileManager = FileManager.default
         let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
         guard let documentsURL = urls.first else { return "" }
-        let fileURL = documentsURL.appendingPathComponent(fileName)
+        
+        // アプリ専用のサブディレクトリを作成
+        let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
         
         do {
+            // ディレクトリが存在しない場合は作成
+            if !fileManager.fileExists(atPath: appDirectoryURL.path) {
+                try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+            }
+            
+            let fileURL = appDirectoryURL.appendingPathComponent(fileName)
+            
             if fileManager.fileExists(atPath: fileURL.path) {
                 try fileManager.removeItem(at: fileURL)
             }
             try fileManager.copyItem(at: url, to: fileURL)
-            return fileURL.path
+            return "AnirecoImages/\(fileName)"
         } catch {
             print("動画保存エラー: \(error)")
             return ""
@@ -1666,7 +1675,7 @@ struct AnimeAboutView: View {
                         Button(action: {
                             showIconPicker = true
                         }) {
-                            if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
@@ -2063,11 +2072,19 @@ struct AnimeAboutView: View {
         let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
         guard let documentsURL = urls.first else { return nil }
         
-        let fileURL = documentsURL.appendingPathComponent(fileName)
+        // アプリ専用のサブディレクトリを作成
+        let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
         
         do {
+            // ディレクトリが存在しない場合は作成
+            if !fileManager.fileExists(atPath: appDirectoryURL.path) {
+                try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+            }
+            
+            let fileURL = appDirectoryURL.appendingPathComponent(fileName)
+            
             try data.write(to: fileURL)
-            return fileURL.path
+            return "AnirecoImages/\(fileName)"
         } catch {
             print("画像保存エラー: \(error)")
             return nil
@@ -2217,7 +2234,7 @@ struct AnimeDetailView: View {
             ZStack(alignment: .topLeading) {
                 // 背景画像
                 if let imagePath = currentAnime.backgroundImagePath,
-                   let uiImage = UIImage(contentsOfFile: imagePath) {
+                   let uiImage = loadImageFromPath(imagePath) {
                     GeometryReader { geo in
                         Image(uiImage: uiImage)
                             .resizable()
@@ -2264,7 +2281,7 @@ struct AnimeDetailView: View {
                 VStack {
                     Spacer().frame(height: 180 + 50)
                     ZStack {
-                        if let imageIdentifier = currentAnime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                        if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                             Image(uiImage: image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
@@ -2490,7 +2507,7 @@ struct AnimeDetailView: View {
                                     .clipped()
                                     .cornerRadius(12)
                             } else if let imagePath = anime.backgroundImagePath,
-                                      let uiImage = UIImage(contentsOfFile: imagePath) {
+                                      let uiImage = loadImageFromPath(imagePath) {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
@@ -2583,7 +2600,7 @@ struct AnimeDetailView: View {
                                     .aspectRatio(contentMode: .fill)
                                     .frame(width: 150, height: 150)
                                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                            } else if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                            } else if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)

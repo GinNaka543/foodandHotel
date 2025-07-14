@@ -959,14 +959,23 @@ struct VideoGalleryScreen: View {
         let fileManager = FileManager.default
         let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
         guard let documentsURL = urls.first else { return "" }
-        let fileURL = documentsURL.appendingPathComponent(fileName)
+        
+        // アプリ専用のサブディレクトリを作成
+        let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
         
         do {
+            // ディレクトリが存在しない場合は作成
+            if !fileManager.fileExists(atPath: appDirectoryURL.path) {
+                try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+            }
+            
+            let fileURL = appDirectoryURL.appendingPathComponent(fileName)
+            
             if fileManager.fileExists(atPath: fileURL.path) {
                 try fileManager.removeItem(at: fileURL)
             }
             try fileManager.copyItem(at: url, to: fileURL)
-            return fileURL.path
+            return "AnirecoImages/\(fileName)"
         } catch {
             print("動画保存エラー: \(error)")
             return ""
@@ -1146,8 +1155,9 @@ struct VideoThumbnailPlayer: View {
         .onAppear {
             if player == nil && video.youtubeURL == nil && !video.videoPath.isEmpty {
                 // videoPathから動画ファイルを読み込む
-                let videoURL = URL(fileURLWithPath: video.videoPath)
-                player = AVPlayer(url: videoURL)
+                if let videoURL = loadVideoURLFromPath(video.videoPath) {
+                    player = AVPlayer(url: videoURL)
+                }
             }
         }
         .onDisappear {
@@ -1305,8 +1315,9 @@ struct VideoInlinePlayer: View {
             }
         }
         .onAppear {
-            let videoURL = URL(fileURLWithPath: video.videoPath)
-            player = AVPlayer(url: videoURL)
+            if let videoURL = loadVideoURLFromPath(video.videoPath) {
+                player = AVPlayer(url: videoURL)
+            }
         }
         .onDisappear {
             player?.pause()

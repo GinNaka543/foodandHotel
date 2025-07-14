@@ -122,7 +122,8 @@ struct CharacterRankingScrollView: View {
                     characterId: UUID(),
                     rank: item.rank,
                     characterName: item.characterName,
-                    characterImagePath: item.customImageURL ?? item.characterImageURL
+                    characterImagePath: item.customImageURL ?? item.characterImageURL,
+                    externalLink: item.externalLink
                 )
             }
             print("🔍 変換後のランキング数: \(self.rankings.count)")
@@ -400,7 +401,6 @@ enum DisplayItem: Identifiable {
 // キャラクターランキングカード
 struct CharacterRankingCard: View {
     let ranking: CharacterRanking
-    @StateObject private var characterManager = CharacterManager()
     
     private func convertGitHubUrl(_ url: String) -> String {
         if url.contains("github.com") && url.contains("/blob/") {
@@ -514,9 +514,8 @@ struct CharacterRankingCard: View {
         }
         .frame(width: 84)
         .onTapGesture {
-            // キャラクターのリンクがある場合は開く
-            if let character = characterManager.characters.first(where: { $0.id == ranking.characterId }),
-               let link = character.externalLink,
+            // ランキングに設定されたリンクがある場合は開く
+            if let link = ranking.externalLink,
                !link.isEmpty,
                let url = URL(string: link) {
                 UIApplication.shared.open(url)

@@ -94,12 +94,14 @@ struct CharacterRanking: Identifiable, Codable {
     var rank: Int // 1-7位
     var characterName: String // 表示用
     var characterImagePath: String? // 表示用
+    var externalLink: String? // 外部リンク（Firebaseから取得）
     
-    init(characterId: UUID, rank: Int, characterName: String, characterImagePath: String? = nil) {
+    init(characterId: UUID, rank: Int, characterName: String, characterImagePath: String? = nil, externalLink: String? = nil) {
         self.characterId = characterId
         self.rank = rank
         self.characterName = characterName
         self.characterImagePath = characterImagePath
+        self.externalLink = externalLink
     }
 }
 
@@ -158,7 +160,6 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     var seichi: String // 聖地
     var height: String // 身長
     var customFields: [CustomField]? // カスタムフィールド
-    var externalLink: String? // 外部リンク（人気キャラランキング用）
 
     static func == (lhs: Character, rhs: Character) -> Bool {
         lhs.id == rhs.id
@@ -1535,7 +1536,6 @@ struct CharacterRankingAdminView: View {
     @State private var selectedRank: Int = 1
     @State private var selectedCharacter: Character? = nil
     @State private var showingCharacterPicker = false
-    @State private var rankingLinks: [Int: String] = [:]
     
     var body: some View {
         NavigationView {
@@ -1562,26 +1562,12 @@ struct CharacterRankingAdminView: View {
                             RankingSettingRow(
                                 rank: rank,
                                 currentRanking: rankingManager.getRanking(for: rank),
-                                linkText: Binding(
-                                    get: { rankingLinks[rank] ?? "" },
-                                    set: { rankingLinks[rank] = $0 }
-                                ),
                                 onTap: {
                                     selectedRank = rank
                                     showingCharacterPicker = true
                                 },
                                 onRemove: {
                                     rankingManager.removeRanking(rank: rank)
-                                    rankingLinks[rank] = nil
-                                },
-                                onLinkSave: { link in
-                                    // リンクを保存
-                                    if let ranking = rankingManager.getRanking(for: rank),
-                                       let character = characterManager.characters.first(where: { $0.id == ranking.characterId }) {
-                                        var updatedCharacter = character
-                                        updatedCharacter.externalLink = link.isEmpty ? nil : link
-                                        characterManager.updateCharacter(updatedCharacter)
-                                    }
                                 }
                             )
                         }
@@ -1592,16 +1578,6 @@ struct CharacterRankingAdminView: View {
                 Spacer()
             }
             .background(Color(.systemGray6))
-        }
-        .onAppear {
-            // 既存のリンクを読み込む
-            for rank in 1...7 {
-                if let ranking = rankingManager.getRanking(for: rank),
-                   let character = characterManager.characters.first(where: { $0.id == ranking.characterId }),
-                   let link = character.externalLink {
-                    rankingLinks[rank] = link
-                }
-            }
         }
         .sheet(isPresented: $showingCharacterPicker) {
             CharacterPickerView(
@@ -1625,98 +1601,62 @@ struct CharacterRankingAdminView: View {
 struct RankingSettingRow: View {
     let rank: Int
     let currentRanking: CharacterRanking?
-    @Binding var linkText: String
     let onTap: () -> Void
     let onRemove: () -> Void
-    let onLinkSave: (String) -> Void
-    @FocusState private var isLinkFieldFocused: Bool
     
     var body: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                // 順位表示
-                ZStack {
-                    Circle()
-                        .fill(rankColor)
-                        .frame(width: 32, height: 32)
-                    Text("\(rank)")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                }
-                
-                // キャラクター情報
-                if let ranking = currentRanking {
-                    HStack(spacing: 12) {
-                        // キャラクターアイコン
-                        if let imagePath = ranking.characterImagePath,
-                           let image = loadImageFromPath(imagePath) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 40, height: 40)
-                                .clipShape(Circle())
-                        } else {
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 40, height: 40)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.gray)
-                                )
-                        }
-                        
-                        // キャラクター名
-                        Text(ranking.characterName)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.black)
-                        
-                        Spacer()
-                        
-                        // 削除ボタン
-                        Button(action: onRemove) {
-                            Image(systemName: "trash.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.red)
-                        }
-                    }
-                } else {
-                    Text("キャラクターを選択してください")
-                        .font(.system(size: 16))
-                        .foregroundColor(.gray)
-                    Spacer()
-                }
-            }
-            .onTapGesture {
-                if currentRanking == nil {
-                    onTap()
-                }
+        HStack(spacing: 12) {
+            // 順位表示
+            ZStack {
+                Circle()
+                    .fill(rankColor)
+                    .frame(width: 32, height: 32)
+                Text("\(rank)")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
             }
             
-            // リンク入力フィールド（キャラクターが選択されている場合のみ表示）
-            if currentRanking != nil {
-                HStack {
-                    Text("リンク:")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                    
-                    TextField("https://example.com", text: $linkText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .focused($isLinkFieldFocused)
-                        .onSubmit {
-                            onLinkSave(linkText)
-                        }
-                    
-                    Button("保存") {
-                        onLinkSave(linkText)
-                        isLinkFieldFocused = false
+            // キャラクター情報
+            if let ranking = currentRanking {
+                HStack(spacing: 12) {
+                    // キャラクターアイコン
+                    if let imagePath = ranking.characterImagePath,
+                       let image = loadImageFromPath(imagePath) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 40, height: 40)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 40, height: 40)
+                            .overlay(
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.gray)
+                            )
                     }
-                    .font(.system(size: 14))
-                    .foregroundColor(.blue)
+                    
+                    // キャラクター名
+                    Text(ranking.characterName)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.black)
+                    
+                    Spacer()
+                    
+                    // 削除ボタン
+                    Button(action: onRemove) {
+                        Image(systemName: "trash.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.red)
+                    }
                 }
-                .padding(.horizontal, 4)
+            } else {
+                Text("キャラクターを選択してください")
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                Spacer()
             }
         }
         .padding(.horizontal, 16)
@@ -1724,6 +1664,9 @@ struct RankingSettingRow: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 1)
+        .onTapGesture {
+            onTap()
+        }
     }
     
     private var rankColor: Color {

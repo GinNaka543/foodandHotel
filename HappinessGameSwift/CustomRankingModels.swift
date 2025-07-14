@@ -30,6 +30,7 @@ struct CustomRankingItem: Codable, Identifiable {
     let characterName: String
     let characterImageURL: String?
     let customImageURL: String?
+    let externalLink: String?
     let createdAt: Date
     
     enum CodingKeys: String, CodingKey {
@@ -38,6 +39,7 @@ struct CustomRankingItem: Codable, Identifiable {
         case characterName
         case characterImageURL
         case customImageURL
+        case externalLink
         case createdAt
     }
 }

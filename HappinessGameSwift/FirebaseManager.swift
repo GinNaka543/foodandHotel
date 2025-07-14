@@ -285,7 +285,8 @@ class FirebaseManager: ObservableObject {
                         characterId: characterId,
                         rank: rank,
                         characterName: characterName,
-                        characterImagePath: data["characterImagePath"] as? String
+                        characterImagePath: data["characterImagePath"] as? String,
+                        externalLink: data["externalLink"] as? String
                     )
                     
                     rankings.append(ranking)

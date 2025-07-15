@@ -72,10 +72,10 @@ class UserProfileManager: ObservableObject {
 struct HomeScreen: View {
     @EnvironmentObject var mainTab: MainTabSelection
     @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var characterManager: CharacterManager
+    @EnvironmentObject var animeManager: AnimeManager
     @State private var showListPage = false
     @State private var initialTab: ListTab = .chara
-    @StateObject private var characterManager = CharacterManager()
-    @StateObject private var animeManager = AnimeManager()
     @StateObject private var profileManager = UserProfileManager()
     @State private var showingProfile = false
     @State private var showingPoints = false

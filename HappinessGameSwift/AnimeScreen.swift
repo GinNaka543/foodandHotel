@@ -170,13 +170,13 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
 }
 
 struct AnimeScreen: View {
-    @StateObject private var animeManager = AnimeManager()
+    @EnvironmentObject var animeManager: AnimeManager
+    @EnvironmentObject var mainTab: MainTabSelection
     @State private var showAddSheet = false
     @State private var selectedTab: AnimeTab = .all
     @State private var selectedAnime: Anime? = nil
     @State private var showMenu = false
     @State private var showNavigationMenu = false
-    @EnvironmentObject var mainTab: MainTabSelection
     
     enum AnimeTab: String, CaseIterable {
         case all = "すべて"

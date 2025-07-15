@@ -218,14 +218,14 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
 }
 
 struct CharaScreen: View {
-    @StateObject private var characterManager = CharacterManager()
+    @EnvironmentObject var characterManager: CharacterManager
+    @EnvironmentObject var mainTab: MainTabSelection
     @State private var showAddSheet = false
     @State private var searchText = ""
     @State private var selectedCharacter: Character? = nil
     @State private var showMenu = false
     @State private var showRankingAdmin = false
     @State private var showNavigationMenu = false
-    @EnvironmentObject var mainTab: MainTabSelection
     
     var filteredCharacters: [Character] {
         // Filter out characters without names first
@@ -1858,20 +1858,13 @@ struct NavigationBarItem: View {
         .contentShape(Rectangle())
         .onTapGesture {
             print("🎯 [NavigationBarItem] タップ検出: \(title)")
-            // タップ時の即座のフィードバック
-            withAnimation(.easeInOut(duration: 0.1)) {
-                isPressed = true
-            }
-            
-            // タップアクションを実行
-            print("🎯 [NavigationBarItem] onTap実行: \(title)")
+            // 即座にタップアクションを実行
             onTap()
             
-            // 短時間後にリセット
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.easeInOut(duration: 0.1)) {
-                    isPressed = false
-                }
+            // シンプルなフィードバック
+            isPressed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                isPressed = false
             }
         }
     }

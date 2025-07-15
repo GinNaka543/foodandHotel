@@ -114,22 +114,28 @@ struct MainContainerView: View {
             VStack(spacing: 0) {
                 // 選択されたタブに応じてコンテンツを表示
                 VStack {
-                    let _ = print("🎯 [MainContainer] 現在のタブ: \(mainTab.selectedTab.title)")
-                    if mainTab.selectedTab == .home {
-                        HomeScreen()
-                            .environmentObject(mainTab)
-                            .environmentObject(authManager)
-                    } else if mainTab.selectedTab == .chara {
-                        CharaScreen()
-                            .environmentObject(mainTab)
-                    } else if mainTab.selectedTab == .anime {
-                        AnimeScreen()
-                            .environmentObject(mainTab)
-                    } else if mainTab.selectedTab == .visit {
-                        VisitScreen()
-                    } else if mainTab.selectedTab == .card {
-                        ProductScreen()
+                    Group {
+                        if mainTab.selectedTab == .home {
+                            HomeScreen()
+                                .environmentObject(mainTab)
+                                .environmentObject(authManager)
+                                .environmentObject(characterManager)
+                                .environmentObject(animeManager)
+                        } else if mainTab.selectedTab == .chara {
+                            CharaScreen()
+                                .environmentObject(mainTab)
+                                .environmentObject(characterManager)
+                        } else if mainTab.selectedTab == .anime {
+                            AnimeScreen()
+                                .environmentObject(mainTab)
+                                .environmentObject(animeManager)
+                        } else if mainTab.selectedTab == .visit {
+                            VisitScreen()
+                        } else if mainTab.selectedTab == .card {
+                            ProductScreen()
+                        }
                     }
+                    .animation(nil, value: mainTab.selectedTab)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
@@ -147,13 +153,9 @@ struct MainContainerView: View {
                             title: tab.title,
                             isSelected: mainTab.selectedTab == tab,
                             onTap: {
-                                print("🔄 [DEBUG] [\(tab.title)] タブタップ開始")
-                                print("🔄 [DEBUG] [\(tab.title)] 現在のタブ: \(mainTab.selectedTab.title)")
-                                print("🔄 [DEBUG] [\(tab.title)] タブ切り替え実行中...")
+                                print("🔄 [Tab] \(mainTab.selectedTab.title) → \(tab.title)")
                                 // 即座にタブを切り替える（アニメーション削除）
                                 mainTab.selectedTab = tab
-                                print("🔄 [DEBUG] [\(tab.title)] 切り替え完了: \(mainTab.selectedTab.title)")
-                                print("🔄 [DEBUG] [\(tab.title)] タブタップ終了")
                             }
                         )
                     }

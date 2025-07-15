@@ -330,8 +330,9 @@ struct AnimeRow: View {
             if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
+                    .aspectRatio(contentMode: .fill)
                     .frame(width: 183, height: 99)
+                    .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             } else {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)

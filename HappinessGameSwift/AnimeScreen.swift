@@ -1254,6 +1254,8 @@ struct AnimeVideoScreen: View {
     @State private var playingVideoId: UUID? = nil
     @State private var albums: [Album] = []
     @State private var selectedAlbum: Album? = nil
+    @State private var showThumbnailPicker = false
+    @State private var editingVideo: MemoryVideo? = nil
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -1439,15 +1441,42 @@ struct AnimeVideoScreen: View {
                                             .padding(.top, 3)
                                             .padding(.leading, 8)
                                             Spacer()
-                                            Button(action: {
-                                                selectedVideo = video
-                                                showEditTitle = true // 必要に応じてActionSheetや編集処理
-                                            }) {
-                                                Image(systemName: "ellipsis.vertical")
-                                                    .font(.system(size: 23))
-                                                    .foregroundColor(.black)
-                                                    .padding(.trailing, 8)
+                                            Menu {
+                                                Button(action: {
+                                                    editText = video.title
+                                                    editingVideo = video
+                                                    showEditTitle = true
+                                                }) {
+                                                    Label("タイトルを編集", systemImage: "pencil")
+                                                }
+                                                Button(action: {
+                                                    editText = video.tags.joined(separator: ", ")
+                                                    editingVideo = video
+                                                    showEditTags = true
+                                                }) {
+                                                    Label("タグを編集", systemImage: "tag")
+                                                }
+                                                Button(action: {
+                                                    editingVideo = video
+                                                    showThumbnailPicker = true
+                                                }) {
+                                                    Label("サムネイルを変更", systemImage: "photo")
+                                                }
+                                                Button(role: .destructive, action: {
+                                                    deletingVideoID = video.id
+                                                    showDeleteAlert = true
+                                                }) {
+                                                    Label("削除", systemImage: "trash")
+                                                }
+                                            } label: {
+                                                Image(systemName: "ellipsis")
+                                                    .font(.system(size: 18))
+                                                    .foregroundColor(.gray)
+                                                    .padding(8)
+                                                    .background(Color.gray.opacity(0.1))
+                                                    .clipShape(Circle())
                                             }
+                                            .padding(.trailing, 8)
                                         }
                                         .padding(.leading, 8)
                                     }
@@ -1461,12 +1490,29 @@ struct AnimeVideoScreen: View {
                                 character: nil,
                                 anime: anime,
                                 allVideos: videos,
+                                onSave: { newTitle, newTags in
+                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                        var updated = videos[idx]
+                                        updated.title = newTitle
+                                        updated.tags = newTags
+                                        videos[idx] = updated
+                                        saveVideosToUserDefaults()
+                                    }
+                                },
                                 onDelete: {
                                     if let idx = videos.firstIndex(where: { $0.id == video.id }) {
                                         videos.remove(at: idx)
                                         saveVideosToUserDefaults()
                                     }
                                     selectedVideo = nil
+                                },
+                                onThumbnailUpdate: { newThumbnailData in
+                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                        var updated = videos[idx]
+                                        updated.thumbnailData = newThumbnailData
+                                        videos[idx] = updated
+                                        saveVideosToUserDefaults()
+                                    }
                                 }
                             )
                         }
@@ -1532,6 +1578,108 @@ struct AnimeVideoScreen: View {
             }, onYouTubeSave: { url, title, thumbnailURL, tags in
                 saveYouTubeVideo(url: url, title: title, thumbnailURL: thumbnailURL, tags: tags)
             })
+        }
+        .sheet(isPresented: $showEditTitle) {
+            VStack(spacing: 24) {
+                Text("タイトルを編集")
+                    .font(.headline)
+                TextField("タイトル", text: $editText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                HStack(spacing: 24) {
+                    Button(action: { 
+                        showEditTitle = false
+                        editingVideo = nil
+                    }) {
+                        Text("キャンセル")
+                            .foregroundColor(.red)
+                    }
+                    Button(action: {
+                        if let video = editingVideo,
+                           let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                            var updated = videos[idx]
+                            updated.title = editText
+                            videos[idx] = updated
+                            saveVideosToUserDefaults()
+                        }
+                        showEditTitle = false
+                        editingVideo = nil
+                    }) {
+                        Text("保存")
+                            .foregroundColor(.blue)
+                            .fontWeight(.bold)
+                    }
+                }
+            }
+            .padding(32)
+        }
+        .sheet(isPresented: $showEditTags) {
+            VStack(spacing: 24) {
+                Text("タグを編集")
+                    .font(.headline)
+                TextField("タグ（カンマ区切り）", text: $editText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                HStack(spacing: 24) {
+                    Button(action: { 
+                        showEditTags = false
+                        editingVideo = nil
+                    }) {
+                        Text("キャンセル")
+                            .foregroundColor(.red)
+                    }
+                    Button(action: {
+                        if let video = editingVideo,
+                           let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                            var updated = videos[idx]
+                            updated.tags = editText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                            videos[idx] = updated
+                            saveVideosToUserDefaults()
+                        }
+                        showEditTags = false
+                        editingVideo = nil
+                    }) {
+                        Text("保存")
+                            .foregroundColor(.blue)
+                            .fontWeight(.bold)
+                    }
+                }
+            }
+            .padding(32)
+        }
+        .sheet(isPresented: $showThumbnailPicker) {
+            if let video = editingVideo {
+                ThumbnailPickerView(
+                    video: video,
+                    onSave: { newThumbnailData in
+                        if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                            var updated = videos[idx]
+                            updated.thumbnailData = newThumbnailData
+                            videos[idx] = updated
+                            saveVideosToUserDefaults()
+                        }
+                        showThumbnailPicker = false
+                        editingVideo = nil
+                    },
+                    onCancel: {
+                        showThumbnailPicker = false
+                        editingVideo = nil
+                    }
+                )
+            }
+        }
+        .alert(isPresented: $showDeleteAlert) {
+            Alert(
+                title: Text("動画を削除しますか？"),
+                message: Text("この動画は完全に削除されます。"),
+                primaryButton: .destructive(Text("削除")) {
+                    if let id = deletingVideoID,
+                       let idx = videos.firstIndex(where: { $0.id == id }) {
+                        videos.remove(at: idx)
+                        saveVideosToUserDefaults()
+                    }
+                    deletingVideoID = nil
+                },
+                secondaryButton: .cancel(Text("キャンセル"))
+            )
         }
     }
     

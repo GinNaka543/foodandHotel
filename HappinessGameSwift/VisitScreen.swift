@@ -204,7 +204,7 @@ public struct VisitScreen: View {
                                     .background(Color.orange)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.bottom, 8)
+                                    .padding(.bottom, 18)
                             }
                         }
                     } else if selectedTab == .purchased {
@@ -238,7 +238,7 @@ public struct VisitScreen: View {
                                     .background(Color.purple)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.bottom, 8)
+                                    .padding(.bottom, 18)
                             }
                         }
                     } else if plan.price == 0 {
@@ -843,6 +843,12 @@ public struct VisitScreen: View {
     func purchasePlan(_ plan: VisitPlanModel) {
         let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
         
+        // 既に購入済みかチェック
+        if savedPlans.contains(where: { $0.id.uuidString == plan.id && $0.isPurchased }) {
+            print("⚠️ このプランは既に購入済みです: \(plan.title)")
+            return
+        }
+        
         // プランの価格分のポイントを消費
         firebaseManager.usePoints(userId: userId, points: plan.price, description: "プラン購入: \(plan.title)") { result in
             switch result {
@@ -907,14 +913,17 @@ public struct VisitScreen: View {
         // 既存の保存済みプランを読み込み
         var savedPlans = self.savedPlans
         
-        // 既に同じプランが保存されていないかチェック
-        if !savedPlans.contains(where: { $0.id.uuidString == plan.id }) {
+        // 既に同じプランが保存されていないかチェック（IDとタイトルの両方でチェック）
+        if !savedPlans.contains(where: { $0.id.uuidString == plan.id || ($0.title == plan.title && $0.isPurchased) }) {
             savedPlans.append(visitPlanData)
             
             // UserDefaultsに保存
             if let encodedData = try? JSONEncoder().encode(savedPlans) {
                 UserDefaults.standard.set(encodedData, forKey: "savedPlans")
                 print("✅ 購入プランをローカルに保存: \(plan.title)")
+                
+                // 保存済みプランのリストを直接更新（重複を防ぐため）
+                self.savedPlans = savedPlans
                 
                 // 保存済みプランを再読み込み
                 DispatchQueue.main.async {

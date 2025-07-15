@@ -224,8 +224,25 @@ public struct VisitScreen: View {
                             }
                             Spacer()
                         }
+                    } else if selectedTab == .original && plan.price == 0 {
+                        // オリジナルタブで無料プランの場合は「オリジナル」バッジを表示
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("オリジナル")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.purple)
+                                    .cornerRadius(8)
+                                    .padding(.trailing, 8)
+                                    .padding(.top, 8)
+                            }
+                            Spacer()
+                        }
                     } else if plan.price == 0 {
-                        // 無料プランの場合は「無料」バッジを表示
+                        // その他のタブで無料プランの場合は「無料」バッジを表示
                         VStack {
                             HStack {
                                 Spacer()

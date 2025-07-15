@@ -84,6 +84,15 @@ struct VisitPlanningScreen: View {
                                 TextField("例: 京都の聖地巡礼", text: $planTitle)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(showValidationErrors && planTitle.isEmpty ? Color.red : Color.clear, lineWidth: 2)
+                                    )
+                                if showValidationErrors && planTitle.isEmpty {
+                                    Text("プランタイトルを入力してください")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.red)
+                                }
                             }
                             
                             // アニメ名入力
@@ -94,6 +103,15 @@ struct VisitPlanningScreen: View {
                                 TextField("例: 響け！ユーフォニアム", text: $animeName)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(showValidationErrors && animeName.isEmpty ? Color.red : Color.clear, lineWidth: 2)
+                                    )
+                                if showValidationErrors && animeName.isEmpty {
+                                    Text("アニメ名を入力してください")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.red)
+                                }
                             }
                             
                             // 開始時刻と旅行日数
@@ -238,9 +256,20 @@ struct VisitPlanningScreen: View {
                                     .padding(.vertical, 6)
                                     .background(Color.blue)
                                     .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(showValidationErrors && spots.isEmpty ? Color.red : Color.clear, lineWidth: 2)
+                                    )
                                 }
                             }
                             .padding(.horizontal, 16)
+                            
+                            if showValidationErrors && spots.isEmpty {
+                                Text("スポットを追加してください")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 16)
+                            }
                             
                             // 日数が2日以上の場合はタブ表示
                             if numberOfDays > 1 {
@@ -382,29 +411,6 @@ struct VisitPlanningScreen: View {
                         }
                         .disabled(planTitle.isEmpty || animeName.isEmpty || spots.isEmpty)
                 .padding(.horizontal)
-                
-                // 記載漏れの警告表示（ボタンクリック後のみ）
-                if showValidationErrors {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if animeName.isEmpty {
-                            Label("アニメ名を入力してください", systemImage: "exclamationmark.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                        }
-                        if planTitle.isEmpty {
-                            Label("プランタイトルを入力してください", systemImage: "exclamationmark.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                        }
-                        if spots.isEmpty {
-                            Label("スポットを追加してください", systemImage: "exclamationmark.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-                }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -472,11 +478,6 @@ struct VisitPlanningScreen: View {
             if !planTitle.isEmpty && !animeName.isEmpty && !spots.isEmpty {
                 showValidationErrors = false
             }
-        }
-        .alert("入力エラー", isPresented: $showValidationErrors) {
-            Button("OK") {}
-        } message: {
-            Text("アニメ名、プランタイトル、訪問スポットを入力してください")
         }
         .sheet(isPresented: $showingPaymentConfirmation) {
             PlanPaymentConfirmationView(

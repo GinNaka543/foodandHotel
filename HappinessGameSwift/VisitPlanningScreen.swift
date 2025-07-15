@@ -869,7 +869,7 @@ struct VisitPlanningScreen: View {
         )
         
         // 既存の保存済みプランを読み込み
-        var plans = loadSavedPlans()
+        var plans = getSavedPlans()
         
         // 既存の下書きプランを更新する場合
         if let draft = draftPlan {

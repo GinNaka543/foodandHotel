@@ -85,7 +85,8 @@ public struct VisitScreen: View {
                     planTitle: plan.title,
                     spots: plan.spots,
                     numberOfDays: plan.numberOfDays,
-                    startTime: plan.startTime
+                    startTime: plan.startTime,
+                    onClose: nil
                 )
             }
             .alert("プランを削除しますか？", isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
@@ -479,8 +480,8 @@ public struct VisitScreen: View {
             let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
             savedPlans = plans
             
-            // VisitPlanDataからVisitPlanModelへ変換（最新順にソート）
-            userOriginalPlans = plans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+            // VisitPlanDataからVisitPlanModelへ変換（オリジナル作成プランのみ、最新順にソート）
+            userOriginalPlans = plans.filter { !$0.isPurchased }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
                 VisitPlanModel(
                     id: plan.id.uuidString,
                     userId: currentUserId,
@@ -762,7 +763,7 @@ public struct VisitScreen: View {
     }
     
     func savePurchasedPlan(_ plan: VisitPlanModel) {
-        // VisitPlanModelをVisitPlanDataに変換
+        // VisitPlanModelをVisitPlanDataに変換（購入プランとしてマーク）
         let visitPlanData = VisitPlanData(
             id: UUID(uuidString: plan.id) ?? UUID(),
             animeName: plan.animeName,
@@ -772,7 +773,8 @@ public struct VisitScreen: View {
             thumbnailData: nil,
             createdDate: plan.createdDate,
             startTime: plan.startTime,
-            numberOfDays: plan.numberOfDays
+            numberOfDays: plan.numberOfDays,
+            isPurchased: true
         )
         
         // 既存の保存済みプランを読み込み
@@ -798,7 +800,7 @@ public struct VisitScreen: View {
             
             // UserDefaultsに保存
             if let encodedData = try? JSONEncoder().encode(savedPlans) {
-                UserDefaults.standard.set(encodedData, forKey: "visitPlans")
+                UserDefaults.standard.set(encodedData, forKey: "savedPlans")
             }
             
             // userOriginalPlansから削除

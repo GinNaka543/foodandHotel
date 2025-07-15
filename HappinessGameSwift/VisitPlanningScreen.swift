@@ -436,7 +436,11 @@ struct VisitPlanningScreen: View {
                 planTitle: planTitle,
                 spots: updateSpotTimes(),
                 numberOfDays: numberOfDays,
-                startTime: startTime
+                startTime: startTime,
+                onClose: {
+                    showingItinerary = false
+                    dismiss()
+                }
             )
         }
         .onChange(of: planTitle) { _ in
@@ -500,7 +504,11 @@ struct VisitPlanningScreen: View {
                 planTitle: plan.title,
                 spots: plan.spots,
                 numberOfDays: plan.numberOfDays,
-                startTime: plan.startTime
+                startTime: plan.startTime,
+                onClose: {
+                    selectedPlanForNavigation = nil
+                    dismiss()
+                }
             )
         }
         .alert("エラー", isPresented: $showingErrorAlert) {
@@ -562,12 +570,12 @@ struct VisitPlanningScreen: View {
         savedPlans.append(plan)
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encoded, forKey: "visitPlans")
+            UserDefaults.standard.set(encoded, forKey: "savedPlans")
         }
     }
     
     func getSavedPlans() -> [VisitPlanData] {
-        guard let data = UserDefaults.standard.data(forKey: "visitPlans"),
+        guard let data = UserDefaults.standard.data(forKey: "savedPlans"),
               let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
             return []
         }
@@ -778,7 +786,7 @@ struct VisitPlanningScreen: View {
                 
                 // UserDefaultsに保存
                 if let encodedData = try? JSONEncoder().encode(plans) {
-                    UserDefaults.standard.set(encodedData, forKey: "visitPlans")
+                    UserDefaults.standard.set(encodedData, forKey: "savedPlans")
                     print("✅ 非公開プラン保存成功: \(plan.title)")
                     
                     DispatchQueue.main.async {

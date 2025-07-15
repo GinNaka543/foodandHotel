@@ -12,6 +12,7 @@ struct VisitGameScreen: View {
     @State private var selectedDay: Int = 1
     let numberOfDays: Int
     let startTime: Date
+    let onClose: (() -> Void)?
     
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -48,7 +49,13 @@ struct VisitGameScreen: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { 
+                        if let onClose = onClose {
+                            onClose()
+                        } else {
+                            dismiss()
+                        }
+                    }) {
                         HStack(spacing: 4) {
                             Image(systemName: "xmark")
                                 .font(.system(size: 18, weight: .medium))
@@ -172,7 +179,11 @@ struct VisitGameScreen: View {
                 // 下部のボタン
                 if completedSpotsCount == spots.count {
                     Button(action: {
-                        dismiss()
+                        if let onClose = onClose {
+                            onClose()
+                        } else {
+                            dismiss()
+                        }
                     }) {
                         Text("完了")
                             .font(.system(size: 17, weight: .semibold))

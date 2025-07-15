@@ -75,10 +75,17 @@ public struct VisitScreen: View {
                 loadVisitAds()
                 loadFirebasePlans()
             }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                // アプリがフォアグラウンドに戻ったときにデータを再読み込み
+                print("DEBUG: アプリがフォアグラウンドに戻りました - データを再読み込みします")
+                loadSavedPlans()
+                loadFirebasePlans()
+            }
     }
     
     @ViewBuilder
     private func planCard(for plan: VisitPlanModel) -> some View {
+        let _ = print("🎯 [DEBUG] planCard - id: \(plan.id), userId: \(plan.userId), thumbnailUrl: \(plan.thumbnailUrl ?? "nil")")
         Button(action: {
             checkAndShowPlan(plan)
         }) {
@@ -89,20 +96,26 @@ public struct VisitScreen: View {
                         .fill(Color(.systemGray5))
                         .frame(height: 233)
                     
+                    let _ = print("🖼️ [DEBUG] thumbnailUrl check - value: '\(plan.thumbnailUrl ?? "nil")', isEmpty: \(plan.thumbnailUrl?.isEmpty ?? true)")
+                    
                     if let thumbnailUrl = plan.thumbnailUrl, !thumbnailUrl.isEmpty {
+                        let _ = print("🖼️ [DEBUG] AsyncImage loading URL: \(thumbnailUrl)")
                         AsyncImage(url: URL(string: thumbnailUrl)) { phase in
                             switch phase {
                             case .empty:
+                                let _ = print("🖼️ [DEBUG] AsyncImage loading...")
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle())
                                     .scaleEffect(1.5)
                             case .success(let image):
+                                let _ = print("🖼️ [DEBUG] AsyncImage success!")
                                 image
                                     .resizable()
                                     .scaledToFill()
                                     .frame(height: 233)
                                     .clipped()
-                            case .failure(_):
+                            case .failure(let error):
+                                let _ = print("🖼️ [DEBUG] AsyncImage failed: \(error)")
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.system(size: 40))
                                     .foregroundColor(.orange)
@@ -114,12 +127,14 @@ public struct VisitScreen: View {
                               let thumbnailData = savedPlan.thumbnailData,
                               let uiImage = UIImage(data: thumbnailData) {
                         // ローカルプランのサムネイル画像を表示
+                        let _ = print("🖼️ [DEBUG] Using local thumbnail for plan: \(plan.id)")
                         Image(uiImage: uiImage)
                             .resizable()
                             .scaledToFill()
                             .frame(height: 233)
                             .clipped()
                     } else {
+                        let _ = print("🖼️ [DEBUG] No image available for plan: \(plan.id)")
                         Image(systemName: "photo")
                             .font(.system(size: 40))
                             .foregroundColor(.gray)
@@ -400,7 +415,7 @@ public struct VisitScreen: View {
     
     func loadSavedPlans() {
         print("DEBUG: loadSavedPlans開始")
-        guard let data = UserDefaults.standard.data(forKey: "visitPlans") else {
+        guard let data = UserDefaults.standard.data(forKey: "savedPlans") else {
             print("DEBUG: UserDefaultsにデータがありません")
             return
         }

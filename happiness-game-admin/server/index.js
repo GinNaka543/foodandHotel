@@ -450,6 +450,27 @@ app.post('/api/github-repositories', async (req, res) => {
       return res.status(400).json({ error: '必須フィールドが不足しています' });
     }
 
+    // GitHubトークンとリポジトリの有効性をテスト
+    try {
+      const githubResponse = await axios.get(`https://api.github.com/repos/${owner}/${name}`, {
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      console.log('GitHubリポジトリ確認成功:', githubResponse.data.full_name);
+    } catch (githubError) {
+      console.error('GitHub API エラー:', githubError.message);
+      if (githubError.response?.status === 401) {
+        return res.status(400).json({ error: 'GitHubアクセストークンが無効です' });
+      } else if (githubError.response?.status === 404) {
+        return res.status(400).json({ error: 'リポジトリが見つからないか、アクセス権限がありません' });
+      } else {
+        return res.status(400).json({ error: 'GitHubリポジトリの確認に失敗しました' });
+      }
+    }
+
     const newRepo = {
       id: Date.now().toString(),
       owner,
@@ -457,7 +478,7 @@ app.post('/api/github-repositories', async (req, res) => {
       token,
       branch: branch || 'main',
       basePath: basePath || 'visit-plans',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: new Date(),
       isActive: true,
       currentSize: 0,
       maxSize: 10737418240, // 10GB
@@ -486,6 +507,7 @@ app.post('/api/github-repositories', async (req, res) => {
     res.json({ success: true, repository: newRepo });
   } catch (error) {
     console.error('リポジトリ追加エラー:', error);
+    console.error('エラーの詳細:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });

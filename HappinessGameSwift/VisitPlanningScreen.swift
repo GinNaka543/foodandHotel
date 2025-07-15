@@ -24,11 +24,18 @@ struct VisitPlanningScreen: View {
     @State private var planPrice: Int = 0
     @State private var planBudget: Int = 0
     @State private var isPublic: Bool = false
-    @State private var showingPublicationChoice = false
-    @State private var showingPublishDialog = false
-    @State private var showingPaymentSheet = false
-    @State private var showingPublicationConfirmation = false
+    // @State private var showingPublicationChoice = false // 削除
+    // @State private var showingPublishDialog = false // 削除
+    // @State private var showingPaymentSheet = false // 削除
+    // @State private var showingPublicationConfirmation = false // 削除
     @State private var showValidationErrors = false
+    @State private var showingPaymentConfirmation = false
+    @State private var showingFinalConfirmation = false
+    @State private var showingErrorAlert = false
+    @State private var errorMessage = ""
+    @State private var showingCompletionView = false
+    @State private var createdPlan: VisitPlanData?
+    @State private var selectedPlanForNavigation: VisitPlanData?
     @StateObject private var firebaseManager = FirebaseManager.shared
     @StateObject private var stripeManager = StripePaymentManager.shared
     @StateObject private var githubManager = GitHubImageManager.shared
@@ -359,7 +366,7 @@ struct VisitPlanningScreen: View {
                             if planTitle.isEmpty || animeName.isEmpty || spots.isEmpty {
                                 showValidationErrors = true
                             } else {
-                                showingPublicationChoice = true
+                                showingPaymentConfirmation = true
                             }
                         }) {
                             Text("プランを確定")
@@ -404,42 +411,9 @@ struct VisitPlanningScreen: View {
             }
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showingPublicationChoice) {
-            PlanPublicationChoiceView(
-                planTitle: planTitle,
-                onPrivate: { 
-                    isPublic = false
-                    showingPublicationChoice = false
-                    savePlanPrivately()
-                },
-                onPublic: { 
-                    isPublic = true
-                    showingPublicationChoice = false
-                    showingPublishDialog = true
-                },
-                onCancel: { showingPublicationChoice = false }
-            )
-        }
-        .sheet(isPresented: $showingPublishDialog) {
-            PublishPlanDialog(
-                planTitle: planTitle,
-                planDescription: $planDescription,
-                planPrice: $planPrice,
-                planBudget: $planBudget,
-                onPublish: { 
-                    showingPublishDialog = false
-                    showingPublicationConfirmation = true
-                },
-                onCancel: { showingPublishDialog = false }
-            )
-        }
-        .sheet(isPresented: $showingPublicationConfirmation) {
-            PlanPublicationConfirmationView(
-                planTitle: planTitle,
-                onConfirm: { publishPlan() },
-                onCancel: { showingPublicationConfirmation = false }
-            )
-        }
+        // プラン公開選択画面を削除
+        // 公開プラン詳細設定画面を削除
+        // 公開確認画面を削除
         .sheet(isPresented: $showingAddSpotSheet) {
             AddSpotView(spots: $spots, startTime: startTime, previousSpots: spots, selectedDay: selectedDayForNewSpot)
         }
@@ -479,6 +453,60 @@ struct VisitPlanningScreen: View {
             if !planTitle.isEmpty && !animeName.isEmpty && !spots.isEmpty {
                 showValidationErrors = false
             }
+        }
+        .alert("入力エラー", isPresented: $showValidationErrors) {
+            Button("OK") {}
+        } message: {
+            Text("アニメ名、プランタイトル、訪問スポットを入力してください")
+        }
+        .sheet(isPresented: $showingPaymentConfirmation) {
+            PlanPaymentConfirmationView(
+                planTitle: planTitle,
+                animeName: animeName,
+                spotsCount: spots.count,
+                totalDuration: formatTotalDuration(),
+                onConfirm: {
+                    showingPaymentConfirmation = false
+                    savePlanWithPayment()
+                },
+                onCancel: {
+                    showingPaymentConfirmation = false
+                }
+            )
+        }
+        .sheet(isPresented: $showingCompletionView) {
+            if let plan = createdPlan {
+                PlanPaymentFinalConfirmationView(
+                    planTitle: plan.title,
+                    visitPlanData: plan,
+                    onViewPlan: {
+                        showingCompletionView = false
+                        selectedPlanForNavigation = plan
+                    },
+                    onClose: {
+                        showingCompletionView = false
+                        // Dismiss both the completion view and the planning screen
+                        DispatchQueue.main.async {
+                            dismiss()
+                        }
+                    }
+                )
+            }
+        }
+        .fullScreenCover(item: $selectedPlanForNavigation) { plan in
+            VisitGameScreen(
+                animeName: plan.animeName,
+                duration: plan.duration,
+                planTitle: plan.title,
+                spots: plan.spots,
+                numberOfDays: plan.numberOfDays,
+                startTime: plan.startTime
+            )
+        }
+        .alert("エラー", isPresented: $showingErrorAlert) {
+            Button("OK") {}
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -546,17 +574,77 @@ struct VisitPlanningScreen: View {
         return plans
     }
     
-    func savePlanPrivately() {
-        // プライベートプランとして保存（支払い不要）
-        uploadPlanToFirebase(payment: nil, isPublic: false)
+    func savePlanWithPayment() {
+        let creationCost = 50 // 50ポイント消費
+        
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? {
+            let newId = UUID().uuidString
+            UserDefaults.standard.set(newId, forKey: "userId")
+            return newId
+        }()
+        
+        print("💰 [DEBUG] プラン作成: 50ポイント消費開始")
+        
+        // 50ポイントを消費してプランを作成
+        firebaseManager.usePoints(userId: userId, points: creationCost, description: "旅行プラン作成", completion: { result in
+            switch result {
+            case .success:
+                print("💰 [DEBUG] ポイント消費成功: \(creationCost)ポイント")
+                // ポイント消費成功後、プランをローカルに保存
+                self.saveLocalPlan()
+            case .failure(let error):
+                print("💰 [DEBUG] ポイント消費エラー: \(error)")
+                // エラー処理（ポイント不足など）
+                DispatchQueue.main.async {
+                    self.errorMessage = "ポイントが不足しています。\nプラン作成には50ポイントが必要です。"
+                    self.showingErrorAlert = true
+                }
+            }
+        })
+    }
+    
+    func saveLocalPlan() {
+        // ローカルプランとして保存
+        var plan = VisitPlanData(
+            id: UUID(),
+            animeName: animeName,
+            title: planTitle,
+            duration: formatTotalDuration(),
+            spots: spots,
+            thumbnailData: thumbnailData,
+            createdDate: Date(),
+            startTime: startTime,
+            numberOfDays: numberOfDays
+        )
+        plan.totalCost = calculateTotalCost()
+        
+        // 既存のプランを読み込む
+        var plans = getSavedPlans()
+        plans.append(plan)
+        
+        // プランをローカルストレージに保存
+        if let encoded = try? JSONEncoder().encode(plans) {
+            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+            print("💰 [DEBUG] ローカルプラン保存成功: \(plan.title)")
+            
+            DispatchQueue.main.async {
+                self.createdPlan = plan
+                self.showingCompletionView = true
+            }
+        } else {
+            print("💰 [DEBUG] ローカルプラン保存失敗")
+        }
     }
     
     func publishPlan() {
+        print("🚀 [DEBUG] publishPlan() 開始")
         // 予算チェック
         guard planBudget > 0 else {
-            print("予算が設定されていません")
+            print("🚀 [DEBUG] 予算が設定されていません: \(planBudget)")
             return
         }
+        print("🚀 [DEBUG] 予算チェック通過: \(planBudget)")
+        print("🚀 [DEBUG] thumbnailImage状態: \(thumbnailImage != nil ? "あり" : "なし")")
         
         let userId = UserDefaults.standard.string(forKey: "userId") ?? {
             let newId = UUID().uuidString
@@ -576,7 +664,7 @@ struct VisitPlanningScreen: View {
                 print("ポイント消費エラー: \(error)")
                 // エラー処理（ポイント不足など）
                 DispatchQueue.main.async {
-                    self.showingPublicationConfirmation = false
+                    // TODO: ユーザーにエラーメッセージを表示
                 }
             }
         })
@@ -593,17 +681,24 @@ struct VisitPlanningScreen: View {
         var thumbnailUrl: String?
         let group = DispatchGroup()
         
+        print("🖼️ [DEBUG] uploadPlanToFirebase - isPublic: \(isPublic), thumbnailImage: \(thumbnailImage != nil ? "あり" : "なし")")
+        
         if isPublic && thumbnailImage != nil {
+            print("🖼️ [DEBUG] 画像アップロード開始")
             group.enter()
             githubManager.uploadImage(thumbnailImage!, fileName: "plan_\(UUID().uuidString)") { result in
                 switch result {
                 case .success(let url):
+                    print("🖼️ [DEBUG] 画像アップロード成功: \(url)")
                     thumbnailUrl = url
                 case .failure(let error):
-                    print("画像アップロードエラー: \(error)")
+                    print("🖼️ [DEBUG] 画像アップロードエラー: \(error)")
+                    print("⚠️ [WARNING] 画像なしでプランを公開します")
                 }
                 group.leave()
             }
+        } else {
+            print("🖼️ [DEBUG] 画像アップロードをスキップ")
         }
         
         group.notify(queue: DispatchQueue.main, execute: {
@@ -634,6 +729,7 @@ struct VisitPlanningScreen: View {
             print("  - userId: \(plan.userId)")
             print("  - title: \(plan.title)")
             print("  - isPublic: \(plan.isPublic)")
+            print("  - thumbnailUrl: \(plan.thumbnailUrl ?? "nil")")
             
             if isPublic {
                 // 公開プランはFirebaseに保存
@@ -651,7 +747,6 @@ struct VisitPlanningScreen: View {
                     } else {
                         // プライベートプランまたは公開プランの場合はそのまま閉じる
                         DispatchQueue.main.async {
-                            self.showingPublicationConfirmation = false
                             self.dismiss()
                         }
                     }

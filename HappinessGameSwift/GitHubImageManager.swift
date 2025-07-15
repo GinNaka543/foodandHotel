@@ -30,22 +30,43 @@ class GitHubImageManager: ObservableObject {
         db.collection("githubSettings").document("repositories")
             .getDocument { [weak self] snapshot, error in
                 guard let self = self,
-                      let data = snapshot?.data(),
-                      let reposData = data["repositories"] as? [[String: Any]] else {
-                    print("リポジトリ設定の読み込み失敗")
+                      let data = snapshot?.data() else {
+                    print("🖼️ [DEBUG] リポジトリ設定の読み込み失敗: \(error?.localizedDescription ?? "データなし")")
                     return
                 }
                 
-                let repos = reposData.compactMap { GitHubRepository(dictionary: $0) }
+                print("🖼️ [DEBUG] Firestoreデータ取得成功: \(data.keys)")
+                
+                // 現在のFirestore構造に合わせてデータを取得
+                var repoData: [String: Any]?
+                if let reposArray = data["repositories"] as? [[String: Any]], !reposArray.isEmpty {
+                    // 新しい構造: repositories配列
+                    repoData = reposArray.first
+                    print("🖼️ [DEBUG] repositories配列から取得")
+                } else if let firstRepo = data["0"] as? [String: Any] {
+                    // 現在の構造: 直接インデックス
+                    repoData = firstRepo
+                    print("🖼️ [DEBUG] インデックス0から取得")
+                }
+                
+                guard let repoData = repoData,
+                      let repo = GitHubRepository(dictionary: repoData) else {
+                    print("🖼️ [DEBUG] リポジトリデータの変換に失敗")
+                    return
+                }
+                
+                print("🖼️ [DEBUG] リポジトリ設定読み込み成功: \(repo.owner)/\(repo.name)")
+                
                 self.repoSettings = GitHubRepoSettings()
-                self.repoSettings?.repositories = repos
-                self.repoSettings?.activeRepoId = data["activeRepoId"] as? String
+                self.repoSettings?.repositories = [repo]
+                self.repoSettings?.activeRepoId = data["activeRepoId"] as? String ?? repo.id
                 self.lastSettingsUpdate = Date()
             }
     }
     
     // 画像をGitHubにアップロード
     func uploadImage(_ image: UIImage, fileName: String, completion: @escaping (Result<String, Error>) -> Void) {
+        print("🖼️ [DEBUG] GitHubImageManager.uploadImage - fileName: \(fileName)")
         uploadImage(image, fileName: fileName, type: "visit-plan", completion: completion)
     }
     
@@ -56,14 +77,19 @@ class GitHubImageManager: ObservableObject {
     
     // 画像をGitHubにアップロード（内部メソッド）
     private func uploadImage(_ image: UIImage, fileName: String, type: String, completion: @escaping (Result<String, Error>) -> Void) {
+        print("🖼️ [DEBUG] uploadImage内部処理開始 - fileName: \(fileName), type: \(type)")
+        
         // リポジトリ設定を再読み込み
         loadRepositorySettings()
         
         // 利用可能なリポジトリを取得
         guard let repo = repoSettings?.getAvailableRepository() else {
+            print("🖼️ [DEBUG] リポジトリ設定なし")
             completion(.failure(NSError(domain: "GitHubImageManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "利用可能なリポジトリがありません"])))  
             return
         }
+        
+        print("🖼️ [DEBUG] リポジトリ設定取得: \(repo.owner)/\(repo.name)")
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             completion(.failure(NSError(domain: "GitHubImageManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "画像の変換に失敗しました"])))
             return
@@ -107,6 +133,7 @@ class GitHubImageManager: ObservableObject {
             if httpResponse.statusCode == 201 || httpResponse.statusCode == 200 {
                 // 成功時、画像のURLを返す
                 let imageUrl = "https://raw.githubusercontent.com/\(repo.owner)/\(repo.name)/\(repo.branch)/\(path)"
+                print("🖼️ [DEBUG] GitHub API成功 - 生成URL: \(imageUrl)")
                 
                 // アップロード記録を保存
                 self.recordImageUpload(repo: repo, fileName: fileName, path: path, size: Int64(imageData.count), type: type)

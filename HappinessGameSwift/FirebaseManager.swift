@@ -566,7 +566,6 @@ class FirebaseManager: ObservableObject {
     func fetchPublicPlans(completion: @escaping (Result<[VisitPlanModel], Error>) -> Void) {
         db.collection("visitPlans")
             .whereField("isPublic", isEqualTo: true)
-            .order(by: "createdAt", descending: true)
             .limit(to: 50)
             .getDocuments { snapshot, error in
                 if let error = error {
@@ -578,8 +577,11 @@ class FirebaseManager: ObservableObject {
                     VisitPlanModel(dictionary: doc.data())
                 } ?? []
                 
-                self.publicPlans = plans
-                completion(.success(plans))
+                // クライアント側で作成日時の降順にソート
+                let sortedPlans = plans.sorted { $0.createdAt > $1.createdAt }
+                
+                self.publicPlans = sortedPlans
+                completion(.success(sortedPlans))
             }
     }
     

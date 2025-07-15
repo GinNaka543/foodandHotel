@@ -20,12 +20,10 @@ struct NavigationMenuView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // ヘッダー
                     HStack {
-                        Image(systemName: "house.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.blue)
-                        Text("Happiness Game")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.primary)
+                        Image("ログインロゴ")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: 60)
                         Spacer()
                     }
                     .padding(.horizontal, 24)
@@ -37,9 +35,7 @@ struct NavigationMenuView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         // ホーム
                         NavigationMenuItem(
-                            icon: "house.fill",
-                            title: "ホーム",
-                            iconColor: .blue
+                            title: "ホーム"
                         ) {
                             mainTab.selectedTab = .home
                             isPresented = false
@@ -47,9 +43,7 @@ struct NavigationMenuView: View {
                         
                         // キャラクター
                         NavigationMenuItem(
-                            icon: "person.3.fill",
-                            title: "キャラクター",
-                            iconColor: .orange
+                            title: "キャラクター"
                         ) {
                             mainTab.selectedTab = .chara
                             isPresented = false
@@ -57,9 +51,7 @@ struct NavigationMenuView: View {
                         
                         // アニメ
                         NavigationMenuItem(
-                            icon: "tv.fill",
-                            title: "アニメ",
-                            iconColor: .purple
+                            title: "アニメ"
                         ) {
                             mainTab.selectedTab = .anime
                             isPresented = false
@@ -67,9 +59,7 @@ struct NavigationMenuView: View {
                         
                         // ビジット
                         NavigationMenuItem(
-                            icon: "mappin.and.ellipse",
-                            title: "ビジット",
-                            iconColor: .green
+                            title: "ビジット"
                         ) {
                             mainTab.selectedTab = .visit
                             isPresented = false
@@ -77,9 +67,7 @@ struct NavigationMenuView: View {
                         
                         // プロダクト
                         NavigationMenuItem(
-                            icon: "bag.fill",
-                            title: "プロダクト",
-                            iconColor: .red
+                            title: "プロダクト"
                         ) {
                             mainTab.selectedTab = .card
                             isPresented = false
@@ -102,19 +90,12 @@ struct NavigationMenuView: View {
 }
 
 struct NavigationMenuItem: View {
-    let icon: String
     let title: String
-    let iconColor: Color
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
             HStack(spacing: 20) {
-                Image(systemName: icon)
-                    .font(.system(size: 22))
-                    .foregroundColor(iconColor)
-                    .frame(width: 30)
-                
                 Text(title)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.primary)

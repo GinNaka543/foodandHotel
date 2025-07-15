@@ -256,6 +256,37 @@ struct SpotCard: View {
                             .frame(width: 140, height: 100)
                             .clipped()
                             .cornerRadius(8)
+                    } else if !spot.imageUrl.isEmpty {
+                        // Web管理画面から作成されたプランの画像を表示
+                        AsyncImage(url: URL(string: spot.imageUrl)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 140, height: 100)
+                                    .clipped()
+                                    .cornerRadius(8)
+                            case .failure(_):
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 140, height: 100)
+                                    .overlay(
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .font(.system(size: 30))
+                                            .foregroundColor(.gray)
+                                    )
+                            case .empty:
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 140, height: 100)
+                                    .overlay(
+                                        ProgressView()
+                                    )
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
                     } else {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color(.systemGray5))
@@ -416,6 +447,40 @@ struct SpotDetailView: View {
                             .frame(height: 200)
                             .clipped()
                             .cornerRadius(12)
+                    } else if !spot.imageUrl.isEmpty {
+                        // Web管理画面から作成されたプランの画像を表示
+                        AsyncImage(url: URL(string: spot.imageUrl)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 200)
+                                    .clipped()
+                                    .cornerRadius(12)
+                            case .failure(_):
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray5))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 200)
+                                    .overlay(
+                                        Image(systemName: "exclamationmark.triangle")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.gray)
+                                    )
+                            case .empty:
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray5))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 200)
+                                    .overlay(
+                                        ProgressView()
+                                    )
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
                     }
                     
                     // スポット名

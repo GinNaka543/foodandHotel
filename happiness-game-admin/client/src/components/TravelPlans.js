@@ -17,6 +17,7 @@ const TravelPlans = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     animeName: '',
@@ -142,6 +143,55 @@ const TravelPlans = () => {
     }
   };
 
+  const startEditPlan = (plan) => {
+    setEditingPlan(plan);
+    setFormData({
+      title: plan.title,
+      animeName: plan.animeName,
+      duration: plan.duration,
+      description: plan.description || '',
+      spots: plan.spots || [],
+      price: plan.price || 0,
+      tags: plan.tags || [],
+      imageUrl: plan.imageUrl || '',
+      thumbnailUrl: plan.thumbnailUrl || '',
+      numberOfDays: plan.numberOfDays || 1,
+      startTime: plan.startTime || '09:00'
+    });
+    setShowCreateForm(true);
+  };
+
+  const cancelEdit = () => {
+    setEditingPlan(null);
+    setShowCreateForm(false);
+    setFormData({
+      title: '',
+      animeName: '',
+      duration: '',
+      description: '',
+      spots: [],
+      price: 0,
+      tags: [],
+      imageUrl: '',
+      thumbnailUrl: '',
+      numberOfDays: 1,
+      startTime: '09:00'
+    });
+    setCurrentSpot({
+      name: '',
+      address: '',
+      stayDuration: 60,
+      notes: '',
+      nearestStation: '',
+      imageUrl: '',
+      images: [],
+      timeRange: '',
+      activity: '',
+      dayNumber: 1,
+      spotCost: 0
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -166,8 +216,14 @@ const TravelPlans = () => {
         }))
       };
 
-      const response = await fetch('http://localhost:5002/api/travel-plans', {
-        method: 'POST',
+      const url = editingPlan 
+        ? `http://localhost:5002/api/travel-plans/${editingPlan.id}`
+        : 'http://localhost:5002/api/travel-plans';
+      
+      const method = editingPlan ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -175,27 +231,14 @@ const TravelPlans = () => {
       });
 
       if (response.ok) {
-        alert('旅行プランが作成されました！');
-        setShowCreateForm(false);
-        setFormData({
-          title: '',
-          animeName: '',
-          duration: '',
-          description: '',
-          spots: [],
-          price: 0,
-          tags: [],
-          imageUrl: '',
-          thumbnailUrl: '',
-          numberOfDays: 1,
-          startTime: '09:00'
-        });
+        alert(editingPlan ? '旅行プランが更新されました！' : '旅行プランが作成されました！');
+        cancelEdit();
         fetchPlans();
       } else {
-        alert('作成に失敗しました');
+        alert(editingPlan ? '更新に失敗しました' : '作成に失敗しました');
       }
     } catch (error) {
-      console.error('作成エラー:', error);
+      console.error(editingPlan ? '更新エラー:' : '作成エラー:', error);
       alert('エラーが発生しました');
     }
   };
@@ -239,7 +282,7 @@ const TravelPlans = () => {
       {showCreateForm && (
         <div className="create-form-overlay">
           <div className="create-form">
-            <h3>新しい旅行プラン作成</h3>
+            <h3>{editingPlan ? '旅行プラン編集' : '新しい旅行プラン作成'}</h3>
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label>プラン名:</label>
@@ -531,10 +574,10 @@ const TravelPlans = () => {
               </div>
 
               <div className="form-actions">
-                <button type="submit" className="submit-btn">作成</button>
+                <button type="submit" className="submit-btn">{editingPlan ? '更新' : '作成'}</button>
                 <button 
                   type="button" 
-                  onClick={() => setShowCreateForm(false)}
+                  onClick={cancelEdit}
                   className="cancel-btn"
                 >
                   キャンセル
@@ -550,12 +593,20 @@ const TravelPlans = () => {
           <div key={plan.id} className="plan-card">
             <div className="plan-header">
               <h3>{plan.title}</h3>
-              <button 
-                className="delete-btn"
-                onClick={() => deletePlan(plan.id)}
-              >
-                削除
-              </button>
+              <div className="plan-actions">
+                <button 
+                  className="edit-btn"
+                  onClick={() => startEditPlan(plan)}
+                >
+                  編集
+                </button>
+                <button 
+                  className="delete-btn"
+                  onClick={() => deletePlan(plan.id)}
+                >
+                  削除
+                </button>
+              </div>
             </div>
             <div className="plan-info">
               <p><strong>アニメ:</strong> {plan.animeName}</p>

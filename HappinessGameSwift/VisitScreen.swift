@@ -15,6 +15,8 @@ public struct VisitScreen: View {
     @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
     @State private var showingDeleteConfirmation = false
     @State private var planToDelete: VisitPlanModel?
+    @State private var showingHideConfirmation = false
+    @State private var planToHide: VisitPlanModel?
     @State private var planToPurchase: VisitPlanModel?
     @State private var showingPurchaseCompletion = false
     @State private var purchasedPlan: VisitPlanModel?
@@ -100,6 +102,14 @@ public struct VisitScreen: View {
             } message: { plan in
                 Text("「\(plan.title)」を削除します。この操作は取り消せません。")
             }
+            .alert("リストから消去しますか？", isPresented: $showingHideConfirmation, presenting: planToHide) { plan in
+                Button("消去", role: .destructive) {
+                    hidePurchasedPlan(plan)
+                }
+                Button("キャンセル", role: .cancel) { }
+            } message: { plan in
+                Text("「\(plan.title)」をリストから消去します。オールタブで再度クリックすると再表示されます。")
+            }
             .onAppear {
                 // userIdが設定されていない場合は新しいUUIDを生成
                 if currentUserId.isEmpty || UserDefaults.standard.string(forKey: "userId") == nil {
@@ -177,8 +187,26 @@ public struct VisitScreen: View {
                             .foregroundColor(.gray)
                     }
                     
-                    // 無料プランの場合は「無料」バッジを表示
-                    if plan.price == 0 {
+                    // バッジを表示
+                    if selectedTab == .purchased {
+                        // 購入済みタブでは「購入済み」バッジを表示
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("購入済み")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.blue)
+                                    .cornerRadius(8)
+                                    .padding(.trailing, 8)
+                                    .padding(.top, 8)
+                            }
+                            Spacer()
+                        }
+                    } else if plan.price == 0 {
+                        // 無料プランの場合は「無料」バッジを表示
                         VStack {
                             HStack {
                                 Spacer()
@@ -222,8 +250,9 @@ public struct VisitScreen: View {
                     if selectedTab == .original || selectedTab == .purchased {
                         Button(action: {
                             if selectedTab == .purchased {
-                                // 購入済みタブでは非表示にする
-                                hidePurchasedPlan(plan)
+                                // 購入済みタブでは非表示確認を表示
+                                planToHide = plan
+                                showingHideConfirmation = true
                             } else {
                                 // オリジナルタブでは削除確認を表示
                                 planToDelete = plan
@@ -694,7 +723,10 @@ public struct VisitScreen: View {
         if selectedTab == .all && hiddenPlanIds.contains(plan.id) {
             hiddenPlanIds.remove(plan.id)
             saveHiddenPlanIds()
-            loadSavedPlans()
+            // 即座に購入済みプランを更新
+            DispatchQueue.main.async {
+                self.loadSavedPlans()
+            }
             // アラートで通知
             return
         }

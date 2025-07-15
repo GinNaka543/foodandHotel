@@ -1436,7 +1436,7 @@ app.get('/api/travel-plans', async (req, res) => {
 
 app.post('/api/travel-plans', async (req, res) => {
   try {
-    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl } = req.body;
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays } = req.body;
     
     console.log('🔍 [DEBUG] 受信したデータ:');
     console.log('  title:', title);
@@ -1483,7 +1483,7 @@ app.post('/api/travel-plans', async (req, res) => {
       budget: parseInt(price) || 0,
       tags: tags || [],
       thumbnailUrl: thumbnailUrl || '',
-      numberOfDays: 1,
+      numberOfDays: parseInt(numberOfDays) || 1,
       totalCost: parseInt(price) || 0,
       startTime: now.getTime() / 1000,
       createdAt: now.getTime() / 1000,
@@ -1518,6 +1518,82 @@ app.delete('/api/travel-plans/:id', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('旅行プラン削除エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 旅行プラン更新API
+app.put('/api/travel-plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays } = req.body;
+    
+    console.log('🔍 [DEBUG] 更新データ:');
+    console.log('  id:', id);
+    console.log('  title:', title);
+    console.log('  animeName:', animeName);
+    console.log('  duration:', duration);
+    console.log('  spots:', spots);
+    
+    if (!title || !animeName || !duration) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+
+    const now = new Date();
+    
+    // 既存のデータを取得
+    const docRef = db.collection('visitPlans').doc(id);
+    const doc = await docRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'プランが見つかりません' });
+    }
+
+    const existingData = doc.data();
+    
+    // VisitPlanModelの形式に合わせてデータを構築
+    const planData = {
+      ...existingData, // 既存のデータを保持
+      title,
+      animeName,
+      duration,
+      description: description || '',
+      spots: (spots || []).map((spot, index) => {
+        console.log(`🔍 [DEBUG] スポット${index + 1}:`, spot);
+        const processedSpot = {
+          id: spot.id || crypto.randomUUID(),
+          name: spot.name,
+          address: spot.address || '',
+          stayDuration: parseInt(spot.stayDuration) || 60,
+          timeRange: spot.timeRange || '',
+          activity: spot.activity || '',
+          dayNumber: parseInt(spot.dayNumber) || 1,
+          spotCost: parseInt(spot.spotCost) || 0,
+          imageUrl: spot.imageUrl || '',
+          images: spot.images || [], // 複数画像をサポート
+          transportToNext: spot.transportToNext || null
+        };
+        console.log(`✅ [DEBUG] 処理後スポット${index + 1}:`, processedSpot);
+        return processedSpot;
+      }),
+      price: parseInt(price) || 0,
+      budget: parseInt(price) || 0,
+      tags: tags || [],
+      thumbnailUrl: thumbnailUrl || '',
+      numberOfDays: numberOfDays !== undefined ? parseInt(numberOfDays) : existingData.numberOfDays,
+      totalCost: parseInt(price) || 0,
+      updatedAt: now.getTime() / 1000,
+    };
+
+    await docRef.update(planData);
+    
+    res.json({
+      id: id,
+      ...planData,
+      updatedAt: now.toISOString()
+    });
+  } catch (error) {
+    console.error('旅行プラン更新エラー:', error);
     res.status(500).json({ error: error.message });
   }
 });

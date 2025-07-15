@@ -69,7 +69,8 @@ struct VisitPlanModel: Codable, Identifiable {
                     "activity": spot.activity,
                     "dayNumber": spot.dayNumber,
                     "spotCost": spot.spotCost,
-                    "imageUrl": spot.imageData != nil ? "image_\(spot.id.uuidString)" : nil,
+                    "imageUrl": !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.imageData != nil ? "image_\(spot.id.uuidString)" : nil),
+                    "images": spot.images,
                     "transportToNext": spot.transportToNext != nil ? [
                         "method": spot.transportToNext!.method,
                         "duration": spot.transportToNext!.duration,
@@ -295,6 +296,9 @@ struct VisitPlanModel: Codable, Identifiable {
                 spotCost = 0
             }
             
+            let imageUrl = spotDict["imageUrl"] as? String ?? ""
+            let images = spotDict["images"] as? [String] ?? []
+            
             let visitSpot = VisitSpot(
                 id: id,
                 name: name,
@@ -307,10 +311,12 @@ struct VisitPlanModel: Codable, Identifiable {
                 activity: spotDict["activity"] as? String ?? "",
                 dayNumber: dayNumber,
                 spotCost: spotCost,
-                imageUrl: spotDict["imageUrl"] as? String ?? "",
-                images: spotDict["images"] as? [String] ?? []
+                imageUrl: imageUrl,
+                images: images
             )
             print("✅ [DEBUG] spot変換成功: \(visitSpot.name)")
+            print("🖼️ [DEBUG] imageUrl: '\(imageUrl)'")
+            print("🖼️ [DEBUG] images: \(images)")
             return visitSpot
         }
         print("🔍 [DEBUG] 最終的なspots配列の要素数: \(self.spots.count)")

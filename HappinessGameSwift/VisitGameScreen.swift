@@ -1,5 +1,78 @@
 import SwiftUI
 
+// カスタム画像ローダー
+class ImageLoader: ObservableObject {
+    @Published var image: UIImage?
+    @Published var isLoading = false
+    
+    func loadImage(from url: URL) {
+        print("🔄 [DEBUG] ImageLoader: 画像読み込み開始 - \(url)")
+        isLoading = true
+        
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                
+                if let error = error {
+                    print("❌ [DEBUG] ImageLoader: エラー - \(error)")
+                    return
+                }
+                
+                if let data = data, let loadedImage = UIImage(data: data) {
+                    print("✅ [DEBUG] ImageLoader: 画像読み込み成功 - サイズ: \(loadedImage.size)")
+                    self.image = loadedImage
+                } else {
+                    print("❌ [DEBUG] ImageLoader: 画像データの変換に失敗")
+                }
+            }
+        }.resume()
+    }
+}
+
+// カスタム画像ビュー
+struct CustomAsyncImage: View {
+    let url: URL
+    let width: CGFloat
+    let height: CGFloat
+    
+    @StateObject private var loader = ImageLoader()
+    
+    var body: some View {
+        Group {
+            if let image = loader.image {
+                let _ = print("🎨 [DEBUG] CustomAsyncImage: 画像表示中")
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: width, height: height)
+                    .clipped()
+            } else if loader.isLoading {
+                let _ = print("⏳ [DEBUG] CustomAsyncImage: 読み込み中")
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.purple) // 読み込み中は紫色
+                    .frame(width: width, height: height)
+                    .overlay(
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    )
+            } else {
+                let _ = print("❌ [DEBUG] CustomAsyncImage: 画像なし")
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray)
+                    .frame(width: width, height: height)
+                    .overlay(
+                        Image(systemName: "photo")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                    )
+            }
+        }
+        .onAppear {
+            loader.loadImage(from: url)
+        }
+    }
+}
+
 struct VisitGameScreen: View {
     @Environment(\.dismiss) var dismiss
     let animeName: String
@@ -249,56 +322,56 @@ struct SpotCard: View {
             // スポット画像（タップで詳細表示）
             ZStack(alignment: .topLeading) {
                 Button(action: onTap) {
-                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                    let _ = print("🔍 [DEBUG] Button内部に入った - スポット: \(spot.name)")
+                    let _ = print("🔍 [DEBUG] 画像表示条件チェック - スポット: \(spot.name)")
+                let _ = print("🔍 [DEBUG] imageData: \(spot.imageData != nil ? "あり" : "なし")")
+                let _ = print("🔍 [DEBUG] imageUrl: '\(spot.imageUrl)'")
+                let _ = print("🔍 [DEBUG] images: \(spot.images)")
+                
+                if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                        let _ = print("✅ [DEBUG] ローカル画像を表示")
                         Image(uiImage: uiImage)
                             .resizable()
                             .scaledToFill()
                             .frame(width: 140, height: 100)
                             .clipped()
                             .cornerRadius(8)
-                    } else if !spot.imageUrl.isEmpty {
+                    } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
+                        let _ = print("✅ [DEBUG] Web画像表示条件に入った")
                         // Web管理画面から作成されたプランの画像を表示
-                        AsyncImage(url: URL(string: spot.imageUrl)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 140, height: 100)
-                                    .clipped()
-                                    .cornerRadius(8)
-                            case .failure(_):
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(.systemGray5))
-                                    .frame(width: 140, height: 100)
-                                    .overlay(
-                                        Image(systemName: "exclamationmark.triangle")
-                                            .font(.system(size: 30))
-                                            .foregroundColor(.gray)
-                                    )
-                            case .empty:
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(.systemGray5))
-                                    .frame(width: 140, height: 100)
-                                    .overlay(
-                                        ProgressView()
-                                    )
-                            @unknown default:
-                                EmptyView()
-                            }
+                        let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
+                        let _ = print("🖼️ [DEBUG] スポット \(spot.name) の画像URL: '\(imageUrlToUse)'")
+                        let _ = print("🔗 [DEBUG] URL作成結果: \(URL(string: imageUrlToUse)?.absoluteString ?? "nil")")
+                        
+                        // URLに問題がないか最終チェック
+                        if let url = URL(string: imageUrlToUse), !imageUrlToUse.isEmpty {
+                            CustomAsyncImage(url: url, width: 140, height: 100)
+                                .cornerRadius(8)
+                        } else {
+                            let _ = print("❌ [DEBUG] 無効なURL: '\(imageUrlToUse)'")
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.orange) // デバッグ用にオレンジ色に変更
+                                .frame(width: 140, height: 100)
+                                .overlay(
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .font(.system(size: 30))
+                                        .foregroundColor(.white)
+                                )
                         }
                     } else {
+                        let _ = print("❌ [DEBUG] 画像なし - デフォルト画像を表示")
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(.systemGray5))
+                            .fill(Color.blue) // デバッグ用に青色に変更
                             .frame(width: 140, height: 100)
                             .overlay(
                                 Image(systemName: "photo")
                                     .font(.system(size: 30))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(.white)
                             )
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+                .background(Color.green.opacity(0.3)) // デバッグ用背景色
                 
                 // 滞在時間バッジ（左上に配置）
                 Text("\(spot.stayDuration)分")
@@ -427,6 +500,8 @@ struct SpotDetailView: View {
     @State private var selectedImageData: Data? = nil
     @State private var showingFullScreenImage = false
     @State private var showingEditSheet = false
+    @State private var selectedImageUrl: String? = nil
+    @State private var showingFullScreenWebImage = false
     
     let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -447,40 +522,41 @@ struct SpotDetailView: View {
                             .frame(height: 200)
                             .clipped()
                             .cornerRadius(12)
-                    } else if !spot.imageUrl.isEmpty {
+                    } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
                         // Web管理画面から作成されたプランの画像を表示
-                        AsyncImage(url: URL(string: spot.imageUrl)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 200)
-                                    .clipped()
+                        let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
+                        let _ = print("🖼️ [DEBUG] 詳細スポット \(spot.name) の画像URL: '\(imageUrlToUse)'")
+                        let _ = print("🔗 [DEBUG] 詳細URL作成結果: \(URL(string: imageUrlToUse)?.absoluteString ?? "nil")")
+                        
+                        // URLに問題がないか最終チェック
+                        if let url = URL(string: imageUrlToUse), !imageUrlToUse.isEmpty {
+                            GeometryReader { geometry in
+                                CustomAsyncImage(url: url, width: geometry.size.width, height: 200)
                                     .cornerRadius(12)
-                            case .failure(_):
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray5))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 200)
-                                    .overlay(
-                                        Image(systemName: "exclamationmark.triangle")
-                                            .font(.system(size: 40))
-                                            .foregroundColor(.gray)
-                                    )
-                            case .empty:
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray5))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 200)
-                                    .overlay(
-                                        ProgressView()
-                                    )
-                            @unknown default:
-                                EmptyView()
                             }
+                            .frame(height: 200)
+                        } else {
+                            let _ = print("❌ [DEBUG] 詳細無効なURL: '\(imageUrlToUse)'")
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemGray5))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 200)
+                                .overlay(
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                )
                         }
+                    } else {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray5))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 200)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.system(size: 40))
+                                    .foregroundColor(.gray)
+                            )
                     }
                     
                     // スポット名
@@ -559,7 +635,10 @@ struct SpotDetailView: View {
                     }
                     
                     // 詳細画像（予約情報など）
-                    if let detailImagesData = spot.detailImagesData, !detailImagesData.isEmpty {
+                    let hasLocalImages = spot.detailImagesData != nil && !spot.detailImagesData!.isEmpty
+                    let hasWebImages = !spot.images.isEmpty
+                    
+                    if hasLocalImages || hasWebImages {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("詳細画像")
                                 .font(.system(size: 14))
@@ -567,16 +646,33 @@ struct SpotDetailView: View {
                             
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
-                                    ForEach(Array(detailImagesData.enumerated()), id: \.offset) { index, imageData in
-                                        if let uiImage = UIImage(data: imageData) {
-                                            Image(uiImage: uiImage)
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(height: 150)
+                                    // ローカル画像を表示
+                                    if let detailImagesData = spot.detailImagesData {
+                                        ForEach(Array(detailImagesData.enumerated()), id: \.offset) { index, imageData in
+                                            if let uiImage = UIImage(data: imageData) {
+                                                Image(uiImage: uiImage)
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(height: 150)
+                                                    .cornerRadius(8)
+                                                    .onTapGesture {
+                                                        selectedImageData = imageData
+                                                        showingFullScreenImage = true
+                                                    }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Web管理画面からの画像を表示
+                                    ForEach(Array(spot.images.enumerated()), id: \.offset) { index, imageUrl in
+                                        if let url = URL(string: imageUrl) {
+                                            let _ = print("🖼️ [DEBUG] 詳細画像表示: \(imageUrl)")
+                                            CustomAsyncImage(url: url, width: 200, height: 150)
                                                 .cornerRadius(8)
                                                 .onTapGesture {
-                                                    selectedImageData = imageData
-                                                    showingFullScreenImage = true
+                                                    // Web画像のフルスクリーン表示用
+                                                    selectedImageUrl = imageUrl
+                                                    showingFullScreenWebImage = true
                                                 }
                                         }
                                     }
@@ -623,6 +719,11 @@ struct SpotDetailView: View {
                 FullScreenImageView(image: uiImage, isPresented: $showingFullScreenImage)
             }
         }
+        .fullScreenCover(isPresented: $showingFullScreenWebImage) {
+            if let imageUrl = selectedImageUrl, let url = URL(string: imageUrl) {
+                FullScreenWebImageView(url: url, isPresented: $showingFullScreenWebImage)
+            }
+        }
         .sheet(isPresented: $showingEditSheet) {
             EditSpotView(spot: spot, spots: $spots, startTime: startTime)
         }
@@ -632,6 +733,80 @@ struct SpotDetailView: View {
         let encodedAddress = address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         if let url = URL(string: "maps://?q=\(encodedAddress)") {
             UIApplication.shared.open(url)
+        }
+    }
+}
+
+struct FullScreenWebImageView: View {
+    let url: URL
+    @Binding var isPresented: Bool
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+    @StateObject private var loader = ImageLoader()
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                
+                if let image = loader.image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .scaleEffect(scale)
+                        .offset(offset)
+                        .gesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    let delta = value / lastScale
+                                    lastScale = value
+                                    scale = scale * delta
+                                }
+                                .onEnded { value in
+                                    lastScale = 1.0
+                                    if scale < 1.0 {
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            scale = 1.0
+                                        }
+                                    }
+                                }
+                                .simultaneously(with:
+                                    DragGesture()
+                                        .onChanged { value in
+                                            offset = CGSize(
+                                                width: lastOffset.width + value.translation.width,
+                                                height: lastOffset.height + value.translation.height
+                                            )
+                                        }
+                                        .onEnded { value in
+                                            lastOffset = offset
+                                        }
+                                )
+                        )
+                } else if loader.isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(2.0)
+                } else {
+                    Text("画像を読み込めませんでした")
+                        .foregroundColor(.white)
+                }
+            }
+            .navigationTitle("画像")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("閉じる") {
+                        isPresented = false
+                    }
+                    .foregroundColor(.white)
+                }
+            }
+        }
+        .onAppear {
+            loader.loadImage(from: url)
         }
     }
 }

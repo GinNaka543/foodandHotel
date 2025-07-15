@@ -773,13 +773,25 @@ public struct VisitScreen: View {
         if selectedTab == .all && hiddenPlanIds.contains(plan.id) {
             hiddenPlanIds.remove(plan.id)
             saveHiddenPlanIds()
-            // アラートで通知
+            // 即座に購入済みプランを更新
+            DispatchQueue.main.async {
+                self.loadSavedPlans()
+            }
+            // プラン詳細も表示
+            showPlanDetail(plan)
             return
         }
         
         // 自分のプランか、無料プランの場合は直接表示
         if plan.userId == currentUserId || plan.price == 0 {
             print("  → 自分のプランまたは無料プラン。直接表示します。")
+            showPlanDetail(plan)
+            return
+        }
+        
+        // 既に購入済みのプランかチェック（ローカルストレージ）
+        if savedPlans.contains(where: { $0.id.uuidString == plan.id && $0.isPurchased }) {
+            print("  → ローカルストレージに購入済みプランがあります。直接表示します。")
             showPlanDetail(plan)
             return
         }

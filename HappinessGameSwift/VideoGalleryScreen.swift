@@ -60,6 +60,7 @@ struct VideoGalleryScreen: View {
         case editTags(MemoryVideo)
         case thumbnailPicker(MemoryVideo)
         case videoDetail(MemoryVideo)
+        case youtubeConfirmation(MemoryVideo)
         
         var id: String {
             switch self {
@@ -67,6 +68,7 @@ struct VideoGalleryScreen: View {
             case .editTags: return "editTags"
             case .thumbnailPicker: return "thumbnailPicker"
             case .videoDetail: return "videoDetail"
+            case .youtubeConfirmation: return "youtubeConfirmation"
             }
         }
     }
@@ -286,7 +288,12 @@ struct VideoGalleryScreen: View {
     // ビデオ行ビュー
     func videoRowView(video: MemoryVideo) -> some View {
         Button(action: {
-            selectedVideo = video
+            // YouTube動画の場合は確認ページを表示
+            if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                activeSheet = .youtubeConfirmation(video)
+            } else {
+                selectedVideo = video
+            }
         }) {
             HStack(alignment: .top, spacing: 16) {
                 // サムネイル
@@ -429,6 +436,8 @@ struct VideoGalleryScreen: View {
                 )
             case .videoDetail(let video):
                 videoDetailSheet(video: video)
+            case .youtubeConfirmation(let video):
+                youtubeConfirmationSheet(video: video)
             }
         }
         .alert(isPresented: $showDeleteAlert) {
@@ -682,6 +691,78 @@ struct VideoGalleryScreen: View {
                 secondaryButton: .cancel(Text("キャンセル"))
             )
         }
+    }
+    
+    // YouTube確認ページ
+    func youtubeConfirmationSheet(video: MemoryVideo) -> some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            VStack(spacing: 20) {
+                // サムネイル
+                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: 300)
+                        .cornerRadius(12)
+                } else if let thumbnailURL = video.youtubeThumbnailURL {
+                    AsyncImage(url: URL(string: thumbnailURL)) { image in
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: 300)
+                            .cornerRadius(12)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 200)
+                            .overlay(ProgressView())
+                    }
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 200)
+                }
+                
+                Text(video.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                
+                Button(action: {
+                    if let youtubeURL = video.youtubeURL, let url = URL(string: youtubeURL) {
+                        UIApplication.shared.open(url)
+                    }
+                    activeSheet = nil
+                }) {
+                    HStack {
+                        Image(systemName: "play.circle.fill")
+                            .font(.title)
+                        Text("YouTubeで開く")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.red)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                }
+                
+                Button(action: {
+                    activeSheet = nil
+                }) {
+                    Text("閉じる")
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+            }
+            
+            Spacer()
+        }
+        .background(Color(.systemBackground))
     }
     
     // ビデオ情報ビュー

@@ -1,6 +1,7 @@
 import SwiftUI
 import AVKit
 import AVFoundation
+import UIKit
 
 struct VideoPlayerScreen: View {
     let video: MemoryVideo
@@ -28,6 +29,25 @@ struct VideoPlayerScreen: View {
     // フルスクリーン用
     @State private var fullscreenShowControls = true
     @State private var fullscreenPlayer: AVPlayer? = nil
+    // YouTube動画確認用
+    @State private var activeSheet: ActiveSheet? = nil
+    @State private var editText = ""
+    
+    enum ActiveSheet: Identifiable {
+        case youtubeConfirmation(MemoryVideo)
+        case editTitle(MemoryVideo)
+        case editTags(MemoryVideo)
+        case thumbnailPicker(MemoryVideo)
+        
+        var id: String {
+            switch self {
+            case .youtubeConfirmation: return "youtubeConfirmation"
+            case .editTitle: return "editTitle"
+            case .editTags: return "editTags"
+            case .thumbnailPicker: return "thumbnailPicker"
+            }
+        }
+    }
     
     var body: some View {
         // YouTube動画の場合は、YouTubeアプリで開く
@@ -248,6 +268,11 @@ struct VideoPlayerScreen: View {
             player?.pause()
             player = nil
         }
+        .onChange(of: selectedVideo) { newVideo in
+            if let newVideo = newVideo {
+                handleVideoSelection(newVideo)
+            }
+        }
         // --- 編集・削除用シート ---
         .sheet(isPresented: $showMenuSheet) {
             VStack(spacing: 24) {
@@ -319,6 +344,26 @@ struct VideoPlayerScreen: View {
                 }
             )
         }
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .youtubeConfirmation(let video):
+                youtubeConfirmationSheet(video: video)
+            case .editTitle(let video):
+                editTitleSheet(video: video)
+            case .editTags(let video):
+                editTagsSheet(video: video)
+            case .thumbnailPicker(let video):
+                ThumbnailPickerView(
+                    video: video,
+                    onSave: { newThumbnailData in
+                        onThumbnailUpdate?(newThumbnailData)
+                    },
+                    onCancel: {
+                        activeSheet = nil
+                    }
+                )
+            }
+        }
         }
     }
     
@@ -349,8 +394,14 @@ struct VideoPlayerScreen: View {
     }
     
     private func openYouTubeVideo(url: String) {
+        print("YouTube動画を開こうとしています: \(url)")
         if let youtubeURL = URL(string: url) {
-            UIApplication.shared.open(youtubeURL)
+            print("URL変換成功: \(youtubeURL)")
+            UIApplication.shared.open(youtubeURL) { success in
+                print("YouTube動画を開く結果: \(success)")
+            }
+        } else {
+            print("URL変換失敗: \(url)")
         }
     }
 
@@ -363,6 +414,240 @@ struct VideoPlayerScreen: View {
         }
         hideControlsWorkItem = workItem
         DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
+    }
+    
+    private func handleVideoSelection(_ newVideo: MemoryVideo) {
+        print("動画が選択されました: \(newVideo.title)")
+        
+        // YouTubeの動画の場合は確認ページに移動
+        if let youtubeURL = newVideo.youtubeURL, !youtubeURL.isEmpty {
+            print("YouTube動画です: \(youtubeURL)")
+            // YouTube動画の確認ページを表示
+            showYouTubeConfirmation(for: youtubeURL, title: newVideo.title)
+        } else {
+            print("自分でアップロードした動画です: \(newVideo.videoPath)")
+            // 自分でアップロードした動画の場合は動画プレイヤーを切り替え
+            switchToVideo(newVideo)
+        }
+        
+        // 選択状態をリセット
+        selectedVideo = nil
+    }
+    
+    private func showYouTubeConfirmation(for url: String, title: String) {
+        print("YouTube確認ダイアログを表示します: \(title)")
+        if let youtubeVideo = allVideos.first(where: { $0.youtubeURL == url }) {
+            activeSheet = .youtubeConfirmation(youtubeVideo)
+        }
+    }
+    
+    private func switchToVideo(_ newVideo: MemoryVideo) {
+        // 現在の動画を停止
+        player?.pause()
+        player = nil
+        
+        // 新しい動画のプレイヤーを設定
+        if let videoURL = loadVideoURLFromPath(newVideo.videoPath) {
+            let newPlayer = AVPlayer(url: videoURL)
+            player = newPlayer
+            
+            // 動画の長さを取得
+            let asset = AVAsset(url: videoURL)
+            Task {
+                do {
+                    let duration = try await asset.load(.duration)
+                    await MainActor.run {
+                        self.duration = CMTimeGetSeconds(duration)
+                        self.currentTime = 0
+                    }
+                } catch {
+                    print("動画の長さの取得に失敗しました: \(error)")
+                }
+            }
+            
+            // 動画を再生
+            newPlayer.play()
+            isPlaying = true
+            
+            // タイトルとタグを更新
+            editTitle = newVideo.title
+            editTags = newVideo.tags.joined(separator: ",")
+            
+            print("動画を切り替えました: \(newVideo.title)")
+        } else {
+            print("動画ファイルの読み込みに失敗しました: \(newVideo.videoPath)")
+        }
+    }
+    
+    // YouTube確認ページ
+    private func youtubeConfirmationSheet(video: MemoryVideo) -> some View {
+        VStack(spacing: 0) {
+            Spacer()
+            
+            VStack(spacing: 20) {
+                // サムネイル
+                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity, maxHeight: 300)
+                        .cornerRadius(12)
+                } else if let thumbnailURL = video.youtubeThumbnailURL {
+                    AsyncImage(url: URL(string: thumbnailURL)) { image in
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: 300)
+                            .cornerRadius(12)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 200)
+                            .overlay(ProgressView())
+                    }
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 200)
+                }
+                
+                Text(video.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                
+                Button(action: {
+                    if let youtubeURL = video.youtubeURL, let url = URL(string: youtubeURL) {
+                        UIApplication.shared.open(url)
+                    }
+                    activeSheet = nil
+                }) {
+                    HStack {
+                        Image(systemName: "play.circle.fill")
+                            .font(.title)
+                        Text("YouTubeで開く")
+                            .font(.headline)
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.red)
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                }
+                
+                Button(action: {
+                    activeSheet = nil
+                }) {
+                    Text("閉じる")
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+            }
+            
+            Spacer()
+        }
+        .background(Color(.systemBackground))
+    }
+    
+    // タイトル編集シート
+    private func editTitleSheet(video: MemoryVideo) -> some View {
+        VStack(spacing: 24) {
+            Text("タイトルを編集")
+                .font(.headline)
+                .padding(.top, 24)
+            
+            TextField("タイトル", text: $editText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .font(.system(size: 18))
+                .padding(.horizontal, 24)
+            
+            HStack(spacing: 24) {
+                Button(action: {
+                    activeSheet = nil
+                }) {
+                    Text("キャンセル")
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                }
+                
+                Button(action: {
+                    let tags = video.tags
+                    onSave?(editText, tags)
+                    activeSheet = nil
+                }) {
+                    Text("保存")
+                        .foregroundColor(.white)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.black)
+                        .cornerRadius(10)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
+        }
+        .background(Color.white)
+        .cornerRadius(20)
+        .shadow(radius: 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.3))
+        .edgesIgnoringSafeArea(.all)
+    }
+    
+    // タグ編集シート
+    private func editTagsSheet(video: MemoryVideo) -> some View {
+        VStack(spacing: 24) {
+            Text("タグを編集")
+                .font(.headline)
+                .padding(.top, 24)
+            
+            TextField("タグ（カンマ区切り）", text: $editText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .font(.system(size: 18))
+                .padding(.horizontal, 24)
+            
+            HStack(spacing: 24) {
+                Button(action: {
+                    activeSheet = nil
+                }) {
+                    Text("キャンセル")
+                        .foregroundColor(.red)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                }
+                
+                Button(action: {
+                    let title = video.title
+                    let tags = editText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    onSave?(title, tags)
+                    activeSheet = nil
+                }) {
+                    Text("保存")
+                        .foregroundColor(.white)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.black)
+                        .cornerRadius(10)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
+        }
+        .background(Color.white)
+        .cornerRadius(20)
+        .shadow(radius: 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.3))
+        .edgesIgnoringSafeArea(.all)
     }
 }
 

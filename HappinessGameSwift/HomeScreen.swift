@@ -36,8 +36,10 @@ class UserProfileManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
            let user = try? JSONDecoder().decode(UserProfile.self, from: data) {
             self.currentUser = user
+            print("📱 [UserProfileManager] UserDefaultsから読み込み成功: username=\(user.username), iconPath=\(user.iconImagePath ?? "nil")")
         } else {
             self.currentUser = UserProfile()
+            print("📱 [UserProfileManager] 新規UserProfile作成")
         }
         
         // ログイン済みの場合はFirebaseから最新データを取得
@@ -51,9 +53,15 @@ class UserProfileManager: ObservableObject {
             DispatchQueue.main.async {
                 switch result {
                 case .success(let profile):
+                    // 既存の画像パスを保持
+                    let existingIconPath = self.currentUser.iconImagePath
                     self.currentUser = profile
+                    // Firebaseから取得したプロファイルに画像パスがない場合は、既存のパスを復元
+                    if profile.iconImagePath == nil && existingIconPath != nil {
+                        self.currentUser.iconImagePath = existingIconPath
+                    }
                     self.saveProfile()
-                    print("✅ Firebaseからプロフィール読み込み成功")
+                    print("✅ Firebaseからプロフィール読み込み成功: iconPath=\(self.currentUser.iconImagePath ?? "nil")")
                 case .failure(let error):
                     print("❌ Firebaseからプロフィール読み込みエラー: \(error)")
                 }
@@ -65,6 +73,7 @@ class UserProfileManager: ObservableObject {
         currentUser.updatedAt = Date()
         if let data = try? JSONEncoder().encode(currentUser) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
+            print("💾 [UserProfileManager] UserDefaultsに保存: username=\(currentUser.username), iconPath=\(currentUser.iconImagePath ?? "nil")")
         }
     }
 }
@@ -812,9 +821,12 @@ struct UserProfileScreenTemp: View {
         if let imagePath = profileManager.currentUser.iconImagePath,
            let uiImage = loadImageFromPath(imagePath) {
             iconImage = uiImage
+            print("✅ [Profile] 画像読み込み成功: \(imagePath)")
+        } else {
+            print("❌ [Profile] 画像読み込み失敗: \(profileManager.currentUser.iconImagePath ?? "nil")")
         }
         
-        print("📱 [Profile] 現在のプロフィール読み込み: username=\(username), animeQuote=\(animeQuote)")
+        print("📱 [Profile] 現在のプロフィール読み込み: username=\(username), animeQuote=\(animeQuote), iconPath=\(profileManager.currentUser.iconImagePath ?? "nil")")
     }
     
     private func saveProfile() {
@@ -824,13 +836,26 @@ struct UserProfileScreenTemp: View {
         
         // 画像を保存
         if let iconImage = iconImage {
+            // 古い画像ファイルを削除
+            if let oldImagePath = profileManager.currentUser.iconImagePath {
+                let oldFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent(oldImagePath)
+                try? FileManager.default.removeItem(at: oldFilePath)
+                print("🗑️ [Profile] 古い画像削除: \(oldImagePath)")
+            }
+            
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
             let fileName = "profile_\(UUID().uuidString).jpg"
             let filePath = documentsPath.appendingPathComponent(fileName)
             
             if let imageData = iconImage.jpegData(compressionQuality: 0.8) {
-                try? imageData.write(to: filePath)
-                profileManager.currentUser.iconImagePath = filePath.path
+                do {
+                    try imageData.write(to: filePath)
+                    // 相対パスで保存（ファイル名のみ）
+                    profileManager.currentUser.iconImagePath = fileName
+                    print("✅ [Profile] 画像保存成功: \(fileName)")
+                } catch {
+                    print("❌ [Profile] 画像保存エラー: \(error)")
+                }
             }
         }
         

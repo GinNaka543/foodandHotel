@@ -47,11 +47,13 @@ struct VisitSpot: Identifiable, Codable, Equatable {
     var detailImagesData: [Data]? // 詳細画像（予約情報などのスクショ）
     var dayNumber: Int = 1
     var spotCost: Int = 0
+    var imageUrl: String = "" // GitHub画像URL（メイン画像）
+    var images: [String] = [] // 複数の画像URL
     
     init(id: UUID = UUID(), name: String, address: String = "", notes: String = "", event: SpotEvent? = nil, 
          nearestStation: String = "", arrivalTime: Date? = nil, departureTime: Date? = nil,
          stayDuration: Int = 60, transportToNext: TransportInfo? = nil, timeRange: String = "", 
-         activity: String = "", imageData: Data? = nil, detailImagesData: [Data]? = nil, dayNumber: Int = 1, spotCost: Int = 0) {
+         activity: String = "", imageData: Data? = nil, detailImagesData: [Data]? = nil, dayNumber: Int = 1, spotCost: Int = 0, imageUrl: String = "", images: [String] = []) {
         self.id = id
         self.name = name
         self.address = address
@@ -68,6 +70,8 @@ struct VisitSpot: Identifiable, Codable, Equatable {
         self.detailImagesData = detailImagesData
         self.dayNumber = dayNumber
         self.spotCost = spotCost
+        self.imageUrl = imageUrl
+        self.images = images
     }
     
     static func == (lhs: VisitSpot, rhs: VisitSpot) -> Bool {

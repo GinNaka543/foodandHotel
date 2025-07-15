@@ -1,0 +1,508 @@
+.travel-plans-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.travel-plans-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.travel-plans-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.create-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.create-btn:hover {
+  background-color: #0056b3;
+}
+
+.create-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.create-form {
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.create-form h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.spots-section {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+}
+
+.spots-section h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.spot-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.spot-form input,
+.spot-form textarea {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-family: inherit;
+}
+
+.spot-form textarea {
+  grid-column: span 2;
+  resize: vertical;
+}
+
+.spot-form .add-spot-btn {
+  grid-column: span 2;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.spot-form .add-spot-btn:hover {
+  background-color: #218838;
+}
+
+.spot-image-preview {
+  grid-column: span 2;
+  text-align: center;
+}
+
+.url-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.url-input-group input {
+  flex: 1;
+}
+
+.preview-btn, .convert-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.preview-btn:hover, .convert-btn:hover {
+  background-color: #0056b3;
+}
+
+.preview-btn:disabled, .convert-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.image-preview {
+  max-width: 200px;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 3px;
+  margin-top: 10px;
+  border: 1px solid #ddd;
+}
+
+.spot-url-input {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.spot-url-input input {
+  flex: 1;
+}
+
+.spot-url-input .convert-btn {
+  font-size: 10px;
+  padding: 6px 8px;
+}
+
+.spots-list {
+  margin-top: 15px;
+}
+
+.spot-item {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.spot-content {
+  padding: 15px;
+}
+
+.spot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.spot-header h5 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.spot-details {
+  margin-bottom: 10px;
+}
+
+.spot-details p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.spot-image {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.spot-thumbnail {
+  max-width: 200px;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+}
+
+.remove-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.remove-btn:hover {
+  background-color: #c82333;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.submit-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background-color: #0056b3;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.plan-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.plan-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+.plan-info p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.plan-thumbnail {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 5px;
+  margin-top: 10px;
+}
+
+.no-plans {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+/* スポット複数画像管理 */
+.spot-images-section {
+  grid-column: span 2;
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f1f3f4;
+  border-radius: 5px;
+}
+
+.spot-images-section h5 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 14px;
+}
+
+.add-image-btn {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.add-image-btn:hover {
+  background-color: #138496;
+}
+
+.spot-images-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.spot-image-item {
+  position: relative;
+  background: white;
+  border-radius: 5px;
+  padding: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.spot-image-item:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview-small {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+  transition: border-color 0.2s;
+}
+
+.image-preview-small:hover {
+  border-color: #007bff;
+}
+
+.image-controls {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.spot-image-item:hover .image-controls {
+  opacity: 1;
+}
+
+.edit-image-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-image-btn:hover {
+  background-color: #0056b3;
+}
+
+.remove-image-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-image-btn:hover {
+  background-color: #c82333;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .create-form {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .spot-form {
+    grid-template-columns: 1fr;
+  }
+  
+  .spot-form button {
+    grid-column: span 1;
+  }
+  
+  .spot-images-section {
+    grid-column: span 1;
+  }
+  
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .url-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .spot-url-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .spot-url-input .convert-btn {
+    margin-top: 5px;
+  }
+  
+  .spot-images-list {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+}

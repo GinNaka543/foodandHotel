@@ -88,16 +88,11 @@ struct BirthdayReminderListScreen: View {
                 VStack(spacing: 0) {
                     Divider()
                     HStack(spacing: 0) {
-                        NavigationBarItem(icon: "house.fill", title: "Home", isSelected: false)
-                            .onTapGesture { onClose() }
-                        NavigationBarItem(icon: "person.2", title: "Chara", isSelected: true)
-                            .onTapGesture { }
-                        NavigationBarItem(icon: "tv", title: "Anime", isSelected: false)
-                            .onTapGesture { }
-                        NavigationBarItem(icon: "map", title: "Visit", isSelected: false)
-                            .onTapGesture { }
-                        NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false)
-                            .onTapGesture { }
+                        NavigationBarItem(icon: "house.fill", title: "Home", isSelected: false, onTap: { onClose() })
+                        NavigationBarItem(icon: "person.2", title: "Chara", isSelected: true, onTap: { })
+                        NavigationBarItem(icon: "tv", title: "Anime", isSelected: false, onTap: { })
+                        NavigationBarItem(icon: "map", title: "Visit", isSelected: false, onTap: { })
+                        NavigationBarItem(icon: "creditcard", title: "Card", isSelected: false, onTap: { })
                     }
                     .frame(height: 75)
                     .background(Color.white)

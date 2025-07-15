@@ -38,7 +38,13 @@ struct VisitGameScreen: View {
     }
     
     var body: some View {
-        NavigationView {
+        let _ = print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
+        let _ = print("🎮 [DEBUG] planTitle: \(planTitle)")
+        let _ = print("🎮 [DEBUG] animeName: \(animeName)")
+        let _ = print("🎮 [DEBUG] spots.count: \(spots.count)")
+        let _ = print("🎮 [DEBUG] numberOfDays: \(numberOfDays)")
+        
+        return NavigationView {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {

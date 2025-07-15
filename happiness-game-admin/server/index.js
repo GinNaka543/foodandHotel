@@ -1419,6 +1419,109 @@ app.post('/api/character-rankings/update-link', async (req, res) => {
   }
 });
 
+// 旅行プラン管理API
+app.get('/api/travel-plans', async (req, res) => {
+  try {
+    const snapshot = await db.collection('visitPlans').get();
+    const plans = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    res.json(plans);
+  } catch (error) {
+    console.error('旅行プラン取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/travel-plans', async (req, res) => {
+  try {
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl } = req.body;
+    
+    console.log('🔍 [DEBUG] 受信したデータ:');
+    console.log('  title:', title);
+    console.log('  animeName:', animeName);
+    console.log('  duration:', duration);
+    console.log('  spots:', spots);
+    console.log('  spots length:', spots ? spots.length : 0);
+    
+    if (!title || !animeName || !duration) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+
+    const now = new Date();
+    const docRef = db.collection('visitPlans').doc();
+    
+    // VisitPlanModelの形式に合わせてデータを構築
+    const planData = {
+      id: docRef.id,
+      title,
+      animeName,
+      duration,
+      description: description || '',
+      spots: (spots || []).map((spot, index) => {
+        console.log(`🔍 [DEBUG] スポット${index + 1}:`, spot);
+        const processedSpot = {
+          id: spot.id || crypto.randomUUID(),
+          name: spot.name,
+          address: spot.address || '',
+          notes: spot.notes || '',
+          nearestStation: spot.nearestStation || '',
+          stayDuration: parseInt(spot.stayDuration) || 60,
+          timeRange: spot.timeRange || '',
+          activity: spot.activity || '',
+          dayNumber: parseInt(spot.dayNumber) || 1,
+          spotCost: parseInt(spot.spotCost) || 0,
+          imageUrl: spot.imageUrl || '',
+          images: spot.images || [], // 複数画像をサポート
+          transportToNext: spot.transportToNext || null
+        };
+        console.log(`✅ [DEBUG] 処理後スポット${index + 1}:`, processedSpot);
+        return processedSpot;
+      }),
+      price: parseInt(price) || 0,
+      budget: parseInt(price) || 0,
+      tags: tags || [],
+      thumbnailUrl: thumbnailUrl || '',
+      numberOfDays: 1,
+      totalCost: parseInt(price) || 0,
+      startTime: now.getTime() / 1000,
+      createdAt: now.getTime() / 1000,
+      updatedAt: now.getTime() / 1000,
+      isPublic: true,
+      userId: 'admin',
+      purchasedBy: [],
+      // 統計情報
+      viewCount: 0,
+      purchaseCount: 0,
+      rating: 0,
+      reviewCount: 0
+    };
+
+    await docRef.set(planData);
+    
+    res.status(201).json({
+      id: docRef.id,
+      ...planData,
+      createdAt: now.toISOString()
+    });
+  } catch (error) {
+    console.error('旅行プラン作成エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/travel-plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection('visitPlans').doc(id).delete();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('旅行プラン削除エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

@@ -14,8 +14,10 @@ public struct VisitScreen: View {
     @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
     @State private var showingDeleteConfirmation = false
     @State private var planToDelete: VisitPlanModel?
-    @State private var showingPurchaseDialog = false
     @State private var planToPurchase: VisitPlanModel?
+    @State private var showingPurchaseCompletion = false
+    @State private var purchasedPlan: VisitPlanModel?
+    @State private var selectedPlanForNavigation: VisitPlanModel?
     @State private var showNavigationMenu = false
     @EnvironmentObject var mainTab: MainTabSelection
     
@@ -39,10 +41,52 @@ public struct VisitScreen: View {
                         loadFirebasePlans()
                     }
             }
-            .sheet(isPresented: $showingPurchaseDialog) {
-                if let plan = planToPurchase {
-                    PlanPurchaseView(plan: plan, isPresented: $showingPurchaseDialog)
+            .sheet(item: $planToPurchase) { plan in
+                let _ = print("💰 [DEBUG] purchase sheet が表示されます")
+                let _ = print("💰 [DEBUG] planToPurchase: \(plan.title)")
+                let _ = print("💰 [DEBUG] PlanPurchaseConfirmationView を作成中")
+                
+                PlanPurchaseConfirmationView(
+                    plan: plan,
+                    onConfirm: {
+                        print("💰 [DEBUG] 購入確認ボタンが押されました")
+                        planToPurchase = nil
+                        purchasePlan(plan)
+                    },
+                    onCancel: {
+                        print("💰 [DEBUG] キャンセルボタンが押されました")
+                        planToPurchase = nil
+                    }
+                )
+            }
+            .sheet(isPresented: $showingPurchaseCompletion) {
+                if let plan = purchasedPlan {
+                    PlanPurchaseCompletionView(
+                        plan: plan,
+                        onViewPlan: {
+                            showingPurchaseCompletion = false
+                            selectedPlanForNavigation = plan
+                        },
+                        onClose: {
+                            showingPurchaseCompletion = false
+                        }
+                    )
                 }
+            }
+            .fullScreenCover(item: $selectedPlanForNavigation) { plan in
+                let _ = print("🎮 [DEBUG] fullScreenCover呼び出し")
+                let _ = print("🎮 [DEBUG] plan.id: \(plan.id)")
+                let _ = print("🎮 [DEBUG] plan.title: \(plan.title)")
+                let _ = print("🎮 [DEBUG] plan.spots.count: \(plan.spots.count)")
+                
+                return VisitGameScreen(
+                    animeName: plan.animeName,
+                    duration: plan.duration,
+                    planTitle: plan.title,
+                    spots: plan.spots,
+                    numberOfDays: plan.numberOfDays,
+                    startTime: plan.startTime
+                )
             }
             .alert("プランを削除しますか？", isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
                 Button("削除", role: .destructive) {
@@ -51,16 +95,6 @@ public struct VisitScreen: View {
                 Button("キャンセル", role: .cancel) { }
             } message: { plan in
                 Text("「\(plan.title)」を削除します。この操作は取り消せません。")
-            }
-            .fullScreenCover(item: $selectedPlan) { plan in
-                VisitGameScreen(
-                    animeName: plan.animeName,
-                    duration: plan.duration,
-                    planTitle: plan.title,
-                    spots: plan.spots,
-                    numberOfDays: plan.numberOfDays,
-                    startTime: plan.startTime
-                )
             }
             .onAppear {
                 // userIdが設定されていない場合は新しいUUIDを生成
@@ -74,12 +108,14 @@ public struct VisitScreen: View {
                 loadSavedPlans()
                 loadVisitAds()
                 loadFirebasePlans()
+                loadPurchasedPlansFromFirebase()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 // アプリがフォアグラウンドに戻ったときにデータを再読み込み
                 print("DEBUG: アプリがフォアグラウンドに戻りました - データを再読み込みします")
                 loadSavedPlans()
                 loadFirebasePlans()
+                loadPurchasedPlansFromFirebase()
             }
     }
     
@@ -138,6 +174,25 @@ public struct VisitScreen: View {
                         Image(systemName: "photo")
                             .font(.system(size: 40))
                             .foregroundColor(.gray)
+                    }
+                    
+                    // 無料プランの場合は「無料」バッジを表示
+                    if plan.price == 0 {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("無料")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.green)
+                                    .cornerRadius(8)
+                                    .padding(.trailing, 8)
+                                    .padding(.top, 8)
+                            }
+                            Spacer()
+                        }
                     }
                 }
                 .frame(height: 233)
@@ -560,11 +615,15 @@ public struct VisitScreen: View {
     func loadFirebasePlans() {
         print("DEBUG: loadFirebasePlans開始 - currentUserId: \(currentUserId)")
         
-        // 公開プランを取得
+        // 公開プランを取得（強制的にFirebaseから新しいデータを取得）
         firebaseManager.fetchPublicPlans { result in
             switch result {
             case .success(let plans):
                 print("DEBUG: 公開プラン取得成功: \(plans.count)件")
+                // 各プランのスポット数をログ出力
+                for plan in plans {
+                    print("DEBUG: プラン \(plan.title) - スポット数: \(plan.spots.count)")
+                }
                 self.publicPlans = plans
             case .failure(let error):
                 print("公開プラン取得エラー: \(error)")
@@ -589,53 +648,147 @@ public struct VisitScreen: View {
             return
         }
         
-        // 購入済みかチェック
+        print("  → 有料プランです。購入チェックを開始します。")
+        
+        // まずローカル購入記録をチェック
+        if checkLocalPurchaseRecord(planId: plan.id) {
+            print("  → ローカル購入記録があります。直接表示します。")
+            showPlanDetail(plan)
+            return
+        }
+        
+        // ローカル記録にない場合、Firebaseでチェック
         firebaseManager.checkPlanPurchased(userId: currentUserId, planId: plan.id) { result in
-            switch result {
-            case .success(let isPurchased):
-                if isPurchased {
-                    self.showPlanDetail(plan)
-                } else {
-                    // 購入画面を表示
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let isPurchased):
+                    print("  → 購入チェック結果: \(isPurchased ? "購入済み" : "未購入")")
+                    if isPurchased {
+                        print("  → 購入済みなので直接表示します。")
+                        // Firebaseで購入確認できた場合、ローカル記録も更新
+                        self.saveLocalPurchaseRecord(planId: plan.id)
+                        self.showPlanDetail(plan)
+                    } else {
+                        print("  → 未購入なので購入画面を表示します。")
+                        self.showPurchaseDialog(for: plan)
+                    }
+                case .failure(let error):
+                    print("  → 購入チェックエラー: \(error)")
+                    // エラーが発生した場合も購入画面を表示
+                    print("  → エラーのため購入画面を表示します。")
                     self.showPurchaseDialog(for: plan)
                 }
-            case .failure(let error):
-                print("購入チェックエラー: \(error)")
             }
         }
     }
     
     // プラン詳細を表示
     func showPlanDetail(_ plan: VisitPlanModel) {
-        // VisitPlanModelをVisitPlanDataに変換
-        // ローカルプランの場合はthumbnailDataを含める
-        let thumbnailData = savedPlans.first(where: { $0.id.uuidString == plan.id })?.thumbnailData
+        print("DEBUG: showPlanDetail - プラン表示開始")
+        print("  - id: \(plan.id)")
+        print("  - title: \(plan.title)")
+        print("  - spots count: \(plan.spots.count)")
         
-        var visitPlanData = VisitPlanData(
+        self.selectedPlanForNavigation = plan
+        print("DEBUG: showPlanDetail - selectedPlanForNavigation設定完了")
+    }
+    
+    // 購入ダイアログを表示
+    func showPurchaseDialog(for plan: VisitPlanModel) {
+        print("DEBUG: showPurchaseDialog - 購入ダイアログ表示開始")
+        print("  - plan.title: \(plan.title)")
+        print("  - plan.price: \(plan.price)")
+        
+        // planToPurchaseを設定するとsheet(item:)が自動的に表示される
+        planToPurchase = plan
+        print("DEBUG: showPurchaseDialog - planToPurchase設定完了: \(planToPurchase?.title ?? "nil")")
+    }
+    
+    func purchasePlan(_ plan: VisitPlanModel) {
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // プランの価格分のポイントを消費
+        firebaseManager.usePoints(userId: userId, points: plan.price, description: "プラン購入: \(plan.title)") { result in
+            switch result {
+            case .success:
+                print("✅ ポイント消費成功: \(plan.title)")
+                
+                // Firebase に購入記録を保存
+                let purchase = PlanPurchase(
+                    id: UUID().uuidString,
+                    userId: userId,
+                    planId: plan.id,
+                    planOwnerId: plan.userId,
+                    purchasePrice: plan.price,
+                    purchasedAt: Date(),
+                    stripePaymentIntentId: nil
+                )
+                
+                self.firebaseManager.recordPlanPurchase(purchase) { purchaseResult in
+                    switch purchaseResult {
+                    case .success:
+                        print("✅ Firebase購入記録保存成功: \(plan.title)")
+                        
+                        // プランをローカルに保存
+                        self.savePurchasedPlan(plan)
+                        
+                        // ローカル購入記録も保存
+                        self.saveLocalPurchaseRecord(planId: plan.id)
+                        
+                        DispatchQueue.main.async {
+                            self.purchasedPlan = plan
+                            self.showingPurchaseCompletion = true
+                        }
+                        
+                    case .failure(let error):
+                        print("❌ Firebase購入記録保存失敗: \(error)")
+                        // 購入記録保存に失敗した場合でもローカルには保存
+                        self.savePurchasedPlan(plan)
+                        
+                        DispatchQueue.main.async {
+                            self.purchasedPlan = plan
+                            self.showingPurchaseCompletion = true
+                        }
+                    }
+                }
+                
+            case .failure(let error):
+                print("❌ プラン購入失敗: \(error)")
+                DispatchQueue.main.async {
+                    // エラーメッセージを表示する処理をここに追加できます
+                }
+            }
+        }
+    }
+    
+    func savePurchasedPlan(_ plan: VisitPlanModel) {
+        // VisitPlanModelをVisitPlanDataに変換
+        let visitPlanData = VisitPlanData(
             id: UUID(uuidString: plan.id) ?? UUID(),
             animeName: plan.animeName,
             title: plan.title,
             duration: plan.duration,
             spots: plan.spots,
-            thumbnailData: thumbnailData,
+            thumbnailData: nil,
             createdDate: plan.createdDate,
             startTime: plan.startTime,
             numberOfDays: plan.numberOfDays
         )
-        visitPlanData.totalCost = plan.totalCost
         
-        self.selectedPlan = visitPlanData
-        print("DEBUG: showPlanDetail - selectedPlan設定完了")
-        print("  - id: \(visitPlanData.id)")
-        print("  - title: \(visitPlanData.title)")
-        print("  - spots count: \(visitPlanData.spots.count)")
-        print("  - selectedPlan設定済み")
-    }
-    
-    // 購入ダイアログを表示
-    func showPurchaseDialog(for plan: VisitPlanModel) {
-        planToPurchase = plan
-        showingPurchaseDialog = true
+        // 既存の保存済みプランを読み込み
+        var savedPlans = self.savedPlans
+        savedPlans.append(visitPlanData)
+        
+        // UserDefaultsに保存
+        if let encodedData = try? JSONEncoder().encode(savedPlans) {
+            UserDefaults.standard.set(encodedData, forKey: "savedPlans")
+            print("✅ 購入プランをローカルに保存: \(plan.title)")
+            
+            // 保存済みプランを再読み込み
+            DispatchQueue.main.async {
+                self.loadSavedPlans()
+            }
+        }
     }
     
     func deleteOriginalPlan(_ plan: VisitPlanModel) {
@@ -650,6 +803,85 @@ public struct VisitScreen: View {
             
             // userOriginalPlansから削除
             userOriginalPlans.removeAll(where: { $0.id == plan.id })
+        }
+    }
+    
+    // ローカル購入記録を保存
+    func saveLocalPurchaseRecord(planId: String) {
+        var purchasedPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(currentUserId)") ?? []
+        if !purchasedPlanIds.contains(planId) {
+            purchasedPlanIds.append(planId)
+            UserDefaults.standard.set(purchasedPlanIds, forKey: "purchasedPlanIds_\(currentUserId)")
+            print("✅ ローカル購入記録保存: planId=\(planId), userId=\(currentUserId)")
+        }
+    }
+    
+    // ローカル購入記録をチェック
+    func checkLocalPurchaseRecord(planId: String) -> Bool {
+        let purchasedPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(currentUserId)") ?? []
+        let isPurchased = purchasedPlanIds.contains(planId)
+        print("🔍 ローカル購入記録チェック: planId=\(planId), isPurchased=\(isPurchased)")
+        return isPurchased
+    }
+    
+    // Firebaseから購入済みプランを読み込む
+    func loadPurchasedPlansFromFirebase() {
+        print("DEBUG: loadPurchasedPlansFromFirebase開始 - currentUserId: \(currentUserId)")
+        
+        // Firestoreから購入記録を取得
+        firebaseManager.database.collection("planPurchases")
+            .whereField("userId", isEqualTo: currentUserId)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ 購入記録取得エラー: \(error)")
+                    return
+                }
+                
+                let purchaseRecords = snapshot?.documents ?? []
+                print("📋 購入記録数: \(purchaseRecords.count)")
+                
+                // 購入したプランのIDを取得
+                let purchasedPlanIds = purchaseRecords.compactMap { doc in
+                    doc.data()["planId"] as? String
+                }
+                
+                print("📋 購入済みプランID: \(purchasedPlanIds)")
+                
+                // 購入したプランをFirebaseから取得してローカルに保存
+                for planId in purchasedPlanIds {
+                    self.downloadAndSavePurchasedPlan(planId: planId)
+                }
+            }
+    }
+    
+    // 購入済みプランをFirebaseからダウンロードしてローカルに保存
+    func downloadAndSavePurchasedPlan(planId: String) {
+        print("DEBUG: downloadAndSavePurchasedPlan開始 - planId: \(planId)")
+        
+        firebaseManager.database.collection("visitPlans").document(planId).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ プランダウンロードエラー: \(error)")
+                return
+            }
+            
+            guard let document = snapshot, document.exists,
+                  let data = document.data(),
+                  let plan = VisitPlanModel(dictionary: data) else {
+                print("❌ プランデータの変換に失敗")
+                return
+            }
+            
+            print("✅ プランダウンロード成功: \(plan.title)")
+            
+            // ローカルに既に保存されているかチェック
+            let existingPlan = self.savedPlans.first { $0.id.uuidString == planId }
+            if existingPlan == nil {
+                // ローカルに保存
+                self.savePurchasedPlan(plan)
+                print("✅ 購入済みプランをローカルに保存: \(plan.title)")
+            } else {
+                print("ℹ️ プランは既にローカルに存在します: \(plan.title)")
+            }
         }
     }
 }

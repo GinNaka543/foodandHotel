@@ -2,7 +2,11 @@ import SwiftUI
 import FirebaseCore
 
 class MainTabSelection: ObservableObject {
-    @Published var selectedTab: MainContainerView.Tab = .home
+    @Published var selectedTab: MainContainerView.Tab = .home {
+        didSet {
+            print("🔄 [MainTabSelection] タブ変更: \(oldValue.title) → \(selectedTab.title)")
+        }
+    }
 }
 
 class AuthenticationManager: ObservableObject {
@@ -110,12 +114,17 @@ struct MainContainerView: View {
             VStack(spacing: 0) {
                 // 選択されたタブに応じてコンテンツを表示
                 VStack {
+                    let _ = print("🎯 [MainContainer] 現在のタブ: \(mainTab.selectedTab.title)")
                     if mainTab.selectedTab == .home {
-                        HomeScreen().environmentObject(mainTab)
+                        HomeScreen()
+                            .environmentObject(mainTab)
+                            .environmentObject(authManager)
                     } else if mainTab.selectedTab == .chara {
-                        CharaScreen().environmentObject(mainTab)
+                        CharaScreen()
+                            .environmentObject(mainTab)
                     } else if mainTab.selectedTab == .anime {
-                        AnimeScreen().environmentObject(mainTab)
+                        AnimeScreen()
+                            .environmentObject(mainTab)
                     } else if mainTab.selectedTab == .visit {
                         VisitScreen()
                     } else if mainTab.selectedTab == .card {
@@ -136,13 +145,17 @@ struct MainContainerView: View {
                         NavigationBarItem(
                             icon: tab.icon,
                             title: tab.title,
-                            isSelected: mainTab.selectedTab == tab
-                        )
-                        .onTapGesture {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            isSelected: mainTab.selectedTab == tab,
+                            onTap: {
+                                print("🔄 [DEBUG] [\(tab.title)] タブタップ開始")
+                                print("🔄 [DEBUG] [\(tab.title)] 現在のタブ: \(mainTab.selectedTab.title)")
+                                print("🔄 [DEBUG] [\(tab.title)] タブ切り替え実行中...")
+                                // 即座にタブを切り替える（アニメーション削除）
                                 mainTab.selectedTab = tab
+                                print("🔄 [DEBUG] [\(tab.title)] 切り替え完了: \(mainTab.selectedTab.title)")
+                                print("🔄 [DEBUG] [\(tab.title)] タブタップ終了")
                             }
-                        }
+                        )
                     }
                 }
                 .frame(height: 75)

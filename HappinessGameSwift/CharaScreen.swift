@@ -1830,6 +1830,8 @@ struct NavigationBarItem: View {
     let icon: String
     let title: String
     let isSelected: Bool
+    let onTap: () -> Void
+    @State private var isPressed: Bool = false
     
     var body: some View {
         VStack(spacing: 4) {
@@ -1850,6 +1852,28 @@ struct NavigationBarItem: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 75)
+        .background(isPressed ? Color.gray.opacity(0.2) : Color.clear)
+        .scaleEffect(isPressed ? 0.95 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            print("🎯 [NavigationBarItem] タップ検出: \(title)")
+            // タップ時の即座のフィードバック
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = true
+            }
+            
+            // タップアクションを実行
+            print("🎯 [NavigationBarItem] onTap実行: \(title)")
+            onTap()
+            
+            // 短時間後にリセット
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    isPressed = false
+                }
+            }
+        }
     }
 }
 

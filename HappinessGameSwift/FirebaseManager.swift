@@ -7,6 +7,11 @@ import UIKit
 class FirebaseManager: ObservableObject {
     static let shared = FirebaseManager()
     private let db = Firestore.firestore()
+    
+    // dbへの読み取り専用アクセスを提供
+    var database: Firestore {
+        return db
+    }
     @Published var publicPlans: [VisitPlanModel] = []
     @Published var userPlans: [VisitPlanModel] = []
     
@@ -564,18 +569,45 @@ class FirebaseManager: ObservableObject {
     
     // 公開プランを取得（オールタブ用）
     func fetchPublicPlans(completion: @escaping (Result<[VisitPlanModel], Error>) -> Void) {
+        print("🔍 [DEBUG] fetchPublicPlans開始")
         db.collection("visitPlans")
             .whereField("isPublic", isEqualTo: true)
             .limit(to: 50)
             .getDocuments { snapshot, error in
                 if let error = error {
+                    print("❌ [DEBUG] fetchPublicPlans失敗: \(error)")
                     completion(.failure(error))
                     return
                 }
                 
-                let plans = snapshot?.documents.compactMap { doc in
-                    VisitPlanModel(dictionary: doc.data())
+                print("📊 [DEBUG] fetchPublicPlans取得件数: \(snapshot?.documents.count ?? 0)")
+                
+                let plans: [VisitPlanModel] = snapshot?.documents.compactMap { doc in
+                    print("📋 [DEBUG] 処理中のドキュメント: \(doc.documentID)")
+                    let docData = doc.data()
+                    print("📋 [DEBUG] データ: \(docData)")
+                    
+                    // spots データを特別に確認
+                    if let spots = docData["spots"] as? [[String: Any]] {
+                        print("📋 [DEBUG] spots データ確認: \(spots.count)個のスポット")
+                        for (index, spot) in spots.enumerated() {
+                            print("📋 [DEBUG] スポット\(index + 1): \(spot)")
+                        }
+                    } else {
+                        print("❌ [DEBUG] spots データが見つからないか、形式が違います: \(docData["spots"] ?? "nil")")
+                    }
+                    
+                    let plan = VisitPlanModel(dictionary: docData)
+                    if plan == nil {
+                        print("❌ [DEBUG] プラン変換失敗: \(doc.documentID)")
+                    } else {
+                        print("✅ [DEBUG] プラン変換成功: \(doc.documentID) - \(plan!.title)")
+                        print("✅ [DEBUG] 変換後スポット数: \(plan!.spots.count)")
+                    }
+                    return plan
                 } ?? []
+                
+                print("📊 [DEBUG] 変換成功したプラン数: \(plans.count)")
                 
                 // クライアント側で作成日時の降順にソート
                 let sortedPlans = plans.sorted { $0.createdAt > $1.createdAt }
@@ -625,13 +657,21 @@ class FirebaseManager: ObservableObject {
     
     // プラン購入を記録
     func recordPlanPurchase(_ purchase: PlanPurchase, completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🔥 [FirebaseManager] recordPlanPurchase開始")
+        print("  - userId: \(purchase.userId)")
+        print("  - planId: \(purchase.planId)")
+        print("  - purchasePrice: \(purchase.purchasePrice)")
+        
         // 購入記録を保存
         let purchaseRef = db.collection("planPurchases").document(purchase.id)
         purchaseRef.setData(purchase.dictionary) { error in
             if let error = error {
+                print("❌ [FirebaseManager] planPurchases保存失敗: \(error)")
                 completion(.failure(error))
                 return
             }
+            
+            print("✅ [FirebaseManager] planPurchases保存成功: \(purchase.id)")
             
             // プランの購入者リストを更新
             let planRef = self.db.collection("visitPlans").document(purchase.planId)
@@ -639,8 +679,10 @@ class FirebaseManager: ObservableObject {
                 "purchasedBy": FieldValue.arrayUnion([purchase.userId])
             ]) { error in
                 if let error = error {
+                    print("❌ [FirebaseManager] visitPlans purchasedBy更新失敗: \(error)")
                     completion(.failure(error))
                 } else {
+                    print("✅ [FirebaseManager] visitPlans purchasedBy更新成功")
                     completion(.success(()))
                 }
             }
@@ -661,17 +703,33 @@ class FirebaseManager: ObservableObject {
     
     // ユーザーがプランを購入済みかチェック
     func checkPlanPurchased(userId: String, planId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
+        print("🔥 [FirebaseManager] checkPlanPurchased開始")
+        print("  - userId: \(userId)")
+        print("  - planId: \(planId)")
+        
         db.collection("planPurchases")
             .whereField("userId", isEqualTo: userId)
             .whereField("planId", isEqualTo: planId)
             .limit(to: 1)
             .getDocuments { snapshot, error in
                 if let error = error {
+                    print("❌ [FirebaseManager] checkPlanPurchased失敗: \(error)")
                     completion(.failure(error))
                     return
                 }
                 
-                let isPurchased = !(snapshot?.documents.isEmpty ?? true)
+                let documentsCount = snapshot?.documents.count ?? 0
+                let isPurchased = documentsCount > 0
+                print("✅ [FirebaseManager] checkPlanPurchased結果: \(isPurchased ? "購入済み" : "未購入") (documents: \(documentsCount))")
+                
+                if isPurchased {
+                    print("🔍 [FirebaseManager] 見つかった購入記録:")
+                    for doc in snapshot?.documents ?? [] {
+                        print("  - documentId: \(doc.documentID)")
+                        print("  - data: \(doc.data())")
+                    }
+                }
+                
                 completion(.success(isPurchased))
             }
     }

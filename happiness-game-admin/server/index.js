@@ -1462,7 +1462,7 @@ app.post('/api/travel-plans', async (req, res) => {
       spots: (spots || []).map((spot, index) => {
         console.log(`🔍 [DEBUG] スポット${index + 1}:`, spot);
         const processedSpot = {
-          id: spot.id || crypto.randomUUID(),
+          id: spot.id || `spot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: spot.name,
           address: spot.address || '',
           notes: spot.notes || '',
@@ -1561,9 +1561,11 @@ app.put('/api/travel-plans/:id', async (req, res) => {
       spots: (spots || []).map((spot, index) => {
         console.log(`🔍 [DEBUG] スポット${index + 1}:`, spot);
         const processedSpot = {
-          id: spot.id || crypto.randomUUID(),
+          id: spot.id || `spot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           name: spot.name,
           address: spot.address || '',
+          notes: spot.notes || '',
+          nearestStation: spot.nearestStation || '',
           stayDuration: parseInt(spot.stayDuration) || 60,
           timeRange: spot.timeRange || '',
           activity: spot.activity || '',

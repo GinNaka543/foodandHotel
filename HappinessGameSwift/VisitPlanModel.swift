@@ -20,12 +20,13 @@ struct VisitPlanModel: Codable, Identifiable {
     let purchasedBy: [String] // 購入したユーザーIDリスト
     let createdAt: Date
     let updatedAt: Date
+    let isDraft: Bool // 下書きかどうか
     
     // 標準的な初期化子
     init(id: String, userId: String, animeName: String, title: String, description: String,
          duration: String, spots: [VisitSpot], thumbnailUrl: String?, price: Int, budget: Int,
          createdDate: Date, startTime: Date, numberOfDays: Int, totalCost: Int,
-         isPublic: Bool, purchasedBy: [String], createdAt: Date, updatedAt: Date) {
+         isPublic: Bool, purchasedBy: [String], createdAt: Date, updatedAt: Date, isDraft: Bool = false) {
         self.id = id
         self.userId = userId
         self.animeName = animeName
@@ -44,6 +45,7 @@ struct VisitPlanModel: Codable, Identifiable {
         self.purchasedBy = purchasedBy
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.isDraft = isDraft
     }
     
     // Firebaseとの連携用
@@ -85,7 +87,8 @@ struct VisitPlanModel: Codable, Identifiable {
             "isPublic": isPublic,
             "purchasedBy": purchasedBy,
             "createdAt": createdAt.timeIntervalSince1970,
-            "updatedAt": updatedAt.timeIntervalSince1970
+            "updatedAt": updatedAt.timeIntervalSince1970,
+            "isDraft": isDraft
         ]
     }
     
@@ -227,6 +230,7 @@ struct VisitPlanModel: Codable, Identifiable {
         self.createdAt = Date(timeIntervalSince1970: createdAtTimestamp)
         self.updatedAt = Date(timeIntervalSince1970: updatedAtTimestamp)
         self.createdDate = self.createdAt
+        self.isDraft = dictionary["isDraft"] as? Bool ?? false
         
         // Spotsの変換
         print("🔍 [DEBUG] spotsData変換開始 - 要素数: \(spotsData.count)")

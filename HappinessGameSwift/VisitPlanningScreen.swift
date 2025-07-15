@@ -4,6 +4,7 @@ import Foundation
 
 struct VisitPlanningScreen: View {
     @Environment(\.dismiss) var dismiss
+    var draftPlan: VisitPlanData? = nil // 下書きプランを受け取る
     @State private var spots: [VisitSpot] = []
     @State private var showingAddSpotSheet = false
     @State private var animeName: String = ""
@@ -410,6 +411,20 @@ struct VisitPlanningScreen: View {
                 .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+            .onAppear {
+                // 下書きプランのデータを読み込む
+                if let draft = draftPlan {
+                    animeName = draft.animeName
+                    planTitle = draft.title
+                    spots = draft.spots
+                    thumbnailData = draft.thumbnailData
+                    if let data = draft.thumbnailData {
+                        thumbnailImage = UIImage(data: data)
+                    }
+                    startTime = draft.startTime
+                    numberOfDays = draft.numberOfDays
+                }
+            }
         }
         // プラン公開選択画面を削除
         // 公開プラン詳細設定画面を削除
@@ -556,17 +571,27 @@ struct VisitPlanningScreen: View {
     }
     
     func savePlan() {
+        var savedPlans = getSavedPlans()
+        
+        // 既存の下書きプランを更新する場合
+        if let draft = draftPlan {
+            // 既存のプランを削除
+            savedPlans.removeAll { $0.id == draft.id }
+        }
+        
         let plan = VisitPlanData(
+            id: draftPlan?.id ?? UUID(), // 下書きの場合は既存のIDを使用
             animeName: animeName,
             title: planTitle,
             duration: formatTotalDuration(),
             spots: updateSpotTimes(),
             thumbnailData: thumbnailData,
             startTime: startTime,
-            numberOfDays: numberOfDays
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: false // 完成したプラン
         )
         
-        var savedPlans = getSavedPlans()
         savedPlans.append(plan)
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
@@ -823,19 +848,42 @@ struct VisitPlanningScreen: View {
             isPublic: false, // 下書きは非公開
             purchasedBy: [],
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            isDraft: true // 下書きフラグを設定
         )
         
-        // Firebaseに下書きとして保存
-        firebaseManager.saveVisitPlan(plan) { result in
-            switch result {
-            case .success:
-                print("下書き保存成功: \(plan.title)")
-                DispatchQueue.main.async {
-                    self.dismiss()
-                }
-            case .failure(let error):
-                print("下書き保存エラー: \(error)")
+        // ローカルに下書きとして保存
+        let visitPlanData = VisitPlanData(
+            id: draftPlan?.id ?? UUID(), // 下書きの場合は既存のIDを使用
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailData: thumbnailData,
+            thumbnailUrl: nil,
+            createdDate: Date(),
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: true // 下書きフラグを設定
+        )
+        
+        // 既存の保存済みプランを読み込み
+        var plans = loadSavedPlans()
+        
+        // 既存の下書きプランを更新する場合
+        if let draft = draftPlan {
+            plans.removeAll { $0.id == draft.id }
+        }
+        
+        plans.append(visitPlanData)
+        
+        // UserDefaultsに保存
+        if let encodedData = try? JSONEncoder().encode(plans) {
+            UserDefaults.standard.set(encodedData, forKey: "savedPlans")
+            print("下書き保存成功: \(visitPlanData.title)")
+            DispatchQueue.main.async {
+                self.dismiss()
             }
         }
     }

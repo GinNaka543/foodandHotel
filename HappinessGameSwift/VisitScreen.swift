@@ -23,6 +23,7 @@ public struct VisitScreen: View {
     @State private var selectedPlanForNavigation: VisitPlanModel?
     @State private var showNavigationMenu = false
     @State private var hiddenPlanIds: Set<String> = []
+    @State private var selectedDraftPlan: VisitPlanData? = nil
     @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
@@ -39,9 +40,10 @@ public struct VisitScreen: View {
     public var body: some View {
         mainContent
             .fullScreenCover(isPresented: $showingPlanningScreen) {
-                VisitPlanningScreen()
+                VisitPlanningScreen(draftPlan: selectedDraftPlan)
                     .onDisappear {
                         print("プランニング画面が閉じられました - データを再読み込みします")
+                        selectedDraftPlan = nil // クリア
                         loadSavedPlans()
                         loadFirebasePlans()
                     }
@@ -188,7 +190,24 @@ public struct VisitScreen: View {
                     }
                     
                     // バッジを表示
-                    if selectedTab == .purchased {
+                    if plan.isDraft {
+                        // 下書きプランの場合は「下書き」バッジを表示
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("下書き")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.orange)
+                                    .cornerRadius(8)
+                                    .padding(.trailing, 8)
+                                    .padding(.top, 8)
+                            }
+                            Spacer()
+                        }
+                    } else if selectedTab == .purchased {
                         // 購入済みタブでは「購入済み」バッジを表示
                         VStack {
                             HStack {
@@ -540,7 +559,8 @@ public struct VisitScreen: View {
                     isPublic: false, // ローカルプランは非公開
                     purchasedBy: [],
                     createdAt: plan.createdDate,
-                    updatedAt: plan.createdDate
+                    updatedAt: plan.createdDate,
+                    isDraft: plan.isDraft // 下書きフラグを設定
                 )
             }
             
@@ -564,7 +584,8 @@ public struct VisitScreen: View {
                     isPublic: false,
                     purchasedBy: [],
                     createdAt: plan.createdDate,
-                    updatedAt: plan.createdDate
+                    updatedAt: plan.createdDate,
+                    isDraft: false // 購入済みプランは下書きではない
                 )
             }
             
@@ -718,6 +739,18 @@ public struct VisitScreen: View {
         print("  - plan.userId: \(plan.userId)")
         print("  - currentUserId: \(currentUserId)")
         print("  - plan.price: \(plan.price)")
+        print("  - plan.isDraft: \(plan.isDraft)")
+        
+        // 下書きプランの場合は編集画面を開く
+        if plan.isDraft {
+            print("  → 下書きプランです。編集画面を開きます。")
+            // 対応するVisitPlanDataを見つける
+            if let draftData = savedPlans.first(where: { $0.id.uuidString == plan.id }) {
+                selectedDraftPlan = draftData
+                showingPlanningScreen = true
+            }
+            return
+        }
         
         // オールタブで非表示のプランをクリックした場合、再表示する
         if selectedTab == .all && hiddenPlanIds.contains(plan.id) {

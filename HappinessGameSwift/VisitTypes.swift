@@ -92,8 +92,9 @@ struct VisitPlanData: Identifiable, Codable {
     var totalCost: Int = 0
     var numberOfDays: Int = 1
     var isPurchased: Bool = false
+    var isDraft: Bool = false
     
-    init(id: UUID = UUID(), animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, thumbnailUrl: String? = nil, createdDate: Date = Date(), startTime: Date = Date(), numberOfDays: Int = 1, isPurchased: Bool = false) {
+    init(id: UUID = UUID(), animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, thumbnailUrl: String? = nil, createdDate: Date = Date(), startTime: Date = Date(), numberOfDays: Int = 1, isPurchased: Bool = false, isDraft: Bool = false) {
         self.id = id
         self.animeName = animeName
         self.title = title
@@ -105,5 +106,6 @@ struct VisitPlanData: Identifiable, Codable {
         self.startTime = startTime
         self.numberOfDays = numberOfDays
         self.isPurchased = isPurchased
+        self.isDraft = isDraft
     }
 } 

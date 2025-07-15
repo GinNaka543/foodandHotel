@@ -723,10 +723,6 @@ public struct VisitScreen: View {
         if selectedTab == .all && hiddenPlanIds.contains(plan.id) {
             hiddenPlanIds.remove(plan.id)
             saveHiddenPlanIds()
-            // 即座に購入済みプランを更新
-            DispatchQueue.main.async {
-                self.loadSavedPlans()
-            }
             // アラートで通知
             return
         }
@@ -869,17 +865,23 @@ public struct VisitScreen: View {
         
         // 既存の保存済みプランを読み込み
         var savedPlans = self.savedPlans
-        savedPlans.append(visitPlanData)
         
-        // UserDefaultsに保存
-        if let encodedData = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encodedData, forKey: "savedPlans")
-            print("✅ 購入プランをローカルに保存: \(plan.title)")
+        // 既に同じプランが保存されていないかチェック
+        if !savedPlans.contains(where: { $0.id.uuidString == plan.id }) {
+            savedPlans.append(visitPlanData)
             
-            // 保存済みプランを再読み込み
-            DispatchQueue.main.async {
-                self.loadSavedPlans()
+            // UserDefaultsに保存
+            if let encodedData = try? JSONEncoder().encode(savedPlans) {
+                UserDefaults.standard.set(encodedData, forKey: "savedPlans")
+                print("✅ 購入プランをローカルに保存: \(plan.title)")
+                
+                // 保存済みプランを再読み込み
+                DispatchQueue.main.async {
+                    self.loadSavedPlans()
+                }
             }
+        } else {
+            print("⚠️ プランは既に保存されています: \(plan.title)")
         }
     }
     

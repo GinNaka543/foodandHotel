@@ -1,74 +1,23 @@
 import Foundation
 import UIKit
 import Combine
+import StripePaymentSheet
 
-class StripePaymentManager: ObservableObject {
+class StripePaymentManager: NSObject, ObservableObject {
     static let shared = StripePaymentManager()
     
     // Stripe設定
-    private let publishableKey = "pk_test_..." // 要変更: Stripeのpublishable key
-    private let baseURL = "https://your-backend-url.com/api" // 要変更: バックエンドURL
+    private let publishableKey = "pk_live_51RjjWjD7PsaPGu6xz0RGH0Gnw36ORTqI9pjec4ycPMlxAQ8biO4igeEMwoKZxdwhB8EJGeW947jmgaCWNKZi3ZTR005t6UHTLA"
+    private let baseURL = "http://10.101.9.168:5002/api" // バックエンドURL
     
-    private init() {}
+    @Published var paymentSheet: PaymentSheet?
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
     
-    // プラン投稿料金（1000円）を支払う
-    func payForPlanPosting(userId: String, completion: @escaping (Result<PlanPostingPayment, Error>) -> Void) {
-        let amount = 1000 // 1000円
-        
-        // PaymentIntentを作成するためのリクエスト
-        let url = URL(string: "\(baseURL)/create-payment-intent")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let body: [String: Any] = [
-            "amount": amount,
-            "currency": "jpy",
-            "userId": userId,
-            "type": "plan_posting"
-        ]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        } catch {
-            completion(.failure(error))
-            return
-        }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let clientSecret = json["clientSecret"] as? String,
-                  let paymentIntentId = json["paymentIntentId"] as? String else {
-                completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
-                return
-            }
-            
-            // 支払い処理を実行（実際のアプリではStripe SDKを使用）
-            DispatchQueue.main.async {
-                self.processPayment(clientSecret: clientSecret) { result in
-                    switch result {
-                    case .success:
-                        let payment = PlanPostingPayment(
-                            id: UUID().uuidString,
-                            userId: userId,
-                            amount: amount,
-                            paidAt: Date(),
-                            stripePaymentIntentId: paymentIntentId,
-                            status: "completed"
-                        )
-                        completion(.success(payment))
-                    case .failure(let error):
-                        completion(.failure(error))
-                    }
-                }
-            }
-        }.resume()
+    private var currentCompletion: ((Result<Void, Error>) -> Void)?
+    
+    private override init() {
+        super.init()
     }
     
     // プランを購入する
@@ -80,8 +29,8 @@ class StripePaymentManager: ObservableObject {
         
         let body: [String: Any] = [
             "amount": plan.price,
-            "currency": "jpy",
             "userId": userId,
+            "pointAmount": 0, // プラン購入は直接支払い
             "planId": plan.id,
             "planOwnerId": plan.userId,
             "type": "plan_purchase"
@@ -131,26 +80,80 @@ class StripePaymentManager: ObservableObject {
         }.resume()
     }
     
-    // 支払い処理（実際のアプリではStripe SDKを使用）
+    // 支払い処理（Stripe Payment Sheetを使用）
     private func processPayment(clientSecret: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        // 注意: 実際の実装では、Stripe iOS SDKを使用して支払いを処理します
-        // ここでは簡略化のため、成功したと仮定
+        // 保存する
+        self.currentCompletion = completion
         
-        // 実際の実装例:
-        // STPPaymentHandler.shared().confirmPayment(withParams: paymentParams, authenticationContext: self) { status, paymentIntent, error in
-        //     switch status {
-        //     case .succeeded:
-        //         completion(.success(()))
-        //     case .failed:
-        //         completion(.failure(error ?? NSError(...)))
-        //     case .canceled:
-        //         completion(.failure(NSError(...)))
-        //     }
-        // }
+        // PaymentSheet設定
+        var configuration = PaymentSheet.Configuration()
+        configuration.merchantDisplayName = "アニレコ"
+        configuration.applePay = PaymentSheet.ApplePayConfiguration(
+            merchantId: "merchant.com.anireco", 
+            merchantCountryCode: "JP"
+        )
+        configuration.allowsDelayedPaymentMethods = false
         
-        // デモ用: 2秒後に成功を返す
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            completion(.success(()))
+        // 日本の決済方法を有効化
+        configuration.allowsPaymentMethodsRequiringShippingAddress = false
+        configuration.defaultBillingDetails.address.country = "JP"
+        
+        // PaymentSheetを作成
+        self.paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+        
+        print("📝 [StripePaymentManager] PaymentSheet準備完了")
+        
+        // ViewControllerが必要なので、現在のウィンドウから取得
+        DispatchQueue.main.async {
+            if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+               let window = windowScene.windows.first,
+               let viewController = window.rootViewController {
+                
+                self.presentPaymentSheet(from: viewController)
+            } else {
+                print("❌ [StripePaymentManager] ViewControllerが見つかりません")
+                completion(.failure(NSError(domain: "StripePaymentManager", code: 1002, userInfo: [NSLocalizedDescriptionKey: "決済画面を表示できません"])))
+            }
+        }
+    }
+    
+    // Payment Sheetを表示
+    private func presentPaymentSheet(from viewController: UIViewController) {
+        guard let paymentSheet = self.paymentSheet else {
+            print("❌ [StripePaymentManager] PaymentSheetが初期化されていません")
+            self.currentCompletion?(.failure(NSError(domain: "StripePaymentManager", code: 1003, userInfo: [NSLocalizedDescriptionKey: "PaymentSheetエラー"])))
+            return
+        }
+        
+        print("🎯 [StripePaymentManager] PaymentSheet表示")
+        
+        // 最前面のViewControllerを取得
+        var topViewController = viewController
+        while let presented = topViewController.presentedViewController {
+            topViewController = presented
+        }
+        
+        // 少し遅延させて、現在の画面遷移が完了するのを待つ
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            paymentSheet.present(from: topViewController) { paymentResult in
+                switch paymentResult {
+                case .completed:
+                    print("✅ [StripePaymentManager] 決済成功")
+                    self.currentCompletion?(.success(()))
+                    
+                case .canceled:
+                    print("⚠️ [StripePaymentManager] 決済キャンセル")
+                    self.currentCompletion?(.failure(NSError(domain: "StripePaymentManager", code: 1004, userInfo: [NSLocalizedDescriptionKey: "決済がキャンセルされました"])))
+                    
+                case .failed(let error):
+                    print("❌ [StripePaymentManager] 決済エラー: \(error.localizedDescription)")
+                    self.currentCompletion?(.failure(error))
+                }
+                
+                // クリーンアップ
+                self.paymentSheet = nil
+                self.currentCompletion = nil
+            }
         }
     }
     
@@ -165,9 +168,8 @@ class StripePaymentManager: ObservableObject {
         
         let body: [String: Any] = [
             "amount": package.price,
-            "currency": "jpy",
             "userId": userId,
-            "points": package.points,
+            "pointAmount": package.points,
             "type": "point_purchase"
         ]
         
@@ -180,14 +182,26 @@ class StripePaymentManager: ObservableObject {
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("❌ [StripePaymentManager] ネットワークエラー: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
             
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            guard let data = data else {
+                print("❌ [StripePaymentManager] データが空です")
+                completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received"])))
+                return
+            }
+            
+            // レスポンスをログ出力
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📝 [StripePaymentManager] サーバーレスポンス: \(responseString)")
+            }
+            
+            guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let clientSecret = json["clientSecret"] as? String else {
-                completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
+                print("❌ [StripePaymentManager] JSONパースエラー")
+                completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])))
                 return
             }
             
@@ -208,9 +222,3 @@ class StripePaymentManager: ObservableObject {
     }
 }
 
-// Stripeバックエンドとの通信用モデル
-struct PaymentIntentResponse: Codable {
-    let clientSecret: String
-    let paymentIntentId: String
-    let amount: Int
-}

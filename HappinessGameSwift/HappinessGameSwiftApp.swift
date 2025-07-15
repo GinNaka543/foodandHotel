@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseCore
+import StripePaymentSheet
 
 class MainTabSelection: ObservableObject {
     @Published var selectedTab: MainContainerView.Tab = .home {
@@ -34,6 +35,10 @@ struct HappinessGameSwiftApp: App {
     
     init() {
         FirebaseApp.configure()
+        
+        // Stripe SDKを初期化
+        StripeAPI.defaultPublishableKey = "pk_live_51RjjWjD7PsaPGu6xz0RGH0Gnw36ORTqI9pjec4ycPMlxAQ8biO4igeEMwoKZxdwhB8EJGeW947jmgaCWNKZi3ZTR005t6UHTLA"
+        
         cleanupLargeUserDefaultsEntries()
         // 画像パスの移行処理を実行
         ImageMigrationHelper.shared.migrateAllImagePaths()

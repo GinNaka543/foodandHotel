@@ -8,6 +8,7 @@ struct PointPurchaseView: View {
     @State private var isPurchasing = false
     @State private var showingSuccess = false
     @State private var errorMessage = ""
+    @State private var shouldDismissBeforePayment = false
     
     let onPurchaseComplete: () -> Void
     
@@ -133,10 +134,11 @@ struct PointPurchaseView: View {
         
         guard let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty else {
             errorMessage = "ユーザーIDが見つかりません。再度ログインしてください。"
+            isPurchasing = false
             return
         }
         
-        // Stripe決済処理（実装例）
+        // Stripe決済処理
         stripeManager.purchasePoints(userId: userId, package: package) { result in
             DispatchQueue.main.async {
                 switch result {
@@ -155,7 +157,10 @@ struct PointPurchaseView: View {
                     }
                 case .failure(let error):
                     isPurchasing = false
-                    errorMessage = "決済に失敗しました: \(error.localizedDescription)"
+                    // キャンセルの場合はエラーメッセージを表示しない
+                    if (error as NSError).code != 1004 {
+                        errorMessage = "決済に失敗しました: \(error.localizedDescription)"
+                    }
                 }
             }
         }

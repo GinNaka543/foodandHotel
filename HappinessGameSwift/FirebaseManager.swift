@@ -218,7 +218,7 @@ class FirebaseManager: ObservableObject {
     }
     
     // ユーザーの好みデータを更新
-    private func updateUserPreferences(_ profile: HappinessGameSwift.UserProfile) {
+    private func updateUserPreferences(_ profile: UserProfile) {
         // Firebaseが利用可能になったらコメントを解除
         /*
         // アニメ別のインデックスを更新
@@ -457,7 +457,7 @@ class FirebaseManager: ObservableObject {
     }
     
     // 広告を取得（旧メソッド - 互換性のため残す）
-    func fetchAds(for profile: HappinessGameSwift.UserProfile, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
+    func fetchAds(for profile: UserProfile, completion: @escaping (Result<[Advertisement], Error>) -> Void) {
         // Firebaseが利用可能になったらコメントを解除
         /*
         var ads: [Advertisement] = []

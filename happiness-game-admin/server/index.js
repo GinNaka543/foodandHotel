@@ -5,6 +5,7 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 const axios = require('axios');
 const cheerio = require('cheerio');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 5002;
@@ -1318,6 +1319,122 @@ app.get('/api/users/:userId/points', async (req, res) => {
     console.error('ポイント情報取得エラー:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Stripe Payment APIs
+// Create payment intent for points purchase
+app.post('/api/create-payment-intent', async (req, res) => {
+  try {
+    const { amount, userId, pointAmount } = req.body;
+    
+    if (!amount || !userId || !pointAmount) {
+      return res.status(400).json({ error: '必須パラメータが不足しています' });
+    }
+    
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount, // 金額（円）
+      currency: 'jpy',
+      statement_descriptor: 'アニレコ',
+      metadata: {
+        userId: userId,
+        pointAmount: pointAmount.toString(),
+        type: 'point_purchase'
+      }
+    });
+    
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    });
+  } catch (error) {
+    console.error('Payment intent creation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stripe webhook handler
+app.post('/api/stripe-webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+  
+  try {
+    // Webhook署名の検証（本番環境では必須）
+    if (process.env.STRIPE_WEBHOOK_SECRET) {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } else {
+      // 開発環境用：署名検証をスキップ
+      event = JSON.parse(req.body.toString());
+    }
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      const { userId, pointAmount, type } = paymentIntent.metadata;
+      
+      if (type === 'point_purchase' && userId && pointAmount) {
+        try {
+          // ユーザーのポイントを更新
+          const userPointsRef = db.collection('userPoints').doc(userId);
+          const userPointsDoc = await userPointsRef.get();
+          const points = parseInt(pointAmount);
+          
+          let currentPoints = 0;
+          if (userPointsDoc.exists) {
+            currentPoints = userPointsDoc.data().points || 0;
+          }
+          
+          const newPoints = currentPoints + points;
+          await userPointsRef.set({
+            userId: userId,
+            points: newPoints,
+            totalEarned: admin.firestore.FieldValue.increment(points),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          
+          // 取引履歴を記録
+          await db.collection('pointTransactions').add({
+            userId: userId,
+            amount: points,
+            type: 'purchase',
+            description: `${points}ポイント購入`,
+            paymentIntentId: paymentIntent.id,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          
+          console.log(`Payment successful: User ${userId} purchased ${points} points`);
+        } catch (error) {
+          console.error('Failed to update user points:', error);
+        }
+      }
+      break;
+      
+    case 'payment_intent.payment_failed':
+      const failedPayment = event.data.object;
+      console.log('Payment failed:', failedPayment.id);
+      break;
+      
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+  
+  res.json({ received: true });
+});
+
+// Get Stripe publishable key
+app.get('/api/stripe-config', (req, res) => {
+  res.json({
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+  });
 });
 
 // キャラクターランキングAPI

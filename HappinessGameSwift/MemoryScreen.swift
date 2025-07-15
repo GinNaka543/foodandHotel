@@ -26,7 +26,7 @@ struct MemoryScreen: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ScrollView(.vertical) {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(photos) { photo in
                         NavigationLink(destination: PhotoDetailView(photo: photo)) {

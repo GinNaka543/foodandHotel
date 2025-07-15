@@ -11,5 +11,8 @@ target 'HappinessGameSwift' do
   pod 'Firebase/Core'
   pod 'Firebase/Auth'
   pod 'Firebase/Firestore'
+  
+  # Stripe SDK
+  pod 'StripePaymentSheet'
 
 end 

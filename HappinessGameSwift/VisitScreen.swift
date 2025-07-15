@@ -15,8 +15,6 @@ public struct VisitScreen: View {
     @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
     @State private var showingDeleteConfirmation = false
     @State private var planToDelete: VisitPlanModel?
-    @State private var showingHideConfirmation = false
-    @State private var planToHide: VisitPlanModel?
     @State private var planToPurchase: VisitPlanModel?
     @State private var showingPurchaseCompletion = false
     @State private var purchasedPlan: VisitPlanModel?
@@ -103,14 +101,6 @@ public struct VisitScreen: View {
                 Button("キャンセル", role: .cancel) { }
             } message: { plan in
                 Text("「\(plan.title)」を削除します。この操作は取り消せません。")
-            }
-            .alert("リストから消去しますか？", isPresented: $showingHideConfirmation, presenting: planToHide) { plan in
-                Button("消去", role: .destructive) {
-                    hidePurchasedPlan(plan)
-                }
-                Button("キャンセル", role: .cancel) { }
-            } message: { plan in
-                Text("「\(plan.title)」をリストから消去します。オールタブで再度クリックすると再表示されます。")
             }
             .onAppear {
                 // userIdが設定されていない場合は新しいUUIDを生成
@@ -204,7 +194,7 @@ public struct VisitScreen: View {
                                     .background(Color.orange)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.bottom, 18)
+                                    .padding(.bottom, 8)
                             }
                         }
                     } else if selectedTab == .purchased {
@@ -238,7 +228,7 @@ public struct VisitScreen: View {
                                     .background(Color.purple)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.bottom, 18)
+                                    .padding(.bottom, 8)
                             }
                         }
                     } else if plan.price == 0 {
@@ -282,18 +272,12 @@ public struct VisitScreen: View {
                             .foregroundColor(.gray)
                     }
                     Spacer()
-                    // オリジナルプランまたは購入済みプランの場合は削除/非表示ボタンを表示
-                    if selectedTab == .original || selectedTab == .purchased {
+                    // オリジナルプランの場合は削除ボタンを表示
+                    if selectedTab == .original {
                         Button(action: {
-                            if selectedTab == .purchased {
-                                // 購入済みタブでは非表示確認を表示
-                                planToHide = plan
-                                showingHideConfirmation = true
-                            } else {
-                                // オリジナルタブでは削除確認を表示
-                                planToDelete = plan
-                                showingDeleteConfirmation = true
-                            }
+                            // オリジナルタブでは削除確認を表示
+                            planToDelete = plan
+                            showingDeleteConfirmation = true
                         }) {
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 16, weight: .medium))

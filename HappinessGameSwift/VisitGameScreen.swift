@@ -44,6 +44,10 @@ struct VisitGameScreen: View {
         let _ = print("🎮 [DEBUG] animeName: \(animeName)")
         let _ = print("🎮 [DEBUG] spots.count: \(spots.count)")
         let _ = print("🎮 [DEBUG] numberOfDays: \(numberOfDays)")
+        let _ = print("🎮 [DEBUG] spots dayNumber distribution:")
+        for spot in spots {
+            print("  - \(spot.name): day \(spot.dayNumber)")
+        }
         
         return NavigationView {
             VStack(spacing: 0) {

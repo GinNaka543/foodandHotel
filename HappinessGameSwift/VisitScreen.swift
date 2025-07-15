@@ -11,6 +11,7 @@ public struct VisitScreen: View {
     @StateObject private var firebaseManager = FirebaseManager.shared
     @State private var publicPlans: [VisitPlanModel] = []
     @State private var userOriginalPlans: [VisitPlanModel] = []
+    @State private var purchasedPlans: [VisitPlanModel] = []
     @State private var currentUserId: String = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
     @State private var showingDeleteConfirmation = false
     @State private var planToDelete: VisitPlanModel?
@@ -19,12 +20,14 @@ public struct VisitScreen: View {
     @State private var purchasedPlan: VisitPlanModel?
     @State private var selectedPlanForNavigation: VisitPlanModel?
     @State private var showNavigationMenu = false
+    @State private var hiddenPlanIds: Set<String> = []
     @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
     enum VisitTab: String, CaseIterable {
         case all = "オール"
         case original = "オリジナル"
+        case purchased = "購入済み"
     }
     @State private var selectedTab: VisitTab = .all
     @State private var showSearchBar = false
@@ -106,6 +109,7 @@ public struct VisitScreen: View {
                     print("DEBUG: 新しいユーザーIDを生成しました: \(newUserId)")
                 }
                 
+                loadHiddenPlanIds()
                 loadSavedPlans()
                 loadVisitAds()
                 loadFirebasePlans()
@@ -131,7 +135,7 @@ public struct VisitScreen: View {
                 ZStack {
                     Rectangle()
                         .fill(Color(.systemGray5))
-                        .frame(height: 233)
+                        .frame(maxWidth: .infinity, maxHeight: 233)
                     
                     let _ = print("🖼️ [DEBUG] thumbnailUrl check - value: '\(plan.thumbnailUrl ?? "nil")', isEmpty: \(plan.thumbnailUrl?.isEmpty ?? true)")
                     
@@ -149,8 +153,6 @@ public struct VisitScreen: View {
                                 image
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(height: 233)
-                                    .clipped()
                             case .failure(let error):
                                 let _ = print("🖼️ [DEBUG] AsyncImage failed: \(error)")
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -168,8 +170,6 @@ public struct VisitScreen: View {
                         Image(uiImage: uiImage)
                             .resizable()
                             .scaledToFill()
-                            .frame(height: 233)
-                            .clipped()
                     } else {
                         let _ = print("🖼️ [DEBUG] No image available for plan: \(plan.id)")
                         Image(systemName: "photo")
@@ -196,7 +196,7 @@ public struct VisitScreen: View {
                         }
                     }
                 }
-                .frame(height: 233)
+                .frame(maxWidth: .infinity, maxHeight: 233)
                 .clipped()
                 
                 // プラン情報
@@ -218,11 +218,17 @@ public struct VisitScreen: View {
                             .foregroundColor(.gray)
                     }
                     Spacer()
-                    // オリジナルプランの場合は削除ボタンを表示
-                    if selectedTab == .original {
+                    // オリジナルプランまたは購入済みプランの場合は削除/非表示ボタンを表示
+                    if selectedTab == .original || selectedTab == .purchased {
                         Button(action: {
-                            planToDelete = plan
-                            showingDeleteConfirmation = true
+                            if selectedTab == .purchased {
+                                // 購入済みタブでは非表示にする
+                                hidePurchasedPlan(plan)
+                            } else {
+                                // オリジナルタブでは削除確認を表示
+                                planToDelete = plan
+                                showingDeleteConfirmation = true
+                            }
                         }) {
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 16, weight: .medium))
@@ -245,9 +251,9 @@ public struct VisitScreen: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             }
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.vertical, 8)
     }
     
     @ViewBuilder
@@ -276,8 +282,6 @@ public struct VisitScreen: View {
                                 image
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(height: 233)
-                                    .clipped()
                             case .failure(_):
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.system(size: 40))
@@ -292,7 +296,7 @@ public struct VisitScreen: View {
                             .foregroundColor(.gray)
                     }
                 }
-                .frame(height: 233)
+                .frame(maxWidth: .infinity, maxHeight: 233)
                 .clipped()
                 
                 HStack {
@@ -318,9 +322,9 @@ public struct VisitScreen: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
+            .frame(maxWidth: .infinity)
         }
         .buttonStyle(PlainButtonStyle())
-        .padding(.vertical, 8)
         .onAppear {
             firebaseManager.recordAdImpression(advertisementId: ad.id ?? "")
         }
@@ -328,25 +332,32 @@ public struct VisitScreen: View {
     
     @ViewBuilder
     private var planListView: some View {
-        let displayPlans = selectedTab == .all ? publicPlans : userOriginalPlans
+        let displayPlans = getDisplayPlans()
         let combinedItems = createCombinedItems(displayPlans)
         
         let _ = print("🔍 [DEBUG] planListView - selectedTab: \(selectedTab.rawValue)")
         let _ = print("🔍 [DEBUG] planListView - publicPlans.count: \(publicPlans.count)")
         let _ = print("🔍 [DEBUG] planListView - userOriginalPlans.count: \(userOriginalPlans.count)")
+        let _ = print("🔍 [DEBUG] planListView - purchasedPlans.count: \(purchasedPlans.count)")
         let _ = print("🔍 [DEBUG] planListView - displayPlans.count: \(displayPlans.count)")
         
-        if displayPlans.isEmpty && (selectedTab == .original || visitAds.isEmpty) {
+        if displayPlans.isEmpty && (selectedTab != .all || visitAds.isEmpty) {
             VStack(spacing: 16) {
                 Image(systemName: "map")
                     .font(.system(size: 50))
                     .foregroundColor(.gray)
-                Text("まだプランがありません")
+                Text(selectedTab == .purchased ? "購入したプランがありません" : "まだプランがありません")
                     .font(.system(size: 16))
                     .foregroundColor(.gray)
-                Text("右下のCreateボタンから作成してください")
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
+                if selectedTab == .original {
+                    Text("右下のCreateボタンから作成してください")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                } else if selectedTab == .purchased {
+                    Text("オールタブからプランを購入してください")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 100)
@@ -434,7 +445,7 @@ public struct VisitScreen: View {
                 }
                 // ビジットプラン欄
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 16) {
                         planListView
                     }
                     .padding(.top, 8)
@@ -480,7 +491,7 @@ public struct VisitScreen: View {
             let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
             savedPlans = plans
             
-            // VisitPlanDataからVisitPlanModelへ変換（オリジナル作成プランのみ、最新順にソート）
+            // オリジナル作成プランのみ（購入プランを除外）
             userOriginalPlans = plans.filter { !$0.isPurchased }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
                 VisitPlanModel(
                     id: plan.id.uuidString,
@@ -504,9 +515,35 @@ public struct VisitScreen: View {
                 )
             }
             
+            // 購入済みプランのみ（非表示を除外し、最新順にソート）
+            purchasedPlans = plans.filter { $0.isPurchased && !hiddenPlanIds.contains($0.id.uuidString) }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+                VisitPlanModel(
+                    id: plan.id.uuidString,
+                    userId: currentUserId,
+                    animeName: plan.animeName,
+                    title: plan.title,
+                    description: "",
+                    duration: plan.duration,
+                    spots: plan.spots,
+                    thumbnailUrl: plan.thumbnailUrl,
+                    price: 0,
+                    budget: plan.totalCost,
+                    createdDate: plan.createdDate,
+                    startTime: plan.startTime,
+                    numberOfDays: plan.numberOfDays,
+                    totalCost: plan.totalCost,
+                    isPublic: false,
+                    purchasedBy: [],
+                    createdAt: plan.createdDate,
+                    updatedAt: plan.createdDate
+                )
+            }
+            
             print("DEBUG: \(plans.count)個のプランを読み込みました")
+            print("DEBUG: オリジナルプラン: \(userOriginalPlans.count)個")
+            print("DEBUG: 購入済みプラン: \(purchasedPlans.count)個")
             for plan in plans {
-                print("DEBUG: プラン: \(plan.title), スポット数: \(plan.spots.count)")
+                print("DEBUG: プラン: \(plan.title), スポット数: \(plan.spots.count), 購入済み: \(plan.isPurchased)")
             }
         } catch {
             print("DEBUG: デコードエラー: \(error)")
@@ -555,6 +592,17 @@ public struct VisitScreen: View {
             case .failure(let error):
                 print("❌ ビジット広告取得エラー: \(error)")
             }
+        }
+    }
+    
+    func getDisplayPlans() -> [VisitPlanModel] {
+        switch selectedTab {
+        case .all:
+            return publicPlans
+        case .original:
+            return userOriginalPlans
+        case .purchased:
+            return purchasedPlans
         }
     }
     
@@ -641,6 +689,15 @@ public struct VisitScreen: View {
         print("  - plan.userId: \(plan.userId)")
         print("  - currentUserId: \(currentUserId)")
         print("  - plan.price: \(plan.price)")
+        
+        // オールタブで非表示のプランをクリックした場合、再表示する
+        if selectedTab == .all && hiddenPlanIds.contains(plan.id) {
+            hiddenPlanIds.remove(plan.id)
+            saveHiddenPlanIds()
+            loadSavedPlans()
+            // アラートで通知
+            return
+        }
         
         // 自分のプランか、無料プランの場合は直接表示
         if plan.userId == currentUserId || plan.price == 0 {
@@ -771,6 +828,7 @@ public struct VisitScreen: View {
             duration: plan.duration,
             spots: plan.spots,
             thumbnailData: nil,
+            thumbnailUrl: plan.thumbnailUrl,
             createdDate: plan.createdDate,
             startTime: plan.startTime,
             numberOfDays: plan.numberOfDays,
@@ -805,6 +863,27 @@ public struct VisitScreen: View {
             
             // userOriginalPlansから削除
             userOriginalPlans.removeAll(where: { $0.id == plan.id })
+        }
+    }
+    
+    // 購入済みプランを非表示にする
+    func hidePurchasedPlan(_ plan: VisitPlanModel) {
+        hiddenPlanIds.insert(plan.id)
+        saveHiddenPlanIds()
+        // リストを再読み込み
+        loadSavedPlans()
+    }
+    
+    // 非表示のプランIDを保存
+    func saveHiddenPlanIds() {
+        let idsArray = Array(hiddenPlanIds)
+        UserDefaults.standard.set(idsArray, forKey: "hiddenPlanIds_\(currentUserId)")
+    }
+    
+    // 非表示のプランIDを読み込み
+    func loadHiddenPlanIds() {
+        if let idsArray = UserDefaults.standard.stringArray(forKey: "hiddenPlanIds_\(currentUserId)") {
+            hiddenPlanIds = Set(idsArray)
         }
     }
     

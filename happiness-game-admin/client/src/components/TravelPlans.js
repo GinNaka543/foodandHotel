@@ -144,6 +144,15 @@ const TravelPlans = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // 空のcurrentSpotがある場合、バリデーションエラーを防ぐため
+    if (currentSpot.name.trim() !== '' || currentSpot.address.trim() !== '') {
+      if (!currentSpot.name.trim() || !currentSpot.address.trim()) {
+        alert('未完成のスポットがあります。完成してからプランを作成してください。');
+        return;
+      }
+    }
+    
     try {
       // GitHub URLsを変換してからサーバーに送信
       const processedFormData = {
@@ -349,7 +358,6 @@ const TravelPlans = () => {
                     value={currentSpot.name}
                     onChange={handleSpotChange}
                     placeholder="スポット名"
-                    required
                   />
                   <input
                     type="text"
@@ -357,7 +365,6 @@ const TravelPlans = () => {
                     value={currentSpot.address}
                     onChange={handleSpotChange}
                     placeholder="住所"
-                    required
                   />
                   <input
                     type="number"

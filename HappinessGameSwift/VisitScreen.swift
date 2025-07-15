@@ -193,6 +193,7 @@ public struct VisitScreen: View {
                     if plan.isDraft {
                         // 下書きプランの場合は「下書き」バッジを表示
                         VStack {
+                            Spacer()
                             HStack {
                                 Spacer()
                                 Text("下書き")
@@ -203,13 +204,13 @@ public struct VisitScreen: View {
                                     .background(Color.orange)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.top, 8)
+                                    .padding(.bottom, 8)
                             }
-                            Spacer()
                         }
                     } else if selectedTab == .purchased {
                         // 購入済みタブでは「購入済み」バッジを表示
                         VStack {
+                            Spacer()
                             HStack {
                                 Spacer()
                                 Text("購入済み")
@@ -220,13 +221,13 @@ public struct VisitScreen: View {
                                     .background(Color.blue)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.top, 8)
+                                    .padding(.bottom, 8)
                             }
-                            Spacer()
                         }
                     } else if selectedTab == .original && plan.price == 0 {
                         // オリジナルタブで無料プランの場合は「オリジナル」バッジを表示
                         VStack {
+                            Spacer()
                             HStack {
                                 Spacer()
                                 Text("オリジナル")
@@ -237,13 +238,13 @@ public struct VisitScreen: View {
                                     .background(Color.purple)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.top, 8)
+                                    .padding(.bottom, 8)
                             }
-                            Spacer()
                         }
                     } else if plan.price == 0 {
                         // その他のタブで無料プランの場合は「無料」バッジを表示
                         VStack {
+                            Spacer()
                             HStack {
                                 Spacer()
                                 Text("無料")
@@ -254,9 +255,8 @@ public struct VisitScreen: View {
                                     .background(Color.green)
                                     .cornerRadius(8)
                                     .padding(.trailing, 8)
-                                    .padding(.top, 8)
+                                    .padding(.bottom, 8)
                             }
-                            Spacer()
                         }
                     }
                 }
@@ -861,30 +861,21 @@ public struct VisitScreen: View {
                 )
                 
                 self.firebaseManager.recordPlanPurchase(purchase) { purchaseResult in
+                    // どちらの場合でも一度だけ保存
+                    self.savePurchasedPlan(plan)
+                    self.saveLocalPurchaseRecord(planId: plan.id)
+                    
                     switch purchaseResult {
                     case .success:
                         print("✅ Firebase購入記録保存成功: \(plan.title)")
-                        
-                        // プランをローカルに保存
-                        self.savePurchasedPlan(plan)
-                        
-                        // ローカル購入記録も保存
-                        self.saveLocalPurchaseRecord(planId: plan.id)
-                        
-                        DispatchQueue.main.async {
-                            self.purchasedPlan = plan
-                            self.showingPurchaseCompletion = true
-                        }
-                        
                     case .failure(let error):
                         print("❌ Firebase購入記録保存失敗: \(error)")
-                        // 購入記録保存に失敗した場合でもローカルには保存
-                        self.savePurchasedPlan(plan)
-                        
-                        DispatchQueue.main.async {
-                            self.purchasedPlan = plan
-                            self.showingPurchaseCompletion = true
-                        }
+                        print("  → ローカルには保存済み")
+                    }
+                    
+                    DispatchQueue.main.async {
+                        self.purchasedPlan = plan
+                        self.showingPurchaseCompletion = true
                     }
                 }
                 

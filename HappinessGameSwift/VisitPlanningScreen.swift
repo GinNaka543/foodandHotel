@@ -638,9 +638,17 @@ struct VisitPlanningScreen: View {
     }
     
     func saveLocalPlan() {
+        // 既存のプランを読み込む
+        var plans = getSavedPlans()
+        
+        // 既存の下書きプランを削除
+        if let draft = draftPlan {
+            plans.removeAll { $0.id == draft.id }
+        }
+        
         // ローカルプランとして保存
         var plan = VisitPlanData(
-            id: UUID(),
+            id: draftPlan?.id ?? UUID(), // 下書きの場合は既存のIDを使用
             animeName: animeName,
             title: planTitle,
             duration: formatTotalDuration(),
@@ -648,12 +656,12 @@ struct VisitPlanningScreen: View {
             thumbnailData: thumbnailData,
             createdDate: Date(),
             startTime: startTime,
-            numberOfDays: numberOfDays
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: false // 完成したプラン
         )
         plan.totalCost = calculateTotalCost()
         
-        // 既存のプランを読み込む
-        var plans = getSavedPlans()
         plans.append(plan)
         
         // プランをローカルストレージに保存

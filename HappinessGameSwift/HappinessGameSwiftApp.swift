@@ -79,6 +79,9 @@ struct HappinessGameSwiftApp: App {
 // メインコンテナビュー - ナビゲーションバーを固定し、上部コンテンツのみを切り替え
 struct MainContainerView: View {
     @EnvironmentObject var mainTab: MainTabSelection
+    @EnvironmentObject var characterManager: CharacterManager
+    @EnvironmentObject var animeManager: AnimeManager
+    @EnvironmentObject var authManager: AuthenticationManager
     
     enum Tab: Int, CaseIterable {
         case home = 0

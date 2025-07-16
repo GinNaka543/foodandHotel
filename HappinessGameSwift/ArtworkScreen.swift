@@ -64,7 +64,7 @@ typealias ArtworkPlayerScreenTemp = ArtworkPlayerScreen
 
 struct ArtworkScreen: View {
     let character: Character
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss
     @State private var artworks: [Artwork] = []
     @State private var showAddSheet = false
     @State private var selectedImage: UIImage? = nil
@@ -105,47 +105,119 @@ struct ArtworkScreen: View {
     }
     @State private var activeSheet: SheetType? = nil
     
+    // ヘッダービュー
+    var headerView: some View {
+        HStack {
+            // 戻るボタン（矢印）
+            Button(action: { 
+                dismiss() 
+            }) {
+                Image(systemName: "chevron.left")
+                    .foregroundColor(.black)
+                    .font(.system(size: 18, weight: .bold))
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Spacer()
+            
+            // タイトル
+            Text(character.name)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.black)
+            
+            Spacer()
+            
+            // 追加ボタン
+            Button(action: { activeSheet = .addPhoto }) {
+                Text("追加")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8) // Reduced from 12 to 8
+        .background(Color.white)
+    }
+    
+    // バナービュー
+    var bannerView: some View {
+        Button(action: { activeSheet = .addPhoto }) {
+            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .clipped()
+                    .overlay(
+                        Color.black.opacity(0.4)
+                    )
+                    .overlay(
+                        VStack {
+                            Spacer()
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("アートワーク")
+                                        .font(.system(size: 24, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text(character.name)
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
+                        }
+                    )
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .overlay(
+                        Color.black.opacity(0.4)
+                    )
+                    .overlay(
+                        VStack {
+                            Spacer()
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("アートワーク")
+                                        .font(.system(size: 24, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text(character.name)
+                                        .font(.system(size: 18, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 16)
+                        }
+                    )
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
-                HStack(alignment: .center, spacing: 0) {
-                    // 戻るボタン
-                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.black)
-                            .font(.system(size: 24, weight: .bold))
-                            .padding(.leading, 8)
-                            .offset(x: -19)
-                    }
-                    Spacer()
-                    // キャラクター名
-                    HStack {
-                        Spacer().frame(width: 0)
-                        Text(character.name)
-                            .font(.system(size: 25, weight: .bold))
-                            .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
-                            .offset(x: -15)
-                        Spacer()
-                    }
-                    // Uploadボタン（右端に揃える）
-                    Button(action: { activeSheet = .addPhoto }) {
-                        Text("Upload")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 6)
-                            .background(Color.black)
-                            .cornerRadius(8)
-                    }
-                    .padding(.trailing, 16)
-                }
-                .frame(height: 56)
-                .padding(.top, 8)
-                .padding(.leading, 30)
+                // ヘッダー
+                headerView
+                    .zIndex(2) // ヘッダーを最前面に
+                // バナー
+                bannerView
+                    .allowsHitTesting(false) // バナーのタップを無効化
+                    .zIndex(1)
 
-                // タブバー - カプセル型デザイン（中央揃え）
+                // タブバー - カプセル型デザイン（左寄せ）
                 HStack {
-                    Spacer()
                     HStack(spacing: 12) {
                         Button(action: { showAlbum = false }) {
                             Text("ArtWork")
@@ -171,6 +243,7 @@ struct ArtworkScreen: View {
                                 )
                         }
                     }
+                    .padding(.leading, 16)
                     Spacer()
                 }
                 .padding(.vertical, 8)

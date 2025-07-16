@@ -361,7 +361,8 @@ struct AnimeRow: View {
 struct AnimeArtworkScreen: View {
     @Binding var anime: Anime
     @Binding var animes: [Anime]
-    @Environment(\.presentationMode) var presentationMode
+    let onClose: () -> Void
+    @Environment(\.dismiss) var dismiss
     @State private var artworks: [Artwork] = []
     @State private var showAddSheet = false
     @State private var selectedImage: UIImage? = nil
@@ -402,47 +403,99 @@ struct AnimeArtworkScreen: View {
     }
     @State private var activeSheet: SheetType? = nil
     
+    // ヘッダービュー
+    var headerView: some View {
+        HStack {
+            // 戻るボタン（矢印）
+            Button(action: { 
+                dismiss()
+                onClose()
+            }) {
+                Image(systemName: "chevron.left")
+                    .foregroundColor(.black)
+                    .font(.system(size: 18, weight: .bold))
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Spacer()
+            
+            // タイトル
+            Text(anime.title)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.black)
+            
+            Spacer()
+            
+            // 追加ボタン
+            Button(action: { activeSheet = .addPhoto }) {
+                Text("追加")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8) // Reduced from 12 to 8
+        .background(Color.white)
+    }
+    
+    // バナービュー
+    var bannerView: some View {
+        ZStack {
+            // 画像のロード
+            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+            }
+            
+            // ダークオーバーレイ
+            Color.black.opacity(0.4)
+                .frame(maxWidth: .infinity, maxHeight: 120)
+            
+            // テキストオーバーレイ
+            VStack {
+                Spacer()
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("アートワーク")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                        Text(anime.title)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: 120)
+    }
+    
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
-                HStack(alignment: .center, spacing: 0) {
-                    // 戻るボタン
-                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.black)
-                            .font(.system(size: 24, weight: .bold))
-                            .padding(.leading, 8)
-                            .offset(x: -19)
-                    }
-                    Spacer()
-                    // アニメ名
-                    HStack {
-                        Spacer().frame(width: 0)
-                        Text(anime.title)
-                            .font(.system(size: 25, weight: .bold))
-                            .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
-                            .offset(x: -15)
-                        Spacer()
-                    }
-                    // Uploadボタン（右端に揃える）
-                    Button(action: { activeSheet = .addPhoto }) {
-                        Text("Upload")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 6)
-                            .background(Color.black)
-                            .cornerRadius(8)
-                    }
-                    .padding(.trailing, 16)
-                }
-                .frame(height: 56)
-                .padding(.top, 8)
-                .padding(.leading, 30)
-
-                // タブバー - カプセル型デザイン（中央揃え）
+                // Header
+                headerView
+                    .zIndex(2) // ヘッダーを最前面に
+                // Banner
+                bannerView
+                    .allowsHitTesting(false) // バナーのタップを無効化
+                    .zIndex(1)
+                
+                // タブバー - カプセル型デザイン（左寄せ）
                 HStack {
-                    Spacer()
                     HStack(spacing: 12) {
                         Button(action: { showAlbum = false }) {
                             Text("ArtWork")
@@ -468,6 +521,7 @@ struct AnimeArtworkScreen: View {
                                 )
                         }
                     }
+                    .padding(.leading, 16)
                     Spacer()
                 }
                 .padding(.vertical, 8)
@@ -1234,7 +1288,8 @@ struct AnimeVideoRowView: View {
 struct AnimeVideoScreen: View {
     @Binding var anime: Anime
     @Binding var animes: [Anime]
-    @Environment(\.presentationMode) var presentationMode
+    let onClose: () -> Void
+    @Environment(\.dismiss) var dismiss
     @State private var videos: [MemoryVideo] = []
     @State private var showAddSheet = false
     @State private var selectedVideoURL: URL? = nil
@@ -1257,48 +1312,100 @@ struct AnimeVideoScreen: View {
     @State private var selectedAlbum: Album? = nil
     @State private var showThumbnailPicker = false
     @State private var editingVideo: MemoryVideo? = nil
+    
+    // ヘッダービュー
+    var headerView: some View {
+        HStack {
+            // 戻るボタン（矢印）
+            Button(action: { 
+                dismiss()
+                onClose()
+            }) {
+                Image(systemName: "chevron.left")
+                    .foregroundColor(.black)
+                    .font(.system(size: 18, weight: .bold))
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Spacer()
+            
+            // タイトル
+            Text(anime.title)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.black)
+            
+            Spacer()
+            
+            // 追加ボタン
+            Button(action: { showAddSheet = true }) {
+                Text("追加")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8) // Reduced from 12 to 8
+        .background(Color.white)
+    }
+    
+    // バナービュー
+    var bannerView: some View {
+        ZStack {
+            // 画像のロード
+            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+            }
+            
+            // ダークオーバーレイ
+            Color.black.opacity(0.4)
+                .frame(maxWidth: .infinity, maxHeight: 120)
+            
+            // テキストオーバーレイ
+            VStack {
+                Spacer()
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("ビデオ")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                        Text(anime.title)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: 120)
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
-                HStack(alignment: .center, spacing: 0) {
-                    // 戻るボタン
-                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.black)
-                            .font(.system(size: 24, weight: .bold))
-                            .padding(.leading, 8)
-                            .offset(x: -19)
-                    }
-                    Spacer()
-                    // アニメ名
-                    HStack {
-                        Spacer().frame(width: 0)
-                        Text(anime.title)
-                            .font(.system(size: 25, weight: .bold))
-                            .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
-                            .offset(x: -15)
-                        Spacer()
-                    }
-                    // Uploadボタン（右端に揃える）
-                    Button(action: { showAddSheet = true }) {
-                        Text("Upload")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 6)
-                            .background(Color.black)
-                            .cornerRadius(8)
-                    }
-                    .padding(.trailing, 16)
-                }
-                .frame(height: 56)
-                .padding(.top, 8)
-                .padding(.leading, 30)
-
-                // タブバー - カプセル型デザイン（中央揃え）
+                // Header
+                headerView
+                    .zIndex(2) // ヘッダーを最前面に
+                // Banner
+                bannerView
+                    .allowsHitTesting(false) // バナーのタップを無効化
+                    .zIndex(1)
+                
+                // タブバー - カプセル型デザイン（左寄せ）
                 HStack {
-                    Spacer()
                     HStack(spacing: 12) {
                         Button(action: { showAlbum = false }) {
                             Text("Video")
@@ -1324,6 +1431,7 @@ struct AnimeVideoScreen: View {
                                 )
                         }
                     }
+                    .padding(.leading, 16)
                     Spacer()
                 }
                 .padding(.vertical, 8)
@@ -1828,7 +1936,7 @@ struct AnimeAboutView: View {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(maxWidth: .infinity, maxHeight: 200)
+                                    .frame(maxWidth: .infinity, maxHeight: 120)
                                     .clipped()
                                     .overlay(
                                         Color.black.opacity(0.4)
@@ -1857,7 +1965,7 @@ struct AnimeAboutView: View {
                             } else {
                                 Rectangle()
                                     .fill(Color.gray.opacity(0.3))
-                                    .frame(maxWidth: .infinity, maxHeight: 200)
+                                    .frame(maxWidth: .infinity, maxHeight: 120)
                                     .overlay(
                                         VStack(spacing: 4) {
                                             Image(systemName: "film.fill")
@@ -2564,10 +2672,10 @@ struct AnimeDetailView: View {
                     }
                     .padding(.top, 40)
                     .fullScreenCover(isPresented: $showArtwork) {
-                        AnimeArtworkScreen(anime: $anime, animes: $animes)
+                        AnimeArtworkScreen(anime: $anime, animes: $animes, onClose: { showArtwork = false })
                     }
                     .fullScreenCover(isPresented: $showVideo) {
-                        AnimeVideoScreen(anime: $anime, animes: $animes)
+                        AnimeVideoScreen(anime: $anime, animes: $animes, onClose: { showVideo = false })
                     }
                     .fullScreenCover(isPresented: $showAbout) {
                         AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })

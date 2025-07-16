@@ -35,7 +35,7 @@ struct Album: Identifiable, Hashable, Equatable {
 
 struct VideoGalleryScreen: View {
     let character: Character
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss
     @State private var videos: [MemoryVideo] = []
     @State private var showAddSheet = false
     @State private var selectedVideoURL: URL? = nil
@@ -82,50 +82,90 @@ struct VideoGalleryScreen: View {
     
     // ヘッダービュー
     var headerView: some View {
-        HStack(alignment: .center, spacing: 0) {
-            // 戻るボタン
-            Button(action: { presentationMode.wrappedValue.dismiss() }) {
+        HStack {
+            // 戻るボタン（矢印）
+            Button(action: { 
+                dismiss() 
+            }) {
                 Image(systemName: "chevron.left")
                     .foregroundColor(.black)
-                    .font(.system(size: 24, weight: .bold))
-                    .padding(.leading, 8)
-                    .offset(x: -19)
+                    .font(.system(size: 18, weight: .bold))
             }
+            .buttonStyle(PlainButtonStyle())
+            
             Spacer()
-            // キャラ名
-            HStack {
-                Spacer().frame(width: 0)
-                Text(character.name)
-                    .font(.system(size: 25, weight: .bold))
-                    .shadow(color: .black.opacity(0.2), radius: 2, x: 0, y: 2)
-                    .offset(x: -15)
-                Spacer()
-            }
-            // Uploadボタン（右端に揃える）
+            
+            // タイトル
+            Text(character.name)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.black)
+            
+            Spacer()
+            
+            // 追加ボタン
             Button(action: { 
                 videoTitle = ""
                 videoTags = ""
                 showAddSheet = true 
             }) {
-                Text("Upload")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
+                Text("追加")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.black)
-                    .cornerRadius(8)
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(Capsule())
             }
-            .padding(.trailing, 16)
         }
-        .frame(height: 56)
-        .padding(.top, 8)
-        .padding(.leading, 30)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8) // Reduced from 12 to 8
+        .background(Color.white)
+    }
+    
+    // バナービュー
+    var bannerView: some View {
+        ZStack {
+            // 画像のロード
+            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(maxWidth: .infinity, maxHeight: 120)
+            }
+            
+            // ダークオーバーレイ
+            Color.black.opacity(0.4)
+                .frame(maxWidth: .infinity, maxHeight: 120)
+            
+            // テキストオーバーレイ
+            VStack {
+                Spacer()
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("ビデオ")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                        Text(character.name)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: 120)
     }
     
     // タブビュー
     var tabView: some View {
         HStack {
-            Spacer()
             HStack(spacing: 12) {
                 Button(action: { showAlbum = false }) {
                     Text("Video")
@@ -151,6 +191,7 @@ struct VideoGalleryScreen: View {
                         )
                 }
             }
+            .padding(.leading, 16)
             Spacer()
         }
         .padding(.vertical, 8)
@@ -384,7 +425,17 @@ struct VideoGalleryScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            mainContent
+            VStack(spacing: 0) {
+                // Header
+                headerView
+                    .zIndex(2) // ヘッダーを最前面に
+                // Banner
+                bannerView
+                    .allowsHitTesting(false) // バナーのタップを無効化
+                    .zIndex(1)
+                // Main content
+                mainContent
+            }
             floatingButton
         }
         .overlay(loadingOverlay)
@@ -457,7 +508,6 @@ struct VideoGalleryScreen: View {
     // メインコンテンツ
     var mainContent: some View {
         VStack(spacing: 0) {
-            headerView
             tabView
             contentView
         }

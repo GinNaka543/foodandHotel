@@ -84,14 +84,15 @@ public struct VisitScreen: View {
                 let _ = print("🎮 [DEBUG] plan.title: \(plan.title)")
                 let _ = print("🎮 [DEBUG] plan.spots.count: \(plan.spots.count)")
                 
-                return VisitGameScreen(
+                VisitGameScreen(
                     animeName: plan.animeName,
                     duration: plan.duration,
                     planTitle: plan.title,
                     spots: plan.spots,
                     numberOfDays: plan.numberOfDays,
                     startTime: plan.startTime,
-                    onClose: nil
+                    onClose: nil,
+                    planId: UUID(uuidString: plan.id)
                 )
             }
             .alert("プランを削除しますか？", isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in

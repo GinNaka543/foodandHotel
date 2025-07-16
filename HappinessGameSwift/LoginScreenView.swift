@@ -10,6 +10,7 @@ struct LoginScreenView: View {
     @State private var showingAlert = false
     @State private var alertTitle = ""
     @State private var alertMessage = ""
+    @State private var showingTermsOfService = false
     
     var body: some View {
         NavigationView {
@@ -116,6 +117,16 @@ struct LoginScreenView: View {
                                 .font(.system(size: 14))
                                 .foregroundColor(.blue)
                         }
+                        
+                        // 利用規約ボタン
+                        Button(action: {
+                            showingTermsOfService = true
+                        }) {
+                            Text("利用規約")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                                .underline()
+                        }
                         .padding(.bottom, 40)
                     }
                 }
@@ -127,6 +138,9 @@ struct LoginScreenView: View {
             Button("OK") {}
         } message: {
             Text(alertMessage)
+        }
+        .sheet(isPresented: $showingTermsOfService) {
+            TermsOfServiceView()
         }
     }
     

@@ -52,7 +52,7 @@ struct VisitSpot: Identifiable, Codable, Equatable {
     
     init(id: UUID = UUID(), name: String, address: String = "", notes: String = "", event: SpotEvent? = nil, 
          nearestStation: String = "", arrivalTime: Date? = nil, departureTime: Date? = nil,
-         stayDuration: Int = 60, transportToNext: TransportInfo? = nil, timeRange: String = "", 
+         stayDuration: Int = 60, transportToNext: TransportInfo? = nil, isCompleted: Bool = false, timeRange: String = "", 
          activity: String = "", imageData: Data? = nil, detailImagesData: [Data]? = nil, dayNumber: Int = 1, spotCost: Int = 0, imageUrl: String = "", images: [String] = []) {
         self.id = id
         self.name = name
@@ -64,6 +64,7 @@ struct VisitSpot: Identifiable, Codable, Equatable {
         self.departureTime = departureTime
         self.stayDuration = stayDuration
         self.transportToNext = transportToNext
+        self.isCompleted = isCompleted
         self.timeRange = timeRange
         self.activity = activity
         self.imageData = imageData
@@ -93,8 +94,9 @@ struct VisitPlanData: Identifiable, Codable {
     var numberOfDays: Int = 1
     var isPurchased: Bool = false
     var isDraft: Bool = false
+    var lastVisitedDate: Date?
     
-    init(id: UUID = UUID(), animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, thumbnailUrl: String? = nil, createdDate: Date = Date(), startTime: Date = Date(), numberOfDays: Int = 1, isPurchased: Bool = false, isDraft: Bool = false) {
+    init(id: UUID = UUID(), animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, thumbnailUrl: String? = nil, createdDate: Date = Date(), startTime: Date = Date(), numberOfDays: Int = 1, isPurchased: Bool = false, isDraft: Bool = false, lastVisitedDate: Date? = nil) {
         self.id = id
         self.animeName = animeName
         self.title = title
@@ -107,5 +109,6 @@ struct VisitPlanData: Identifiable, Codable {
         self.numberOfDays = numberOfDays
         self.isPurchased = isPurchased
         self.isDraft = isDraft
+        self.lastVisitedDate = lastVisitedDate
     }
 } 

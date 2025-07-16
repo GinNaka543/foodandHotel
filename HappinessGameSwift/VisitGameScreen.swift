@@ -80,58 +80,48 @@ struct SpotListView: View {
     @Binding var selectedSpot: VisitSpot?
     @Binding var showingDetail: Bool
     @Binding var newlyCompletedSpots: Set<UUID>
-    @Binding var updateTrigger: Bool
     
     var body: some View {
-        let daySpots = spots.filter { $0.dayNumber == selectedDay }
-        ForEach(Array(daySpots.enumerated()), id: \.element.id) { index, spot in
-            if let originalIndex = spots.firstIndex(where: { $0.id == spot.id }) {
+        ForEach(spots.indices, id: \.self) { index in
+            if spots[index].dayNumber == selectedDay {
                 VStack(spacing: 0) {
                     SpotCard(
-                        spot: spot,
+                        spot: spots[index],
                         index: index,
-                        isCompleted: spots[originalIndex].isCompleted,
-                        isNewlyCompleted: newlyCompletedSpots.contains(spot.id),
+                        isCompleted: spots[index].isCompleted,
+                        isNewlyCompleted: newlyCompletedSpots.contains(spots[index].id),
                         onTap: {
-                            selectedSpot = spots[originalIndex]
+                            selectedSpot = spots[index]
                             showingDetail = true
                         },
                         onToggle: {
-                            print("🔄 DEBUG: onToggle呼び出し - スポット: \(spot.name)")
-                            print("🔄 DEBUG: originalIndex: \(originalIndex)")
-                            print("🔄 DEBUG: 更新前isCompleted: \(spots[originalIndex].isCompleted)")
+                            print("🔄 DEBUG: チェックボックスがタップされました")
+                            print("  - インデックス: \(index)")
+                            print("  - スポット名: \(spots[index].name)")
+                            print("  - 現在のisCompleted: \(spots[index].isCompleted)")
                             
-                            // 明示的に値を反転
-                            let newValue = !spots[originalIndex].isCompleted
-                            spots[originalIndex].isCompleted = newValue
+                            // 直接ここで値を更新
+                            spots[index].isCompleted.toggle()
+                            
+                            print("  - 更新後のisCompleted: \(spots[index].isCompleted)")
                             
                             // 新しく完了したスポットを追跡
-                            if newValue {
-                                newlyCompletedSpots.insert(spot.id)
-                                // 3秒後に新規完了フラグをクリア
+                            if spots[index].isCompleted {
+                                newlyCompletedSpots.insert(spots[index].id)
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                    newlyCompletedSpots.remove(spot.id)
+                                    newlyCompletedSpots.remove(spots[index].id)
                                 }
                             } else {
-                                newlyCompletedSpots.remove(spot.id)
-                            }
-                            
-                            print("🔄 DEBUG: 設定した値: \(newValue)")
-                            print("🔄 DEBUG: 更新後isCompleted: \(spots[originalIndex].isCompleted)")
-                            
-                            // 強制的にUIを更新
-                            updateTrigger.toggle()
-                            
-                            // 配列全体の状態を確認
-                            print("🔄 DEBUG: spots配列の状態:")
-                            for (idx, s) in spots.enumerated() {
-                                print("  [\(idx)] \(s.name): \(s.isCompleted)")
+                                newlyCompletedSpots.remove(spots[index].id)
                             }
                         }
                     )
                     
                     // 交通機関情報
-                    if index < daySpots.count - 1, let transport = spot.transportToNext {
+                    let daySpotsSorted = spots.filter { $0.dayNumber == selectedDay }
+                    if let currentDayIndex = daySpotsSorted.firstIndex(where: { $0.id == spots[index].id }),
+                       currentDayIndex < daySpotsSorted.count - 1,
+                       let transport = spots[index].transportToNext {
                         TransportCard(transport: transport)
                     }
                 }
@@ -218,22 +208,41 @@ struct VisitGameHeader: View {
     }
 }
 
+// スポットデータを管理するクラス
+class SpotsViewModel: ObservableObject {
+    @Published var spots: [VisitSpot]
+    
+    init(spots: [VisitSpot]) {
+        self.spots = spots
+    }
+}
+
 struct VisitGameScreen: View {
     @Environment(\.dismiss) var dismiss
     let animeName: String
     let duration: String
     let planTitle: String
-    @State var spots: [VisitSpot]
+    @StateObject private var viewModel: SpotsViewModel
     @State private var currentSpotIndex = 0
     @State private var showingDetail = false
     @State private var selectedSpot: VisitSpot?
     @State private var selectedDay: Int = 1
-    @State private var updateTrigger = false  // 強制更新用
     @State private var newlyCompletedSpots: Set<UUID> = [] // 新しく完了したスポットを追跡
     let numberOfDays: Int
     let startTime: Date
     let onClose: (() -> Void)?
     let planId: UUID?
+    
+    init(animeName: String, duration: String, planTitle: String, spots: [VisitSpot], numberOfDays: Int, startTime: Date, onClose: (() -> Void)? = nil, planId: UUID? = nil) {
+        self.animeName = animeName
+        self.duration = duration
+        self.planTitle = planTitle
+        self._viewModel = StateObject(wrappedValue: SpotsViewModel(spots: spots))
+        self.numberOfDays = numberOfDays
+        self.startTime = startTime
+        self.onClose = onClose
+        self.planId = planId
+    }
     
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -248,21 +257,21 @@ struct VisitGameScreen: View {
     }()
     
     var completedSpotsCount: Int {
-        spots.filter { $0.isCompleted }.count
+        viewModel.spots.filter { $0.isCompleted }.count
     }
     
     var filteredSpotsCompletedCount: Int {
-        spots.filter { $0.dayNumber == selectedDay && $0.isCompleted }.count
+        viewModel.spots.filter { $0.dayNumber == selectedDay && $0.isCompleted }.count
     }
     
     var filteredSpotsCount: Int {
-        spots.filter { $0.dayNumber == selectedDay }.count
+        viewModel.spots.filter { $0.dayNumber == selectedDay }.count
     }
     
     var mainContent: some View {
         VStack(spacing: 0) {
             // 現在時刻と開始時刻の表示
-            let filteredSpots = spots.filter { $0.dayNumber == selectedDay }
+            let filteredSpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
             if let firstSpot = filteredSpots.first, let startTime = firstSpot.arrivalTime {
                 HStack {
                     Image(systemName: "clock.fill")
@@ -278,12 +287,11 @@ struct VisitGameScreen: View {
             
             // スポットリスト
             SpotListView(
-                spots: $spots,
+                spots: $viewModel.spots,
                 selectedDay: selectedDay,
                 selectedSpot: $selectedSpot,
                 showingDetail: $showingDetail,
-                newlyCompletedSpots: $newlyCompletedSpots,
-                updateTrigger: $updateTrigger
+                newlyCompletedSpots: $newlyCompletedSpots
             )
             
             // 完了メッセージ
@@ -298,7 +306,7 @@ struct VisitGameScreen: View {
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.purple)
                         .multilineTextAlignment(.center)
-                    if completedSpotsCount == spots.count {
+                    if completedSpotsCount == viewModel.spots.count {
                         Text("すべての日程が完了しました\nお疲れ様でした")
                             .font(.system(size: 16))
                             .foregroundColor(.gray)
@@ -344,7 +352,7 @@ struct VisitGameScreen: View {
                 .background(Color(.systemGray6))
                 
                 // 下部のボタン
-                if completedSpotsCount == spots.count {
+                if completedSpotsCount == viewModel.spots.count {
                     Button(action: {
                         if let onClose = onClose {
                             onClose()
@@ -370,12 +378,12 @@ struct VisitGameScreen: View {
             .navigationBarHidden(true)
         }
         .sheet(item: $selectedSpot) { spot in
-            if let index = spots.firstIndex(where: { $0.id == spot.id }) {
+            if let index = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
                 SpotDetailView(
-                    spot: $spots[index], 
-                    spots: $spots, 
+                    spot: $viewModel.spots[index], 
+                    spots: $viewModel.spots, 
                     startTime: startTime,
-                    savePlanProgress: savePlanProgress
+                    savePlanProgress: {}
                 )
             }
         }
@@ -383,127 +391,20 @@ struct VisitGameScreen: View {
             print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
             print("🎮 [DEBUG] planTitle: \(planTitle)")
             print("🎮 [DEBUG] animeName: \(animeName)")
-            print("🎮 [DEBUG] spots.count: \(spots.count)")
+            print("🎮 [DEBUG] spots.count: \(viewModel.spots.count)")
             print("🎮 [DEBUG] numberOfDays: \(numberOfDays)")
             print("🎮 [DEBUG] spots dayNumber distribution:")
-            for spot in spots {
+            for spot in viewModel.spots {
                 print("  - \(spot.name): day \(spot.dayNumber)")
             }
-            if spots.isEmpty {
+            if viewModel.spots.isEmpty {
                 print("⚠️ WARNING: spotsが空です！")
             }
         }
         .background(Color(.systemBackground))
     }
     
-    func toggleSpotCompletion(spotId: UUID) {
-        print("DEBUG: toggleSpotCompletion が呼び出されました - ID: \(spotId)")
-        
-        if let index = spots.firstIndex(where: { $0.id == spotId }) {
-            let oldValue = spots[index].isCompleted
-            
-            print("DEBUG: toggle前の詳細情報")
-            print("  - スポット名: \(spots[index].name)")
-            print("  - 現在のisCompleted: \(spots[index].isCompleted)")
-            print("  - スポットID: \(spots[index].id)")
-            
-            // 明示的にwithAnimationを使って更新
-            withAnimation(.easeInOut(duration: 0.2)) {
-                spots[index].isCompleted = !spots[index].isCompleted
-            }
-            
-            let newValue = spots[index].isCompleted
-            print("  - 配列更新後のisCompleted: \(newValue)")
-            
-            print("DEBUG: スポット完了状態変更")
-            print("  - スポット名: \(spots[index].name)")
-            print("  - 変更前: \(oldValue)")
-            print("  - 変更後: \(newValue)")
-            
-            // UI更新を強制する
-            DispatchQueue.main.async {
-                self.savePlanProgress()
-            }
-        } else {
-            print("ERROR: スポットが見つかりません - ID: \(spotId)")
-            print("DEBUG: 利用可能なスポットID一覧:")
-            for spot in spots {
-                print("  - \(spot.name): \(spot.id)")
-            }
-        }
-    }
     
-    func savePlanProgress() {
-        do {
-            let encoder = JSONEncoder()
-            
-            // UserDefaultsから現在の保存されたプランを読み込み
-            if let savedPlansData = UserDefaults.standard.data(forKey: "savedPlans"),
-               var savedPlans = try? JSONDecoder().decode([VisitPlanData].self, from: savedPlansData) {
-                
-                print("DEBUG: 保存されたプラン数: \(savedPlans.count)")
-                
-                // 現在のプランを見つけて更新
-                var planFound = false
-                
-                // 1. まずIDで検索
-                if let planId = planId {
-                    for i in 0..<savedPlans.count {
-                        if savedPlans[i].id == planId {
-                            print("DEBUG: IDで一致するプランが見つかりました")
-                            savedPlans[i].spots = spots
-                            savedPlans[i].lastVisitedDate = Date()
-                            planFound = true
-                            break
-                        }
-                    }
-                }
-                
-                // 2. IDで見つからない場合は、タイトルとアニメ名で検索
-                if !planFound {
-                    for i in 0..<savedPlans.count {
-                        print("DEBUG: プラン \(i): title='\(savedPlans[i].title)', animeName='\(savedPlans[i].animeName)'")
-                        if savedPlans[i].title == planTitle && savedPlans[i].animeName == animeName {
-                            print("DEBUG: タイトルとアニメ名で一致するプランが見つかりました")
-                            savedPlans[i].spots = spots
-                            savedPlans[i].lastVisitedDate = Date()
-                            planFound = true
-                            break
-                        }
-                    }
-                }
-                
-                // 3. それでも見つからない場合は、アニメ名のみで検索して類似プランを探す
-                if !planFound {
-                    for i in 0..<savedPlans.count {
-                        if savedPlans[i].animeName == animeName {
-                            print("DEBUG: アニメ名のみで一致するプランが見つかりました (プラン: \(savedPlans[i].title))")
-                            savedPlans[i].spots = spots
-                            savedPlans[i].lastVisitedDate = Date()
-                            planFound = true
-                            break
-                        }
-                    }
-                }
-                
-                if !planFound {
-                    print("ERROR: 一致するプランが見つかりません")
-                    print("  検索対象: planId=\(planId?.uuidString ?? "nil"), planTitle='\(planTitle)', animeName='\(animeName)'")
-                } else {
-                    print("DEBUG: プランの進捗が保存されました")
-                }
-                
-                // 更新されたプランをUserDefaultsに保存
-                let updatedData = try encoder.encode(savedPlans)
-                UserDefaults.standard.set(updatedData, forKey: "savedPlans")
-                
-            } else {
-                print("ERROR: 保存されたプランデータが見つかりません")
-            }
-        } catch {
-            print("ERROR: プランの進捗保存に失敗しました: \(error)")
-        }
-    }
 }
 
 struct SpotCard: View {
@@ -625,9 +526,11 @@ struct SpotCard: View {
                 
                 // チェックボックス
                 Button(action: {
-                    print("🔘 DEBUG: チェックボックスが押されました - スポット: \(spot.name)")
-                    print("🔘 DEBUG: 現在のisCompleted: \(isCompleted)")
-                    print("🔘 DEBUG: spot.id: \(spot.id)")
+                    print("🔘 DEBUG: SpotCard - チェックボックスが押されました")
+                    print("  - スポット名: \(spot.name)")
+                    print("  - 現在のisCompleted (プロパティ): \(isCompleted)")
+                    print("  - spot.isCompleted: \(spot.isCompleted)")
+                    print("  - spot.id: \(spot.id)")
                     
                     // ハプティックフィードバック
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)

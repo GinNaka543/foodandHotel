@@ -38,7 +38,7 @@ public struct VisitScreen: View {
     public var body: some View {
         mainContent
             .fullScreenCover(isPresented: $showingPlanningScreen) {
-                VisitPlanningScreen()
+                VisitPlanningScreen(editingDraft: selectedDraftPlan)
                     .onDisappear {
                         print("プランニング画面が閉じられました - データを再読み込みします")
                         selectedDraftPlan = nil // クリア

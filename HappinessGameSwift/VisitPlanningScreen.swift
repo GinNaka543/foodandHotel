@@ -32,6 +32,27 @@ struct VisitPlanningScreen: View {
     @StateObject private var stripeManager = StripePaymentManager.shared
     @StateObject private var githubManager = GitHubImageManager.shared
     
+    // 編集中の下書きデータ
+    private let editingDraftId: UUID?
+    
+    init(editingDraft: VisitPlanData? = nil) {
+        if let draft = editingDraft {
+            print("DEBUG: 下書きデータを読み込み中: \(draft.title)")
+            self.editingDraftId = draft.id
+            self._animeName = State(initialValue: draft.animeName)
+            self._planTitle = State(initialValue: draft.title)
+            self._spots = State(initialValue: draft.spots)
+            self._thumbnailData = State(initialValue: draft.thumbnailData)
+            self._startTime = State(initialValue: draft.startTime)
+            self._numberOfDays = State(initialValue: draft.numberOfDays)
+            if let thumbnailData = draft.thumbnailData {
+                self._thumbnailImage = State(initialValue: UIImage(data: thumbnailData))
+            }
+        } else {
+            self.editingDraftId = nil
+        }
+    }
+    
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MM/dd"
@@ -678,6 +699,7 @@ struct VisitPlanningScreen: View {
     func saveDraft() {
         // 下書きプランデータを作成
         let planData = VisitPlanData(
+            id: editingDraftId ?? UUID(), // 編集中の場合は既存のIDを使用
             animeName: animeName,
             title: planTitle.isEmpty ? "無題のプラン" : planTitle,
             duration: formatTotalDuration(),
@@ -689,13 +711,26 @@ struct VisitPlanningScreen: View {
             isDraft: true
         )
         
-        // savedPlansに追加（重複チェックなし - 新しい下書きとして追加）
         var savedPlans = getSavedPlans()
-        savedPlans.append(planData)
+        
+        if let editingId = editingDraftId {
+            // 既存の下書きを更新
+            if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
+                savedPlans[index] = planData
+                print("既存の下書きを更新しました: \(planData.title)")
+            } else {
+                // 既存の下書きが見つからない場合は新規追加
+                savedPlans.append(planData)
+                print("下書きが見つからないため新規追加しました: \(planData.title)")
+            }
+        } else {
+            // 新規の下書きとして追加
+            savedPlans.append(planData)
+            print("新規下書きを保存しました: \(planData.title)")
+        }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
             UserDefaults.standard.set(encoded, forKey: "savedPlans")
-            print("下書きを保存しました: \(planData.title)")
             
             DispatchQueue.main.async {
                 self.dismiss()

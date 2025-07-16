@@ -927,9 +927,9 @@ struct AboutView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
-                    // キャラクターアイコン
+                    // キャラクターバナー画像
                     if let character = character {
-                        VStack(spacing: 12) {
+                        VStack(spacing: 0) {
                             Button(action: {
                                 showIconPicker = true
                             }) {
@@ -937,35 +937,80 @@ struct AboutView: View {
                                     Image(uiImage: image)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                        .frame(width: 100, height: 100)
-                                        .clipShape(Circle())
+                                        .frame(maxWidth: .infinity, maxHeight: 200)
+                                        .clipped()
                                         .overlay(
-                                            Circle()
-                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                            Color.black.opacity(0.4)
                                         )
                                         .overlay(
-                                            Circle()
-                                                .fill(Color.black.opacity(0.5))
-                                                .frame(width: 100, height: 100)
-                                                .overlay(
-                                                    Image(systemName: "camera.fill")
-                                                        .font(.system(size: 20))
-                                                        .foregroundColor(.white)
-                                                )
-                                                .opacity(0)
+                                            VStack {
+                                                Spacer()
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 4) {
+                                                        Text(character.name)
+                                                            .font(.system(size: 24, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                        
+                                                        if !character.tag.isEmpty {
+                                                            Text(character.tag)
+                                                                .font(.system(size: 16, weight: .medium))
+                                                                .foregroundColor(.white)
+                                                        }
+                                                        
+                                                        if !character.voiceActor.isEmpty {
+                                                            Text(character.voiceActor)
+                                                                .font(.system(size: 14, weight: .regular))
+                                                                .foregroundColor(.white.opacity(0.8))
+                                                        }
+                                                    }
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 16)
+                                                .padding(.bottom, 16)
+                                            }
                                         )
                                 } else {
-                                    Circle()
+                                    Rectangle()
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 100, height: 100)
+                                        .frame(maxWidth: .infinity, maxHeight: 200)
                                         .overlay(
                                             VStack(spacing: 4) {
                                                 Image(systemName: "person.fill")
                                                     .font(.system(size: 40))
                                                     .foregroundColor(.gray)
                                                 Text("タップで追加")
-                                                    .font(.system(size: 10))
+                                                    .font(.system(size: 12))
                                                     .foregroundColor(.gray)
+                                            }
+                                        )
+                                        .overlay(
+                                            Color.black.opacity(0.4)
+                                        )
+                                        .overlay(
+                                            VStack {
+                                                Spacer()
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 4) {
+                                                        Text(character.name)
+                                                            .font(.system(size: 24, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                        
+                                                        if !character.tag.isEmpty {
+                                                            Text(character.tag)
+                                                                .font(.system(size: 16, weight: .medium))
+                                                                .foregroundColor(.white)
+                                                        }
+                                                        
+                                                        if !character.voiceActor.isEmpty {
+                                                            Text(character.voiceActor)
+                                                                .font(.system(size: 14, weight: .regular))
+                                                                .foregroundColor(.white.opacity(0.8))
+                                                        }
+                                                    }
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 16)
+                                                .padding(.bottom, 16)
                                             }
                                         )
                                 }
@@ -1081,7 +1126,7 @@ struct AboutView: View {
                     Spacer(minLength: 50)
                 }
             }
-            .background(Color(.systemGray6))
+            .background(Color.white)
             .navigationBarTitle("About", displayMode: .inline)
             .navigationBarItems(
                 leading: Button(action: {

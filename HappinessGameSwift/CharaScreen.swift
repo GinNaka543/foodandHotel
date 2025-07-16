@@ -833,7 +833,18 @@ struct CharacterDetailView: View {
                 }
             }
             .sheet(isPresented: $showEditBackgroundModal) {
-                EditBackgroundView(character: $character, characterManager: characterManager)
+                // 最新のキャラクター情報を取得
+                if let updatedCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                    EditBackgroundView(character: Binding(
+                        get: { updatedCharacter },
+                        set: { newValue in
+                            character = newValue
+                            characterManager.updateCharacter(newValue)
+                        }
+                    ), characterManager: characterManager)
+                } else {
+                    EditBackgroundView(character: $character, characterManager: characterManager)
+                }
             }
             .fullScreenCover(isPresented: $showArtwork) {
                 ArtworkScreen(character: character)
@@ -1876,6 +1887,11 @@ struct EditBackgroundView: View {
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
     @Environment(\.dismiss) var dismiss
+    
+    // 最新のキャラクター情報を取得
+    private var currentCharacter: Character {
+        characterManager.characters.first(where: { $0.id == character.id }) ?? character
+    }
 
     var body: some View {
         NavigationView {
@@ -1892,7 +1908,7 @@ struct EditBackgroundView: View {
                                 .frame(height: 200)
                                 .clipped()
                                 .cornerRadius(12)
-                        } else if let imagePath = character.backgroundImagePath,
+                        } else if let imagePath = currentCharacter.backgroundImagePath,
                                   let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
@@ -1921,52 +1937,41 @@ struct EditBackgroundView: View {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self),
                                let uiImage = UIImage(data: data) {
-                                backgroundImage = uiImage
+                                await MainActor.run {
+                                    backgroundImage = uiImage
+                                    
+                                    // 即座に背景を更新
+                                    let fileName = "bg_\(UUID().uuidString).png"
+                                    if let imagePath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                        // 古い画像を削除
+                                        if let oldPath = character.backgroundImagePath {
+                                            try? FileManager.default.removeItem(atPath: oldPath)
+                                        }
+                                        
+                                        // 新しいCharacterオブジェクトを作成して更新
+                                        var updatedCharacter = character
+                                        updatedCharacter.backgroundImagePath = imagePath
+                                        
+                                        // Bindingを通じて更新
+                                        character = updatedCharacter
+                                        
+                                        // モーダルを自動的に閉じる
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                            dismiss()
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                
+                Text("画像を選択すると自動的に背景が変更されます")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .padding(.top, 10)
                 
                 Spacer()
-                
-                HStack(spacing: 20) {
-                    Button("キャンセル") {
-                        dismiss()
-                    }
-                    .foregroundColor(.red)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 12)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(10)
-                    
-                    Button("保存") {
-                        if let image = backgroundImage {
-                            let fileName = "bg_\(UUID().uuidString).png"
-                            if let imagePath = saveImageToDocuments(image, fileName: fileName) {
-                                // 古い画像を削除
-                                if let oldPath = character.backgroundImagePath {
-                                    try? FileManager.default.removeItem(atPath: oldPath)
-                                }
-                                
-                                // 新しいCharacterオブジェクトを作成して更新
-                                var updatedCharacter = character
-                                updatedCharacter.backgroundImagePath = imagePath
-                                
-                                // Bindingを通じて更新
-                                character = updatedCharacter
-                                
-                                dismiss()
-                            }
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 30)
-                    .padding(.vertical, 12)
-                    .background(backgroundImage != nil ? Color.blue : Color.gray)
-                    .cornerRadius(10)
-                    .disabled(backgroundImage == nil)
-                }
-                .padding(.bottom, 30)
             }
             .padding()
             .navigationBarTitle("背景画像を変更", displayMode: .inline)
@@ -1976,6 +1981,11 @@ struct EditBackgroundView: View {
                         .foregroundColor(.gray)
                 }
             )
+        }
+        .onDisappear {
+            // モーダルが閉じたときに状態をリセット
+            backgroundImage = nil
+            backgroundPickerItem = nil
         }
     }
 }

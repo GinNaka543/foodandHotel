@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import UIKit
+import FirebaseFirestore
 
 // VisitTypes.swiftの型を使用するための明示的なimport
 
@@ -688,17 +689,48 @@ public struct VisitScreen: View {
     // Firebaseからプランを読み込む
     func loadFirebasePlans() {
         print("DEBUG: loadFirebasePlans開始 - currentUserId: \(currentUserId)")
+        print("DEBUG: 現在のpublicPlans数: \(publicPlans.count)")
+        
+        // まず、すべての管理者プランを確認（デバッグ用）
+        print("🔍 [DEBUG] すべての管理者プランを確認...")
+        let db = Firestore.firestore()
+        db.collection("visitPlans")
+            .whereField("userId", isEqualTo: "admin")
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ 管理者プラン確認エラー: \(error)")
+                } else {
+                    print("✅ 管理者プラン総数: \(snapshot?.documents.count ?? 0)件")
+                    snapshot?.documents.forEach { doc in
+                        let data = doc.data()
+                        print("  プラン: \(data["title"] as? String ?? "nil")")
+                        print("    - ID: \(doc.documentID)")
+                        print("    - isPublic: \(data["isPublic"] as? Bool ?? false)")
+                        print("    - createdAt: \(data["createdAt"] ?? "nil")")
+                    }
+                }
+            }
         
         // 公開プランを取得（強制的にFirebaseから新しいデータを取得）
         firebaseManager.fetchPublicPlans { result in
             switch result {
             case .success(let plans):
                 print("DEBUG: 公開プラン取得成功: \(plans.count)件")
-                // 各プランのスポット数をログ出力
-                for plan in plans {
-                    print("DEBUG: プラン \(plan.title) - スポット数: \(plan.spots.count)")
+                
+                // 管理者プランのみをフィルタリングして確認
+                let adminPlans = plans.filter { $0.userId == "admin" }
+                print("DEBUG: 取得した管理者プラン数: \(adminPlans.count)")
+                
+                // 各プランの詳細をログ出力
+                for (index, plan) in plans.enumerated() {
+                    print("DEBUG: プラン[\(index)] - タイトル: \(plan.title)")
+                    print("  - userId: \(plan.userId)")
+                    print("  - isPublic: \(plan.isPublic)")
+                    print("  - スポット数: \(plan.spots.count)")
                 }
+                
                 self.publicPlans = plans
+                print("DEBUG: publicPlansを更新しました: \(self.publicPlans.count)件")
             case .failure(let error):
                 print("公開プラン取得エラー: \(error)")
             }

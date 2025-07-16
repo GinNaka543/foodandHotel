@@ -570,10 +570,14 @@ class FirebaseManager: ObservableObject {
     // 公開プランを取得（オールタブ用）
     func fetchPublicPlans(completion: @escaping (Result<[VisitPlanModel], Error>) -> Void) {
         print("🔍 [DEBUG] fetchPublicPlans開始")
+        
+        // すべての公開プランを取得し、クライアント側でフィルタリング
         db.collection("visitPlans")
             .whereField("isPublic", isEqualTo: true)
-            .limit(to: 50)
-            .getDocuments { snapshot, error in
+            .limit(to: 100)
+            .getDocuments { [weak self] snapshot, error in
+                guard let self = self else { return }
+                
                 if let error = error {
                     print("❌ [DEBUG] fetchPublicPlans失敗: \(error)")
                     completion(.failure(error))
@@ -582,38 +586,46 @@ class FirebaseManager: ObservableObject {
                 
                 print("📊 [DEBUG] fetchPublicPlans取得件数: \(snapshot?.documents.count ?? 0)")
                 
-                let plans: [VisitPlanModel] = snapshot?.documents.compactMap { doc in
-                    print("📋 [DEBUG] 処理中のドキュメント: \(doc.documentID)")
-                    let docData = doc.data()
-                    print("📋 [DEBUG] データ: \(docData)")
+                var allPlans: [VisitPlanModel] = []
+                
+                // 公開プランを変換
+                snapshot?.documents.forEach { doc in
+                    let data = doc.data()
+                    print("📋 [DEBUG] プラン: \(data["title"] as? String ?? "nil"), userId: \(data["userId"] as? String ?? "nil"), isPublic: \(data["isPublic"] as? Bool ?? false)")
                     
-                    // spots データを特別に確認
-                    if let spots = docData["spots"] as? [[String: Any]] {
-                        print("📋 [DEBUG] spots データ確認: \(spots.count)個のスポット")
-                        for (index, spot) in spots.enumerated() {
-                            print("📋 [DEBUG] スポット\(index + 1): \(spot)")
+                    if let plan = VisitPlanModel(dictionary: data) {
+                        allPlans.append(plan)
+                    }
+                }
+                
+                // 管理者の非公開プランも追加で取得
+                self.db.collection("visitPlans")
+                    .whereField("userId", isEqualTo: "admin")
+                    .whereField("isPublic", isEqualTo: false)
+                    .limit(to: 50)
+                    .getDocuments { adminSnapshot, adminError in
+                        if let adminError = adminError {
+                            print("❌ [DEBUG] 管理者非公開プラン取得失敗: \(adminError)")
+                        } else {
+                            print("📊 [DEBUG] 管理者非公開プラン取得件数: \(adminSnapshot?.documents.count ?? 0)")
+                            
+                            adminSnapshot?.documents.forEach { doc in
+                                let data = doc.data()
+                                print("📋 [DEBUG] 管理者非公開プラン: \(data["title"] as? String ?? "nil")")
+                                
+                                if let plan = VisitPlanModel(dictionary: data) {
+                                    allPlans.append(plan)
+                                }
+                            }
                         }
-                    } else {
-                        print("❌ [DEBUG] spots データが見つからないか、形式が違います: \(docData["spots"] ?? "nil")")
+                        
+                        print("📊 [DEBUG] 総プラン数: \(allPlans.count)")
+                        
+                        // 作成日時でソート
+                        let sortedPlans = allPlans.sorted { $0.createdAt > $1.createdAt }
+                        self.publicPlans = sortedPlans
+                        completion(.success(sortedPlans))
                     }
-                    
-                    let plan = VisitPlanModel(dictionary: docData)
-                    if plan == nil {
-                        print("❌ [DEBUG] プラン変換失敗: \(doc.documentID)")
-                    } else {
-                        print("✅ [DEBUG] プラン変換成功: \(doc.documentID) - \(plan!.title)")
-                        print("✅ [DEBUG] 変換後スポット数: \(plan!.spots.count)")
-                    }
-                    return plan
-                } ?? []
-                
-                print("📊 [DEBUG] 変換成功したプラン数: \(plans.count)")
-                
-                // クライアント側で作成日時の降順にソート
-                let sortedPlans = plans.sorted { $0.createdAt > $1.createdAt }
-                
-                self.publicPlans = sortedPlans
-                completion(.success(sortedPlans))
             }
     }
     

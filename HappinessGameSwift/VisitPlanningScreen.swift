@@ -70,7 +70,14 @@ struct VisitPlanningScreen: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { 
+                        // 戻るボタンを押した時、未確定のプランを自動的に下書き保存
+                        if !planTitle.isEmpty || !animeName.isEmpty || !spots.isEmpty {
+                            saveDraftSilently()
+                        } else {
+                            dismiss()
+                        }
+                    }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 20, weight: .medium))
@@ -737,6 +744,51 @@ struct VisitPlanningScreen: View {
             }
         } else {
             print("下書き保存エラー")
+        }
+    }
+    
+    func saveDraftSilently() {
+        // 下書きプランデータを作成
+        let planData = VisitPlanData(
+            id: editingDraftId ?? UUID(), // 編集中の場合は既存のIDを使用
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailData: thumbnailData,
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: true
+        )
+        
+        var savedPlans = getSavedPlans()
+        
+        if let editingId = editingDraftId {
+            // 既存の下書きを更新
+            if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
+                savedPlans[index] = planData
+                print("戻るボタンで下書きを自動更新しました: \(planData.title)")
+            } else {
+                // 既存の下書きが見つからない場合は新規追加
+                savedPlans.append(planData)
+                print("戻るボタンで下書きを自動追加しました: \(planData.title)")
+            }
+        } else {
+            // 新規の下書きとして追加
+            savedPlans.append(planData)
+            print("戻るボタンで新規下書きを自動保存しました: \(planData.title)")
+        }
+        
+        if let encoded = try? JSONEncoder().encode(savedPlans) {
+            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+        } else {
+            print("自動下書き保存エラー")
+        }
+        
+        // dismiss()を最後に呼び出す
+        DispatchQueue.main.async {
+            self.dismiss()
         }
     }
 }

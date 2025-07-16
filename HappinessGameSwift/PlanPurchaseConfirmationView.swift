@@ -211,7 +211,7 @@ struct PlanPurchaseConfirmationView: View {
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.orange)
+                                    .fill(Color.purple)
                             )
                         }
                         .disabled(isLoadingPoints)

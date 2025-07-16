@@ -1101,11 +1101,53 @@ struct SpotCard: View {
                     .lineLimit(2)
                     .padding(.top, 15) // 15ピクセル下げる
                     
-                    // 滞在時間帯
-                    if !spot.timeRange.isEmpty {
-                        Text(spot.timeRange)
-                            .font(.system(size: 12))
-                            .foregroundColor(.blue)
+                    // 到着・出発時間
+                    HStack(spacing: 8) {
+                        if let arrivalTime = spot.arrivalTime {
+                            Label(timeFormatter.string(from: arrivalTime), systemImage: "arrow.down.circle.fill")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.green)
+                        }
+                        
+                        if let departureTime = spot.departureTime {
+                            Label(timeFormatter.string(from: departureTime), systemImage: "arrow.up.circle.fill")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.red)
+                        }
+                        
+                        // 既存の時間帯表示も残す
+                        if !spot.timeRange.isEmpty && spot.arrivalTime == nil && spot.departureTime == nil {
+                            Text(spot.timeRange)
+                                .font(.system(size: 12))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
+                    // プログレスバー（現在時刻が到着・出発時間の間にある場合に表示）
+                    if let arrivalTime = spot.arrivalTime, let departureTime = spot.departureTime {
+                        let now = Date()
+                        let totalDuration = departureTime.timeIntervalSince(arrivalTime)
+                        let elapsedTime = now.timeIntervalSince(arrivalTime)
+                        let progress = min(max(elapsedTime / totalDuration, 0), 1)
+                        
+                        if progress >= 0 && progress <= 1 {
+                            GeometryReader { geometry in
+                                ZStack(alignment: .leading) {
+                                    // 背景
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(height: 4)
+                                    
+                                    // 進捗
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.purple)
+                                        .frame(width: geometry.size.width * CGFloat(progress), height: 4)
+                                        .animation(.linear(duration: 0.3), value: progress)
+                                }
+                            }
+                            .frame(height: 4)
+                            .padding(.top, 2)
+                        }
                     }
                     
                     // 住所情報

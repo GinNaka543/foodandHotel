@@ -851,6 +851,18 @@ class FirebaseManager: ObservableObject {
     
     // MARK: - Points Management Functions
     
+    // ユーザーのポイント残高のみを取得
+    func fetchUserPoints(userId: String, completion: @escaping (Result<Int, Error>) -> Void) {
+        getUserPoints(userId: userId) { result in
+            switch result {
+            case .success(let pointsModel):
+                completion(.success(pointsModel.points))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
     // ユーザーのポイント情報を取得
     func getUserPoints(userId: String, completion: @escaping (Result<UserPointsModel, Error>) -> Void) {
         print("🔥 [FirebaseManager] getUserPoints開始: userId=\(userId)")
@@ -968,7 +980,7 @@ class FirebaseManager: ObservableObject {
     }
     
     // ポイントを使用（減算）
-    func usePoints(userId: String, points: Int, description: String, completion: @escaping (Result<Void, Error>) -> Void) {
+    func usePoints(userId: String, points: Int, reason: String, completion: @escaping (Result<Void, Error>) -> Void) {
         print("🔥 [FirebaseManager] usePoints開始: userId=\(userId), points=\(points)")
         
         // 現在のポイントを確認
@@ -998,7 +1010,7 @@ class FirebaseManager: ObservableObject {
                     "userId": userId,
                     "amount": -points,
                     "type": "usage",
-                    "description": description,
+                    "description": reason,
                     "createdAt": FieldValue.serverTimestamp()
                 ]
                 batch.setData(transactionData, forDocument: transactionRef)

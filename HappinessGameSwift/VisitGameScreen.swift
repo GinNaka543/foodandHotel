@@ -232,8 +232,9 @@ struct VisitGameScreen: View {
     let startTime: Date
     let onClose: (() -> Void)?
     let planId: UUID?
+    let isReadOnly: Bool
     
-    init(animeName: String, duration: String, planTitle: String, spots: [VisitSpot], numberOfDays: Int, startTime: Date, onClose: (() -> Void)? = nil, planId: UUID? = nil) {
+    init(animeName: String, duration: String, planTitle: String, spots: [VisitSpot], numberOfDays: Int, startTime: Date, onClose: (() -> Void)? = nil, planId: UUID? = nil, isReadOnly: Bool = false) {
         self.animeName = animeName
         self.duration = duration
         self.planTitle = planTitle
@@ -242,6 +243,7 @@ struct VisitGameScreen: View {
         self.startTime = startTime
         self.onClose = onClose
         self.planId = planId
+        self.isReadOnly = isReadOnly
     }
     
     let dateFormatter: DateFormatter = {
@@ -323,18 +325,20 @@ struct VisitGameScreen: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // シンプルなヘッダー
-                animeStyleHeader
-                
-                // メインバナー
-                mainBanner
-                
-                // タブバー
-                animeStyleTabs
-                
-                // メインコンテンツ
-                ScrollView {
+            ZStack(alignment: .top) {
+                VStack(spacing: 0) {
+                    // ヘッダーのスペースを確保
+                    Color.clear
+                        .frame(height: 60)
+                    
+                    // メインバナー
+                    mainBanner
+                    
+                    // タブバー
+                    animeStyleTabs
+                    
+                    // メインコンテンツ
+                    ScrollView {
                     LazyVStack(spacing: 12) {
                         let dayFilteredSpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
                         ForEach(dayFilteredSpots, id: \.id) { spot in
@@ -349,26 +353,30 @@ struct VisitGameScreen: View {
                                         spot: viewModel.spots[realIndex],
                                         isCompleted: viewModel.spots[realIndex].isCompleted,
                                         onToggle: {
-                                            withAnimation(.spring()) {
-                                                viewModel.spots[realIndex].isCompleted.toggle()
-                                                if viewModel.spots[realIndex].isCompleted {
-                                                    newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                        newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
+                                            // 読み取り専用モードではチェックボックスを無効化
+                                            if !isReadOnly {
+                                                withAnimation(.spring()) {
+                                                    viewModel.spots[realIndex].isCompleted.toggle()
+                                                    if viewModel.spots[realIndex].isCompleted {
+                                                        newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
+                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                                            newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
+                                                        }
                                                     }
-                                                }
-                                                
-                                                // 全てのスポットが完了したかチェック
-                                                if allSpotsCompleted {
-                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                        showCompletionPopup = true
+                                                    
+                                                    // 全てのスポットが完了したかチェック
+                                                    if allSpotsCompleted {
+                                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                            showCompletionPopup = true
+                                                        }
                                                     }
                                                 }
                                             }
                                         },
                                         onTap: {
                                             // NavigationLinkを使用するため、このonTapは使用しない
-                                        }
+                                        },
+                                        isReadOnly: isReadOnly
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -390,7 +398,16 @@ struct VisitGameScreen: View {
                 }
             }
             .background(Color(.systemBackground))
-            .navigationBarHidden(true)
+            
+            // ヘッダーを最前面に配置
+            VStack {
+                animeStyleHeader
+                    .background(Color(.systemBackground))
+                    .zIndex(1000)
+                Spacer()
+            }
+        }
+        .navigationBarHidden(true)
         }
         .onAppear {
             print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
@@ -420,16 +437,22 @@ struct VisitGameScreen: View {
         HStack {
             // 戻るボタン
             Button(action: {
+                print("×ボタンがタップされました")
                 if let onClose = onClose {
+                    print("onCloseを実行します")
                     onClose()
                 } else {
+                    print("dismissを実行します")
                     dismiss()
                 }
             }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(.black)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
+            .zIndex(999)
             
             Spacer()
             
@@ -802,6 +825,7 @@ struct AnimeStyleSpotCard: View {
     let isCompleted: Bool
     let onToggle: () -> Void
     let onTap: () -> Void
+    let isReadOnly: Bool
     
     var body: some View {
         HStack(spacing: 12) {
@@ -869,6 +893,7 @@ struct AnimeStyleSpotCard: View {
                     .font(.system(size: 24))
                     .foregroundColor(isCompleted ? .green : .gray)
             }
+            .disabled(isReadOnly) // 読み取り専用モードでは無効化
             .buttonStyle(PlainButtonStyle())
         }
         .padding(.horizontal, 16)

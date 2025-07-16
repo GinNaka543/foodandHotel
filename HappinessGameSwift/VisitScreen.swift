@@ -829,7 +829,7 @@ public struct VisitScreen: View {
         }
         
         // プランの価格分のポイントを消費
-        firebaseManager.usePoints(userId: userId, points: plan.price, description: "プラン購入: \(plan.title)") { result in
+        firebaseManager.usePoints(userId: userId, points: plan.price, reason: "プラン購入: \(plan.title)") { result in
             switch result {
             case .success:
                 print("✅ ポイント消費成功: \(plan.title)")

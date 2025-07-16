@@ -251,7 +251,7 @@ struct PlanPurchaseView: View {
         }
         
         // ポイントを使用してプランを購入
-        firebaseManager.usePoints(userId: userId, points: plan.price, description: "プラン購入: \(plan.title)") { result in
+        firebaseManager.usePoints(userId: userId, points: plan.price, reason: "プラン購入: \(plan.title)") { result in
             switch result {
             case .success:
                 // 購入記録を作成

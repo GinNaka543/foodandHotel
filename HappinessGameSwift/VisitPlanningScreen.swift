@@ -24,9 +24,10 @@ struct VisitPlanningScreen: View {
     @State private var planPrice: Int = 0
     @State private var planBudget: Int = 0
     @State private var isPublic: Bool = false
-    @State private var showingPublicationChoice = false
-    @State private var showingPublishDialog = false
+    @State private var showingConfirmation = false
+    @State private var showingPointPurchase = false
     @State private var showingPaymentSheet = false
+    @State private var showingPublishDialog = false
     @StateObject private var firebaseManager = FirebaseManager.shared
     @StateObject private var stripeManager = StripePaymentManager.shared
     @StateObject private var githubManager = GitHubImageManager.shared
@@ -354,7 +355,7 @@ struct VisitPlanningScreen: View {
                         }
                         
                         Button(action: {
-                            showingPublicationChoice = true
+                            showingConfirmation = true
                         }) {
                             Text("プランを確定")
                                 .font(.system(size: 17, weight: .semibold))
@@ -374,21 +375,25 @@ struct VisitPlanningScreen: View {
             }
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showingPublicationChoice) {
-            PlanPublicationChoiceView(
+        .sheet(isPresented: $showingConfirmation) {
+            PlanConfirmationView(
                 planTitle: planTitle,
-                onPrivate: { 
-                    isPublic = false
-                    showingPublicationChoice = false
-                    savePlanPrivately()
+                onConfirm: { 
+                    confirmPlanWithPoints()
                 },
-                onPublic: { 
-                    isPublic = true
-                    showingPublicationChoice = false
-                    showingPublishDialog = true
+                onCancel: { 
+                    showingConfirmation = false 
                 },
-                onCancel: { showingPublicationChoice = false }
+                onPurchasePoints: {
+                    showingConfirmation = false
+                    showingPointPurchase = true
+                }
             )
+        }
+        .sheet(isPresented: $showingPointPurchase) {
+            PointPurchaseView(onPurchaseComplete: {
+                showingPointPurchase = false
+            })
         }
         .sheet(isPresented: $showingPublishDialog) {
             PublishPlanDialog(
@@ -422,7 +427,11 @@ struct VisitPlanningScreen: View {
                 planTitle: planTitle,
                 spots: updateSpotTimes(),
                 numberOfDays: numberOfDays,
-                startTime: startTime
+                startTime: startTime,
+                onClose: {
+                    showingItinerary = false
+                },
+                isReadOnly: true  // 読み取り専用モード
             )
         }
     }
@@ -587,32 +596,52 @@ struct VisitPlanningScreen: View {
         })
     }
     
-    func saveDraft() {
+    func confirmPlanWithPoints() {
+        showingConfirmation = false
+        
         let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
         
-        // 下書きプランを作成（isPublicをfalseに設定）
+        // 50ポイントを消費してプランを確定
+        firebaseManager.usePoints(userId: userId, points: 50, reason: "プラン確定") { result in
+            switch result {
+            case .success:
+                // ポイント消費成功、プランを保存
+                self.savePlanAsConfirmed()
+            case .failure(let error):
+                print("ポイント消費エラー: \(error)")
+                // エラー処理（必要に応じてアラートを表示）
+            }
+        }
+    }
+    
+    func savePlanAsConfirmed() {
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // 確定済みプランを作成
         let plan = VisitPlanModel(
             id: UUID().uuidString,
             userId: userId,
             animeName: animeName,
             title: planTitle.isEmpty ? "無題のプラン" : planTitle,
-            description: planDescription,
+            description: "",
             duration: formatTotalDuration(),
             spots: updateSpotTimes(),
             thumbnailUrl: nil,
             price: 0,
-            budget: calculateTotalCost(), // 下書きの場合は総費用を予算として設定
+            budget: calculateTotalCost(),
             createdDate: Date(),
             startTime: startTime,
             numberOfDays: numberOfDays,
             totalCost: calculateTotalCost(),
-            isPublic: false, // 下書きは非公開
+            isPublic: false, // プライベートプランとして保存
             purchasedBy: [],
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            isDraft: false,
+            isConfirmed: true // 確定済みフラグ
         )
         
-        // Firebaseに下書きとして保存
+        // Firebaseに保存
         firebaseManager.saveVisitPlan(plan) { result in
             switch result {
             case .success:
@@ -620,8 +649,49 @@ struct VisitPlanningScreen: View {
                     self.dismiss()
                 }
             case .failure(let error):
-                print("下書き保存エラー: \(error)")
+                print("プラン保存エラー: \(error)")
             }
+        }
+    }
+    
+    func saveDraft() {
+        // 下書きプランデータを作成
+        let planData = VisitPlanData(
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailData: thumbnailData,
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            isDraft: true
+        )
+        
+        // ローカルに保存
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let draftsDirectory = documentsPath.appendingPathComponent("drafts")
+        
+        // draftsディレクトリが存在しない場合は作成
+        if !FileManager.default.fileExists(atPath: draftsDirectory.path) {
+            try? FileManager.default.createDirectory(at: draftsDirectory, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        let fileName = "draft_\(Date().timeIntervalSince1970).json"
+        let fileURL = draftsDirectory.appendingPathComponent(fileName)
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(planData)
+            try data.write(to: fileURL)
+            
+            print("下書きを保存しました: \(fileURL)")
+            
+            DispatchQueue.main.async {
+                self.dismiss()
+            }
+        } catch {
+            print("下書き保存エラー: \(error)")
         }
     }
 }
@@ -929,6 +999,9 @@ struct AddSpotView: View {
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
     @State private var transportRoute: String = ""
+    @State private var selectedThumbnail: PhotosPickerItem?
+    @State private var thumbnailImage: UIImage?
+    @State private var thumbnailData: Data?
     
     let transportMethods = ["電車", "バス", "徒歩", "タクシー"]
     
@@ -1085,7 +1158,7 @@ struct AddSpotView: View {
                             ),
                             timeRange: formattedTimeRange,
                             activity: activity,
-                            imageData: spotImagesData.first, // 後方互換性のため最初の画像を設定
+                            imageData: thumbnailData, // サムネイル画像を設定
                             detailImagesData: spotImagesData.isEmpty ? nil : spotImagesData,
                             dayNumber: selectedDay,
                             spotCost: spotCost
@@ -1093,7 +1166,7 @@ struct AddSpotView: View {
                         spots.append(newSpot)
                         dismiss()
                     }
-                    .disabled(spotName.isEmpty)
+                    .disabled(spotName.isEmpty || thumbnailData == nil)
                 )
         }
     }
@@ -1154,6 +1227,55 @@ struct AddSpotView: View {
                                 .keyboardType(.numberPad)
                             Text("円")
                                 .font(.system(size: 14))
+                        }
+                    }
+                    
+                    // サムネイル画像選択
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("サムネイル画像")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        PhotosPicker(selection: $selectedThumbnail,
+                                    matching: .images,
+                                    photoLibrary: .shared()) {
+                            if let thumbnailImage {
+                                Image(uiImage: thumbnailImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 150)
+                                    .frame(maxWidth: .infinity)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color(.systemGray4), lineWidth: 1)
+                                    )
+                            } else {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                    Text("タップしてサムネイルを選択")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                }
+                                .frame(height: 150)
+                                .frame(maxWidth: .infinity)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
+                            }
+                        }
+                        .onChange(of: selectedThumbnail) { _, newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                    thumbnailImage = UIImage(data: data)
+                                    thumbnailData = data
+                                }
+                            }
                         }
                     }
                     

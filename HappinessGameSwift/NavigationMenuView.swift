@@ -3,6 +3,8 @@ import SwiftUI
 struct NavigationMenuView: View {
     @Binding var isPresented: Bool
     @EnvironmentObject var mainTab: MainTabSelection
+    @State private var showingCharacterOrderModal = false
+    @State private var showingAnimeOrderModal = false
     
     var body: some View {
         ZStack {
@@ -72,6 +74,29 @@ struct NavigationMenuView: View {
                             mainTab.selectedTab = .card
                             isPresented = false
                         }
+                        
+                        Divider()
+                            .padding(.vertical, 8)
+                        
+                        // キャラの順番変更
+                        NavigationMenuItem(
+                            title: "キャラの順番変更"
+                        ) {
+                            isPresented = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                showingCharacterOrderModal = true
+                            }
+                        }
+                        
+                        // アニメの順番変更
+                        NavigationMenuItem(
+                            title: "アニメの順番変更"
+                        ) {
+                            isPresented = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                showingAnimeOrderModal = true
+                            }
+                        }
                     }
                     .padding(.top, 8)
                     
@@ -85,6 +110,12 @@ struct NavigationMenuView: View {
             }
             .offset(x: isPresented ? 0 : -300)
             .animation(.easeOut(duration: 0.25), value: isPresented)
+        }
+        .sheet(isPresented: $showingCharacterOrderModal) {
+            CharacterOrderModal()
+        }
+        .sheet(isPresented: $showingAnimeOrderModal) {
+            AnimeOrderModal()
         }
     }
 }

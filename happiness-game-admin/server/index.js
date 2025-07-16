@@ -1555,7 +1555,7 @@ app.post('/api/travel-plans', async (req, res) => {
   try {
     const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays } = req.body;
     
-    console.log('🔍 [DEBUG] 受信したデータ:');
+    console.log('🔍 [DEBUG] 受信したデータ（ローカル保存のみ）:');
     console.log('  title:', title);
     console.log('  animeName:', animeName);
     console.log('  duration:', duration);
@@ -1567,11 +1567,11 @@ app.post('/api/travel-plans', async (req, res) => {
     }
 
     const now = new Date();
-    const docRef = db.collection('visitPlans').doc();
+    const planId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // VisitPlanModelの形式に合わせてデータを構築
+    // ローカル表示用のデータを構築（Firebaseには保存しない）
     const planData = {
-      id: docRef.id,
+      id: planId,
       title,
       animeName,
       duration,
@@ -1591,6 +1591,8 @@ app.post('/api/travel-plans', async (req, res) => {
           spotCost: parseInt(spot.spotCost) || 0,
           imageUrl: spot.imageUrl || '',
           images: spot.images || [], // 複数画像をサポート
+          arrivalTime: spot.arrivalTime || null,
+          departureTime: spot.departureTime || null,
           transportToNext: spot.transportToNext || null
         };
         console.log(`✅ [DEBUG] 処理後スポット${index + 1}:`, processedSpot);
@@ -1615,10 +1617,11 @@ app.post('/api/travel-plans', async (req, res) => {
       reviewCount: 0
     };
 
-    await docRef.set(planData);
+    // Firebaseへの保存を削除し、ローカル表示のみ
+    console.log('ℹ️ [INFO] プランはローカル表示のみ（Firebase保存なし）');
     
     res.status(201).json({
-      id: docRef.id,
+      id: planId,
       ...planData,
       createdAt: now.toISOString()
     });
@@ -1631,7 +1634,8 @@ app.post('/api/travel-plans', async (req, res) => {
 app.delete('/api/travel-plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.collection('visitPlans').doc(id).delete();
+    // Firebaseからは削除しない（ローカル表示のみ）
+    console.log('ℹ️ [INFO] プラン削除はローカル表示のみ（Firebase削除なし）');
     res.json({ success: true });
   } catch (error) {
     console.error('旅行プラン削除エラー:', error);
@@ -1639,13 +1643,13 @@ app.delete('/api/travel-plans/:id', async (req, res) => {
   }
 });
 
-// 旅行プラン更新API
+// 旅行プラン更新API（ローカル表示のみ）
 app.put('/api/travel-plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays } = req.body;
     
-    console.log('🔍 [DEBUG] 更新データ:');
+    console.log('🔍 [DEBUG] 更新データ（ローカル表示のみ）:');
     console.log('  id:', id);
     console.log('  title:', title);
     console.log('  animeName:', animeName);
@@ -1658,15 +1662,18 @@ app.put('/api/travel-plans/:id', async (req, res) => {
 
     const now = new Date();
     
-    // 既存のデータを取得
-    const docRef = db.collection('visitPlans').doc(id);
-    const doc = await docRef.get();
-    
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'プランが見つかりません' });
-    }
-
-    const existingData = doc.data();
+    // ローカル表示用のダミーデータ（Firebaseからは取得しない）
+    const existingData = {
+      id: id,
+      createdAt: now.getTime() / 1000,
+      userId: 'admin',
+      purchasedBy: [],
+      viewCount: 0,
+      purchaseCount: 0,
+      rating: 0,
+      reviewCount: 0,
+      isPublic: true
+    };
     
     // VisitPlanModelの形式に合わせてデータを構築
     const planData = {
@@ -1690,6 +1697,8 @@ app.put('/api/travel-plans/:id', async (req, res) => {
           spotCost: parseInt(spot.spotCost) || 0,
           imageUrl: spot.imageUrl || '',
           images: spot.images || [], // 複数画像をサポート
+          arrivalTime: spot.arrivalTime || null,
+          departureTime: spot.departureTime || null,
           transportToNext: spot.transportToNext || null
         };
         console.log(`✅ [DEBUG] 処理後スポット${index + 1}:`, processedSpot);
@@ -1704,7 +1713,8 @@ app.put('/api/travel-plans/:id', async (req, res) => {
       updatedAt: now.getTime() / 1000,
     };
 
-    await docRef.update(planData);
+    // Firebaseへの保存を削除し、ローカル表示のみ
+    console.log('ℹ️ [INFO] プラン更新はローカル表示のみ（Firebase保存なし）');
     
     res.json({
       id: id,

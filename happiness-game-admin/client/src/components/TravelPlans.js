@@ -42,7 +42,15 @@ const TravelPlans = () => {
     timeRange: '',
     activity: '',
     dayNumber: 1,
-    spotCost: 0
+    spotCost: 0,
+    arrivalTime: '',
+    departureTime: '',
+    transportToNext: {
+      method: '電車',
+      duration: 30,
+      cost: 0,
+      route: ''
+    }
   });
 
   useEffect(() => {
@@ -77,6 +85,17 @@ const TravelPlans = () => {
     }));
   };
 
+  const handleTransportChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentSpot(prev => ({
+      ...prev,
+      transportToNext: {
+        ...prev.transportToNext,
+        [name]: value
+      }
+    }));
+  };
+
   const addSpot = () => {
     if (currentSpot.name && currentSpot.address) {
       setFormData(prev => ({
@@ -94,7 +113,15 @@ const TravelPlans = () => {
         timeRange: '',
         activity: '',
         dayNumber: 1,
-        spotCost: 0
+        spotCost: 0,
+        arrivalTime: '',
+        departureTime: '',
+        transportToNext: {
+          method: '電車',
+          duration: 30,
+          cost: 0,
+          route: ''
+        }
       });
     }
   };
@@ -188,7 +215,15 @@ const TravelPlans = () => {
       timeRange: '',
       activity: '',
       dayNumber: 1,
-      spotCost: 0
+      spotCost: 0,
+      arrivalTime: '',
+      departureTime: '',
+      transportToNext: {
+        method: '電車',
+        duration: 30,
+        cost: 0,
+        route: ''
+      }
     });
   };
 
@@ -450,6 +485,62 @@ const TravelPlans = () => {
                     placeholder="スポット料金(円)"
                     min="0"
                   />
+                  
+                  <div className="time-inputs">
+                    <input
+                      type="time"
+                      name="arrivalTime"
+                      value={currentSpot.arrivalTime}
+                      onChange={handleSpotChange}
+                      placeholder="到着時刻"
+                    />
+                    <input
+                      type="time"
+                      name="departureTime"
+                      value={currentSpot.departureTime}
+                      onChange={handleSpotChange}
+                      placeholder="出発時刻"
+                    />
+                  </div>
+                  
+                  <div className="transport-section">
+                    <h5>次のスポットへの移動</h5>
+                    <select
+                      name="method"
+                      value={currentSpot.transportToNext.method}
+                      onChange={handleTransportChange}
+                    >
+                      <option value="電車">電車</option>
+                      <option value="バス">バス</option>
+                      <option value="徒歩">徒歩</option>
+                      <option value="車">車</option>
+                      <option value="タクシー">タクシー</option>
+                    </select>
+                    <input
+                      type="number"
+                      name="duration"
+                      value={currentSpot.transportToNext.duration}
+                      onChange={handleTransportChange}
+                      placeholder="移動時間(分)"
+                      min="0"
+                    />
+                    <input
+                      type="number"
+                      name="cost"
+                      value={currentSpot.transportToNext.cost}
+                      onChange={handleTransportChange}
+                      placeholder="交通費(円)"
+                      min="0"
+                    />
+                    <input
+                      type="text"
+                      name="route"
+                      value={currentSpot.transportToNext.route}
+                      onChange={handleTransportChange}
+                      placeholder="経路情報（例：JR山手線）"
+                    />
+                  </div>
+                  
                   <textarea
                     name="notes"
                     value={currentSpot.notes}
@@ -556,6 +647,14 @@ const TravelPlans = () => {
                           {spot.nearestStation && <p><strong>最寄り駅:</strong> {spot.nearestStation}</p>}
                           {spot.activity && <p><strong>アクティビティ:</strong> {spot.activity}</p>}
                           {spot.spotCost > 0 && <p><strong>料金:</strong> {spot.spotCost}円</p>}
+                          {spot.arrivalTime && <p><strong>到着時刻:</strong> {spot.arrivalTime}</p>}
+                          {spot.departureTime && <p><strong>出発時刻:</strong> {spot.departureTime}</p>}
+                          {spot.transportToNext && spot.transportToNext.method && (
+                            <p><strong>次への移動:</strong> {spot.transportToNext.method} ({spot.transportToNext.duration}分)
+                              {spot.transportToNext.route && ` - ${spot.transportToNext.route}`}
+                              {spot.transportToNext.cost > 0 && ` - ${spot.transportToNext.cost}円`}
+                            </p>
+                          )}
                           {spot.notes && <p><strong>メモ:</strong> {spot.notes}</p>}
                         </div>
                         {spot.imageUrl && (

@@ -36,6 +36,7 @@ struct Album: Identifiable, Hashable, Equatable {
 struct VideoGalleryScreen: View {
     let character: Character
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var videos: [MemoryVideo] = []
     @State private var showAddSheet = false
     @State private var selectedVideoURL: URL? = nil
@@ -54,6 +55,11 @@ struct VideoGalleryScreen: View {
     @State private var showDeleteAlert = false
     @State private var deletingVideoID: UUID? = nil
     @State private var activeSheet: ActiveSheet? = nil
+    
+    // 最新のキャラクター情報を取得
+    private var currentCharacter: Character {
+        characterManager.characters.first(where: { $0.id == character.id }) ?? character
+    }
     
     enum ActiveSheet: Identifiable {
         case editTitle(MemoryVideo)
@@ -97,7 +103,7 @@ struct VideoGalleryScreen: View {
             Spacer()
             
             // タイトル
-            Text(character.name)
+            Text(currentCharacter.name)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
@@ -130,7 +136,7 @@ struct VideoGalleryScreen: View {
     var bannerView: some View {
         ZStack {
             // 画像のロード
-            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -154,7 +160,7 @@ struct VideoGalleryScreen: View {
                         Text("ビデオ")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
-                        Text(character.name)
+                        Text(currentCharacter.name)
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white.opacity(0.9))
                     }

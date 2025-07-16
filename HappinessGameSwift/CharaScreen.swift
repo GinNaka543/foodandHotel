@@ -79,6 +79,39 @@ class CharacterManager: ObservableObject {
             self.objectWillChange.send()
         }
     }
+    
+    // 新規キャラクターを先頭に追加
+    func addCharacterAtTop(_ character: Character) {
+        var newCharacter = character
+        newCharacter.order = 0
+        
+        // 他のキャラクターの順番を1つずつ増やす
+        for i in 0..<characters.count {
+            characters[i].order += 1
+        }
+        
+        characters.insert(newCharacter, at: 0)
+        saveCharacters()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+    
+    // キャラクターの順番を移動
+    func moveCharacter(from source: IndexSet, to destination: Int) {
+        characters.move(fromOffsets: source, toOffset: destination)
+        
+        // 順番を更新
+        for (index, _) in characters.enumerated() {
+            characters[index].order = index
+        }
+        
+        saveCharacters()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+    
 }
 
 // カスタムフィールド用構造体
@@ -160,13 +193,14 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     var seichi: String // 聖地
     var height: String // 身長
     var customFields: [CustomField]? // カスタムフィールド
+    var order: Int = 0 // 表示順序用フィールド
 
     static func == (lhs: Character, rhs: Character) -> Bool {
         lhs.id == rhs.id
     }
     // Codable対応
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields
+        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields, order
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -183,6 +217,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         try container.encodeIfPresent(imageIdentifier, forKey: .imageIdentifier)
         try container.encodeIfPresent(backgroundImagePath, forKey: .backgroundImagePath)
         try container.encodeIfPresent(customFields, forKey: .customFields)
+        try container.encode(order, forKey: .order)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -199,8 +234,9 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
         backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([CustomField].self, forKey: .customFields)
+        order = (try? container.decode(Int.self, forKey: .order)) ?? 0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -214,6 +250,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         self.seichi = seichi
         self.height = height
         self.customFields = customFields
+        self.order = order
     }
 }
 
@@ -223,7 +260,6 @@ struct CharaScreen: View {
     @State private var showAddSheet = false
     @State private var searchText = ""
     @State private var selectedCharacter: Character? = nil
-    @State private var showMenu = false
     @State private var showRankingAdmin = false
     @State private var showNavigationMenu = false
     
@@ -231,12 +267,19 @@ struct CharaScreen: View {
         // Filter out characters without names first
         let charactersWithNames = characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         
-        if searchText.isEmpty { return charactersWithNames }
-        return charactersWithNames.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText) ||
-            $0.tag.localizedCaseInsensitiveContains(searchText) ||
-            $0.birthday.formatted(.dateTime.year().month().day()).contains(searchText)
+        let result: [Character]
+        if searchText.isEmpty { 
+            result = charactersWithNames 
+        } else {
+            result = charactersWithNames.filter {
+                $0.name.localizedCaseInsensitiveContains(searchText) ||
+                $0.tag.localizedCaseInsensitiveContains(searchText) ||
+                $0.birthday.formatted(.dateTime.year().month().day()).contains(searchText)
+            }
         }
+        
+        // Sort by order
+        return result.sorted(by: { $0.order < $1.order })
     }
 
     var body: some View {
@@ -345,12 +388,6 @@ struct CharaScreen: View {
             .environmentObject(characterManager)
         }
         
-        // サイドメニューをオーバーレイ
-        if showMenu {
-            SideMenuView(isShowing: $showMenu)
-                .transition(.move(edge: .leading))
-                .zIndex(1)
-        }
     }
     .overlay(
         Group {
@@ -566,7 +603,7 @@ struct AddCharacterSheet: View {
                     }
                     let newChar = Character(id: UUID(), imageIdentifier: imageIdentifier, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
                     // CharacterManagerのみを使用して追加（重複を防ぐ）
-                    characterManager.addCharacter(newChar)
+                    characterManager.addCharacterAtTop(newChar)
                     dismiss()
                 }.disabled(name.isEmpty || tag.isEmpty)
             )
@@ -807,6 +844,10 @@ struct CharacterDetailView: View {
                                         // Bindingを通じて更新（これがsetterを呼び出す）
                                         character = updatedCharacter
                                         
+                                        // CharacterManagerも更新してUI全体を更新
+                                        characterManager.updateCharacter(updatedCharacter)
+                                        characterManager.refreshUI()
+                                        
                                         // モーダルを自動的に閉じる
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                             showEditIconModal = false
@@ -848,9 +889,11 @@ struct CharacterDetailView: View {
             }
             .fullScreenCover(isPresented: $showArtwork) {
                 ArtworkScreen(character: character)
+                    .environmentObject(characterManager)
             }
             .fullScreenCover(isPresented: $showVideo) {
                 VideoGalleryScreen(character: character)
+                    .environmentObject(characterManager)
             }
             .fullScreenCover(isPresented: $showAbout) {
                 AboutView(characters: $characters, characterId: character.id, onClose: { showAbout = false })
@@ -1748,13 +1791,18 @@ struct CharacterPickerView: View {
     @State private var searchText = ""
     
     var filteredCharacters: [Character] {
+        let result: [Character]
         if searchText.isEmpty {
-            return characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            result = characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        } else {
+            result = characters.filter {
+                !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                $0.name.localizedCaseInsensitiveContains(searchText)
+            }
         }
-        return characters.filter {
-            !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            $0.name.localizedCaseInsensitiveContains(searchText)
-        }
+        
+        // Sort by order
+        return result.sorted(by: { $0.order < $1.order })
     }
     
     var body: some View {

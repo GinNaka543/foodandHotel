@@ -65,6 +65,7 @@ typealias ArtworkPlayerScreenTemp = ArtworkPlayerScreen
 struct ArtworkScreen: View {
     let character: Character
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var artworks: [Artwork] = []
     @State private var showAddSheet = false
     @State private var selectedImage: UIImage? = nil
@@ -88,6 +89,11 @@ struct ArtworkScreen: View {
     @State private var showPixivRedirect = false
     @State private var pixivRedirectURL: String = ""
     @State private var pixivRedirectArtwork: Artwork? = nil
+    
+    // 最新のキャラクター情報を取得
+    private var currentCharacter: Character {
+        characterManager.characters.first(where: { $0.id == character.id }) ?? character
+    }
     
     // Enum to manage sheet presentations
     enum SheetType: Identifiable {
@@ -122,7 +128,7 @@ struct ArtworkScreen: View {
             Spacer()
             
             // タイトル
-            Text(character.name)
+            Text(currentCharacter.name)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
@@ -150,7 +156,7 @@ struct ArtworkScreen: View {
     // バナービュー
     var bannerView: some View {
         Button(action: { activeSheet = .addPhoto }) {
-            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -168,7 +174,7 @@ struct ArtworkScreen: View {
                                         .font(.system(size: 24, weight: .bold))
                                         .foregroundColor(.white)
                                     
-                                    Text(character.name)
+                                    Text(currentCharacter.name)
                                         .font(.system(size: 18, weight: .medium))
                                         .foregroundColor(.white.opacity(0.9))
                                 }
@@ -194,7 +200,7 @@ struct ArtworkScreen: View {
                                         .font(.system(size: 24, weight: .bold))
                                         .foregroundColor(.white)
                                     
-                                    Text(character.name)
+                                    Text(currentCharacter.name)
                                         .font(.system(size: 18, weight: .medium))
                                         .foregroundColor(.white.opacity(0.9))
                                 }
@@ -374,7 +380,7 @@ struct ArtworkScreen: View {
                                         }
                                         .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
-                                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                                if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                                     Image(uiImage: image)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)

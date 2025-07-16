@@ -555,16 +555,11 @@ class FirebaseManager: ObservableObject {
     
     // MARK: - Visit Plan Functions
     
-    // プランを保存（投稿）
+    // プランを保存（投稿）- ローカル表示のみ（Firebase保存なし）
     func saveVisitPlan(_ plan: VisitPlanModel, completion: @escaping (Result<Void, Error>) -> Void) {
-        let planRef = db.collection("visitPlans").document(plan.id)
-        planRef.setData(plan.dictionary) { error in
-            if let error = error {
-                completion(.failure(error))
-            } else {
-                completion(.success(()))
-            }
-        }
+        print("ℹ️ [INFO] プランはローカル表示のみ（Firebase保存なし）")
+        // Firebase保存を無効化し、成功レスポンスを返す
+        completion(.success(()))
     }
     
     // 公開プランを取得（オールタブ用）

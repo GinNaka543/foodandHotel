@@ -90,6 +90,39 @@ class AnimeManager: ObservableObject {
             self.objectWillChange.send()
         }
     }
+    
+    // 新規アニメを先頭に追加
+    func addAnimeAtTop(_ anime: Anime) {
+        var newAnime = anime
+        newAnime.order = 0
+        
+        // 他のアニメの順番を1つずつ増やす
+        for i in 0..<animes.count {
+            animes[i].order += 1
+        }
+        
+        animes.insert(newAnime, at: 0)
+        saveAnimes()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+    
+    // アニメの順番を移動
+    func moveAnime(from source: IndexSet, to destination: Int) {
+        animes.move(fromOffsets: source, toOffset: destination)
+        
+        // 順番を更新
+        for (index, _) in animes.enumerated() {
+            animes[index].order = index
+        }
+        
+        saveAnimes()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+    
 }
 
 // カスタムフィールド用構造体
@@ -116,12 +149,13 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var customFields: [AnimeCustomField]?
     var watchStatus: WatchStatus = .none  // 後方互換性のため残す
     var watchStatuses: [WatchStatus] = []  // 複数選択用の新しいフィールド
+    var order: Int = 0  // 表示順序用フィールド
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -134,6 +168,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encodeIfPresent(customFields, forKey: .customFields)
         try container.encode(watchStatus, forKey: .watchStatus)
         try container.encode(watchStatuses, forKey: .watchStatuses)
+        try container.encode(order, forKey: .order)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -155,8 +190,11 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         } else {
             watchStatuses = []
         }
+        
+        // orderを読み込む。古いデータの場合はデフォルト値を使用
+        order = (try? container.decode(Int.self, forKey: .order)) ?? 0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = []) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -166,6 +204,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.customFields = customFields
         self.watchStatus = watchStatus
         self.watchStatuses = watchStatuses.isEmpty && watchStatus != .none ? [watchStatus] : watchStatuses
+        self.order = order
     }
 }
 
@@ -175,7 +214,6 @@ struct AnimeScreen: View {
     @State private var showAddSheet = false
     @State private var selectedTab: AnimeTab = .all
     @State private var selectedAnime: Anime? = nil
-    @State private var showMenu = false
     @State private var showNavigationMenu = false
     
     enum AnimeTab: String, CaseIterable {
@@ -190,17 +228,101 @@ struct AnimeScreen: View {
         // Filter out animes without titles first
         let animesWithTitles = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         
+        let result: [Anime]
         switch selectedTab {
         case .all:
-            return animesWithTitles
+            result = animesWithTitles
         case .watching:
-            return animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
+            result = animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
         case .willWatch:
-            return animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
+            result = animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
         case .watchAgain:
-            return animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
+            result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
         case .thisTerm:
-            return animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
+            result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
+        }
+        
+        // Sort by order
+        return result.sorted(by: { $0.order < $1.order })
+    }
+
+    // ヘッダー部分
+    private var headerView: some View {
+        HStack {
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showNavigationMenu = true
+                }
+            }) {
+                Image(systemName: "line.horizontal.3")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.black)
+            }
+            Spacer()
+            Button(action: { showAddSheet = true }) {
+                Text("アニメを追加")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(20)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 7)
+    }
+    
+    // タブビュー部分
+    private var tabView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(AnimeTab.allCases, id: \.self) { tab in
+                    Button(action: { selectedTab = tab }) {
+                        Text(tab.rawValue)
+                            .font(.system(size: 16, weight: .regular))
+                            .foregroundColor(selectedTab == tab ? .white : .black)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(selectedTab == tab ? Color(.darkGray) : Color(.systemGray5))
+                            )
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+    }
+    
+    // アニメリスト部分
+    private var animeListView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                FirebaseAdView(placement: "anime")
+                    .padding(.top, 8)
+                    .padding(.bottom, 0)
+                
+                ForEach(filteredAnimes, id: \.id) { anime in
+                    Button(action: {
+                        selectedAnime = anime
+                    }) {
+                        AnimeRow(anime: anime, animeManager: animeManager)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.bottom, 75)
         }
     }
 
@@ -208,75 +330,9 @@ struct AnimeScreen: View {
         ZStack {
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
-                    HStack {
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showNavigationMenu = true
-                            }
-                        }) {
-                        Image(systemName: "line.horizontal.3")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.black)
-                    }
-                    Spacer()
-                    Button(action: { showAddSheet = true }) {
-                        Text("アニメを追加")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .cornerRadius(20)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 7) // タブとボタンの間隔を7px追加
-                // タブUI
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(AnimeTab.allCases, id: \ .self) { tab in
-                            Button(action: { selectedTab = tab }) {
-                                Text(tab.rawValue)
-                                    .font(.system(size: 16, weight: .regular))
-                                    .foregroundColor(selectedTab == tab ? .white : .black)
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        Capsule()
-                                            .fill(selectedTab == tab ? Color(.darkGray) : Color(.systemGray5))
-                                    )
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                }
-                
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // 広告バナーをアニメ一覧と一緒にスクロール
-                        FirebaseAdView(placement: "anime")
-                            .padding(.top, 8)
-                            .padding(.bottom, 0)
-                        ForEach(filteredAnimes, id: \.id) { anime in
-                            Button(action: {
-                                selectedAnime = anime
-                            }) {
-                                AnimeRow(anime: anime, animeManager: animeManager)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(.bottom, 75)
+                    headerView
+                    tabView
+                    animeListView
                 }
             }
         }
@@ -301,22 +357,13 @@ struct AnimeScreen: View {
             .environmentObject(animeManager)
         }
         
-        // サイドメニューをオーバーレイ
-        if showMenu {
-            SideMenuView(isShowing: $showMenu)
-                .transition(.move(edge: .leading))
-                .zIndex(1)
+        
+        // ナビゲーションメニューをオーバーレイ
+        if showNavigationMenu {
+            NavigationMenuView(isPresented: $showNavigationMenu)
+                .transition(.opacity)
+                .zIndex(2)
         }
-    }
-    .overlay(
-        Group {
-            if showNavigationMenu {
-                NavigationMenuView(isPresented: $showNavigationMenu)
-                    .transition(.opacity)
-                    .zIndex(2)
-            }
-        }
-    )
     }
 }
 
@@ -363,6 +410,7 @@ struct AnimeArtworkScreen: View {
     @Binding var animes: [Anime]
     let onClose: () -> Void
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var animeManager: AnimeManager
     @State private var artworks: [Artwork] = []
     @State private var showAddSheet = false
     @State private var selectedImage: UIImage? = nil
@@ -386,6 +434,11 @@ struct AnimeArtworkScreen: View {
     @State private var showPixivRedirect = false
     @State private var pixivRedirectURL: String = ""
     @State private var pixivRedirectArtwork: Artwork? = nil
+    
+    // 最新のアニメ情報を取得
+    private var currentAnime: Anime {
+        animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+    }
     
     // Enum to manage sheet presentations
     enum SheetType: Identifiable {
@@ -421,7 +474,7 @@ struct AnimeArtworkScreen: View {
             Spacer()
             
             // タイトル
-            Text(anime.title)
+            Text(currentAnime.title)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
@@ -450,7 +503,7 @@ struct AnimeArtworkScreen: View {
     var bannerView: some View {
         ZStack {
             // 画像のロード
-            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+            if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -474,7 +527,7 @@ struct AnimeArtworkScreen: View {
                         Text("アートワーク")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
-                        Text(anime.title)
+                        Text(currentAnime.title)
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white.opacity(0.9))
                     }
@@ -644,7 +697,7 @@ struct AnimeArtworkScreen: View {
                                         }
                                             .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
-                                                if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                                if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                                     Image(uiImage: image)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
@@ -1294,6 +1347,7 @@ struct AnimeVideoScreen: View {
     @Binding var animes: [Anime]
     let onClose: () -> Void
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var animeManager: AnimeManager
     @State private var videos: [MemoryVideo] = []
     @State private var showAddSheet = false
     @State private var selectedVideoURL: URL? = nil
@@ -1317,6 +1371,11 @@ struct AnimeVideoScreen: View {
     @State private var showThumbnailPicker = false
     @State private var editingVideo: MemoryVideo? = nil
     
+    // 最新のアニメ情報を取得
+    private var currentAnime: Anime {
+        animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+    }
+    
     // ヘッダービュー
     var headerView: some View {
         HStack {
@@ -1335,7 +1394,7 @@ struct AnimeVideoScreen: View {
             Spacer()
             
             // タイトル
-            Text(anime.title)
+            Text(currentAnime.title)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
@@ -1364,7 +1423,7 @@ struct AnimeVideoScreen: View {
     var bannerView: some View {
         ZStack {
             // 画像のロード
-            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+            if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
@@ -1388,7 +1447,7 @@ struct AnimeVideoScreen: View {
                         Text("ビデオ")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
-                        Text(anime.title)
+                        Text(currentAnime.title)
                             .font(.system(size: 18, weight: .medium))
                             .foregroundColor(.white.opacity(0.9))
                     }
@@ -1928,8 +1987,14 @@ struct AnimeAboutView: View {
     @State private var showIconPicker: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
+    @State private var currentDisplayedIcon: UIImage? = nil
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
+    
+    // 最新のアニメ情報を取得
+    private var currentAnime: Anime {
+        animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+    }
     
     var body: some View {
         NavigationView {
@@ -1940,7 +2005,7 @@ struct AnimeAboutView: View {
                         Button(action: {
                             showIconPicker = true
                         }) {
-                            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                            if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
@@ -2199,8 +2264,8 @@ struct AnimeAboutView: View {
                 }
                 .padding()
             }
-            .onChange(of: iconPickerItem) { newValue in
-                if let newValue = newValue {
+            .onChange(of: iconPickerItem) {
+                if let newValue = iconPickerItem {
                     Task {
                         if let data = try? await newValue.loadTransferable(type: Data.self),
                            let image = UIImage(data: data) {
@@ -2488,7 +2553,7 @@ struct AddAnimeSheet: View {
                     let year = calendar.component(.year, from: Date())
                     let date = calendar.date(from: DateComponents(year: year, month: selectedMonth, day: selectedDay)) ?? Date()
                     let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: date, watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
-                    animeManager.addAnime(newAnime)
+                    animeManager.addAnimeAtTop(newAnime)
                     dismiss()
                 }
             }
@@ -2522,6 +2587,7 @@ struct AnimeDetailView: View {
     @State private var showEditBackgroundModal = false
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
+    @State private var currentDisplayedIcon: UIImage? = nil
 
     var body: some View {
         GeometryReader { geometry in
@@ -2577,7 +2643,14 @@ struct AnimeDetailView: View {
                 VStack {
                     Spacer().frame(height: 180 + 50)
                     ZStack {
-                        if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        if let currentIcon = currentDisplayedIcon {
+                            Image(uiImage: currentIcon)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 120, height: 120)
+                                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                .shadow(radius: 8)
+                        } else if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                             Image(uiImage: image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
@@ -2692,6 +2765,12 @@ struct AnimeDetailView: View {
                 }
                 .frame(width: geometry.size.width)
                 .zIndex(1) // 背景画像よりも前面に配置
+            }
+        }
+        .onAppear {
+            // 初期化時に現在のアイコンを設定
+            if currentDisplayedIcon == nil, let imageIdentifier = anime.imageIdentifier {
+                currentDisplayedIcon = loadImageFromPath(imageIdentifier)
             }
         }
         .navigationBarHidden(true)
@@ -2856,6 +2935,7 @@ struct AnimeDetailView: View {
                                 var updatedAnime = animes[idx]
                                 updatedAnime.backgroundImagePath = imagePath
                                 animes[idx] = updatedAnime
+                                anime = updatedAnime  // Bindingも更新
                                 animeManager.updateAnime(updatedAnime)
                             }
                         }
@@ -2873,7 +2953,7 @@ struct AnimeDetailView: View {
                     Spacer()
                     Button(action: { 
                         showEditIconModal = false
-                        tempIconImage = nil
+                        // tempIconImageはリセットしない（最新状態を保持）
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 28))
@@ -2914,20 +2994,34 @@ struct AnimeDetailView: View {
                             }
                         }
                     }
-                    .onChange(of: iconPickerItem) { newValue in
-                        if let newItem = newValue {
+                    .onChange(of: iconPickerItem) {
+                        if let newItem = iconPickerItem {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                     tempIconImage = uiImage
+                                    currentDisplayedIcon = uiImage // 即座にUI更新
+                                    
                                     let fileName = "icon_\(UUID().uuidString).png"
                                     let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
                                     
-                                    guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                                    var updatedAnime = animes[idx]
+                                    // 新しいAnimeオブジェクトを作成して更新
+                                    var updatedAnime = anime
                                     updatedAnime.imageIdentifier = imagePath
-                                    animes[idx] = updatedAnime
+                                    
+                                    // Bindingを通じて更新（これがsetterを呼び出す）
+                                    anime = updatedAnime
+                                    
+                                    // animesリストも更新
+                                    if let idx = animes.firstIndex(where: { $0.id == anime.id }) {
+                                        animes[idx] = updatedAnime
+                                    }
+                                    
+                                    // AnimeManagerも更新してUI全体を更新
                                     animeManager.updateAnime(updatedAnime)
                                     animeManager.refreshUI()
+                                    
+                                    // アイコン選択完了後にモーダルを閉じる
+                                    showEditIconModal = false
                                 }
                             }
                         }
@@ -2943,6 +3037,20 @@ struct AnimeDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.systemBackground))
+            .onAppear {
+                // モーダル表示時に現在のアイコンをtempIconImageに設定
+                if let currentIcon = currentDisplayedIcon {
+                    tempIconImage = currentIcon
+                } else if let imageIdentifier = anime.imageIdentifier {
+                    tempIconImage = loadImageFromPath(imageIdentifier)
+                }
+            }
+        }
+        .onAppear {
+            // 初期化時に現在のアイコンを設定
+            if currentDisplayedIcon == nil, let imageIdentifier = anime.imageIdentifier {
+                currentDisplayedIcon = loadImageFromPath(imageIdentifier)
+            }
         }
     }
     

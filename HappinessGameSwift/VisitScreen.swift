@@ -179,62 +179,53 @@ public struct VisitScreen: View {
                             .font(.system(size: 40))
                             .foregroundColor(.gray)
                     }
-                    
-                    // バッジを表示 - 統一された位置設定
-                    HStack {
-                        Spacer()
-                        VStack {
-                            Spacer()
-                            if plan.isDraft {
-                                // 下書きプランの場合は「下書き」バッジを表示
-                                Text("下書き")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.orange)
-                                    .cornerRadius(8)
-                                    .padding(.trailing, 8)
-                                    .padding(.bottom, 8)
-                            } else if selectedTab == .purchased {
-                                // 購入済みタブでは「購入済み」バッジを表示
-                                Text("購入済み")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.blue)
-                                    .cornerRadius(8)
-                                    .padding(.trailing, 8)
-                                    .padding(.bottom, 8)
-                            } else if selectedTab == .original && plan.price == 0 {
-                                // オリジナルタブで無料プランの場合は「オリジナル」バッジを表示
-                                Text("オリジナル")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.purple)
-                                    .cornerRadius(8)
-                                    .padding(.trailing, 8)
-                                    .padding(.bottom, 8)
-                            } else if plan.price == 0 {
-                                // その他のタブで無料プランの場合は「無料」バッジを表示
-                                Text("無料")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green)
-                                    .cornerRadius(8)
-                                    .padding(.trailing, 8)
-                                    .padding(.bottom, 8)
-                            }
-                        }
-                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: 233)
                 .clipped()
+                .overlay(
+                    // バッジを表示 - overlayで統一された位置設定
+                    Group {
+                        if plan.isDraft {
+                            // 下書きプランの場合は「下書き」バッジを表示
+                            Text("下書き")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.orange)
+                                .cornerRadius(8)
+                        } else if selectedTab == .purchased {
+                            // 購入済みタブでは「購入済み」バッジを表示
+                            Text("購入済み")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.blue)
+                                .cornerRadius(8)
+                        } else if selectedTab == .original && plan.price == 0 {
+                            // オリジナルタブで無料プランの場合は「オリジナル」バッジを表示
+                            Text("オリジナル")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.purple)
+                                .cornerRadius(8)
+                        } else if plan.price == 0 {
+                            // その他のタブで無料プランの場合は「無料」バッジを表示
+                            Text("無料")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color.green)
+                                .cornerRadius(8)
+                        }
+                    }
+                    .padding(8),
+                    alignment: .bottomTrailing
+                )
                 
                 // プラン情報
                 HStack(alignment: .center, spacing: 12) {

@@ -488,12 +488,12 @@ struct VisitPlanningScreen: View {
         savedPlans.append(plan)
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encoded, forKey: "visitPlans")
+            UserDefaults.standard.set(encoded, forKey: "savedPlans")
         }
     }
     
     func getSavedPlans() -> [VisitPlanData] {
-        guard let data = UserDefaults.standard.data(forKey: "visitPlans"),
+        guard let data = UserDefaults.standard.data(forKey: "savedPlans"),
               let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
             return []
         }
@@ -617,9 +617,30 @@ struct VisitPlanningScreen: View {
     func savePlanAsConfirmed() {
         let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
         
-        // 確定済みプランを作成
+        // ローカルに保存するためのプランデータを作成
+        let planData = VisitPlanData(
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailData: thumbnailData,
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: false
+        )
+        
+        // ローカルストレージに保存
+        var savedPlans = getSavedPlans()
+        savedPlans.append(planData)
+        
+        if let encoded = try? JSONEncoder().encode(savedPlans) {
+            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+        }
+        
+        // Firebaseにも保存
         let plan = VisitPlanModel(
-            id: UUID().uuidString,
+            id: planData.id.uuidString,
             userId: userId,
             animeName: animeName,
             title: planTitle.isEmpty ? "無題のプラン" : planTitle,
@@ -664,34 +685,23 @@ struct VisitPlanningScreen: View {
             thumbnailData: thumbnailData,
             startTime: startTime,
             numberOfDays: numberOfDays,
+            isPurchased: false,
             isDraft: true
         )
         
-        // ローカルに保存
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let draftsDirectory = documentsPath.appendingPathComponent("drafts")
+        // savedPlansに追加（重複チェックなし - 新しい下書きとして追加）
+        var savedPlans = getSavedPlans()
+        savedPlans.append(planData)
         
-        // draftsディレクトリが存在しない場合は作成
-        if !FileManager.default.fileExists(atPath: draftsDirectory.path) {
-            try? FileManager.default.createDirectory(at: draftsDirectory, withIntermediateDirectories: true, attributes: nil)
-        }
-        
-        let fileName = "draft_\(Date().timeIntervalSince1970).json"
-        let fileURL = draftsDirectory.appendingPathComponent(fileName)
-        
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(planData)
-            try data.write(to: fileURL)
-            
-            print("下書きを保存しました: \(fileURL)")
+        if let encoded = try? JSONEncoder().encode(savedPlans) {
+            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+            print("下書きを保存しました: \(planData.title)")
             
             DispatchQueue.main.async {
                 self.dismiss()
             }
-        } catch {
-            print("下書き保存エラー: \(error)")
+        } else {
+            print("下書き保存エラー")
         }
     }
 }

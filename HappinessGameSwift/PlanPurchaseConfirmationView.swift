@@ -8,6 +8,7 @@ struct PlanPurchaseConfirmationView: View {
     @State private var userPoints: Int = 0
     @State private var isLoadingPoints = true
     @State private var isProcessing = false
+    @State private var showingPurchaseSheet = false
     
     var body: some View {
         let _ = print("💰 [DEBUG] PlanPurchaseConfirmationView.body 呼び出し")
@@ -132,6 +133,14 @@ struct PlanPurchaseConfirmationView: View {
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.green)
                                 }
+                                
+                                if userPoints < plan.price {
+                                    Text("ポイントが不足しています。あと\(plan.price - userPoints)ポイント必要です。")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.red)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.top, 8)
+                                }
                             }
                         }
                         .padding()
@@ -160,31 +169,53 @@ struct PlanPurchaseConfirmationView: View {
                 
                 // 確認ボタン
                 VStack(spacing: 12) {
-                    Button(action: {
-                        isProcessing = true
-                        onConfirm()
-                    }) {
-                        HStack {
-                            if isProcessing {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(0.8)
-                                Text("購入中...")
-                            } else {
-                                Image(systemName: "checkmark.circle")
-                                Text("\(plan.price)ポイントで購入")
+                    if userPoints >= plan.price {
+                        // ポイントが足りている場合
+                        Button(action: {
+                            isProcessing = true
+                            onConfirm()
+                        }) {
+                            HStack {
+                                if isProcessing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
+                                    Text("購入中...")
+                                } else {
+                                    Image(systemName: "checkmark.circle")
+                                    Text("\(plan.price)ポイントで購入")
+                                }
                             }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(isProcessing ? Color.gray : Color.purple)
+                            )
                         }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(isProcessing ? Color.gray : Color.purple)
-                        )
+                        .disabled(isProcessing || isLoadingPoints)
+                    } else {
+                        // ポイントが不足している場合
+                        Button(action: {
+                            showingPurchaseSheet = true
+                        }) {
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                Text("ポイントを購入")
+                            }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.orange)
+                            )
+                        }
+                        .disabled(isLoadingPoints)
                     }
-                    .disabled(isProcessing || isLoadingPoints || userPoints < plan.price)
                     
                     Button(action: onCancel) {
                         Text("キャンセル")
@@ -205,6 +236,13 @@ struct PlanPurchaseConfirmationView: View {
         }
         .onAppear {
             loadUserPoints()
+        }
+        .sheet(isPresented: $showingPurchaseSheet) {
+            PointPurchaseView(
+                onPurchaseComplete: {
+                    loadUserPoints()
+                }
+            )
         }
     }
     

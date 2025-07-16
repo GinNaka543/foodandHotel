@@ -11,6 +11,7 @@ struct PlanPaymentConfirmationView: View {
     @State private var userPoints: Int = 0
     @State private var isLoadingPoints = true
     @State private var isProcessing = false
+    @State private var showingPointPurchase = false
     
     private let creationCost = 50
     
@@ -148,31 +149,55 @@ struct PlanPaymentConfirmationView: View {
                 
                 // 確認ボタン
                 VStack(spacing: 12) {
-                    Button(action: {
-                        isProcessing = true
-                        onConfirm()
-                    }) {
-                        HStack {
-                            if isProcessing {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                    .scaleEffect(0.8)
-                                Text("処理中...")
-                            } else {
-                                Image(systemName: "checkmark.circle")
-                                Text("50ポイントで作成")
+                    if !isLoadingPoints && userPoints < creationCost {
+                        // ポイント不足時のボタン
+                        Button(action: {
+                            showingPointPurchase = true
+                        }) {
+                            HStack {
+                                Image(systemName: "plus.circle")
+                                Text("ポイントを購入")
                             }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.orange)
+                            )
                         }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(isProcessing ? Color.gray : Color.purple)
-                        )
+                        
+                        Text("ポイントが不足しています")
+                            .font(.system(size: 14))
+                            .foregroundColor(.red)
+                    } else {
+                        Button(action: {
+                            isProcessing = true
+                            onConfirm()
+                        }) {
+                            HStack {
+                                if isProcessing {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
+                                    Text("処理中...")
+                                } else {
+                                    Image(systemName: "checkmark.circle")
+                                    Text("50ポイントで作成")
+                                }
+                            }
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(isProcessing || isLoadingPoints ? Color.gray : Color.purple)
+                            )
+                        }
+                        .disabled(isProcessing || isLoadingPoints)
                     }
-                    .disabled(isProcessing || isLoadingPoints || userPoints < creationCost)
                     
                     Button(action: onCancel) {
                         Text("キャンセル")
@@ -193,6 +218,11 @@ struct PlanPaymentConfirmationView: View {
         }
         .onAppear {
             loadUserPoints()
+        }
+        .sheet(isPresented: $showingPointPurchase) {
+            PointPurchaseView(onPurchaseComplete: {
+                loadUserPoints()
+            })
         }
     }
     

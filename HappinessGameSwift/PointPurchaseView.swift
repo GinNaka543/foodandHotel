@@ -9,6 +9,8 @@ struct PointPurchaseView: View {
     @State private var showingSuccess = false
     @State private var errorMessage = ""
     @State private var shouldDismissBeforePayment = false
+    @State private var showCustomAmount = false
+    @State private var customAmount = ""
     
     let onPurchaseComplete: () -> Void
     
@@ -55,10 +57,66 @@ struct PointPurchaseView: View {
                             ForEach(pointPackages, id: \.points) { package in
                                 PointPackageCard(
                                     package: package,
-                                    isSelected: selectedPackage?.points == package.points,
-                                    onSelect: { selectedPackage = package }
+                                    isSelected: selectedPackage?.points == package.points && !showCustomAmount,
+                                    onSelect: { 
+                                        selectedPackage = package
+                                        showCustomAmount = false
+                                        customAmount = ""
+                                    }
                                 )
                             }
+                            
+                            // カスタム金額入力
+                            Button(action: {
+                                showCustomAmount.toggle()
+                                if showCustomAmount {
+                                    selectedPackage = nil
+                                }
+                            }) {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("カスタム金額")
+                                            .font(.system(size: 20, weight: .bold))
+                                            .foregroundColor(.primary)
+                                        
+                                        if showCustomAmount {
+                                            TextField("金額を入力 (円)", text: $customAmount)
+                                                .keyboardType(.numberPad)
+                                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                                .onChange(of: customAmount) { newValue in
+                                                    if let amount = Int(newValue), amount > 0 {
+                                                        selectedPackage = PointPackage(points: amount, price: amount, isPopular: false)
+                                                    } else {
+                                                        selectedPackage = nil
+                                                    }
+                                                }
+                                        } else {
+                                            Text("お好きな金額を入力できます")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: showCustomAmount ? "checkmark.circle.fill" : "circle")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(showCustomAmount ? .purple : .gray)
+                                }
+                                .padding(16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(.systemBackground))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(
+                                                    showCustomAmount ? Color.purple : Color.gray.opacity(0.3),
+                                                    lineWidth: showCustomAmount ? 2 : 1
+                                                )
+                                        )
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         
                         // エラーメッセージ

@@ -1244,77 +1244,20 @@ struct SpotDetailPageView: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(spacing: 0) {
-                    // スポット画像を背景に使用
-                    ZStack {
-                        // 背景画像
-                        if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: geometry.size.width, height: 260)
-                                .clipped()
-                                .overlay(Color.black.opacity(0.4))
-                        } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
-                            let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
-                            
-                            if let url = URL(string: imageUrlToUse), !imageUrlToUse.isEmpty {
-                                AsyncImage(url: url) { image in
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                } placeholder: {
-                                    Rectangle()
-                                        .fill(LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color(red: 0.4, green: 0.7, blue: 1.0),
-                                                Color(red: 0.2, green: 0.6, blue: 1.0)
-                                            ]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ))
-                                }
-                                .frame(width: geometry.size.width, height: 260)
-                                .clipped()
-                                .overlay(Color.black.opacity(0.4))
-                            } else {
-                                Rectangle()
-                                    .fill(LinearGradient(
-                                        gradient: Gradient(colors: [
-                                            Color(red: 0.4, green: 0.7, blue: 1.0),
-                                            Color(red: 0.2, green: 0.6, blue: 1.0)
-                                        ]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ))
-                                    .frame(width: geometry.size.width, height: 260)
-                            }
-                        } else {
-                            Rectangle()
-                                .fill(LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color(red: 0.4, green: 0.7, blue: 1.0),
-                                        Color(red: 0.2, green: 0.6, blue: 1.0)
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ))
-                                .frame(width: geometry.size.width, height: 260)
-                        }
-                    
                     // 中央のコンテンツ
                     VStack(spacing: 16) {
                         // 丸いアイコン（サイズを調整）
                         ZStack {
                             Circle()
                                 .fill(Color.white)
-                                .frame(width: 90, height: 90)
+                                .frame(width: 108, height: 108)
                                 .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
                             
                             if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 78, height: 78)
+                                    .frame(width: 94, height: 94)
                                     .clipShape(Circle())
                             } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
                                 let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
@@ -1326,14 +1269,14 @@ struct SpotDetailPageView: View {
                                             .scaledToFill()
                                     } placeholder: {
                                         Image(systemName: "photo")
-                                            .font(.system(size: 24))
+                                            .font(.system(size: 29))
                                             .foregroundColor(.gray)
                                     }
-                                    .frame(width: 78, height: 78)
+                                    .frame(width: 94, height: 94)
                                     .clipShape(Circle())
                                 } else {
                                     Image(systemName: "photo")
-                                        .font(.system(size: 24))
+                                        .font(.system(size: 29))
                                         .foregroundColor(.gray)
                                 }
                             } else {
@@ -1346,31 +1289,27 @@ struct SpotDetailPageView: View {
                         // スポット名（中央配置）
                         VStack(spacing: 4) {
                             Text(spot.name)
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.black)
                                 .multilineTextAlignment(.center)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                             
                             if !spot.address.isEmpty {
                                 Text(spot.address)
-                                    .font(.system(size: 13))
-                                    .foregroundColor(.white.opacity(0.9))
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(1)
-                                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                             }
                             
                             // 地図アイコン
                             Image(systemName: "mappin.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.white.opacity(0.9))
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                                .font(.system(size: 19))
+                                .foregroundColor(.blue)
                         }
                         
                         Spacer()
                     }
                     .padding(.vertical, 20)
-                }
                 
                 // 白いコンテンツ領域
                 VStack(alignment: .leading, spacing: 20) {

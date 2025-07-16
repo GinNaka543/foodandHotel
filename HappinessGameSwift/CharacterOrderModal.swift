@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CharacterOrderModal: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var characterManager = CharacterManager()
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var characters: [Character] = []
     
     var body: some View {
@@ -44,6 +44,7 @@ struct CharacterOrderModal: View {
                     .onMove(perform: moveCharacter)
                 }
                 .listStyle(PlainListStyle())
+                .environment(\.editMode, .constant(.active))
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

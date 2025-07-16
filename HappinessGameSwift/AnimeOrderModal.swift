@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AnimeOrderModal: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var animeManager = AnimeManager()
+    @EnvironmentObject private var animeManager: AnimeManager
     @State private var animes: [Anime] = []
     
     var body: some View {
@@ -44,6 +44,7 @@ struct AnimeOrderModal: View {
                     .onMove(perform: moveAnime)
                 }
                 .listStyle(PlainListStyle())
+                .environment(\.editMode, .constant(.active))
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

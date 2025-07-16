@@ -335,6 +335,14 @@ struct AnimeScreen: View {
                     animeListView
                 }
             }
+            
+            // ナビゲーションメニューをオーバーレイ
+            if showNavigationMenu {
+                NavigationMenuView(isPresented: $showNavigationMenu)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
         }
         .sheet(isPresented: $showAddSheet) {
             AddAnimeSheet(animes: $animeManager.animes)
@@ -355,14 +363,6 @@ struct AnimeScreen: View {
                 animeManager.refreshUI()
             })
             .environmentObject(animeManager)
-        }
-        
-        
-        // ナビゲーションメニューをオーバーレイ
-        if showNavigationMenu {
-            NavigationMenuView(isPresented: $showNavigationMenu)
-                .transition(.opacity)
-                .zIndex(2)
         }
     }
 }

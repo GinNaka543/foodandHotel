@@ -1819,8 +1819,8 @@ struct AnimeAboutView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
-                    // アニメアイコン
-                    VStack(spacing: 12) {
+                    // アニメバナー画像
+                    VStack(spacing: 0) {
                         Button(action: {
                             showIconPicker = true
                         }) {
@@ -1828,43 +1828,74 @@ struct AnimeAboutView: View {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(width: 100, height: 100)
-                                    .clipShape(Circle())
+                                    .frame(maxWidth: .infinity, maxHeight: 200)
+                                    .clipped()
                                     .overlay(
-                                        Circle()
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        Color.black.opacity(0.4)
                                     )
                                     .overlay(
-                                        Circle()
-                                            .fill(Color.black.opacity(0.5))
-                                            .frame(width: 100, height: 100)
-                                            .overlay(
-                                                Image(systemName: "camera.fill")
-                                                    .font(.system(size: 20))
-                                                    .foregroundColor(.white)
-                                            )
-                                            .opacity(0)
+                                        VStack {
+                                            Spacer()
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(anime.title)
+                                                        .font(.system(size: 24, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                    
+                                                    if !anime.hashtag.isEmpty {
+                                                        Text("#\(anime.hashtag)")
+                                                            .font(.system(size: 16, weight: .medium))
+                                                            .foregroundColor(.white)
+                                                    }
+                                                }
+                                                Spacer()
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.bottom, 16)
+                                        }
                                     )
                             } else {
-                                Circle()
+                                Rectangle()
                                     .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 100, height: 100)
+                                    .frame(maxWidth: .infinity, maxHeight: 200)
                                     .overlay(
                                         VStack(spacing: 4) {
                                             Image(systemName: "film.fill")
                                                 .font(.system(size: 40))
                                                 .foregroundColor(.gray)
                                             Text("タップで追加")
-                                                .font(.system(size: 10))
+                                                .font(.system(size: 12))
                                                 .foregroundColor(.gray)
+                                        }
+                                    )
+                                    .overlay(
+                                        Color.black.opacity(0.4)
+                                    )
+                                    .overlay(
+                                        VStack {
+                                            Spacer()
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(anime.title)
+                                                        .font(.system(size: 24, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                    
+                                                    if !anime.hashtag.isEmpty {
+                                                        Text("#\(anime.hashtag)")
+                                                            .font(.system(size: 16, weight: .medium))
+                                                            .foregroundColor(.white)
+                                                    }
+                                                }
+                                                Spacer()
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.bottom, 16)
                                         }
                                     )
                             }
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
-                    .padding(.top, 20)
-                    .padding(.bottom, 10)
                     
                     // プロフィールセクション
                     VStack(alignment: .leading, spacing: 0) {
@@ -1954,7 +1985,7 @@ struct AnimeAboutView: View {
                     Spacer(minLength: 50)
                 }
             }
-            .background(Color(.systemGray6))
+            .background(Color.white)
             .navigationBarTitle("About", displayMode: .inline)
             .navigationBarItems(
                 leading: Button(action: {

@@ -224,8 +224,6 @@ struct VisitGameScreen: View {
     let planTitle: String
     @StateObject private var viewModel: SpotsViewModel
     @State private var currentSpotIndex = 0
-    @State private var showingDetail = false
-    @State private var selectedSpot: VisitSpot?
     @State private var selectedDay: Int = 1
     @State private var newlyCompletedSpots: Set<UUID> = [] // 新しく完了したスポットを追跡
     @State private var showCompleteAnimation = false
@@ -291,14 +289,7 @@ struct VisitGameScreen: View {
                 .background(Color(.systemGray6))
             }
             
-            // スポットリスト
-            SpotListView(
-                spots: $viewModel.spots,
-                selectedDay: selectedDay,
-                selectedSpot: $selectedSpot,
-                showingDetail: $showingDetail,
-                newlyCompletedSpots: $newlyCompletedSpots
-            )
+            // スポットリスト（現在は使用されていません - 新しいbody実装を使用）
             
             // 完了メッセージ
             if filteredSpotsCount > 0 && filteredSpotsCompletedCount == filteredSpotsCount {
@@ -348,32 +339,39 @@ struct VisitGameScreen: View {
                         let dayFilteredSpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
                         ForEach(dayFilteredSpots, id: \.id) { spot in
                             if let realIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
-                                AnimeStyleSpotCard(
-                                    spot: viewModel.spots[realIndex],
-                                    isCompleted: viewModel.spots[realIndex].isCompleted,
-                                    onToggle: {
-                                        withAnimation(.spring()) {
-                                            viewModel.spots[realIndex].isCompleted.toggle()
-                                            if viewModel.spots[realIndex].isCompleted {
-                                                newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                    newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
+                                NavigationLink(destination: SpotDetailPageView(
+                                    spot: $viewModel.spots[realIndex],
+                                    spots: $viewModel.spots,
+                                    startTime: startTime,
+                                    savePlanProgress: {}
+                                )) {
+                                    AnimeStyleSpotCard(
+                                        spot: viewModel.spots[realIndex],
+                                        isCompleted: viewModel.spots[realIndex].isCompleted,
+                                        onToggle: {
+                                            withAnimation(.spring()) {
+                                                viewModel.spots[realIndex].isCompleted.toggle()
+                                                if viewModel.spots[realIndex].isCompleted {
+                                                    newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                                        newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
+                                                    }
+                                                }
+                                                
+                                                // 全てのスポットが完了したかチェック
+                                                if allSpotsCompleted {
+                                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                        showCompletionPopup = true
+                                                    }
                                                 }
                                             }
-                                            
-                                            // 全てのスポットが完了したかチェック
-                                            if allSpotsCompleted {
-                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                    showCompletionPopup = true
-                                                }
-                                            }
+                                        },
+                                        onTap: {
+                                            // NavigationLinkを使用するため、このonTapは使用しない
                                         }
-                                    },
-                                    onTap: {
-                                        selectedSpot = viewModel.spots[realIndex]
-                                        showingDetail = true
-                                    }
-                                )
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
@@ -393,16 +391,6 @@ struct VisitGameScreen: View {
             }
             .background(Color(.systemBackground))
             .navigationBarHidden(true)
-        }
-        .sheet(item: $selectedSpot) { spot in
-            if let index = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
-                SpotDetailView(
-                    spot: $viewModel.spots[index], 
-                    spots: $viewModel.spots, 
-                    startTime: startTime,
-                    savePlanProgress: {}
-                )
-            }
         }
         .onAppear {
             print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
@@ -816,80 +804,77 @@ struct AnimeStyleSpotCard: View {
     let onTap: () -> Void
     
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                // サムネイル（アニメページと同じサイズ）
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 140, height: 100)
-                    
-                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 140, height: 100)
-                            .clipped()
-                            .cornerRadius(8)
-                    } else if !spot.imageUrl.isEmpty, let url = URL(string: spot.imageUrl) {
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Image(systemName: "photo")
-                                .font(.system(size: 30))
-                                .foregroundColor(.gray)
-                        }
+        HStack(spacing: 12) {
+            // サムネイル（アニメページと同じサイズ）
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 140, height: 100)
+                
+                if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
                         .frame(width: 140, height: 100)
                         .clipped()
                         .cornerRadius(8)
-                    } else {
+                } else if !spot.imageUrl.isEmpty, let url = URL(string: spot.imageUrl) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
                         Image(systemName: "photo")
                             .font(.system(size: 30))
                             .foregroundColor(.gray)
                     }
+                    .frame(width: 140, height: 100)
+                    .clipped()
+                    .cornerRadius(8)
+                } else {
+                    Image(systemName: "photo")
+                        .font(.system(size: 30))
+                        .foregroundColor(.gray)
                 }
+            }
+            
+            // テキスト情報
+            VStack(alignment: .leading, spacing: 4) {
+                Text(spot.name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.black)
+                    .lineLimit(1)
+                    .multilineTextAlignment(.leading)
                 
-                // テキスト情報
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(spot.name)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
+                if !spot.address.isEmpty {
+                    Text(spot.address)
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
                         .lineLimit(1)
                         .multilineTextAlignment(.leading)
-                    
-                    if !spot.address.isEmpty {
-                        Text(spot.address)
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                    }
-                    
-                    if let arrivalTime = spot.arrivalTime {
-                        Text(DateFormatter.localizedString(from: arrivalTime, dateStyle: .none, timeStyle: .short))
-                            .font(.system(size: 12))
-                            .foregroundColor(.blue)
-                    }
                 }
                 
-                Spacer()
-                
-                // 完了ボタン
-                Button(action: onToggle) {
-                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 24))
-                        .foregroundColor(isCompleted ? .green : .gray)
+                if let arrivalTime = spot.arrivalTime {
+                    Text(DateFormatter.localizedString(from: arrivalTime, dateStyle: .none, timeStyle: .short))
+                        .font(.system(size: 12))
+                        .foregroundColor(.blue)
                 }
-                .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemBackground))
-            .cornerRadius(8)
+            
+            Spacer()
+            
+            // 完了ボタン
+            Button(action: onToggle) {
+                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 24))
+                    .foregroundColor(isCompleted ? .green : .gray)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
     }
 }
 
@@ -1237,7 +1222,7 @@ struct TransportCard: View {
     }
 }
 
-struct SpotDetailView: View {
+struct SpotDetailPageView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var spot: VisitSpot
     @Binding var spots: [VisitSpot]
@@ -1256,127 +1241,232 @@ struct SpotDetailView: View {
     }()
     
     var body: some View {
-        NavigationView {
+        GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // サムネイル画像
-                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 200)
-                            .clipped()
-                            .cornerRadius(12)
-                    } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
-                        // Web管理画面から作成されたプランの画像を表示
-                        let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
-                        let _ = print("🖼️ [DEBUG] 詳細スポット \(spot.name) の画像URL: '\(imageUrlToUse)'")
-                        let _ = print("🔗 [DEBUG] 詳細URL作成結果: \(URL(string: imageUrlToUse)?.absoluteString ?? "nil")")
-                        
-                        // URLに問題がないか最終チェック
-                        if let url = URL(string: imageUrlToUse), !imageUrlToUse.isEmpty {
-                            GeometryReader { geometry in
-                                CustomAsyncImage(url: url, width: geometry.size.width, height: 200)
-                                    .cornerRadius(12)
+                VStack(spacing: 0) {
+                    // スポット画像を背景に使用
+                    ZStack {
+                        // 背景画像
+                        if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: geometry.size.width, height: 260)
+                                .clipped()
+                                .overlay(Color.black.opacity(0.4))
+                        } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
+                            let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
+                            
+                            if let url = URL(string: imageUrlToUse), !imageUrlToUse.isEmpty {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                } placeholder: {
+                                    Rectangle()
+                                        .fill(LinearGradient(
+                                            gradient: Gradient(colors: [
+                                                Color(red: 0.4, green: 0.7, blue: 1.0),
+                                                Color(red: 0.2, green: 0.6, blue: 1.0)
+                                            ]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ))
+                                }
+                                .frame(width: geometry.size.width, height: 260)
+                                .clipped()
+                                .overlay(Color.black.opacity(0.4))
+                            } else {
+                                Rectangle()
+                                    .fill(LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(red: 0.4, green: 0.7, blue: 1.0),
+                                            Color(red: 0.2, green: 0.6, blue: 1.0)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ))
+                                    .frame(width: geometry.size.width, height: 260)
                             }
-                            .frame(height: 200)
                         } else {
-                            let _ = print("❌ [DEBUG] 詳細無効なURL: '\(imageUrlToUse)'")
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemGray5))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 200)
-                                .overlay(
-                                    Image(systemName: "exclamationmark.triangle")
-                                        .font(.system(size: 40))
-                                        .foregroundColor(.gray)
-                                )
+                            Rectangle()
+                                .fill(LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(red: 0.4, green: 0.7, blue: 1.0),
+                                        Color(red: 0.2, green: 0.6, blue: 1.0)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ))
+                                .frame(width: geometry.size.width, height: 260)
                         }
-                    } else {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemGray5))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 200)
-                            .overlay(
+                    
+                    // 中央のコンテンツ
+                    VStack(spacing: 16) {
+                        // 丸いアイコン（サイズを調整）
+                        ZStack {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 90, height: 90)
+                                .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
+                            
+                            if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 78, height: 78)
+                                    .clipShape(Circle())
+                            } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
+                                let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
+                                
+                                if let url = URL(string: imageUrlToUse), !imageUrlToUse.isEmpty {
+                                    AsyncImage(url: url) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                    } placeholder: {
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.gray)
+                                    }
+                                    .frame(width: 78, height: 78)
+                                    .clipShape(Circle())
+                                } else {
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.gray)
+                                }
+                            } else {
                                 Image(systemName: "photo")
-                                    .font(.system(size: 40))
+                                    .font(.system(size: 24))
                                     .foregroundColor(.gray)
-                            )
+                            }
+                        }
+                        
+                        // スポット名（中央配置）
+                        VStack(spacing: 4) {
+                            Text(spot.name)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            
+                            if !spot.address.isEmpty {
+                                Text(spot.address)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .multilineTextAlignment(.center)
+                                    .lineLimit(1)
+                                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            }
+                            
+                            // 地図アイコン
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white.opacity(0.9))
+                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                        }
+                        
+                        Spacer()
                     }
-                    
-                    // スポット名
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("スポット名")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                        Text(spot.name)
-                            .font(.system(size: 20, weight: .semibold))
-                    }
-                    
+                    .padding(.vertical, 20)
+                }
+                
+                // 白いコンテンツ領域
+                VStack(alignment: .leading, spacing: 20) {
                     // 滞在時間帯
                     if !spot.timeRange.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("滞在時間帯")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
-                            Text(spot.timeRange)
-                                .font(.system(size: 16))
+                            HStack {
+                                Image(systemName: "clock")
+                                    .foregroundColor(.blue)
+                                    .font(.system(size: 14))
+                                Text(spot.timeRange)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
                     
                     // ここで何をするのか
                     if !spot.activity.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("ここで何をするのか")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             Text(spot.activity)
                                 .font(.system(size: 16))
+                                .foregroundColor(.black)
                         }
                     }
                     
-                    // 滞在時間
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("滞在時間")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
-                        Label("\(spot.stayDuration)分", systemImage: "clock")
-                            .font(.system(size: 16))
-                            .foregroundColor(.orange)
-                    }
-                    
-                    // 住所
-                    if !spot.address.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("住所")
+                    // 情報テーブル
+                    VStack(spacing: 12) {
+                        // 滞在時間
+                        HStack {
+                            Image(systemName: "clock")
+                                .foregroundColor(.blue)
+                                .font(.system(size: 16))
+                                .frame(width: 20)
+                            Text("滞在時間")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
-                            Label(spot.address, systemImage: "mappin")
+                                .frame(width: 80, alignment: .leading)
+                            Text("\(spot.stayDuration)分")
                                 .font(.system(size: 16))
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        // 住所
+                        if !spot.address.isEmpty {
+                            HStack {
+                                Image(systemName: "mappin")
+                                    .foregroundColor(.blue)
+                                    .font(.system(size: 16))
+                                    .frame(width: 20)
+                                Text("住所")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                                    .frame(width: 80, alignment: .leading)
+                                Text(spot.address)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.black)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        
+                        // スポット費用
+                        if spot.spotCost > 0 {
+                            HStack {
+                                Image(systemName: "yensign.circle")
+                                    .foregroundColor(.blue)
+                                    .font(.system(size: 16))
+                                    .frame(width: 20)
+                                Text("費用")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                                    .frame(width: 80, alignment: .leading)
+                                Text("¥\(spot.spotCost)")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
                     }
                     
                     // メモ
                     if !spot.notes.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("メモ")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             Text(spot.notes)
                                 .font(.system(size: 16))
-                        }
-                    }
-                    
-                    // スポット費用
-                    if spot.spotCost > 0 {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("費用")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
-                            Label("¥\(spot.spotCost)", systemImage: "yensign.circle")
-                                .font(.system(size: 16))
-                                .foregroundColor(.blue)
+                                .foregroundColor(.black)
                         }
                     }
                     
@@ -1412,7 +1502,6 @@ struct SpotDetailView: View {
                                     // Web管理画面からの画像を表示
                                     ForEach(Array(spot.images.enumerated()), id: \.offset) { index, imageUrl in
                                         if let url = URL(string: imageUrl) {
-                                            let _ = print("🖼️ [DEBUG] 詳細画像表示: \(imageUrl)")
                                             CustomAsyncImage(url: url, width: 200, height: 150)
                                                 .cornerRadius(8)
                                                 .onTapGesture {
@@ -1432,39 +1521,47 @@ struct SpotDetailView: View {
                         Button(action: {
                             openInMaps(address: spot.address)
                         }) {
-                            Label("地図で開く", systemImage: "map")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.blue)
-                                .cornerRadius(8)
+                            HStack {
+                                Image(systemName: "map")
+                                Text("地図で開く")
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.blue)
+                            .cornerRadius(8)
                         }
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(16)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                    .padding(.bottom, 100)
+                    .background(Color.white)
+                }
             }
+        }
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("編集") {
-                    showingEditSheet = true
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.black)
                 }
-                .foregroundColor(.blue)
             }
             ToolbarItem(placement: .principal) {
                 Text(spot.name)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("戻る") {
-                    dismiss()
-                }
-                .foregroundColor(.blue)
-            }
         }
+        .toolbarBackground(Color.white, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .background(Color(.systemBackground))
         .fullScreenCover(isPresented: $showingFullScreenImage) {
             if let imageData = selectedImageData, let uiImage = UIImage(data: imageData) {
                 FullScreenImageView(image: uiImage, isPresented: $showingFullScreenImage)
@@ -1474,22 +1571,6 @@ struct SpotDetailView: View {
             if let imageUrl = selectedImageUrl, let url = URL(string: imageUrl) {
                 FullScreenWebImageView(url: url, isPresented: $showingFullScreenWebImage)
             }
-        }
-        .sheet(isPresented: $showingEditSheet) {
-            if let spotIndex = spots.firstIndex(where: { $0.id == spot.id }) {
-                SpotEditView(
-                    spot: $spots[spotIndex],
-                    onSave: {
-                        // 保存処理
-                        savePlanProgress()
-                        showingEditSheet = false
-                    },
-                    onCancel: {
-                        showingEditSheet = false
-                    }
-                )
-            }
-        }
         }
     }
     

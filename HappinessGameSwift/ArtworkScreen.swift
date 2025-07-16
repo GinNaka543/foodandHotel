@@ -117,6 +117,7 @@ struct ArtworkScreen: View {
                     .font(.system(size: 18, weight: .bold))
             }
             .buttonStyle(PlainButtonStyle())
+            .frame(width: 60, alignment: .leading)
             
             Spacer()
             
@@ -124,6 +125,8 @@ struct ArtworkScreen: View {
             Text(character.name)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
             
             Spacer()
             
@@ -137,6 +140,7 @@ struct ArtworkScreen: View {
                     .background(Color.gray.opacity(0.1))
                     .clipShape(Capsule())
             }
+            .frame(width: 60, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8) // Reduced from 12 to 8

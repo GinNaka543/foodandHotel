@@ -416,6 +416,7 @@ struct AnimeArtworkScreen: View {
                     .font(.system(size: 18, weight: .bold))
             }
             .buttonStyle(PlainButtonStyle())
+            .frame(width: 60, alignment: .leading)
             
             Spacer()
             
@@ -423,6 +424,8 @@ struct AnimeArtworkScreen: View {
             Text(anime.title)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
             
             Spacer()
             
@@ -436,6 +439,7 @@ struct AnimeArtworkScreen: View {
                     .background(Color.gray.opacity(0.1))
                     .clipShape(Capsule())
             }
+            .frame(width: 60, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8) // Reduced from 12 to 8
@@ -1326,6 +1330,7 @@ struct AnimeVideoScreen: View {
                     .font(.system(size: 18, weight: .bold))
             }
             .buttonStyle(PlainButtonStyle())
+            .frame(width: 60, alignment: .leading)
             
             Spacer()
             
@@ -1333,6 +1338,8 @@ struct AnimeVideoScreen: View {
             Text(anime.title)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .multilineTextAlignment(.center)
             
             Spacer()
             
@@ -1346,6 +1353,7 @@ struct AnimeVideoScreen: View {
                     .background(Color.gray.opacity(0.1))
                     .clipShape(Capsule())
             }
+            .frame(width: 60, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8) // Reduced from 12 to 8
@@ -1936,7 +1944,7 @@ struct AnimeAboutView: View {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(maxWidth: .infinity, maxHeight: 120)
+                                    .frame(maxWidth: .infinity, maxHeight: 200)
                                     .clipped()
                                     .overlay(
                                         Color.black.opacity(0.4)
@@ -1965,7 +1973,7 @@ struct AnimeAboutView: View {
                             } else {
                                 Rectangle()
                                     .fill(Color.gray.opacity(0.3))
-                                    .frame(maxWidth: .infinity, maxHeight: 120)
+                                    .frame(maxWidth: .infinity, maxHeight: 200)
                                     .overlay(
                                         VStack(spacing: 4) {
                                             Image(systemName: "film.fill")

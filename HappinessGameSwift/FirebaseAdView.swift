@@ -22,8 +22,15 @@ struct FirebaseAdView: View {
     private func convertedAd() -> Advertisement? {
         guard !advertisements.isEmpty else { return nil }
         
-        // 複数の広告がある場合は、adIndexに基づいて異なる広告を表示
-        let index = advertisements.count > 1 ? (adIndex % advertisements.count) : (currentIndex % advertisements.count)
+        // 複数の広告がある場合は自動切り替え（currentIndex）、単一広告の場合はadIndexを使用
+        let index: Int
+        if advertisements.count > 1 {
+            // 複数広告の場合：10秒間隔でcurrentIndexを使用
+            index = currentIndex % advertisements.count
+        } else {
+            // 単一広告の場合：adIndexを使用（既存の挙動を維持）
+            index = adIndex % advertisements.count
+        }
         
         // 広告が1つしかない場合、2つ目のインスタンスはnilを返す
         if advertisements.count == 1 && adIndex > 0 {
@@ -33,7 +40,7 @@ struct FirebaseAdView: View {
         guard index < advertisements.count else { return nil }
         
         var ad = advertisements[index]
-        print("🎯 [FirebaseAdView] 広告表示: placement=\(placement), adIndex=\(adIndex), 選択された広告=\(ad.title)")
+        print("🎯 [FirebaseAdView] 広告表示: placement=\(placement), adIndex=\(adIndex), currentIndex=\(currentIndex), 選択された広告=\(ad.title)")
         
         // GitHub URLの場合はraw URLに変換
         if ad.imageURL.contains("github.com") && ad.imageURL.contains("/blob/") {
@@ -350,6 +357,10 @@ struct FirebaseAdView: View {
         .onAppear {
             loadAds()
         }
+        .onDisappear {
+            stopTimer()
+            stopAutoScroll()
+        }
     }
     
     private func handleAdClick(_ ad: Advertisement) {
@@ -446,6 +457,11 @@ struct FirebaseAdView: View {
                 }
                 
                 self.isLoading = false
+                
+                // 広告が読み込まれた後にタイマーを開始
+                DispatchQueue.main.async {
+                    self.startTimer()
+                }
             case .failure(let error):
                 print("❌ [FirebaseAdView] 広告読み込みエラー: \(error)")
                 self.isLoading = false
@@ -456,7 +472,7 @@ struct FirebaseAdView: View {
     func startTimer() {
         guard advertisements.count > 1 else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-            withAnimation {
+            withAnimation(.easeInOut(duration: 0.5)) {
                 currentIndex = (currentIndex + 1) % advertisements.count
             }
         }

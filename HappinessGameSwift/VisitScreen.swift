@@ -9,6 +9,8 @@ public struct VisitScreen: View {
     @State private var savedPlans: [VisitPlanData] = []
     @State private var selectedPlan: VisitPlanData?
     @State private var visitAds: [Advertisement] = []
+    @State private var currentAdIndex = 0
+    @State private var adTimer: Timer?
     @StateObject private var firebaseManager = FirebaseManager.shared
     @State private var publicPlans: [VisitPlanModel] = []
     @State private var userOriginalPlans: [VisitPlanModel] = []
@@ -118,6 +120,9 @@ public struct VisitScreen: View {
                 loadVisitAds()
                 loadFirebasePlans()
                 loadPurchasedPlansFromFirebase()
+            }
+            .onDisappear {
+                stopAdTimer()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 // アプリがフォアグラウンドに戻ったときにデータを再読み込み
@@ -615,10 +620,29 @@ public struct VisitScreen: View {
                     print("    - 説明: \(ad.description)")
                 }
                 
+                // 広告が読み込まれた後にタイマーを開始
+                DispatchQueue.main.async {
+                    self.startAdTimer()
+                }
+                
             case .failure(let error):
                 print("❌ ビジット広告取得エラー: \(error)")
             }
         }
+    }
+    
+    func startAdTimer() {
+        guard visitAds.count > 1 else { return }
+        adTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+            withAnimation(.easeInOut(duration: 0.5)) {
+                currentAdIndex = (currentAdIndex + 1) % visitAds.count
+            }
+        }
+    }
+    
+    func stopAdTimer() {
+        adTimer?.invalidate()
+        adTimer = nil
     }
     
     func getDisplayPlans() -> [VisitPlanModel] {
@@ -637,7 +661,8 @@ public struct VisitScreen: View {
         
         // オールタブの場合のみ広告を表示
         if selectedTab == .all && !visitAds.isEmpty {
-            items.append(visitAds[0])
+            let adIndex = visitAds.count > 1 ? currentAdIndex % visitAds.count : 0
+            items.append(visitAds[adIndex])
         }
         
         // プランを追加

@@ -228,6 +228,8 @@ struct VisitGameScreen: View {
     @State private var selectedSpot: VisitSpot?
     @State private var selectedDay: Int = 1
     @State private var newlyCompletedSpots: Set<UUID> = [] // 新しく完了したスポットを追跡
+    @State private var showCompleteAnimation = false
+    @State private var showCompletionPopup = false
     let numberOfDays: Int
     let startTime: Date
     let onClose: (() -> Void)?
@@ -266,6 +268,10 @@ struct VisitGameScreen: View {
     
     var filteredSpotsCount: Int {
         viewModel.spots.filter { $0.dayNumber == selectedDay }.count
+    }
+    
+    var allSpotsCompleted: Bool {
+        !viewModel.spots.isEmpty && viewModel.spots.allSatisfy { $0.isCompleted }
     }
     
     var mainContent: some View {
@@ -327,54 +333,65 @@ struct VisitGameScreen: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
-                // ヘッダー
-                VisitGameHeader(
-                    planTitle: planTitle,
-                    filteredSpotsCompletedCount: filteredSpotsCompletedCount,
-                    filteredSpotsCount: filteredSpotsCount,
-                    onClose: {
-                        if let onClose = onClose {
-                            onClose()
-                        } else {
-                            dismiss()
-                        }
-                    }
-                )
+                // シンプルなヘッダー
+                animeStyleHeader
                 
-                // 日数が2日以上の場合はタブ表示
-                if numberOfDays > 1 {
-                    DayTabsView(numberOfDays: numberOfDays, selectedDay: $selectedDay)
-                }
+                // メインバナー
+                mainBanner
                 
+                // タブバー
+                animeStyleTabs
+                
+                // メインコンテンツ
                 ScrollView {
-                    mainContent
-                }
-                .background(Color(.systemGray6))
-                
-                // 下部のボタン
-                if completedSpotsCount == viewModel.spots.count {
-                    Button(action: {
-                        if let onClose = onClose {
-                            onClose()
-                        } else {
-                            dismiss()
+                    LazyVStack(spacing: 12) {
+                        let dayFilteredSpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
+                        ForEach(dayFilteredSpots, id: \.id) { spot in
+                            if let realIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
+                                AnimeStyleSpotCard(
+                                    spot: viewModel.spots[realIndex],
+                                    isCompleted: viewModel.spots[realIndex].isCompleted,
+                                    onToggle: {
+                                        withAnimation(.spring()) {
+                                            viewModel.spots[realIndex].isCompleted.toggle()
+                                            if viewModel.spots[realIndex].isCompleted {
+                                                newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                                    newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
+                                                }
+                                            }
+                                            
+                                            // 全てのスポットが完了したかチェック
+                                            if allSpotsCompleted {
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                    showCompletionPopup = true
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onTap: {
+                                        selectedSpot = viewModel.spots[realIndex]
+                                        showingDetail = true
+                                    }
+                                )
+                            }
                         }
-                    }) {
-                        Text("完了")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.green)
-                            )
                     }
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
-                    .background(Color(.systemBackground))
+                    .padding(.top, 8)
+                    .padding(.bottom, 100)
+                }
+                .background(Color(.systemBackground))
+                
+                // 下部のアクションボタン
+                if completedSpotsCount < viewModel.spots.count {
+                    bottomActionButton
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 20)
+                        .background(Color(.systemBackground))
                 }
             }
+            .background(Color(.systemBackground))
             .navigationBarHidden(true)
         }
         .sheet(item: $selectedSpot) { spot in
@@ -400,11 +417,586 @@ struct VisitGameScreen: View {
             if viewModel.spots.isEmpty {
                 print("⚠️ WARNING: spotsが空です！")
             }
+            
+            // 訪問進捗を復元
+            loadVisitProgress()
+        }
+        .background(Color(.systemBackground))
+        .fullScreenCover(isPresented: $showCompletionPopup) {
+            AllDaysCompletionView(isPresented: $showCompletionPopup, planTitle: planTitle)
+        }
+    }
+    
+    // アニメページスタイルのヘッダー
+    var animeStyleHeader: some View {
+        HStack {
+            // 戻るボタン
+            Button(action: {
+                if let onClose = onClose {
+                    onClose()
+                } else {
+                    dismiss()
+                }
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.black)
+            }
+            
+            Spacer()
+            
+            // タイトル
+            Text(planTitle)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.black)
+            
+            Spacer()
+            
+            // 進捗表示
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.green)
+                Text("\(completedSpotsCount)/\(viewModel.spots.count)")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+    }
+    
+    // メインバナー
+    var mainBanner: some View {
+        VStack(spacing: 0) {
+            // バナー画像
+            ZStack {
+                // 背景画像
+                if let firstSpot = viewModel.spots.first,
+                   let imageData = firstSpot.imageData, let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 200)
+                        .clipped()
+                } else if let firstSpot = viewModel.spots.first,
+                          !firstSpot.imageUrl.isEmpty, let url = URL(string: firstSpot.imageUrl) {
+                    AsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Rectangle()
+                            .fill(LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 0.4, green: 0.7, blue: 1.0),
+                                    Color(red: 0.2, green: 0.6, blue: 1.0)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                    }
+                    .frame(height: 200)
+                    .clipped()
+                } else {
+                    Rectangle()
+                        .fill(LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 0.4, green: 0.7, blue: 1.0),
+                                Color(red: 0.2, green: 0.6, blue: 1.0)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(height: 200)
+                }
+                
+                // オーバーレイ
+                Rectangle()
+                    .fill(Color.black.opacity(0.3))
+                    .frame(height: 200)
+                
+                // テキスト情報
+                VStack(spacing: 8) {
+                    Text(planTitle)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                    
+                    Text(animeName)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                    
+                    HStack(spacing: 16) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar")
+                                .font(.system(size: 14))
+                            Text("\(numberOfDays)日間")
+                                .font(.system(size: 14))
+                        }
+                        .foregroundColor(.white.opacity(0.9))
+                        
+                        HStack(spacing: 4) {
+                            Image(systemName: "location")
+                                .font(.system(size: 14))
+                            Text("\(viewModel.spots.count)スポット")
+                                .font(.system(size: 14))
+                        }
+                        .foregroundColor(.white.opacity(0.9))
+                    }
+                }
+            }
         }
         .background(Color(.systemBackground))
     }
     
+    // アニメページスタイルのタブ
+    var animeStyleTabs: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(1...numberOfDays, id: \.self) { day in
+                    Button(action: {
+                        withAnimation(.spring()) {
+                            selectedDay = day
+                        }
+                    }) {
+                        Text("Day \(day)")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(selectedDay == day ? .white : .black)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(selectedDay == day ? Color.black : Color(.systemGray6))
+                            )
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16) // バナーとの間隔を追加
+            .padding(.bottom, 8)
+        }
+        .background(Color(.systemBackground))
+    }
     
+    // 元のモダンなヘッダー（予備）
+    var modernHeader: some View {
+        ZStack {
+            // 青いグラデーション背景
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 0.4, green: 0.7, blue: 1.0),
+                    Color(red: 0.2, green: 0.6, blue: 1.0),
+                    Color(red: 0.3, green: 0.65, blue: 0.95)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .frame(height: 280) // タブ用のスペースを考慮して調整
+            
+            VStack(spacing: 16) {
+                HStack {
+                    Button(action: {
+                        if let onClose = onClose {
+                            onClose()
+                        } else {
+                            dismiss()
+                        }
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 40, height: 40)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
+                    
+                    Spacer()
+                    
+                    // 進捗表示
+                    HStack(spacing: 4) {
+                        Image(systemName: "trophy.fill")
+                            .foregroundColor(.yellow)
+                        Text("\(filteredSpotsCompletedCount)/\(filteredSpotsCount)")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.2))
+                    .cornerRadius(20)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 60) // ステータスバーを考慮して余白を増やす
+                
+                // プランのサムネイル
+                if let firstSpot = viewModel.spots.first(where: { $0.dayNumber == selectedDay }),
+                   (firstSpot.imageData != nil || !firstSpot.imageUrl.isEmpty) {
+                    ZStack {
+                        Circle()
+                            .fill(LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white,
+                                    Color(red: 0.95, green: 0.97, blue: 1.0)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                            .frame(width: 104, height: 104) // 80 * 1.3 = 104
+                        
+                        if let imageData = firstSpot.imageData, let uiImage = UIImage(data: imageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 91, height: 91) // 70 * 1.3 = 91
+                                .clipShape(Circle())
+                        } else if !firstSpot.imageUrl.isEmpty, let url = URL(string: firstSpot.imageUrl) {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            } placeholder: {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                            }
+                            .frame(width: 91, height: 91) // 70 * 1.3 = 91
+                            .clipShape(Circle())
+                        }
+                    }
+                    .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+                }
+                
+                // タイトル
+                Text(planTitle)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                
+                // アニメ名
+                Text(animeName)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.9))
+                
+                Spacer()
+            }
+        }
+        .frame(height: 280)
+        .ignoresSafeArea(edges: .top) // ステータスバーの領域まで青にする
+    }
+    
+    // プラン情報カード - 日数タブ（新しいデザイン）
+    var planInfoCard: some View {
+        HStack(spacing: 16) {
+            ForEach(1...numberOfDays, id: \.self) { day in
+                Button(action: {
+                    withAnimation(.spring()) {
+                        selectedDay = day
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Day \(day)")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(red: 0.3, green: 0.65, blue: 0.95),
+                                        Color(red: 0.2, green: 0.6, blue: 1.0)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    )
+                    .scaleEffect(selectedDay == day ? 1.05 : 1.0)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedDay)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+    
+    // 完了メッセージ
+    var completionMessage: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 50))
+                .foregroundColor(.green)
+            
+            Text("すべて完了しました！")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.green)
+            
+            Text("お疲れ様でした")
+                .font(.system(size: 16))
+                .foregroundColor(.gray)
+        }
+        .padding(.vertical, 30)
+        .frame(maxWidth: .infinity)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+    }
+    
+    // 下部のアクションボタン
+    var bottomActionButton: some View {
+        Button(action: {
+            saveVisitProgress()
+        }) {
+            HStack {
+                Image(systemName: "square.and.arrow.down.fill")
+                Text("旅をセーブ")
+            }
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.black)
+            .cornerRadius(8)
+        }
+    }
+    
+    // 訪問進捗を保存する関数
+    func saveVisitProgress() {
+        let visitProgressKey = "visit_progress_\(planId?.uuidString ?? planTitle)"
+        
+        // 現在の訪問済み状態を保存
+        let completedSpotIds = viewModel.spots.filter { $0.isCompleted }.map { $0.id.uuidString }
+        UserDefaults.standard.set(completedSpotIds, forKey: visitProgressKey)
+        
+        print("✅ 訪問進捗を保存しました: \(completedSpotIds.count)件")
+        
+        // 簡単な成功フィードバック
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        // ビジットページに戻る
+        if let onClose = onClose {
+            onClose()
+        } else {
+            dismiss()
+        }
+    }
+    
+    // 訪問進捗を復元する関数
+    func loadVisitProgress() {
+        let visitProgressKey = "visit_progress_\(planId?.uuidString ?? planTitle)"
+        
+        if let savedCompletedSpotIds = UserDefaults.standard.array(forKey: visitProgressKey) as? [String] {
+            for i in 0..<viewModel.spots.count {
+                let spotIdString = viewModel.spots[i].id.uuidString
+                if savedCompletedSpotIds.contains(spotIdString) {
+                    viewModel.spots[i].isCompleted = true
+                }
+            }
+            print("✅ 訪問進捗を復元しました: \(savedCompletedSpotIds.count)件")
+        }
+    }
+}
+
+// 新しいモダンなスポットカード
+// アニメページスタイルのスポットカード
+struct AnimeStyleSpotCard: View {
+    let spot: VisitSpot
+    let isCompleted: Bool
+    let onToggle: () -> Void
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // サムネイル（アニメページと同じサイズ）
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 140, height: 100)
+                    
+                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 140, height: 100)
+                            .clipped()
+                            .cornerRadius(8)
+                    } else if !spot.imageUrl.isEmpty, let url = URL(string: spot.imageUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Image(systemName: "photo")
+                                .font(.system(size: 30))
+                                .foregroundColor(.gray)
+                        }
+                        .frame(width: 140, height: 100)
+                        .clipped()
+                        .cornerRadius(8)
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.system(size: 30))
+                            .foregroundColor(.gray)
+                    }
+                }
+                
+                // テキスト情報
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(spot.name)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                        .multilineTextAlignment(.leading)
+                    
+                    if !spot.address.isEmpty {
+                        Text(spot.address)
+                            .font(.system(size: 13))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                    }
+                    
+                    if let arrivalTime = spot.arrivalTime {
+                        Text(DateFormatter.localizedString(from: arrivalTime, dateStyle: .none, timeStyle: .short))
+                            .font(.system(size: 12))
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                Spacer()
+                
+                // 完了ボタン
+                Button(action: onToggle) {
+                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 24))
+                        .foregroundColor(isCompleted ? .green : .gray)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color(.systemBackground))
+            .cornerRadius(8)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct ModernSpotCard: View {
+    let spot: VisitSpot
+    let index: Int
+    let isCompleted: Bool
+    let onToggle: () -> Void
+    let onTapImage: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // サムネイル画像（横長に変更）
+            Button(action: onTapImage) {
+                ZStack {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(width: 120, height: 80)
+                        .cornerRadius(8)
+                    
+                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 120, height: 80)
+                            .cornerRadius(8)
+                            .clipped()
+                    } else if !spot.imageUrl.isEmpty, let url = URL(string: spot.imageUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Image(systemName: "photo")
+                                .font(.system(size: 30))
+                                .foregroundColor(.gray.opacity(0.5))
+                        }
+                        .frame(width: 120, height: 80)
+                        .cornerRadius(8)
+                        .clipped()
+                    } else {
+                        Image(systemName: "photo")
+                            .font(.system(size: 30))
+                            .foregroundColor(.gray.opacity(0.5))
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // スポット情報
+            VStack(alignment: .leading, spacing: 6) {
+                Text(spot.name)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(isCompleted ? Color.gray : Color.black)
+                    .strikethrough(isCompleted)
+                    .lineLimit(1)
+                
+                if let arrivalTime = spot.arrivalTime {
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 12))
+                        Text(DateFormatter.localizedString(from: arrivalTime, dateStyle: .none, timeStyle: .short))
+                            .font(.system(size: 13))
+                    }
+                    .foregroundColor(.gray)
+                }
+                
+                if !spot.address.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "location")
+                            .font(.system(size: 12))
+                        Text(spot.address)
+                            .font(.system(size: 13))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+            
+            // チェックボタン
+            Button(action: onToggle) {
+                ZStack {
+                    Circle()
+                        .stroke(isCompleted ? Color.blue : Color.gray.opacity(0.3), lineWidth: 2)
+                        .frame(width: 30, height: 30)
+                    
+                    if isCompleted {
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 30, height: 30)
+                        
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .scaleEffect(isCompleted ? 0.98 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isCompleted)
+    }
 }
 
 struct SpotCard: View {
@@ -1056,5 +1648,185 @@ struct FullScreenImageView: View {
                 Spacer()
             }
         }
+    }
+}
+
+// 全日程完了時のポップアップビュー
+struct AllDaysCompletionView: View {
+    @Binding var isPresented: Bool
+    let planTitle: String
+    @State private var showCelebration = false
+    @State private var showConfetti = false
+    @State private var scale: CGFloat = 0.5
+    @State private var opacity: Double = 0.0
+    
+    var body: some View {
+        ZStack {
+            // 背景
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismissView()
+                }
+            
+            // メインコンテンツ
+            VStack(spacing: 24) {
+                // 完了アイコン
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            gradient: Gradient(colors: [Color.green.opacity(0.3), Color.green.opacity(0.1)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(showCelebration ? 1.2 : 1.0)
+                        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: showCelebration)
+                    
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.green)
+                        .scaleEffect(scale)
+                        .animation(.spring(response: 0.8, dampingFraction: 0.6), value: scale)
+                }
+                
+                // タイトル
+                Text("お疲れ様でした！")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.white)
+                    .opacity(opacity)
+                    .animation(.easeInOut(duration: 0.8).delay(0.3), value: opacity)
+                
+                // プラン名
+                Text(planTitle)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .opacity(opacity)
+                    .animation(.easeInOut(duration: 0.8).delay(0.5), value: opacity)
+                
+                // 完了メッセージ
+                Text("すべての日程が完了しました")
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .opacity(opacity)
+                    .animation(.easeInOut(duration: 0.8).delay(0.7), value: opacity)
+                
+                // 閉じるボタン
+                Button(action: {
+                    dismissView()
+                }) {
+                    Text("閉じる")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.green, Color.green.opacity(0.8)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(12)
+                        .shadow(color: Color.green.opacity(0.3), radius: 5, x: 0, y: 3)
+                }
+                .opacity(opacity)
+                .animation(.easeInOut(duration: 0.8).delay(0.9), value: opacity)
+            }
+            .padding(32)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.black.opacity(0.8))
+                    .blur(radius: 0.5)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+            .padding(.horizontal, 40)
+            .scaleEffect(scale)
+            .opacity(opacity)
+            
+            // 紙吹雪エフェクト
+            if showConfetti {
+                ForEach(0..<20, id: \.self) { index in
+                    ConfettiPiece(index: index)
+                }
+            }
+        }
+        .onAppear {
+            startAnimations()
+        }
+    }
+    
+    private func startAnimations() {
+        // 初期表示アニメーション
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+            scale = 1.0
+            opacity = 1.0
+        }
+        
+        // 祝福アニメーション開始
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            showCelebration = true
+            showConfetti = true
+        }
+        
+        // ハプティックフィードバック
+        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+        impactFeedback.impactOccurred()
+        
+        // 紙吹雪を一定時間後に停止
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            showConfetti = false
+        }
+    }
+    
+    private func dismissView() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            scale = 0.5
+            opacity = 0.0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            isPresented = false
+        }
+    }
+}
+
+// 紙吹雪のピース
+struct ConfettiPiece: View {
+    let index: Int
+    @State private var yPosition: CGFloat = -100
+    @State private var xPosition: CGFloat = 0
+    @State private var rotation: Double = 0
+    @State private var opacity: Double = 1.0
+    
+    private let colors = [Color.yellow, Color.pink, Color.blue, Color.green, Color.orange, Color.purple]
+    
+    var body: some View {
+        Rectangle()
+            .fill(colors[index % colors.count])
+            .frame(width: 8, height: 8)
+            .rotationEffect(.degrees(rotation))
+            .opacity(opacity)
+            .position(x: xPosition, y: yPosition)
+            .onAppear {
+                // 初期位置設定
+                xPosition = CGFloat.random(in: 50...350)
+                
+                // アニメーション開始
+                withAnimation(.linear(duration: Double.random(in: 2...4))) {
+                    yPosition = UIScreen.main.bounds.height + 100
+                    rotation = Double.random(in: 0...360)
+                }
+                
+                // フェードアウト
+                withAnimation(.easeOut(duration: 1.0).delay(1.5)) {
+                    opacity = 0.0
+                }
+            }
     }
 }

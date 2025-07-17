@@ -44,10 +44,20 @@ struct AlbumArtworkListScreen: View {
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
                                 } else if let pixivURL = artwork.pixivURL {
-                                    PixivThumbnailView(pixivURL: pixivURL)
-                                        .frame(width: 160, height: 90)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                        .clipped()
+                                    if let customThumbnailData = artwork.customThumbnailData,
+                                       let uiImage = UIImage(data: customThumbnailData) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 160, height: 90)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                            .clipped()
+                                    } else {
+                                        PixivThumbnailView(pixivURL: pixivURL)
+                                            .frame(width: 160, height: 90)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                            .clipped()
+                                    }
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))

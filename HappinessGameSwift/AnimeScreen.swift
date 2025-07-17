@@ -474,6 +474,8 @@ struct AnimeArtworkScreen: View {
     @State private var pixivRedirectArtwork: Artwork? = nil
     @State private var showDeleteArtworkAlbumAlert = false
     @State private var deletingArtworkAlbum: ArtworkAlbum? = nil
+    @State private var showR18Alert = false
+    @State private var r18ArtworkTitles: [String] = []
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -989,6 +991,14 @@ struct AnimeArtworkScreen: View {
                 }
             )
         }
+        .alert("読み込めない画像を削除しました", isPresented: $showR18Alert) {
+            Button("OK") {
+                showR18Alert = false
+                r18ArtworkTitles.removeAll()
+            }
+        } message: {
+            Text("以下の画像は読み込めないため削除されました：\n\(r18ArtworkTitles.joined(separator: "\n"))\n\nR18作品のサムネイルは表示できないため、自動的に削除されます。")
+        }
         .sheet(isPresented: $showTagInput) {
             VStack(spacing: 24) {
                 Text("表示したいタグを入力")
@@ -1420,7 +1430,60 @@ struct AnimeArtworkScreen: View {
         if let data = UserDefaults.standard.data(forKey: key),
            let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
             artworks = decodedArtworks
+            checkPixivArtworks()
         }
+    }
+    
+    private func checkPixivArtworks() {
+        Task {
+            var problematicArtworks: [(id: UUID, title: String)] = []
+            
+            for artwork in artworks {
+                if let pixivURL = artwork.pixivURL,
+                   artwork.customThumbnailData == nil {
+                    // Check if we can load the thumbnail
+                    if let artworkId = extractPixivArtworkId(from: pixivURL) {
+                        let testURL = "https://embed.pixiv.net/artwork.php?illust_id=\(artworkId)"
+                        
+                        do {
+                            if let url = URL(string: testURL) {
+                                let (data, response) = try await URLSession.shared.data(from: url)
+                                if let httpResponse = response as? HTTPURLResponse,
+                                   httpResponse.statusCode != 200 {
+                                    problematicArtworks.append((id: artwork.id, title: artwork.title))
+                                } else if data.count < 1000 { // Too small response might indicate blocked content
+                                    problematicArtworks.append((id: artwork.id, title: artwork.title))
+                                }
+                            }
+                        } catch {
+                            problematicArtworks.append((id: artwork.id, title: artwork.title))
+                        }
+                    }
+                }
+            }
+            
+            if !problematicArtworks.isEmpty {
+                await MainActor.run {
+                    r18ArtworkTitles = problematicArtworks.map { $0.title }
+                    // Remove problematic artworks
+                    artworks.removeAll { artwork in
+                        problematicArtworks.contains { $0.id == artwork.id }
+                    }
+                    saveArtworksToUserDefaults()
+                    showR18Alert = true
+                }
+            }
+        }
+    }
+    
+    private func extractPixivArtworkId(from url: String) -> String? {
+        let pattern = "artworks/(\\d+)"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+           let match = regex.firstMatch(in: url, options: [], range: NSRange(location: 0, length: url.count)),
+           let range = Range(match.range(at: 1), in: url) {
+            return String(url[range])
+        }
+        return nil
     }
     
     private func saveArtworksToUserDefaults() {

@@ -4,6 +4,7 @@ struct PixivThumbnailView: View {
     let pixivURL: String
     @State private var thumbnailImage: UIImage? = nil
     @State private var isLoading = false
+    @State private var loadFailed = false
     
     var body: some View {
         ZStack {
@@ -13,19 +14,30 @@ struct PixivThumbnailView: View {
                     .scaledToFit()
             } else {
                 Color.gray.opacity(0.1)
-                VStack {
+                VStack(spacing: 8) {
                     if isLoading {
                         ProgressView()
                             .scaleEffect(0.8)
+                    } else if loadFailed {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 24))
+                            .foregroundColor(.orange)
+                        Text("読み込めませんでした")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
+                        Text("R18作品は表示できません")
+                            .font(.caption2)
+                            .foregroundColor(.gray)
                     } else {
                         Image(systemName: "photo")
                             .font(.system(size: 30))
                             .foregroundColor(.gray.opacity(0.5))
+                        Text("Pixiv")
+                            .font(.caption)
+                            .foregroundColor(.gray)
                     }
-                    Text("Pixiv")
-                        .font(.caption)
-                        .foregroundColor(.gray)
                 }
+                .padding(8)
             }
         }
         .onAppear {
@@ -66,6 +78,7 @@ struct PixivThumbnailView: View {
                 
                 await MainActor.run {
                     self.isLoading = false
+                    self.loadFailed = true
                 }
             }
         }
@@ -102,13 +115,18 @@ struct PixivFullscreenView: View {
                             .scaleEffect(1.5)
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     } else {
-                        Image(systemName: "photo")
+                        Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 60))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.orange)
                     }
                     Text(isLoading ? "Pixiv画像を読み込み中..." : "画像を読み込めませんでした")
                         .font(.headline)
                         .foregroundColor(.white)
+                    if !isLoading {
+                        Text("R18作品の可能性があります")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
                 }
             }
         }

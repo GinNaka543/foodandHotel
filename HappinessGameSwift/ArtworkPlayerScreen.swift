@@ -146,10 +146,20 @@ struct ArtworkPlayerScreen: View {
                                                             .clipped()
                                                             .cornerRadius(8)
                                                     } else if let pixivURL = relatedArtwork.pixivURL {
-                                                        PixivThumbnailView(pixivURL: pixivURL)
-                                                            .frame(width: 160, height: 100)
-                                                            .clipped()
-                                                            .cornerRadius(8)
+                                                        if let customThumbnailData = relatedArtwork.customThumbnailData,
+                                                           let uiImage = UIImage(data: customThumbnailData) {
+                                                            Image(uiImage: uiImage)
+                                                                .resizable()
+                                                                .aspectRatio(contentMode: .fill)
+                                                                .frame(width: 160, height: 100)
+                                                                .clipped()
+                                                                .cornerRadius(8)
+                                                        } else {
+                                                            PixivThumbnailView(pixivURL: pixivURL)
+                                                                .frame(width: 160, height: 100)
+                                                                .clipped()
+                                                                .cornerRadius(8)
+                                                        }
                                                     } else {
                                                         Rectangle()
                                                             .fill(Color.gray.opacity(0.3))

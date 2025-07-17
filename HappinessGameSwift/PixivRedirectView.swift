@@ -11,7 +11,6 @@ struct PixivRedirectView: View {
     @State private var showEditMenu = false
     @State private var showEditTitle = false
     @State private var showEditTags = false
-    @State private var showThumbnailPicker = false
     @State private var editText = ""
     @State private var showDeleteAlert = false
     
@@ -60,8 +59,8 @@ struct PixivRedirectView: View {
                     ScrollView {
                         VStack(spacing: 20) {
                             // Pixiv thumbnail display
-                            if let customThumbnailData = artwork?.customThumbnailData,
-                               let uiImage = UIImage(data: customThumbnailData) {
+                            if let thumbnailData = artwork?.customThumbnailData,
+                               let uiImage = UIImage(data: thumbnailData) {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
@@ -170,20 +169,6 @@ struct PixivRedirectView: View {
                         }
                         .foregroundColor(.primary)
                         
-                        Button(action: {
-                            showEditMenu = false
-                            showThumbnailPicker = true
-                        }) {
-                            HStack {
-                                Image(systemName: "photo")
-                                Text("サムネイルを変更")
-                                Spacer()
-                            }
-                            .padding()
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(10)
-                        }
-                        .foregroundColor(.primary)
                         
                         Button(action: {
                             showEditMenu = false
@@ -249,20 +234,6 @@ struct PixivRedirectView: View {
                     onDelete: {
                         onDelete?()
                         dismiss()
-                    }
-                )
-            }
-        }
-        .sheet(isPresented: $showThumbnailPicker) {
-            if let artwork = artwork {
-                ArtworkThumbnailPickerView(
-                    artwork: artwork,
-                    onSave: { newThumbnailData in
-                        onThumbnailUpdate?(newThumbnailData)
-                        showThumbnailPicker = false
-                    },
-                    onCancel: {
-                        showThumbnailPicker = false
                     }
                 )
             }
@@ -421,117 +392,3 @@ struct DeleteAlertDialog: View {
     }
 }
 
-struct ArtworkThumbnailPickerView: View {
-    let artwork: Artwork
-    let onSave: (Data?) -> Void
-    let onCancel: () -> Void
-    
-    @State private var selectedImageItem: PhotosPickerItem?
-    @State private var customThumbnailImage: UIImage?
-    
-    var body: some View {
-        VStack(spacing: 20) {
-                Text("サムネイルを選択")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .padding(.top)
-                
-                // 現在のサムネイル表示
-                VStack {
-                    Text("現在のサムネイル")
-                        .font(.headline)
-                    
-                    if let customThumbnailImage = customThumbnailImage {
-                        Image(uiImage: customThumbnailImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 200)
-                            .cornerRadius(8)
-                    } else if let existingThumbnailData = artwork.customThumbnailData,
-                              let uiImage = UIImage(data: existingThumbnailData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 200)
-                            .cornerRadius(8)
-                    } else if let pixivURL = artwork.pixivURL {
-                        PixivThumbnailView(pixivURL: pixivURL)
-                            .frame(height: 200)
-                            .cornerRadius(8)
-                    } else if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 200)
-                            .cornerRadius(8)
-                    } else {
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(height: 200)
-                            .cornerRadius(8)
-                            .overlay(
-                                Text("サムネイルなし")
-                                    .foregroundColor(.gray)
-                            )
-                    }
-                }
-                .padding(.horizontal)
-                
-                // フォトライブラリから選択
-                PhotosPicker(
-                    selection: $selectedImageItem,
-                    matching: .images
-                ) {
-                    HStack {
-                        Image(systemName: "photo.on.rectangle")
-                        Text("フォトライブラリから選択")
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.blue)
-                    .cornerRadius(10)
-                }
-                .padding(.horizontal)
-                .onChange(of: selectedImageItem) { newItem in
-                    Task {
-                        if let item = newItem,
-                           let data = try? await item.loadTransferable(type: Data.self),
-                           let image = UIImage(data: data) {
-                            customThumbnailImage = image
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                // ボタンエリア
-                HStack(spacing: 20) {
-                    Button("キャンセル") {
-                        onCancel()
-                    }
-                    .font(.headline)
-                    .foregroundColor(.red)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(10)
-                    
-                    Button("保存") {
-                        let thumbnailData = customThumbnailImage?.jpegData(compressionQuality: 0.8)
-                        onSave(thumbnailData)
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(customThumbnailImage != nil ? Color.green : Color.gray)
-                    .cornerRadius(10)
-                    .disabled(customThumbnailImage == nil)
-                }
-                .padding(.horizontal)
-                .padding(.bottom)
-            }
-    }
-}

@@ -93,6 +93,8 @@ struct ArtworkScreen: View {
     @State private var pixivRedirectArtwork: Artwork? = nil
     @State private var showDeleteArtworkAlbumAlert = false
     @State private var deletingArtworkAlbum: ArtworkAlbum? = nil
+    @State private var showR18Alert = false
+    @State private var r18ArtworkTitles: [String] = []
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -320,11 +322,21 @@ struct ArtworkScreen: View {
                                                                 .clipped()
                                                                 .cornerRadius(8)
                                                         } else if let pixivURL = firstArtwork.pixivURL {
-                                                            PixivThumbnailView(pixivURL: pixivURL)
-                                                                .frame(width: 160, height: 90)
-                                                                .aspectRatio(contentMode: .fill)
-                                                                .clipped()
-                                                                .cornerRadius(8)
+                                                            if let customThumbnailData = firstArtwork.customThumbnailData,
+                                                               let uiImage = UIImage(data: customThumbnailData) {
+                                                                Image(uiImage: uiImage)
+                                                                    .resizable()
+                                                                    .aspectRatio(contentMode: .fill)
+                                                                    .frame(width: 160, height: 90)
+                                                                    .clipped()
+                                                                    .cornerRadius(8)
+                                                            } else {
+                                                                PixivThumbnailView(pixivURL: pixivURL)
+                                                                    .frame(width: 160, height: 90)
+                                                                    .aspectRatio(contentMode: .fill)
+                                                                    .clipped()
+                                                                    .cornerRadius(8)
+                                                            }
                                                         } else {
                                                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                                 .fill(Color.gray.opacity(0.3))
@@ -452,9 +464,17 @@ struct ArtworkScreen: View {
                                                             .aspectRatio(contentMode: .fill)
                                                             .frame(width: UIScreen.main.bounds.width, height: 233)
                                                     } else if let pixivURL = artwork.pixivURL {
-                                                        PixivThumbnailView(pixivURL: pixivURL)
-                                                            .frame(width: UIScreen.main.bounds.width, height: 233)
-                                                            .aspectRatio(contentMode: .fill)
+                                                        if let customThumbnailData = artwork.customThumbnailData,
+                                                           let uiImage = UIImage(data: customThumbnailData) {
+                                                            Image(uiImage: uiImage)
+                                                                .resizable()
+                                                                .aspectRatio(contentMode: .fill)
+                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        } else {
+                                                            PixivThumbnailView(pixivURL: pixivURL)
+                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                                .aspectRatio(contentMode: .fill)
+                                                        }
                                                     } else {
                                                         Rectangle()
                                                             .fill(Color.gray.opacity(0.2))
@@ -1007,6 +1027,14 @@ struct ArtworkScreen: View {
                 }
             )
         }
+        .alert("読み込めない画像を削除しました", isPresented: $showR18Alert) {
+            Button("OK") {
+                showR18Alert = false
+                r18ArtworkTitles.removeAll()
+            }
+        } message: {
+            Text("以下の画像は読み込めないため削除されました：\n\(r18ArtworkTitles.joined(separator: "\n"))\n\nR18作品のサムネイルは表示できないため、自動的に削除されます。")
+        }
         .sheet(isPresented: $showTagInput) {
             VStack(spacing: 24) {
                 Text("同じタグからアルバムを作れます")
@@ -1053,9 +1081,62 @@ struct ArtworkScreen: View {
             for artwork in artworks {
                 print("[DEBUG] - \(artwork.title): pixivURL=\(artwork.pixivURL ?? "nil"), customThumbnail=\(artwork.customThumbnailData != nil)")
             }
+            checkPixivArtworks()
         } else {
             print("[DEBUG] アートワークの読み込み失敗")
         }
+    }
+    
+    func checkPixivArtworks() {
+        Task {
+            var problematicArtworks: [(id: UUID, title: String)] = []
+            
+            for artwork in artworks {
+                if let pixivURL = artwork.pixivURL,
+                   artwork.customThumbnailData == nil {
+                    // Check if we can load the thumbnail
+                    if let artworkId = extractPixivArtworkId(from: pixivURL) {
+                        let testURL = "https://embed.pixiv.net/artwork.php?illust_id=\(artworkId)"
+                        
+                        do {
+                            if let url = URL(string: testURL) {
+                                let (data, response) = try await URLSession.shared.data(from: url)
+                                if let httpResponse = response as? HTTPURLResponse,
+                                   httpResponse.statusCode != 200 {
+                                    problematicArtworks.append((id: artwork.id, title: artwork.title))
+                                } else if data.count < 1000 { // Too small response might indicate blocked content
+                                    problematicArtworks.append((id: artwork.id, title: artwork.title))
+                                }
+                            }
+                        } catch {
+                            problematicArtworks.append((id: artwork.id, title: artwork.title))
+                        }
+                    }
+                }
+            }
+            
+            if !problematicArtworks.isEmpty {
+                await MainActor.run {
+                    r18ArtworkTitles = problematicArtworks.map { $0.title }
+                    // Remove problematic artworks
+                    artworks.removeAll { artwork in
+                        problematicArtworks.contains { $0.id == artwork.id }
+                    }
+                    saveArtworksToUserDefaults()
+                    showR18Alert = true
+                }
+            }
+        }
+    }
+    
+    private func extractPixivArtworkId(from url: String) -> String? {
+        let pattern = "artworks/(\\d+)"
+        if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+           let match = regex.firstMatch(in: url, options: [], range: NSRange(location: 0, length: url.count)),
+           let range = Range(match.range(at: 1), in: url) {
+            return String(url[range])
+        }
+        return nil
     }
     
     func saveArtworksToUserDefaults() {

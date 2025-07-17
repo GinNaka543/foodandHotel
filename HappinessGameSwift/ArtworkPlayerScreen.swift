@@ -3,14 +3,17 @@ import Foundation
 
 struct ArtworkPlayerScreen: View {
     let artwork: Artwork
+    var allArtworks: [Artwork] = []
     var onDelete: (() -> Void)? = nil
     var onEdit: ((String, [String]) -> Void)? = nil
+    var onArtworkChange: ((Artwork) -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
     @State private var showMenuSheet = false
     @State private var editTitle: String = ""
     @State private var editTags: String = ""
     @State private var showDeleteAlert = false
     @State private var showFullscreen = false
+    @State private var selectedArtwork: Artwork?
 
     var body: some View {
         GeometryReader { geometry in
@@ -104,6 +107,65 @@ struct ArtworkPlayerScreen: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
+                        
+                        // 関連画像リスト
+                        if allArtworks.count > 1 {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("関連画像")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 16)
+                                
+                                ScrollView {
+                                    LazyVStack(spacing: 12) {
+                                        ForEach(allArtworks.filter { $0.id != artwork.id }, id: \.id) { relatedArtwork in
+                                            Button(action: {
+                                                selectedArtwork = relatedArtwork
+                                            }) {
+                                                HStack(spacing: 16) {
+                                                    // サムネイル画像
+                                                    if let imagePath = relatedArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: 160, height: 100)
+                                                            .clipped()
+                                                            .cornerRadius(8)
+                                                    } else if let pixivURL = relatedArtwork.pixivURL {
+                                                        PixivThumbnailView(pixivURL: pixivURL)
+                                                            .frame(width: 160, height: 100)
+                                                            .clipped()
+                                                            .cornerRadius(8)
+                                                    } else {
+                                                        Rectangle()
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 160, height: 100)
+                                                            .cornerRadius(8)
+                                                    }
+                                                    
+                                                    // タイトルとタグ
+                                                    VStack(alignment: .leading, spacing: 4) {
+                                                        Text(relatedArtwork.title)
+                                                            .font(.system(size: 16, weight: .semibold))
+                                                            .foregroundColor(.black)
+                                                            .lineLimit(2)
+                                                        Text("#" + (relatedArtwork.tags.isEmpty ? "nakajimaginsei" : relatedArtwork.tags.joined(separator: " #")))
+                                                            .font(.system(size: 14))
+                                                            .foregroundColor(.gray)
+                                                            .lineLimit(1)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 16)
+                                            }
+                                            .buttonStyle(PlainButtonStyle())
+                                        }
+                                    }
+                                }
+                                .frame(maxHeight: 300)
+                            }
+                        }
                     }
                     Spacer()
                 }
@@ -135,6 +197,11 @@ struct ArtworkPlayerScreen: View {
         .onAppear {
             editTitle = artwork.title
             editTags = artwork.tags.joined(separator: ",")
+        }
+        .onChange(of: selectedArtwork) { newArtwork in
+            if let newArtwork = newArtwork {
+                onArtworkChange?(newArtwork)
+            }
         }
         .sheet(isPresented: $showMenuSheet) {
             VStack(spacing: 24) {

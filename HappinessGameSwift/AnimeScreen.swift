@@ -814,30 +814,26 @@ struct AnimeArtworkScreen: View {
                                         }
                                     }) {
                                         VStack(alignment: .leading, spacing: 0) {
-                                            GeometryReader { geometry in
-                                                ZStack {
-                                                    Color.white
-                                                    if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                        Image(uiImage: uiImage)
-                                                            .resizable()
-                                                            .aspectRatio(contentMode: .fit)
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
-                                                    } else if let pixivURL = artwork.pixivURL {
-                                                        PixivThumbnailView(pixivURL: pixivURL)
-                                                            .frame(width: geometry.size.width)
-                                                            .aspectRatio(contentMode: .fit)
-                                                    } else {
-                                                        RoundedRectangle(cornerRadius: 0, style: .continuous)
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                    }
+                                            ZStack {
+                                                Color.white
+                                                if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                } else if let pixivURL = artwork.pixivURL {
+                                                    PixivThumbnailView(pixivURL: pixivURL)
+                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        .clipped()
+                                                } else {
+                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
                                                 }
-                                                .frame(width: geometry.size.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
                                             }
-                                            .frame(height: 233)
+                                            .frame(width: UIScreen.main.bounds.width, height: 233)
+                                            .clipped()
+                                            .padding(.bottom, 0)
                                             HStack(alignment: .center, spacing: 12) {
                                                 if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                                     Image(uiImage: image)
@@ -876,20 +872,28 @@ struct AnimeArtworkScreen: View {
                             .padding(.top, 8)
                         }
                         .fullScreenCover(item: $selectedArtwork) { artwork in
-                            ArtworkPlayerScreenTemp(artwork: artwork, onDelete: {
-                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                    artworks.remove(at: idx)
-                                    updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
-                                    saveArtworksToUserDefaults()
-                                    saveAlbumsToUserDefaults()
+                            ArtworkPlayerScreenTemp(
+                                artwork: artwork, 
+                                allArtworks: artworks,
+                                onDelete: {
+                                    if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                        artworks.remove(at: idx)
+                                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
+                                        saveArtworksToUserDefaults()
+                                        saveAlbumsToUserDefaults()
+                                    }
+                                }, 
+                                onEdit: { newTitle, newTags in
+                                    if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                        artworks[idx].title = newTitle
+                                        artworks[idx].tags = newTags
+                                        saveArtworksToUserDefaults()
+                                    }
+                                },
+                                onArtworkChange: { newArtwork in
+                                    selectedArtwork = newArtwork
                                 }
-                            }, onEdit: { newTitle, newTags in
-                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                    artworks[idx].title = newTitle
-                                    artworks[idx].tags = newTags
-                                    saveArtworksToUserDefaults()
-                                }
-                            })
+                            )
                         }
                     }
                 }

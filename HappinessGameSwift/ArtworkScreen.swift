@@ -520,20 +520,28 @@ struct ArtworkScreen: View {
                             }
                         }
                         .fullScreenCover(item: $selectedArtwork) { artwork in
-                            ArtworkPlayerScreenTemp(artwork: artwork, onDelete: {
-                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                    artworks.remove(at: idx)
-                                    updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
-                                    saveArtworksToUserDefaults()
-                                    saveAlbumsToUserDefaults()
+                            ArtworkPlayerScreenTemp(
+                                artwork: artwork, 
+                                allArtworks: artworks,
+                                onDelete: {
+                                    if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                        artworks.remove(at: idx)
+                                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
+                                        saveArtworksToUserDefaults()
+                                        saveAlbumsToUserDefaults()
+                                    }
+                                }, 
+                                onEdit: { newTitle, newTags in
+                                    if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                        artworks[idx].title = newTitle
+                                        artworks[idx].tags = newTags
+                                        saveArtworksToUserDefaults()
+                                    }
+                                },
+                                onArtworkChange: { newArtwork in
+                                    selectedArtwork = newArtwork
                                 }
-                            }, onEdit: { newTitle, newTags in
-                                if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                    artworks[idx].title = newTitle
-                                    artworks[idx].tags = newTags
-                                    saveArtworksToUserDefaults()
-                                }
-                            })
+                            )
                         }
                     }
                 }

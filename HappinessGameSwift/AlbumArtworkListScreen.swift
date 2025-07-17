@@ -78,6 +78,7 @@ struct AlbumArtworkListScreen: View {
         .fullScreenCover(item: $selectedArtwork) { artwork in
             ArtworkPlayerScreen(
                 artwork: artwork,
+                allArtworks: artworks,
                 onDelete: {
                     // 親画面に削除を通知
                     onArtworkDeleted?(artwork)
@@ -100,6 +101,9 @@ struct AlbumArtworkListScreen: View {
                         artworks[index].title = newTitle
                         artworks[index].tags = newTags
                     }
+                },
+                onArtworkChange: { newArtwork in
+                    selectedArtwork = newArtwork
                 }
             )
         }

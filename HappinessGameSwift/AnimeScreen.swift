@@ -312,15 +312,39 @@ struct AnimeScreen: View {
                     .padding(.top, 8)
                     .padding(.bottom, 0)
                 
-                ForEach(filteredAnimes, id: \.id) { anime in
-                    Button(action: {
-                        selectedAnime = anime
-                    }) {
-                        AnimeRow(anime: anime, animeManager: animeManager)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                if filteredAnimes.isEmpty {
+                    VStack(spacing: 24) {
+                        Spacer()
+                        
+                        Image(systemName: "tv")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray.opacity(0.6))
+                        
+                        VStack(spacing: 12) {
+                            Text("アニメがまだありません")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.black)
+                            
+                            Text("右上の「+」ボタンからアニメを追加してください")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                        }
+                        
+                        Spacer()
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .frame(maxWidth: .infinity, minHeight: 400)
+                } else {
+                    ForEach(filteredAnimes, id: \.id) { anime in
+                        Button(action: {
+                            selectedAnime = anime
+                        }) {
+                            AnimeRow(anime: anime, animeManager: animeManager)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 }
             }
             .padding(.bottom, 75)
@@ -457,13 +481,11 @@ struct AnimeArtworkScreen: View {
     // Enum to manage sheet presentations
     enum SheetType: Identifiable {
         case addPhoto
-        case tagInput
         case artworkDetail(Artwork)
         
         var id: String {
             switch self {
             case .addPhoto: return "addPhoto"
-            case .tagInput: return "tagInput"
             case .artworkDetail(let artwork): return "artworkDetail_\(artwork.id)"
             }
         }
@@ -500,10 +522,10 @@ struct AnimeArtworkScreen: View {
             Button(action: { activeSheet = .addPhoto }) {
                 Text("追加")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.gray.opacity(0.1))
+                    .background(Color.purple)
                     .clipShape(Capsule())
             }
             .frame(width: 60, alignment: .trailing)
@@ -573,7 +595,7 @@ struct AnimeArtworkScreen: View {
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(!showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 12)
                                 .background(
                                     Capsule()
                                         .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -585,7 +607,7 @@ struct AnimeArtworkScreen: View {
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 12)
                                 .background(
                                     Capsule()
                                         .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -600,11 +622,45 @@ struct AnimeArtworkScreen: View {
                 // 画像リスト or Album
                 ZStack {
                     if showAlbum {
-                        ScrollView {
-                            VStack(spacing: 4) {
-                                Spacer().frame(height: 5)
-                                // --- アルバムリスト ---
-                                ForEach(albums) { album in
+                        if albums.isEmpty {
+                            VStack(spacing: 20) {
+                                Spacer()
+                                    .frame(maxHeight: 100)
+                                
+                                Image(systemName: "folder.badge.plus")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.purple)
+                                
+                                Text("まだアルバムがありません")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("同じタグのアートワークからアルバムを作成できます")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                
+                                Button(action: {
+                                    showTagInput = true
+                                }) {
+                                    Label("アルバムを作成", systemImage: "plus.circle.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding()
+                                        .background(Color.purple)
+                                        .cornerRadius(25)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 4) {
+                                    Spacer().frame(height: 5)
+                                    // --- アルバムリスト ---
+                                    ForEach(albums) { album in
                                     Button(action: {
                                         selectedAlbum = album
                                     }) {
@@ -636,13 +692,30 @@ struct AnimeArtworkScreen: View {
                                                 }
                                                 .frame(height: 233)
                                             }
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text("#" + album.tag)
-                                                    .font(.system(size: 15.5, weight: .semibold))
-                                                    .foregroundColor(.black)
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text("#" + album.tag)
+                                                        .font(.system(size: 15.5, weight: .semibold))
+                                                        .foregroundColor(.black)
+                                                }
+                                                .padding(.top, 8)
+                                                .padding(.leading, 8)
+                                                
+                                                Spacer()
+                                                
+                                                Button(action: {
+                                                    // #ボタンのアクション
+                                                }) {
+                                                    Text("#")
+                                                        .font(.system(size: 18, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                        .frame(width: 40, height: 40)
+                                                        .background(Color.black)
+                                                        .clipShape(Circle())
+                                                }
+                                                .padding(.trailing, 16)
+                                                .padding(.bottom, 8)
                                             }
-                                            .padding(.top, 8)
-                                            .padding(.leading, 8)
                                         }
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -681,10 +754,45 @@ struct AnimeArtworkScreen: View {
                                 }
                             )
                         }
+                        }
                     } else {
-                        ScrollView {
-                            VStack(spacing: 32) {
-                                ForEach(artworks, id: \ .id) { artwork in
+                        if artworks.isEmpty {
+                            VStack(spacing: 20) {
+                                Spacer()
+                                    .frame(maxHeight: 100)
+                                
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.purple)
+                                
+                                Text("まだアートワークがありません")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("右上の追加ボタンからアートワークを追加できます")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                
+                                Button(action: {
+                                    activeSheet = .addPhoto
+                                }) {
+                                    Label("アートワークを追加", systemImage: "plus.circle.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding()
+                                        .background(Color.purple)
+                                        .cornerRadius(25)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 32) {
+                                    ForEach(artworks, id: \ .id) { artwork in
                                     VStack(alignment: .leading, spacing: 0) {
                                         GeometryReader { geometry in
                                             ZStack {
@@ -812,6 +920,40 @@ struct AnimeArtworkScreen: View {
                 }
             )
         }
+        .sheet(isPresented: $showTagInput) {
+            VStack(spacing: 24) {
+                Text("表示したいタグを入力")
+                    .font(.headline)
+                Text("同じタグからアルバムを作れます")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                TextField("#タグ名", text: $newTag)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal, 24)
+                Button("保存") {
+                    let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !tag.isEmpty {
+                        let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                        if !tagArtworks.isEmpty {
+                            albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
+                        }
+                    }
+                    newTag = ""
+                    showTagInput = false
+                }
+                .font(.headline)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 10)
+                .background(Color.black)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                Button("キャンセル") {
+                    showTagInput = false
+                }
+                .foregroundColor(.red)
+            }
+            .padding(32)
+        }
         .sheet(item: $activeSheet) { sheetType in
             switch sheetType {
             case .addPhoto:
@@ -828,39 +970,6 @@ struct AnimeArtworkScreen: View {
                         savePixivArtwork(pixivURL: pixivURL, title: title, imageURL: imageURL, tags: tags)
                     }
                 )
-            case .tagInput:
-                VStack(spacing: 24) {
-                    Text("表示したいタグを入力")
-                        .font(.headline)
-                    Text("同じタグからアルバムを作れます")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    TextField("#タグ名", text: $newTag)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .padding(.horizontal, 24)
-                    Button("保存") {
-                        let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !tag.isEmpty {
-                            let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
-                            if !tagArtworks.isEmpty {
-                                albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
-                            }
-                        }
-                        newTag = ""
-                        activeSheet = nil
-                    }
-                    .font(.headline)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 10)
-                    .background(Color.black)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    Button("キャンセル") {
-                        activeSheet = nil
-                    }
-                    .foregroundColor(.red)
-                }
-                .padding(32)
             case .artworkDetail(let artwork):
             GeometryReader { geometry in
                 ZStack {
@@ -940,7 +1049,7 @@ struct AnimeArtworkScreen: View {
                         HStack {
                             Spacer()
                             Button(action: {
-                                activeSheet = nil
+                                showTagInput = false
                             }) {
                                 Text("閉じる")
                                     .font(.headline)
@@ -1104,7 +1213,7 @@ struct AnimeArtworkScreen: View {
                                 }
                                 showDeleteAlert = false
                                 deletingArtworkID = nil
-                                activeSheet = nil
+                                showTagInput = false
                             }) {
                                 Text("削除")
                                     .foregroundColor(.red)
@@ -1219,6 +1328,7 @@ struct AnimeArtworkScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
             }
+        }
         }
     }
     
@@ -1423,10 +1533,10 @@ struct AnimeVideoScreen: View {
             Button(action: { showAddSheet = true }) {
                 Text("追加")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.gray.opacity(0.1))
+                    .background(Color.purple)
                     .clipShape(Capsule())
             }
             .frame(width: 60, alignment: .trailing)
@@ -1496,7 +1606,7 @@ struct AnimeVideoScreen: View {
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(!showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 12)
                                 .background(
                                     Capsule()
                                         .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -1508,7 +1618,7 @@ struct AnimeVideoScreen: View {
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
-                                .padding(.vertical, 8)
+                                .padding(.vertical, 12)
                                 .background(
                                     Capsule()
                                         .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -1522,11 +1632,45 @@ struct AnimeVideoScreen: View {
                 // 動画リスト or Album
                 ZStack {
                     if showAlbum {
-                        ScrollView {
-                            VStack(spacing: 4) {
-                                Spacer().frame(height: 5)
-                                // --- アルバムリスト ---
-                                ForEach(albums) { album in
+                        if albums.isEmpty {
+                            VStack(spacing: 20) {
+                                Spacer()
+                                    .frame(maxHeight: 100)
+                                
+                                Image(systemName: "folder.badge.plus")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.purple)
+                                
+                                Text("まだアルバムがありません")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("同じタグのビデオからアルバムを作成できます")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                
+                                Button(action: {
+                                    showTagInput = true
+                                }) {
+                                    Label("アルバムを作成", systemImage: "plus.circle.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding()
+                                        .background(Color.purple)
+                                        .cornerRadius(25)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 4) {
+                                    Spacer().frame(height: 5)
+                                    // --- アルバムリスト ---
+                                    ForEach(albums) { album in
                                     Button(action: {
                                         selectedAlbum = album
                                     }) {
@@ -1548,13 +1692,30 @@ struct AnimeVideoScreen: View {
                                                 }
                                                 .frame(height: 233)
                                             }
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text("#" + album.tag)
-                                                    .font(.system(size: 15.5, weight: .semibold))
-                                                    .foregroundColor(.black)
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text("#" + album.tag)
+                                                        .font(.system(size: 15.5, weight: .semibold))
+                                                        .foregroundColor(.black)
+                                                }
+                                                .padding(.top, 8)
+                                                .padding(.leading, 8)
+                                                
+                                                Spacer()
+                                                
+                                                Button(action: {
+                                                    // #ボタンのアクション
+                                                }) {
+                                                    Text("#")
+                                                        .font(.system(size: 18, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                        .frame(width: 40, height: 40)
+                                                        .background(Color.black)
+                                                        .clipShape(Circle())
+                                                }
+                                                .padding(.trailing, 16)
+                                                .padding(.bottom, 8)
                                             }
-                                            .padding(.top, 8)
-                                            .padding(.leading, 8)
                                         }
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -1580,11 +1741,46 @@ struct AnimeVideoScreen: View {
                                 }
                             )
                         }
+                        }
                     } else {
-                        ScrollView {
-                            VStack(spacing: 0) {
-                                Spacer().frame(height: 5)
-                                ForEach(Array(videos.enumerated()), id: \ .element.id) { idx, video in
+                        if videos.isEmpty {
+                            VStack(spacing: 20) {
+                                Spacer()
+                                    .frame(maxHeight: 100)
+                                
+                                Image(systemName: "video.slash")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.purple)
+                                
+                                Text("まだビデオがありません")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("右上の追加ボタンからビデオを追加できます")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                
+                                Button(action: {
+                                    showAddSheet = true
+                                }) {
+                                    Label("ビデオを追加", systemImage: "plus.circle.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding()
+                                        .background(Color.purple)
+                                        .cornerRadius(25)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 0) {
+                                    Spacer().frame(height: 5)
+                                    ForEach(Array(videos.enumerated()), id: \ .element.id) { idx, video in
                                     if idx > 0 {
                                         Spacer().frame(height: 35)
                                     }
@@ -1719,7 +1915,7 @@ struct AnimeVideoScreen: View {
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 56, height: 56)
-                        .background(Color.black)
+                        .background(Color.purple)
                         .clipShape(Circle())
                         .shadow(radius: 6)
                         .padding(.bottom, 32)
@@ -1876,6 +2072,7 @@ struct AnimeVideoScreen: View {
                 },
                 secondaryButton: .cancel(Text("キャンセル"))
             )
+        }
         }
     }
     
@@ -2511,7 +2708,7 @@ struct AddAnimeSheet: View {
                                 .foregroundColor(.blue)
                         }
                     }
-                    .onChange(of: selectedItem) { newValue in
+                    .onChange(of: selectedItem) { _, newValue in
                         if let newItem = newValue {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -2925,7 +3122,7 @@ struct AnimeDetailView: View {
                             }
                         }
                     }
-                    .onChange(of: backgroundPickerItem) { newValue in
+                    .onChange(of: backgroundPickerItem) { _, newValue in
                         if let newItem = newValue {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self),

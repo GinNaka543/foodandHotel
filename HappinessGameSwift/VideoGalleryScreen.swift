@@ -121,10 +121,10 @@ struct VideoGalleryScreen: View {
             }) {
                 Text("追加")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.gray.opacity(0.1))
+                    .background(Color.purple)
                     .clipShape(Capsule())
             }
             .frame(width: 60, alignment: .trailing)

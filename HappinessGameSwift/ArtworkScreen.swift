@@ -345,38 +345,6 @@ struct ArtworkScreen: View {
                                 }
                             }
                         }
-                        .fullScreenCover(item: $selectedAlbum) { album in
-                            AlbumArtworkListScreenTemp(
-                                artworks: album.videos, 
-                                tag: album.tag,
-                                onArtworkDeleted: { deletedArtwork in
-                                    // 親画面のartworksリストから削除
-                                    if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
-                                        artworks.remove(at: idx)
-                                        print("[DEBUG] ArtworkScreen: Albumから画像削除 - ID: \(deletedArtwork.id)")
-                                        
-                                        // Albumタブの画像リストも更新
-                                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
-                                        
-                                        saveArtworksToUserDefaults()
-                                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
-                                    }
-                                },
-                                onArtworkEdited: { editedArtwork in
-                                    // 親画面のartworksリストを更新
-                                    if let idx = artworks.firstIndex(where: { $0.id == editedArtwork.id }) {
-                                        artworks[idx] = editedArtwork
-                                        print("[DEBUG] ArtworkScreen: Albumから画像編集 - ID: \(editedArtwork.id)")
-                                        
-                                        // Albumタブの画像リストも更新
-                                        updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
-                                        
-                                        saveArtworksToUserDefaults()
-                                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
-                                    }
-                                }
-                            )
-                        }
                     } else {
                         Group {
                             if artworks.isEmpty {
@@ -532,6 +500,38 @@ struct ArtworkScreen: View {
         }
         .onAppear {
             loadArtworks()
+        }
+        .fullScreenCover(item: $selectedAlbum) { album in
+            AlbumArtworkListScreenTemp(
+                artworks: album.videos, 
+                tag: album.tag,
+                onArtworkDeleted: { deletedArtwork in
+                    // 親画面のartworksリストから削除
+                    if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
+                        artworks.remove(at: idx)
+                        print("[DEBUG] ArtworkScreen: Albumから画像削除 - ID: \(deletedArtwork.id)")
+                        
+                        // Albumタブの画像リストも更新
+                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
+                        
+                        saveArtworksToUserDefaults()
+                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
+                    }
+                },
+                onArtworkEdited: { editedArtwork in
+                    // 親画面のartworksリストを更新
+                    if let idx = artworks.firstIndex(where: { $0.id == editedArtwork.id }) {
+                        artworks[idx] = editedArtwork
+                        print("[DEBUG] ArtworkScreen: Albumから画像編集 - ID: \(editedArtwork.id)")
+                        
+                        // Albumタブの画像リストも更新
+                        updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
+                        
+                        saveArtworksToUserDefaults()
+                        print("[DEBUG] ArtworkScreen: UserDefaultsに保存しました")
+                    }
+                }
+            )
         }
         .fullScreenCover(isPresented: $showPixivRedirect) {
             PixivRedirectView(

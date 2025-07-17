@@ -67,6 +67,7 @@ struct VideoGalleryScreen: View {
         case thumbnailPicker(MemoryVideo)
         case videoDetail(MemoryVideo)
         case youtubeConfirmation(MemoryVideo)
+        case tagInput
         
         var id: String {
             switch self {
@@ -75,6 +76,7 @@ struct VideoGalleryScreen: View {
             case .thumbnailPicker: return "thumbnailPicker"
             case .videoDetail: return "videoDetail"
             case .youtubeConfirmation: return "youtubeConfirmation"
+            case .tagInput: return "tagInput"
             }
         }
     }
@@ -220,8 +222,9 @@ struct VideoGalleryScreen: View {
     
     // アルバムビュー
     var albumView: some View {
-        if albums.isEmpty {
-            VStack(spacing: 20) {
+        Group {
+            if albums.isEmpty {
+                VStack(spacing: 20) {
                 Spacer()
                     .frame(maxHeight: 100)
                 
@@ -308,6 +311,7 @@ struct VideoGalleryScreen: View {
                     .buttonStyle(PlainButtonStyle())
                     }
                 }
+            }
             }
         }
         .fullScreenCover(item: $selectedAlbum) { album in
@@ -573,6 +577,8 @@ struct VideoGalleryScreen: View {
                 videoDetailSheet(video: video)
             case .youtubeConfirmation(let video):
                 youtubeConfirmationSheet(video: video)
+            case .tagInput:
+                tagInputSheet
             }
         }
         .alert(isPresented: $showDeleteAlert) {

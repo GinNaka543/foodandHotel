@@ -896,13 +896,11 @@ struct VisitGameScreen: View {
                 if let timeRange = changes["timeRange"] as? String {
                     viewModel.spots[i].timeRange = timeRange
                 }
-                if let hasCustomTimes = changes["hasCustomTimes"] as? Bool, hasCustomTimes {
-                    if let arrivalInterval = changes["arrivalTime"] as? Double, arrivalInterval > 0 {
-                        viewModel.spots[i].arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
-                    }
-                    if let departureInterval = changes["departureTime"] as? Double, departureInterval > 0 {
-                        viewModel.spots[i].departureTime = Date(timeIntervalSince1970: departureInterval)
-                    }
+                if let arrivalInterval = changes["arrivalTime"] as? Double, arrivalInterval > 0 {
+                    viewModel.spots[i].arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
+                }
+                if let departureInterval = changes["departureTime"] as? Double, departureInterval > 0 {
+                    viewModel.spots[i].departureTime = Date(timeIntervalSince1970: departureInterval)
                 }
             }
         }

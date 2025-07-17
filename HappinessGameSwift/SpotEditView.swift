@@ -14,7 +14,6 @@ struct SpotEditView: View {
     @State private var spotCost: String = ""
     @State private var arrivalTime: Date = Date()
     @State private var departureTime: Date = Date()
-    @State private var hasCustomTimes: Bool = false
     @State private var selectedImage: PhotosPickerItem?
     @State private var selectedDetailImages: [PhotosPickerItem] = []
     @State private var imageData: Data?
@@ -37,32 +36,36 @@ struct SpotEditView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 60)
+                            .onChange(of: stayDuration) { _, newValue in
+                                updateDepartureTime()
+                            }
                         Text("分")
                     }
                     
-                    Toggle("カスタム時間を設定", isOn: $hasCustomTimes)
-                        .toggleStyle(SwitchToggleStyle(tint: .blue))
-                    
-                    if hasCustomTimes {
-                        VStack(spacing: 8) {
-                            HStack {
-                                Text("到着時間")
-                                    .frame(width: 80, alignment: .leading)
-                                Spacer()
-                                DatePicker("", selection: $arrivalTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                            }
-                            
-                            HStack {
-                                Text("出発時間")
-                                    .frame(width: 80, alignment: .leading)
-                                Spacer()
-                                DatePicker("", selection: $departureTime, displayedComponents: .hourAndMinute)
-                                    .labelsHidden()
-                            }
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("到着時間")
+                                .frame(width: 80, alignment: .leading)
+                            Spacer()
+                            DatePicker("", selection: $arrivalTime, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .onChange(of: arrivalTime) { _, newValue in
+                                    updateStayDuration()
+                                }
                         }
-                        .padding(.vertical, 4)
+                        
+                        HStack {
+                            Text("出発時間")
+                                .frame(width: 80, alignment: .leading)
+                            Spacer()
+                            DatePicker("", selection: $departureTime, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
+                                .onChange(of: departureTime) { _, newValue in
+                                    updateStayDuration()
+                                }
+                        }
                     }
+                    .padding(.vertical, 4)
                     
                     HStack {
                         Text("費用")
@@ -225,15 +228,16 @@ struct SpotEditView: View {
             if let arrival = spot.arrivalTime, let departure = spot.departureTime {
                 arrivalTime = arrival
                 departureTime = departure
-                hasCustomTimes = true
             } else {
                 // デフォルトの時間を設定
                 let calendar = Calendar.current
                 let now = Date()
                 arrivalTime = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: now) ?? now
                 departureTime = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
-                hasCustomTimes = false
             }
+            
+            // 初期滞在時間を更新
+            updateStayDuration()
         }
         .onChange(of: selectedImage) { oldValue, newValue in
             Task {
@@ -276,19 +280,13 @@ struct SpotEditView: View {
         spot.detailImagesData = detailImagesData.isEmpty ? nil : detailImagesData
         
         // 時間データの保存
-        if hasCustomTimes {
-            spot.arrivalTime = arrivalTime
-            spot.departureTime = departureTime
-            
-            // timeRangeも更新
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            spot.timeRange = "\(formatter.string(from: arrivalTime))-\(formatter.string(from: departureTime))"
-        } else {
-            spot.arrivalTime = nil
-            spot.departureTime = nil
-            spot.timeRange = ""
-        }
+        spot.arrivalTime = arrivalTime
+        spot.departureTime = departureTime
+        
+        // timeRangeも更新
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        spot.timeRange = "\(formatter.string(from: arrivalTime))-\(formatter.string(from: departureTime))"
         
         // ローカルに変更を保存
         saveSpotChangesLocally()
@@ -323,14 +321,27 @@ struct SpotEditView: View {
             if let timeRange = changes["timeRange"] as? String {
                 spot.timeRange = timeRange
             }
-            if let hasCustomTimes = changes["hasCustomTimes"] as? Bool, hasCustomTimes {
-                if let arrivalInterval = changes["arrivalTime"] as? Double, arrivalInterval > 0 {
-                    spot.arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
-                }
-                if let departureInterval = changes["departureTime"] as? Double, departureInterval > 0 {
-                    spot.departureTime = Date(timeIntervalSince1970: departureInterval)
-                }
+            if let arrivalInterval = changes["arrivalTime"] as? Double, arrivalInterval > 0 {
+                spot.arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
             }
+            if let departureInterval = changes["departureTime"] as? Double, departureInterval > 0 {
+                spot.departureTime = Date(timeIntervalSince1970: departureInterval)
+            }
+        }
+    }
+    
+    func updateStayDuration() {
+        // 到着時間と出発時間から滞在時間を計算
+        let duration = Int(departureTime.timeIntervalSince(arrivalTime) / 60)
+        if duration > 0 {
+            stayDuration = String(duration)
+        }
+    }
+    
+    func updateDepartureTime() {
+        // 滞在時間から出発時間を計算
+        if let duration = Int(stayDuration), duration > 0 {
+            departureTime = arrivalTime.addingTimeInterval(TimeInterval(duration * 60))
         }
     }
     
@@ -346,7 +357,6 @@ struct SpotEditView: View {
             "stayDuration": spot.stayDuration,
             "spotCost": spot.spotCost,
             "timeRange": spot.timeRange,
-            "hasCustomTimes": hasCustomTimes,
             "arrivalTime": spot.arrivalTime?.timeIntervalSince1970 ?? 0,
             "departureTime": spot.departureTime?.timeIntervalSince1970 ?? 0
         ]

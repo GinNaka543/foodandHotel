@@ -101,6 +101,8 @@ struct AlbumArtworkListScreen: View {
                     if let index = artworks.firstIndex(where: { $0.id == artwork.id }) {
                         artworks[index].title = newTitle
                         artworks[index].tags = newTags
+                        // 既存のcustomThumbnailDataも保持
+                        artworks[index].customThumbnailData = artwork.customThumbnailData
                     }
                 },
                 onArtworkChange: { newArtwork in

@@ -12,8 +12,9 @@ struct Artwork: Identifiable, Codable, Hashable {
     var createdAt: Date
     var pixivURL: String?
     var twitterURL: String?
+    var customThumbnailData: Data?
     
-    init(id: UUID = UUID(), characterId: UUID, imagePath: String? = nil, title: String, tags: [String] = [], createdAt: Date = Date(), pixivURL: String? = nil, twitterURL: String? = nil) {
+    init(id: UUID = UUID(), characterId: UUID, imagePath: String? = nil, title: String, tags: [String] = [], createdAt: Date = Date(), pixivURL: String? = nil, twitterURL: String? = nil, customThumbnailData: Data? = nil) {
         self.id = id
         self.characterId = characterId
         self.imagePath = imagePath
@@ -22,6 +23,7 @@ struct Artwork: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.pixivURL = pixivURL
         self.twitterURL = twitterURL
+        self.customThumbnailData = customThumbnailData
     }
     
     static func == (lhs: Artwork, rhs: Artwork) -> Bool {
@@ -504,11 +506,19 @@ struct ArtworkScreen: View {
                                             .padding(.vertical, 8)
                                             .contentShape(Rectangle())
                                             .onTapGesture {
+                                                print("[DEBUG] アートワークタップ: \(artwork.title)")
+                                                print("[DEBUG] pixivURL: \(artwork.pixivURL ?? "nil")")
+                                                print("[DEBUG] artwork ID: \(artwork.id)")
+                                                print("[DEBUG] customThumbnailData: \(artwork.customThumbnailData != nil ? "exists" : "nil")")
+                                                
                                                 if let pixivURL = artwork.pixivURL {
+                                                    print("[DEBUG] Pixiv画像をタップ - URL設定: \(pixivURL)")
                                                     pixivRedirectURL = pixivURL
                                                     pixivRedirectArtwork = artwork
+                                                    print("[DEBUG] pixivRedirectArtwork設定: \(pixivRedirectArtwork?.title ?? "nil")")
                                                     showPixivRedirect = true
                                                 } else {
+                                                    print("[DEBUG] 通常の画像をタップ")
                                                     selectedArtwork = artwork
                                                 }
                                             }
@@ -532,8 +542,11 @@ struct ArtworkScreen: View {
                                 }, 
                                 onEdit: { newTitle, newTags in
                                     if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                        // 現在のcustomThumbnailDataを保持しながら更新
+                                        let currentThumbnailData = artworks[idx].customThumbnailData
                                         artworks[idx].title = newTitle
                                         artworks[idx].tags = newTags
+                                        artworks[idx].customThumbnailData = currentThumbnailData
                                         saveArtworksToUserDefaults()
                                     }
                                 },
@@ -564,27 +577,49 @@ struct ArtworkScreen: View {
             loadArtworks()
             loadAlbumsFromUserDefaults()
         }
+        .onChange(of: showPixivRedirect) { newValue in
+            if !newValue {
+                // PixivRedirectViewが閉じられたときにリセット
+                pixivRedirectArtwork = nil
+                pixivRedirectURL = ""
+            }
+        }
         .fullScreenCover(isPresented: $showPixivRedirect) {
+            let _ = print("[DEBUG] fullScreenCoverが開かれました")
+            let _ = print("[DEBUG] pixivRedirectURL: \(pixivRedirectURL)")
+            let _ = print("[DEBUG] pixivRedirectArtwork: \(pixivRedirectArtwork?.title ?? "nil")")
+            let _ = print("[DEBUG] artworks数: \(artworks.count)")
+            
             PixivRedirectView(
                 pixivURL: pixivRedirectURL,
                 artwork: pixivRedirectArtwork,
                 onEdit: { newTitle, newTags in
-                    if let artwork = pixivRedirectArtwork,
-                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                    if let artworkId = pixivRedirectArtwork?.id,
+                       let idx = artworks.firstIndex(where: { $0.id == artworkId }) {
                         artworks[idx].title = newTitle
                         artworks[idx].tags = newTags
                         saveArtworksToUserDefaults()
                     }
                 },
                 onDelete: {
-                    if let artwork = pixivRedirectArtwork,
-                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                    if let artworkId = pixivRedirectArtwork?.id,
+                       let idx = artworks.firstIndex(where: { $0.id == artworkId }) {
+                        let artwork = artworks[idx]
                         artworks.remove(at: idx)
                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                         saveArtworksToUserDefaults()
                         saveAlbumsToUserDefaults()
                     }
                     showPixivRedirect = false
+                    pixivRedirectArtwork = nil
+                },
+                onThumbnailUpdate: { newThumbnailData in
+                    if let artworkId = pixivRedirectArtwork?.id,
+                       let idx = artworks.firstIndex(where: { $0.id == artworkId }) {
+                        artworks[idx].customThumbnailData = newThumbnailData
+                        pixivRedirectArtwork?.customThumbnailData = newThumbnailData
+                        saveArtworksToUserDefaults()
+                    }
                 }
             )
         }
@@ -1010,9 +1045,16 @@ struct ArtworkScreen: View {
     
     func loadArtworks() {
         let key = "character_artworks_\(character.id.uuidString)"
+        print("[DEBUG] loadArtworks - key: \(key)")
         if let data = UserDefaults.standard.data(forKey: key),
            let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
             artworks = decodedArtworks
+            print("[DEBUG] アートワーク読み込み成功: \(artworks.count)件")
+            for artwork in artworks {
+                print("[DEBUG] - \(artwork.title): pixivURL=\(artwork.pixivURL ?? "nil"), customThumbnail=\(artwork.customThumbnailData != nil)")
+            }
+        } else {
+            print("[DEBUG] アートワークの読み込み失敗")
         }
     }
     

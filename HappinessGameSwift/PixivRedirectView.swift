@@ -1,21 +1,31 @@
 import SwiftUI
+import PhotosUI
 
 struct PixivRedirectView: View {
     let pixivURL: String
     var artwork: Artwork? = nil
     var onEdit: ((String, [String]) -> Void)? = nil
     var onDelete: (() -> Void)? = nil
+    var onThumbnailUpdate: ((Data?) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @State private var showEditMenu = false
     @State private var showEditTitle = false
     @State private var showEditTags = false
+    @State private var showThumbnailPicker = false
     @State private var editText = ""
     @State private var showDeleteAlert = false
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color(.systemBackground).edgesIgnoringSafeArea(.all)
+        let _ = print("[DEBUG] PixivRedirectView body実行")
+        let _ = print("[DEBUG] pixivURL: \(pixivURL)")
+        let _ = print("[DEBUG] artwork: \(artwork?.title ?? "nil")")
+        let _ = print("[DEBUG] artwork ID: \(artwork?.id.uuidString ?? "nil")")
+        let _ = print("[DEBUG] onEdit: \(onEdit != nil)")
+        let _ = print("[DEBUG] onDelete: \(onDelete != nil)")
+        let _ = print("[DEBUG] onThumbnailUpdate: \(onThumbnailUpdate != nil)")
+        
+        ZStack {
+            Color(.systemBackground).edgesIgnoringSafeArea(.all)
                 
                 VStack {
                     // Navigation bar with edit button
@@ -32,7 +42,9 @@ struct PixivRedirectView: View {
                         Spacer()
                         
                         if artwork != nil {
+                            let _ = print("[DEBUG] 編集ボタンを表示")
                             Button(action: {
+                                print("[DEBUG] 編集ボタンがクリックされました")
                                 showEditMenu = true
                             }) {
                                 Text("編集")
@@ -48,11 +60,22 @@ struct PixivRedirectView: View {
                     ScrollView {
                         VStack(spacing: 20) {
                             // Pixiv thumbnail display
-                            PixivThumbnailView(pixivURL: pixivURL)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 300)
-                                .cornerRadius(12)
-                                .padding(.horizontal)
+                            if let customThumbnailData = artwork?.customThumbnailData,
+                               let uiImage = UIImage(data: customThumbnailData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 300)
+                                    .cornerRadius(12)
+                                    .padding(.horizontal)
+                            } else {
+                                PixivThumbnailView(pixivURL: pixivURL)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 300)
+                                    .cornerRadius(12)
+                                    .padding(.horizontal)
+                            }
                             
                             // Title
                             if let title = artwork?.title {
@@ -149,6 +172,21 @@ struct PixivRedirectView: View {
                         
                         Button(action: {
                             showEditMenu = false
+                            showThumbnailPicker = true
+                        }) {
+                            HStack {
+                                Image(systemName: "photo")
+                                Text("サムネイルを変更")
+                                Spacer()
+                            }
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(10)
+                        }
+                        .foregroundColor(.primary)
+                        
+                        Button(action: {
+                            showEditMenu = false
                             showDeleteAlert = true
                         }) {
                             HStack {
@@ -214,9 +252,21 @@ struct PixivRedirectView: View {
                     }
                 )
             }
+        }
+        .sheet(isPresented: $showThumbnailPicker) {
+            if let artwork = artwork {
+                ArtworkThumbnailPickerView(
+                    artwork: artwork,
+                    onSave: { newThumbnailData in
+                        onThumbnailUpdate?(newThumbnailData)
+                        showThumbnailPicker = false
+                    },
+                    onCancel: {
+                        showThumbnailPicker = false
+                    }
+                )
             }
         }
-        .navigationBarHidden(true)
     }
     
     private func openPixivURL() {
@@ -226,10 +276,8 @@ struct PixivRedirectView: View {
         // Use openURL with options to ensure it always opens
         UIApplication.shared.open(url, options: [:]) { success in
             if success {
-                // Only dismiss if successfully opened
-                DispatchQueue.main.async {
-                    self.dismiss()
-                }
+                // Dismissを削除 - ユーザーが手動で閉じるまで画面を保持
+                // これにより、Pixivから戻ってきた時も画面が正しく表示される
             }
         }
     }
@@ -370,5 +418,120 @@ struct DeleteAlertDialog: View {
         .frame(maxWidth: 340)
         .padding(.horizontal, 32)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+    }
+}
+
+struct ArtworkThumbnailPickerView: View {
+    let artwork: Artwork
+    let onSave: (Data?) -> Void
+    let onCancel: () -> Void
+    
+    @State private var selectedImageItem: PhotosPickerItem?
+    @State private var customThumbnailImage: UIImage?
+    
+    var body: some View {
+        VStack(spacing: 20) {
+                Text("サムネイルを選択")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.top)
+                
+                // 現在のサムネイル表示
+                VStack {
+                    Text("現在のサムネイル")
+                        .font(.headline)
+                    
+                    if let customThumbnailImage = customThumbnailImage {
+                        Image(uiImage: customThumbnailImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 200)
+                            .cornerRadius(8)
+                    } else if let existingThumbnailData = artwork.customThumbnailData,
+                              let uiImage = UIImage(data: existingThumbnailData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 200)
+                            .cornerRadius(8)
+                    } else if let pixivURL = artwork.pixivURL {
+                        PixivThumbnailView(pixivURL: pixivURL)
+                            .frame(height: 200)
+                            .cornerRadius(8)
+                    } else if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 200)
+                            .cornerRadius(8)
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 200)
+                            .cornerRadius(8)
+                            .overlay(
+                                Text("サムネイルなし")
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                }
+                .padding(.horizontal)
+                
+                // フォトライブラリから選択
+                PhotosPicker(
+                    selection: $selectedImageItem,
+                    matching: .images
+                ) {
+                    HStack {
+                        Image(systemName: "photo.on.rectangle")
+                        Text("フォトライブラリから選択")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.blue)
+                    .cornerRadius(10)
+                }
+                .padding(.horizontal)
+                .onChange(of: selectedImageItem) { newItem in
+                    Task {
+                        if let item = newItem,
+                           let data = try? await item.loadTransferable(type: Data.self),
+                           let image = UIImage(data: data) {
+                            customThumbnailImage = image
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                // ボタンエリア
+                HStack(spacing: 20) {
+                    Button("キャンセル") {
+                        onCancel()
+                    }
+                    .font(.headline)
+                    .foregroundColor(.red)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(10)
+                    
+                    Button("保存") {
+                        let thumbnailData = customThumbnailImage?.jpegData(compressionQuality: 0.8)
+                        onSave(thumbnailData)
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(customThumbnailImage != nil ? Color.green : Color.gray)
+                    .cornerRadius(10)
+                    .disabled(customThumbnailImage == nil)
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
     }
 }

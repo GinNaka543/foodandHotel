@@ -2,7 +2,7 @@ import SwiftUI
 import Foundation
 
 struct ArtworkPlayerScreen: View {
-    let artwork: Artwork
+    @State var artwork: Artwork
     var allArtworks: [Artwork] = []
     var onDelete: (() -> Void)? = nil
     var onEdit: ((String, [String]) -> Void)? = nil
@@ -14,6 +14,7 @@ struct ArtworkPlayerScreen: View {
     @State private var showDeleteAlert = false
     @State private var showFullscreen = false
     @State private var selectedArtwork: Artwork?
+    @State private var showPixivRedirect = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -30,9 +31,18 @@ struct ArtworkPlayerScreen: View {
                                 .padding(.top, -10)
                         } else if let pixivURL = artwork.pixivURL {
                             ZStack {
-                                PixivThumbnailView(pixivURL: pixivURL)
-                                    .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
-                                    .clipped()
+                                if let customThumbnailData = artwork.customThumbnailData,
+                                   let uiImage = UIImage(data: customThumbnailData) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                                        .clipped()
+                                } else {
+                                    PixivThumbnailView(pixivURL: pixivURL)
+                                        .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                                        .clipped()
+                                }
                                 
                                 // Pixivリンクを表示する小さなオーバーレイ
                                 VStack {
@@ -40,9 +50,7 @@ struct ArtworkPlayerScreen: View {
                                     HStack {
                                         Spacer()
                                         Button(action: {
-                                            if let url = URL(string: pixivURL) {
-                                                UIApplication.shared.open(url)
-                                            }
+                                            showPixivRedirect = true
                                         }) {
                                             HStack(spacing: 4) {
                                                 Image(systemName: "link")
@@ -62,6 +70,12 @@ struct ArtworkPlayerScreen: View {
                                 }
                             }
                             .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                            .onTapGesture {
+                                print("[DEBUG] ArtworkPlayerScreen: Pixiv画像タップ")
+                                print("[DEBUG] artwork: \(artwork.title)")
+                                print("[DEBUG] pixivURL: \(artwork.pixivURL ?? "nil")")
+                                showPixivRedirect = true
+                            }
                         } else {
                             Color.gray.opacity(0.2)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
@@ -193,6 +207,27 @@ struct ArtworkPlayerScreen: View {
             }
         }
         .navigationBarHidden(true)
+        .fullScreenCover(isPresented: $showPixivRedirect) {
+            if let pixivURL = artwork.pixivURL {
+                PixivRedirectView(
+                    pixivURL: pixivURL,
+                    artwork: artwork,
+                    onEdit: { newTitle, newTags in
+                        onEdit?(newTitle, newTags)
+                    },
+                    onDelete: {
+                        onDelete?()
+                        presentationMode.wrappedValue.dismiss()
+                    },
+                    onThumbnailUpdate: { newThumbnailData in
+                        // サムネイル更新の処理
+                        artwork.customThumbnailData = newThumbnailData
+                        // 親ビューにも変更を通知
+                        onEdit?(artwork.title, artwork.tags)
+                    }
+                )
+            }
+        }
         .onAppear {
             editTitle = artwork.title
             editTags = artwork.tags.joined(separator: ",")

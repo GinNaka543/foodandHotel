@@ -948,24 +948,29 @@ struct AnimeArtworkScreen: View {
         .fullScreenCover(isPresented: $showPixivRedirect) {
             PixivRedirectView(
                 pixivURL: pixivRedirectURL,
-                artwork: pixivRedirectArtwork,
+                artwork: artworks.first(where: { $0.pixivURL == pixivRedirectURL }),
                 onEdit: { newTitle, newTags in
-                    if let artwork = pixivRedirectArtwork,
-                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                    if let idx = artworks.firstIndex(where: { $0.pixivURL == pixivRedirectURL }) {
                         artworks[idx].title = newTitle
                         artworks[idx].tags = newTags
                         saveArtworksToUserDefaults()
                     }
                 },
                 onDelete: {
-                    if let artwork = pixivRedirectArtwork,
-                       let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                    if let idx = artworks.firstIndex(where: { $0.pixivURL == pixivRedirectURL }) {
+                        let artwork = artworks[idx]
                         artworks.remove(at: idx)
                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                         saveArtworksToUserDefaults()
                         saveAlbumsToUserDefaults()
                     }
                     showPixivRedirect = false
+                },
+                onThumbnailUpdate: { newThumbnailData in
+                    if let idx = artworks.firstIndex(where: { $0.pixivURL == pixivRedirectURL }) {
+                        artworks[idx].customThumbnailData = newThumbnailData
+                        saveArtworksToUserDefaults()
+                    }
                 }
             )
         }
@@ -1343,9 +1348,6 @@ struct AnimeArtworkScreen: View {
                     }
                     .transition(.opacity)
                 }
-            }
-            .fullScreenCover(isPresented: $showPixivRedirect) {
-                PixivRedirectView(pixivURL: pixivRedirectURL)
             }
             } // GeometryReader
             

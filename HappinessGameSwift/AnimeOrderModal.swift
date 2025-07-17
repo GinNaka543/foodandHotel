@@ -8,10 +8,16 @@ struct AnimeOrderModal: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("アニメの順番を変更")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding()
+                VStack(spacing: 8) {
+                    Text("アニメの順番を変更")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("ドラッグ&ドロップで順番を変更できます")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                .padding()
                 
                 List {
                     ForEach(animes, id: \.id) { anime in
@@ -71,7 +77,10 @@ struct AnimeOrderModal: View {
     private func loadAnimes() {
         print("AnimeOrderModal: アニメを読み込み中...")
         print("AnimeOrderModal: animeManager.animes.count = \(animeManager.animes.count)")
-        animes = animeManager.animes.sorted(by: { $0.order < $1.order })
+        // タイトルのないアニメを除外してソート
+        animes = animeManager.animes
+            .filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted(by: { $0.order < $1.order })
         print("AnimeOrderModal: 読み込み完了. animes.count = \(animes.count)")
     }
     

@@ -8,10 +8,16 @@ struct CharacterOrderModal: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("キャラクターの順番を変更")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding()
+                VStack(spacing: 8) {
+                    Text("キャラクターの順番を変更")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("ドラッグ&ドロップで順番を変更できます")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                }
+                .padding()
                 
                 List {
                     ForEach(characters, id: \.id) { character in
@@ -71,7 +77,10 @@ struct CharacterOrderModal: View {
     private func loadCharacters() {
         print("CharacterOrderModal: キャラクターを読み込み中...")
         print("CharacterOrderModal: characterManager.characters.count = \(characterManager.characters.count)")
-        characters = characterManager.characters.sorted(by: { $0.order < $1.order })
+        // 名前のないキャラクターを除外してソート
+        characters = characterManager.characters
+            .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .sorted(by: { $0.order < $1.order })
         print("CharacterOrderModal: 読み込み完了. characters.count = \(characters.count)")
     }
     

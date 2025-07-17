@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PixivThumbnailView: View {
     let pixivURL: String
+    var aspectRatioMode: ContentMode = .fill
     @State private var thumbnailImage: UIImage? = nil
     @State private var isLoading = false
     @State private var loadFailed = false
@@ -11,7 +12,7 @@ struct PixivThumbnailView: View {
             if let image = thumbnailImage {
                 Image(uiImage: image)
                     .resizable()
-                    .scaledToFit()
+                    .aspectRatio(contentMode: aspectRatioMode)
             } else {
                 Color.gray.opacity(0.1)
                 VStack(spacing: 8) {

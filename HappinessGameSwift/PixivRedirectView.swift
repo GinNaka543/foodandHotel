@@ -65,13 +65,13 @@ struct PixivRedirectView: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 300)
+                                    .frame(height: 200)
                                     .cornerRadius(12)
                                     .padding(.horizontal)
                             } else {
                                 PixivThumbnailView(pixivURL: pixivURL)
                                     .frame(maxWidth: .infinity)
-                                    .frame(height: 300)
+                                    .frame(height: 200)
                                     .cornerRadius(12)
                                     .padding(.horizontal)
                             }

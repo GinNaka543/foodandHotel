@@ -26,7 +26,6 @@ struct ArtworkPlayerScreen: View {
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
-                                .clipped()
                                 .background(Color.black)
                                 .padding(.top, -10)
                         } else if let pixivURL = artwork.pixivURL {
@@ -41,7 +40,6 @@ struct ArtworkPlayerScreen: View {
                                 } else {
                                     PixivThumbnailView(pixivURL: pixivURL)
                                         .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
-                                        .clipped()
                                 }
                                 
                                 // Pixivリンクを表示する小さなオーバーレイ
@@ -212,12 +210,17 @@ struct ArtworkPlayerScreen: View {
                     }
                 }
                 .fullScreenCover(isPresented: $showFullscreen) {
-                    FullScreenArtworkView(imagePath: artwork.imagePath, pixivURL: artwork.pixivURL, onDismiss: { showFullscreen = false })
+                    FullScreenArtworkView(
+                        imagePath: artwork.imagePath,
+                        pixivURL: artwork.pixivURL,
+                        customThumbnailData: artwork.customThumbnailData,
+                        onDismiss: { showFullscreen = false }
+                    )
                 }
             }
         }
         .navigationBarHidden(true)
-        .fullScreenCover(isPresented: $showPixivRedirect) {
+        .sheet(isPresented: $showPixivRedirect) {
             if let pixivURL = artwork.pixivURL {
                 PixivRedirectView(
                     pixivURL: pixivURL,
@@ -244,7 +247,11 @@ struct ArtworkPlayerScreen: View {
         }
         .onChange(of: selectedArtwork) { newArtwork in
             if let newArtwork = newArtwork {
-                onArtworkChange?(newArtwork)
+                // 新しい画像を表示
+                artwork = newArtwork
+                editTitle = newArtwork.title
+                editTags = newArtwork.tags.joined(separator: ",")
+                selectedArtwork = nil
             }
         }
         .sheet(isPresented: $showMenuSheet) {
@@ -292,7 +299,16 @@ struct ArtworkPlayerScreen: View {
 struct FullScreenArtworkView: View {
     let imagePath: String?
     let pixivURL: String?
+    let customThumbnailData: Data?
     var onDismiss: () -> Void
+    
+    init(imagePath: String? = nil, pixivURL: String? = nil, customThumbnailData: Data? = nil, onDismiss: @escaping () -> Void) {
+        self.imagePath = imagePath
+        self.pixivURL = pixivURL
+        self.customThumbnailData = customThumbnailData
+        self.onDismiss = onDismiss
+    }
+    
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -305,19 +321,18 @@ struct FullScreenArtworkView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .edgesIgnoringSafeArea(.all)
             } else if let pixivURL = pixivURL {
-                VStack {
-                    Image(systemName: "photo")
-                        .font(.system(size: 100))
-                        .foregroundColor(.gray.opacity(0.5))
-                    Text("Pixiv作品")
-                        .font(.largeTitle)
-                        .foregroundColor(.gray)
-                    Text(pixivURL)
-                        .font(.headline)
-                        .foregroundColor(.gray.opacity(0.7))
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                        .padding(.horizontal)
+                // カスタムサムネイルがある場合はそれを表示
+                if let customThumbnailData = customThumbnailData,
+                   let uiImage = UIImage(data: customThumbnailData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .edgesIgnoringSafeArea(.all)
+                } else {
+                    // Pixivから画像を読み込む
+                    PixivFullscreenView(pixivURL: pixivURL)
+                        .edgesIgnoringSafeArea(.all)
                 }
             } else {
                 Color.gray

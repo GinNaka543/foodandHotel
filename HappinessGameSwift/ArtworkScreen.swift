@@ -604,7 +604,7 @@ struct ArtworkScreen: View {
                 pixivRedirectURL = ""
             }
         }
-        .fullScreenCover(isPresented: $showPixivRedirect) {
+        .sheet(isPresented: $showPixivRedirect) {
             let _ = print("[DEBUG] fullScreenCoverが開かれました")
             let _ = print("[DEBUG] pixivRedirectURL: \(pixivRedirectURL)")
             let _ = print("[DEBUG] pixivRedirectArtwork: \(pixivRedirectArtwork?.title ?? "nil")")

@@ -672,7 +672,6 @@ struct AnimeArtworkScreen: View {
                                                         .cornerRadius(8)
                                                 } else if let pixivURL = firstArtwork.pixivURL {
                                                     PixivThumbnailView(pixivURL: pixivURL)
-                                                        .aspectRatio(contentMode: .fill)
                                                         .frame(width: 160, height: 90)
                                                         .clipped()
                                                         .cornerRadius(8)
@@ -890,9 +889,6 @@ struct AnimeArtworkScreen: View {
                                         artworks[idx].tags = newTags
                                         saveArtworksToUserDefaults()
                                     }
-                                },
-                                onArtworkChange: { newArtwork in
-                                    selectedArtwork = newArtwork
                                 }
                             )
                         }
@@ -947,7 +943,7 @@ struct AnimeArtworkScreen: View {
             loadArtworks()
             loadAlbumsFromUserDefaults()
         }
-        .fullScreenCover(isPresented: $showPixivRedirect) {
+        .sheet(isPresented: $showPixivRedirect) {
             PixivRedirectView(
                 pixivURL: pixivRedirectURL,
                 artwork: artworks.first(where: { $0.pixivURL == pixivRedirectURL }),
@@ -1090,9 +1086,10 @@ struct AnimeArtworkScreen: View {
                                             }
                                     } else if let pixivURL = artwork.pixivURL {
                                         PixivThumbnailView(pixivURL: pixivURL)
-                                            .aspectRatio(contentMode: .fit)
+                                            .aspectRatio(contentMode: .fill)
                                             .frame(maxWidth: min(innerGeometry.size.width - 40, 600))
                                             .frame(maxHeight: innerGeometry.size.height * 0.6)
+                                            .clipped()
                                             .cornerRadius(24)
                                             .onTapGesture {
                                                 pixivRedirectURL = pixivURL

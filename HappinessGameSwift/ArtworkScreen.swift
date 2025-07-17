@@ -342,10 +342,44 @@ struct ArtworkScreen: View {
                             )
                         }
                     } else {
-                        ScrollView {
-                            VStack(spacing: 32) {
-                                ForEach(artworks, id: \.id) { artwork in
-                                    VStack(alignment: .leading, spacing: 0) {
+                        if artworks.isEmpty {
+                            VStack(spacing: 20) {
+                                Spacer()
+                                
+                                Image(systemName: "photo.slash")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.gray)
+                                
+                                Text("まだアートワークがありません")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("右上の追加ボタンから画像を追加できます")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                
+                                Button(action: {
+                                    showAddSheet = true
+                                }) {
+                                    Label("アートワークを追加", systemImage: "plus.circle.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 12)
+                                        .background(Color.blue)
+                                        .cornerRadius(25)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 32) {
+                                    ForEach(artworks, id: \.id) { artwork in
+                                        VStack(alignment: .leading, spacing: 0) {
                                         GeometryReader { geometry in
                                             ZStack {
                                                 Color.white
@@ -420,9 +454,10 @@ struct ArtworkScreen: View {
                                                 activeSheet = .artworkDetail(artwork)
                                             }
                                         }
+                                    }
                                 }
+                                .padding(.top, 8)
                             }
-                            .padding(.top, 8)
                         }
                         .fullScreenCover(item: $selectedArtwork) { artwork in
                             ArtworkPlayerScreenTemp(artwork: artwork, onDelete: {
@@ -501,6 +536,9 @@ struct ArtworkScreen: View {
                 VStack(spacing: 24) {
                     Text("表示したいタグを入力")
                         .font(.headline)
+                    Text("同じタグからアルバムを作れます")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                     TextField("#タグ名", text: $newTag)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.horizontal, 24)
@@ -899,6 +937,9 @@ struct ArtworkScreen: View {
             VStack(spacing: 24) {
                 Text("表示したいタグを入力")
                     .font(.headline)
+                Text("同じタグからアルバムを作れます")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
                 TextField("#タグ名", text: $newTag)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal, 24)

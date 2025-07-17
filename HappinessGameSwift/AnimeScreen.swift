@@ -832,6 +832,9 @@ struct AnimeArtworkScreen: View {
                 VStack(spacing: 24) {
                     Text("表示したいタグを入力")
                         .font(.headline)
+                    Text("同じタグからアルバムを作れます")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                     TextField("#タグ名", text: $newTag)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.horizontal, 24)
@@ -1726,6 +1729,9 @@ struct AnimeVideoScreen: View {
                     VStack(spacing: 24) {
                         Text("表示したいタグを入力")
                             .font(.headline)
+                        Text("同じタグからアルバムを作れます")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                         TextField("#タグ名", text: $newTag)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .padding(.horizontal, 24)

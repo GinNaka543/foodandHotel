@@ -226,6 +226,7 @@ struct VideoPlayerScreen: View {
                                         .buttonStyle(PlainButtonStyle())
                                     }
                                 }
+                                .padding(.bottom, 100) // 戻るボタンのためのスペースを確保
                             }
                         }
                     }

@@ -162,12 +162,11 @@ struct ArtworkPlayerScreen: View {
                                             .buttonStyle(PlainButtonStyle())
                                         }
                                     }
+                                    .padding(.bottom, 100) // 戻るボタンのためのスペースを確保
                                 }
-                                .frame(maxHeight: 300)
                             }
                         }
                     }
-                    Spacer()
                 }
                 VStack {
                     Spacer()

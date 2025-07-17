@@ -314,24 +314,24 @@ struct ArtworkScreen: View {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .aspectRatio(contentMode: .fill)
-                                                                .frame(width: 80, height: 80)
+                                                                .frame(width: 160, height: 90)
                                                                 .clipped()
                                                                 .cornerRadius(8)
                                                         } else if let pixivURL = firstArtwork.pixivURL {
                                                             PixivThumbnailView(pixivURL: pixivURL)
-                                                                .frame(width: 80, height: 80)
+                                                                .frame(width: 160, height: 90)
                                                                 .aspectRatio(contentMode: .fill)
                                                                 .clipped()
                                                                 .cornerRadius(8)
                                                         } else {
                                                             RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                                 .fill(Color.gray.opacity(0.3))
-                                                                .frame(width: 80, height: 80)
+                                                                .frame(width: 160, height: 90)
                                                         }
                                                     } else {
                                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                             .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: 80, height: 80)
+                                                            .frame(width: 160, height: 90)
                                                     }
                                                     
                                                     // 右側のコンテンツ
@@ -368,14 +368,13 @@ struct ArtworkScreen: View {
                                                             .shadow(radius: 4)
                                                     }
                                                 }
-                                                .padding(.horizontal, 16)
+                                                .padding(.horizontal, 8)
                                                 .padding(.vertical, 8)
                                                 .background(Color.white)
                                                 .cornerRadius(8)
-                                                .shadow(radius: 1)
                                             }
                                             .buttonStyle(PlainButtonStyle())
-                                            .padding(.horizontal, 16)
+                                            .padding(.horizontal, 8)
                                             .padding(.vertical, 4)
                                         }
                                     }

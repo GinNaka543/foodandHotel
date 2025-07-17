@@ -40,18 +40,18 @@ struct AlbumArtworkListScreen: View {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .scaledToFill()
-                                        .frame(width: 183, height: 109)
+                                        .frame(width: 160, height: 90)
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
                                 } else if let pixivURL = artwork.pixivURL {
                                     PixivThumbnailView(pixivURL: pixivURL)
-                                        .frame(width: 183, height: 109)
+                                        .frame(width: 160, height: 90)
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 183, height: 109)
+                                        .frame(width: 160, height: 90)
                                 }
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(artwork.title)
@@ -69,6 +69,7 @@ struct AlbumArtworkListScreen: View {
                                 Spacer()
                             }
                             .padding(.leading, 8)
+                            .background(Color.clear)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }

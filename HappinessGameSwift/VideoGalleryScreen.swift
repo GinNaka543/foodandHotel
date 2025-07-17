@@ -284,7 +284,7 @@ struct VideoGalleryScreen: View {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                        .frame(width: 80, height: 80)
+                                        .frame(width: 160, height: 90)
                                         .clipped()
                                         .cornerRadius(8)
                                 } else if let firstVideo = album.videos.first, let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
@@ -292,19 +292,19 @@ struct VideoGalleryScreen: View {
                                         image
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
-                                            .frame(width: 80, height: 80)
+                                            .frame(width: 160, height: 90)
                                             .clipped()
                                             .cornerRadius(8)
                                     } placeholder: {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                                             .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 80, height: 80)
+                                            .frame(width: 160, height: 90)
                                             .overlay(ProgressView())
                                     }
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 80, height: 80)
+                                        .frame(width: 160, height: 90)
                                 }
                                 
                                 // 右側のコンテンツ
@@ -340,14 +340,13 @@ struct VideoGalleryScreen: View {
                                         .shadow(radius: 4)
                                 }
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, 8)
                             .padding(.vertical, 8)
                             .background(Color.white)
                             .cornerRadius(8)
-                            .shadow(radius: 1)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                     }
                 }

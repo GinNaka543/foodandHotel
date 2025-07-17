@@ -1478,6 +1478,171 @@ struct AddSpotView: View {
     }
 }
 
+// 詳細画像セクションのサブビュー
+struct DetailImagesSection: View {
+    @Binding var detailImagesData: [Data]
+    @Binding var existingImageUrls: [String]
+    @Binding var selectedDetailImages: [PhotosPickerItem]
+    
+    var totalImageCount: Int {
+        detailImagesData.count + existingImageUrls.count
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // 既存画像の表示
+            if totalImageCount > 0 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("現在のメイン画像 (\(totalImageCount)枚)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            // ローカル画像
+                            ForEach(0..<detailImagesData.count, id: \.self) { index in
+                                if index < detailImagesData.count {
+                                    LocalImageView(imageData: detailImagesData[index]) {
+                                        detailImagesData.remove(at: index)
+                                    }
+                                }
+                            }
+                            
+                            // Web画像
+                            ForEach(0..<existingImageUrls.count, id: \.self) { index in
+                                if index < existingImageUrls.count {
+                                    WebImageView(imageUrl: existingImageUrls[index]) {
+                                        existingImageUrls.remove(at: index)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                }
+            } else {
+                // 画像がない場合の表示
+                HStack {
+                    Image(systemName: "photo.stack")
+                        .font(.system(size: 20))
+                        .foregroundColor(.gray)
+                    Text("メイン画像がまだ追加されていません")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+            }
+            
+            // 画像追加ボタン
+            PhotosPicker(
+                selection: $selectedDetailImages,
+                maxSelectionCount: 5,
+                matching: .images,
+                photoLibrary: .shared()
+            ) {
+                HStack(spacing: 8) {
+                    Image(systemName: "photo.stack.fill")
+                        .font(.system(size: 16, weight: .medium))
+                    Text("メイン画像を追加")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.orange)
+                .cornerRadius(10)
+                .shadow(color: Color.orange.opacity(0.3), radius: 3, x: 0, y: 2)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Text("最大5枚まで追加できます")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// ローカル画像ビュー
+struct LocalImageView: View {
+    let imageData: Data
+    let onDelete: () -> Void
+    
+    var body: some View {
+        if let uiImage = UIImage(data: imageData) {
+            ZStack(alignment: .topTrailing) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                
+                DeleteButton(action: onDelete)
+            }
+        }
+    }
+}
+
+// Web画像ビュー
+struct WebImageView: View {
+    let imageUrl: String
+    let onDelete: () -> Void
+    
+    var body: some View {
+        if let url = URL(string: imageUrl) {
+            ZStack(alignment: .topTrailing) {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 120, height: 120)
+                        .overlay(
+                            ProgressView()
+                        )
+                }
+                
+                DeleteButton(action: onDelete)
+            }
+        }
+    }
+}
+
+// 削除ボタン
+struct DeleteButton: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 24))
+                .foregroundColor(.white)
+                .background(
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 28, height: 28)
+                )
+                .shadow(radius: 2)
+        }
+        .offset(x: 6, y: -6)
+    }
+}
+
 struct EditSpotView: View {
     @Environment(\.dismiss) var dismiss
     let spot: VisitSpot
@@ -1497,6 +1662,9 @@ struct EditSpotView: View {
     @State private var spotImage: UIImage?
     @State private var spotImageData: Data?
     @State private var spotCost: Int
+    @State private var selectedDetailImages: [PhotosPickerItem] = []
+    @State private var detailImagesData: [Data] = []
+    @State private var existingImageUrls: [String] = []
     
     init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date) {
         self.spot = spot
@@ -1514,6 +1682,10 @@ struct EditSpotView: View {
             self._spotImage = State(initialValue: UIImage(data: imageData))
             self._spotImageData = State(initialValue: imageData)
         }
+        if let detailImages = spot.detailImagesData {
+            self._detailImagesData = State(initialValue: detailImages)
+        }
+        self._existingImageUrls = State(initialValue: spot.images)
         
         // timeRangeから時刻を解析
         let components = spot.timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
@@ -1600,35 +1772,95 @@ struct EditSpotView: View {
                         }
                     }
                     
-                    // 画像選択
-                    PhotosPicker(selection: $selectedImage,
-                               matching: .images,
-                               photoLibrary: .shared()) {
+                    // サムネイル画像セクション
+                    VStack(spacing: 12) {
+                        Text("サムネイル画像")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
                         if let spotImage = spotImage {
                             Image(uiImage: spotImage)
                                 .resizable()
                                 .scaledToFill()
-                                .frame(height: 150)
+                                .frame(height: 200)
                                 .clipped()
-                                .cornerRadius(8)
+                                .cornerRadius(12)
+                                .shadow(radius: 4)
                         } else {
-                            HStack {
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                                Text("スポット画像を選択")
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 100)
-                            .background(Color(.systemGray5))
-                            .cornerRadius(8)
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                                .frame(height: 150)
+                                .overlay(
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "photo.badge.plus")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.blue)
+                                        Text("サムネイル画像を追加")
+                                            .font(.subheadline)
+                                            .foregroundColor(.blue)
+                                            .fontWeight(.medium)
+                                    }
+                                )
                         }
+                        
+                        PhotosPicker(selection: $selectedImage,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "photo.fill")
+                                    .font(.system(size: 16, weight: .medium))
+                                Text(spotImage != nil ? "サムネイルを変更" : "サムネイルを選択")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(10)
+                            .shadow(color: Color.blue.opacity(0.3), radius: 3, x: 0, y: 2)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     .onChange(of: selectedImage) { _, newItem in
                         Task {
                             if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                spotImage = UIImage(data: data)
-                                spotImageData = data
+                                await MainActor.run {
+                                    spotImage = UIImage(data: data)
+                                    spotImageData = data
+                                    selectedImage = nil // 選択状態をリセット
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 詳細画像セクション
+                Section(header: Text("詳細画像（メイン画像）")) {
+                    DetailImagesSection(
+                        detailImagesData: $detailImagesData,
+                        existingImageUrls: $existingImageUrls,
+                        selectedDetailImages: $selectedDetailImages
+                    )
+                }
+                .onChange(of: selectedDetailImages) { _, newValue in
+                    Task {
+                        var newDetailImages: [Data] = []
+                        for item in newValue {
+                            if let data = try? await item.loadTransferable(type: Data.self) {
+                                newDetailImages.append(data)
+                            }
+                        }
+                        if !newDetailImages.isEmpty {
+                            await MainActor.run {
+                                detailImagesData.append(contentsOf: newDetailImages)
+                                selectedDetailImages = []
                             }
                         }
                     }
@@ -1666,6 +1898,8 @@ struct EditSpotView: View {
                             spots[index].activity = activity
                             spots[index].imageData = spotImageData
                             spots[index].spotCost = spotCost
+                            spots[index].detailImagesData = detailImagesData.isEmpty ? nil : detailImagesData
+                            spots[index].images = existingImageUrls
                         }
                         dismiss()
                     }

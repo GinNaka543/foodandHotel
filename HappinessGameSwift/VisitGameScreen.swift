@@ -228,6 +228,8 @@ struct VisitGameScreen: View {
     @State private var newlyCompletedSpots: Set<UUID> = [] // 新しく完了したスポットを追跡
     @State private var showCompleteAnimation = false
     @State private var showCompletionPopup = false
+    @State private var showSpotEditSheet = false
+    @State private var selectedSpotForEdit: VisitSpot?
     let numberOfDays: Int
     let startTime: Date
     let onClose: (() -> Void)?
@@ -420,6 +422,24 @@ struct VisitGameScreen: View {
             }
         }
         .navigationBarHidden(true)
+        .sheet(isPresented: $showSpotEditSheet) {
+            if let selectedSpot = selectedSpotForEdit,
+               let spotIndex = viewModel.spots.firstIndex(where: { $0.id == selectedSpot.id }) {
+                SpotEditView(
+                    spot: $viewModel.spots[spotIndex],
+                    onSave: {
+                        showSpotEditSheet = false
+                        selectedSpotForEdit = nil
+                        // プラン進捗を保存
+                        savePlanProgress()
+                    },
+                    onCancel: {
+                        showSpotEditSheet = false
+                        selectedSpotForEdit = nil
+                    }
+                )
+            }
+        }
         }
         .onAppear {
             print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
@@ -447,8 +467,15 @@ struct VisitGameScreen: View {
             loadVisitProgress()
         }
         .background(Color(.systemBackground))
-        .fullScreenCover(isPresented: $showCompletionPopup) {
-            AllDaysCompletionView(isPresented: $showCompletionPopup, planTitle: planTitle)
+        .overlay {
+            if showCompletionPopup {
+                ImprovedCompletionView(
+                    isPresented: $showCompletionPopup,
+                    planTitle: planTitle,
+                    animeName: animeName,
+                    thumbnail: getThumbnailImage()
+                )
+            }
         }
     }
     
@@ -798,6 +825,21 @@ struct VisitGameScreen: View {
             .background(Color.black)
             .cornerRadius(8)
         }
+    }
+    
+    func savePlanProgress() {
+        // プランの変更を保存（必要に応じて実装）
+        print("📝 プランの変更を保存しました")
+    }
+    
+    func getThumbnailImage() -> UIImage? {
+        // 最初のスポットの画像をサムネイルとして使用
+        for spot in viewModel.spots {
+            if let imageData = spot.imageData, let image = UIImage(data: imageData) {
+                return image
+            }
+        }
+        return nil
     }
     
     // 訪問進捗を保存する関数
@@ -1156,14 +1198,7 @@ struct SpotCard: View {
             // スポット画像（タップで詳細表示）
             ZStack(alignment: .topLeading) {
                 Button(action: onTap) {
-                    let _ = print("🔍 [DEBUG] Button内部に入った - スポット: \(spot.name)")
-                    let _ = print("🔍 [DEBUG] 画像表示条件チェック - スポット: \(spot.name)")
-                let _ = print("🔍 [DEBUG] imageData: \(spot.imageData != nil ? "あり" : "なし")")
-                let _ = print("🔍 [DEBUG] imageUrl: '\(spot.imageUrl)'")
-                let _ = print("🔍 [DEBUG] images: \(spot.images)")
-                
-                if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
-                        let _ = print("✅ [DEBUG] ローカル画像を表示")
+                    if let imageData = spot.imageData, let uiImage = UIImage(data: imageData) {
                         Image(uiImage: uiImage)
                             .resizable()
                             .scaledToFill()
@@ -1171,20 +1206,14 @@ struct SpotCard: View {
                             .clipped()
                             .cornerRadius(8)
                     } else if !spot.imageUrl.isEmpty || !spot.images.isEmpty {
-                        let _ = print("✅ [DEBUG] Web画像表示条件に入った")
-                        // Web管理画面から作成されたプランの画像を表示
                         let imageUrlToUse = !spot.imageUrl.isEmpty ? spot.imageUrl : (spot.images.first ?? "")
-                        let _ = print("🖼️ [DEBUG] スポット \(spot.name) の画像URL: '\(imageUrlToUse)'")
-                        let _ = print("🔗 [DEBUG] URL作成結果: \(URL(string: imageUrlToUse)?.absoluteString ?? "nil")")
                         
-                        // URLに問題がないか最終チェック
                         if let url = URL(string: imageUrlToUse), !imageUrlToUse.isEmpty {
                             CustomAsyncImage(url: url, width: 140, height: 100)
                                 .cornerRadius(8)
                         } else {
-                            let _ = print("❌ [DEBUG] 無効なURL: '\(imageUrlToUse)'")
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.orange) // デバッグ用にオレンジ色に変更
+                                .fill(Color.orange)
                                 .frame(width: 140, height: 100)
                                 .overlay(
                                     Image(systemName: "exclamationmark.triangle")
@@ -1193,9 +1222,8 @@ struct SpotCard: View {
                                 )
                         }
                     } else {
-                        let _ = print("❌ [DEBUG] 画像なし - デフォルト画像を表示")
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.blue) // デバッグ用に青色に変更
+                            .fill(Color.blue)
                             .frame(width: 140, height: 100)
                             .overlay(
                                 Image(systemName: "photo")
@@ -1692,6 +1720,15 @@ struct SpotDetailPageView: View {
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: {
+                    showingEditSheet = true
+                }) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+            }
         }
         .toolbarBackground(Color.white, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -1704,6 +1741,20 @@ struct SpotDetailPageView: View {
         .fullScreenCover(isPresented: $showingFullScreenWebImage) {
             if let imageUrl = selectedImageUrl, let url = URL(string: imageUrl) {
                 FullScreenWebImageView(url: url, isPresented: $showingFullScreenWebImage)
+            }
+        }
+        .sheet(isPresented: $showingEditSheet) {
+            if let spotIndex = spots.firstIndex(where: { $0.id == spot.id }) {
+                SpotEditView(
+                    spot: $spots[spotIndex],
+                    onSave: {
+                        showingEditSheet = false
+                        savePlanProgress()
+                    },
+                    onCancel: {
+                        showingEditSheet = false
+                    }
+                )
             }
         }
     }
@@ -1867,6 +1918,179 @@ struct FullScreenImageView: View {
 }
 
 // 全日程完了時のポップアップビュー
+struct ImprovedCompletionView: View {
+    @Binding var isPresented: Bool
+    let planTitle: String
+    let animeName: String
+    let thumbnail: UIImage?
+    
+    @State private var showCelebration = false
+    @State private var showParticles = false
+    @State private var scale: CGFloat = 0.3
+    @State private var opacity: Double = 0.0
+    @State private var cardOffset: CGFloat = 50
+    @State private var particlesOffset: CGFloat = 0
+    
+    var body: some View {
+        ZStack {
+            // エフェクト背景（透明度を下げて元のページが見える）
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            // パーティクルエフェクト
+            if showParticles {
+                ForEach(0..<20, id: \.self) { index in
+                    Circle()
+                        .fill(Color.random)
+                        .frame(width: CGFloat.random(in: 4...8), height: CGFloat.random(in: 4...8))
+                        .position(
+                            x: CGFloat.random(in: 0...UIScreen.main.bounds.width),
+                            y: CGFloat.random(in: 0...UIScreen.main.bounds.height)
+                        )
+                        .offset(y: particlesOffset)
+                        .animation(.easeInOut(duration: Double.random(in: 2...4)).delay(Double.random(in: 0...1)), value: particlesOffset)
+                }
+            }
+            
+            // メインカード
+            VStack(spacing: 20) {
+                // 完了アイコンとエフェクト
+                ZStack {
+                    // 背景の輝きエフェクト
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                gradient: Gradient(colors: [
+                                    Color.yellow.opacity(0.6),
+                                    Color.orange.opacity(0.4),
+                                    Color.clear
+                                ]),
+                                center: .center,
+                                startRadius: 20,
+                                endRadius: 80
+                            )
+                        )
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(showCelebration ? 1.3 : 1.0)
+                        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: showCelebration)
+                    
+                    // チェックマークアイコン
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.green)
+                        .scaleEffect(scale)
+                        .shadow(radius: 10)
+                }
+                
+                // プランサムネイル
+                if let thumbnail = thumbnail {
+                    Image(uiImage: thumbnail)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 200, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+                        .scaleEffect(scale)
+                }
+                
+                // 完了テキスト
+                VStack(spacing: 8) {
+                    Text("🎉 お疲れ様でした！")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                    
+                    Text(planTitle)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("アニメ：\(animeName)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+                .opacity(opacity)
+                
+                // 閉じるボタン
+                Button(action: dismissView) {
+                    HStack {
+                        Image(systemName: "checkmark")
+                        Text("完了")
+                    }
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.blue, Color.purple]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(25)
+                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .scaleEffect(scale)
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
+            )
+            .scaleEffect(scale)
+            .offset(y: cardOffset)
+        }
+        .onAppear {
+            startAnimations()
+        }
+    }
+    
+    private func startAnimations() {
+        // 順次アニメーション
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+            scale = 1.0
+            cardOffset = 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.easeInOut(duration: 0.6)) {
+                opacity = 1.0
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            showCelebration = true
+            showParticles = true
+            withAnimation(.easeInOut(duration: 3.0)) {
+                particlesOffset = -UIScreen.main.bounds.height
+            }
+        }
+    }
+    
+    private func dismissView() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            scale = 0.3
+            opacity = 0.0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            isPresented = false
+        }
+    }
+}
+
+// ランダムカラー拡張
+extension Color {
+    static var random: Color {
+        return Color(
+            red: .random(in: 0...1),
+            green: .random(in: 0...1),
+            blue: .random(in: 0...1)
+        )
+    }
+}
+
 struct AllDaysCompletionView: View {
     @Binding var isPresented: Bool
     let planTitle: String

@@ -295,10 +295,11 @@ struct VideoGalleryScreen: View {
             if videos.isEmpty {
                 VStack(spacing: 20) {
                     Spacer()
+                        .frame(maxHeight: 100)
                     
                     Image(systemName: "video.slash")
                         .font(.system(size: 60))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.purple)
                     
                     Text("まだビデオがありません")
                         .font(.title2)
@@ -318,7 +319,7 @@ struct VideoGalleryScreen: View {
                             .foregroundColor(.white)
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
-                            .background(Color.blue)
+                            .background(Color.purple)
                             .cornerRadius(25)
                     }
                     

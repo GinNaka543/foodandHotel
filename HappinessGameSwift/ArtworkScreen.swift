@@ -346,10 +346,11 @@ struct ArtworkScreen: View {
                             if artworks.isEmpty {
                                 VStack(spacing: 20) {
                                     Spacer()
+                                        .frame(maxHeight: 100)
                                     
                                     Image(systemName: "photo.slash")
                                         .font(.system(size: 60))
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(.purple)
                                     
                                     Text("まだアートワークがありません")
                                         .font(.title2)
@@ -362,14 +363,14 @@ struct ArtworkScreen: View {
                                         .padding(.horizontal)
                                     
                                     Button(action: {
-                                        showAddSheet = true
+                                        activeSheet = .addPhoto
                                     }) {
                                         Label("アートワークを追加", systemImage: "plus.circle.fill")
                                             .font(.headline)
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 20)
                                             .padding(.vertical, 12)
-                                            .background(Color.blue)
+                                            .background(Color.purple)
                                             .cornerRadius(25)
                                     }
                                     

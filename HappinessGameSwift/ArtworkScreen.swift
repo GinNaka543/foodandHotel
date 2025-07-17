@@ -443,38 +443,35 @@ struct ArtworkScreen: View {
                                     VStack(spacing: 32) {
                                         ForEach(artworks, id: \.id) { artwork in
                                             VStack(alignment: .leading, spacing: 0) {
-                                                GeometryReader { geometry in
-                                                    ZStack {
-                                                        Color.white
-                                                        if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                            Image(uiImage: uiImage)
-                                                                .resizable()
-                                                                .aspectRatio(contentMode: .fit)
-                                                                .frame(width: geometry.size.width, height: 233)
-                                                        } else if let pixivURL = artwork.pixivURL {
-                                                            PixivThumbnailView(pixivURL: pixivURL)
-                                                                .frame(width: geometry.size.width)
-                                                                .aspectRatio(contentMode: .fit)
-                                                        } else {
-                                                            Rectangle()
-                                                                .fill(Color.gray.opacity(0.2))
-                                                                .frame(width: geometry.size.width, height: 233)
-                                                                .overlay(
-                                                                    VStack {
-                                                                        Image(systemName: "photo")
-                                                                            .font(.largeTitle)
-                                                                            .foregroundColor(.gray)
-                                                                        Text("画像なし")
-                                                                            .foregroundColor(.gray)
-                                                                    }
-                                                                )
-                                                        }
+                                                ZStack {
+                                                    Color.white
+                                                    if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                    } else if let pixivURL = artwork.pixivURL {
+                                                        PixivThumbnailView(pixivURL: pixivURL)
+                                                            .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                            .aspectRatio(contentMode: .fill)
+                                                    } else {
+                                                        Rectangle()
+                                                            .fill(Color.gray.opacity(0.2))
+                                                            .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                            .overlay(
+                                                                VStack {
+                                                                    Image(systemName: "photo")
+                                                                        .font(.largeTitle)
+                                                                        .foregroundColor(.gray)
+                                                                    Text("画像なし")
+                                                                        .foregroundColor(.gray)
+                                                                }
+                                                            )
                                                     }
-                                                    .frame(width: geometry.size.width, height: 233)
-                                                    .clipped()
-                                                    .padding(.bottom, 0)
                                                 }
-                                                .frame(height: 233)
+                                                .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
                                                 HStack(alignment: .center, spacing: 12) {
                                                     if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                                         Image(uiImage: image)

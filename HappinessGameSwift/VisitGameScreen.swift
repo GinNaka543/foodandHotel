@@ -463,6 +463,9 @@ struct VisitGameScreen: View {
                 print("⚠️ WARNING: spotsが空です！")
             }
             
+            // ローカルに保存された変更を読み込み
+            loadLocalSpotChanges()
+            
             // 訪問進捗を復元
             loadVisitProgress()
         }
@@ -861,6 +864,47 @@ struct VisitGameScreen: View {
             onClose()
         } else {
             dismiss()
+        }
+    }
+    
+    // ローカルに保存された変更を読み込む関数
+    func loadLocalSpotChanges() {
+        for i in 0..<viewModel.spots.count {
+            let key = "spot_changes_\(viewModel.spots[i].id.uuidString)"
+            
+            if let changes = UserDefaults.standard.dictionary(forKey: key) {
+                print("📱 ローカル変更を読み込み: \(viewModel.spots[i].name)")
+                
+                if let name = changes["name"] as? String {
+                    viewModel.spots[i].name = name
+                }
+                if let address = changes["address"] as? String {
+                    viewModel.spots[i].address = address
+                }
+                if let notes = changes["notes"] as? String {
+                    viewModel.spots[i].notes = notes
+                }
+                if let activity = changes["activity"] as? String {
+                    viewModel.spots[i].activity = activity
+                }
+                if let stayDuration = changes["stayDuration"] as? Int {
+                    viewModel.spots[i].stayDuration = stayDuration
+                }
+                if let spotCost = changes["spotCost"] as? Int {
+                    viewModel.spots[i].spotCost = spotCost
+                }
+                if let timeRange = changes["timeRange"] as? String {
+                    viewModel.spots[i].timeRange = timeRange
+                }
+                if let hasCustomTimes = changes["hasCustomTimes"] as? Bool, hasCustomTimes {
+                    if let arrivalInterval = changes["arrivalTime"] as? Double, arrivalInterval > 0 {
+                        viewModel.spots[i].arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
+                    }
+                    if let departureInterval = changes["departureTime"] as? Double, departureInterval > 0 {
+                        viewModel.spots[i].departureTime = Date(timeIntervalSince1970: departureInterval)
+                    }
+                }
+            }
         }
     }
     
@@ -1724,9 +1768,13 @@ struct SpotDetailPageView: View {
                 Button(action: {
                     showingEditSheet = true
                 }) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.blue)
+                    Text("Change")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.black)
+                        .cornerRadius(6)
                 }
             }
         }

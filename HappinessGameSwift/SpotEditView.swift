@@ -12,6 +12,9 @@ struct SpotEditView: View {
     @State private var activity: String = ""
     @State private var stayDuration: String = ""
     @State private var spotCost: String = ""
+    @State private var arrivalTime: Date = Date()
+    @State private var departureTime: Date = Date()
+    @State private var hasCustomTimes: Bool = false
     @State private var selectedImage: PhotosPickerItem?
     @State private var selectedDetailImages: [PhotosPickerItem] = []
     @State private var imageData: Data?
@@ -35,6 +38,30 @@ struct SpotEditView: View {
                             .multilineTextAlignment(.trailing)
                             .frame(width: 60)
                         Text("分")
+                    }
+                    
+                    Toggle("カスタム時間を設定", isOn: $hasCustomTimes)
+                        .toggleStyle(SwitchToggleStyle(tint: .blue))
+                    
+                    if hasCustomTimes {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Text("到着時間")
+                                    .frame(width: 80, alignment: .leading)
+                                Spacer()
+                                DatePicker("", selection: $arrivalTime, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                            }
+                            
+                            HStack {
+                                Text("出発時間")
+                                    .frame(width: 80, alignment: .leading)
+                                Spacer()
+                                DatePicker("", selection: $departureTime, displayedComponents: .hourAndMinute)
+                                    .labelsHidden()
+                            }
+                        }
+                        .padding(.vertical, 4)
                     }
                     
                     HStack {
@@ -105,12 +132,6 @@ struct SpotEditView: View {
                     .padding(.vertical, 8)
                 }
                 
-                Section(header: Text("メモ")) {
-                    TextEditor(text: $notes)
-                        .frame(minHeight: 100)
-                }
-                
-                
                 Section(header: Text("詳細画像（予約情報など）")) {
                     VStack(spacing: 12) {
                         if !detailImagesData.isEmpty {
@@ -164,6 +185,11 @@ struct SpotEditView: View {
                     }
                     .padding(.vertical, 4)
                 }
+                
+                Section(header: Text("メモ")) {
+                    TextEditor(text: $notes)
+                        .frame(minHeight: 100)
+                }
             }
             .navigationTitle("スポットを編集")
             .navigationBarTitleDisplayMode(.inline)
@@ -182,6 +208,9 @@ struct SpotEditView: View {
             }
         }
         .onAppear {
+            // ローカルに保存された変更を読み込み
+            loadLocalSpotChanges()
+            
             // 既存のデータを読み込み
             name = spot.name
             address = spot.address
@@ -191,6 +220,20 @@ struct SpotEditView: View {
             spotCost = String(spot.spotCost)
             imageData = spot.imageData
             detailImagesData = spot.detailImagesData ?? []
+            
+            // 時間データの初期化
+            if let arrival = spot.arrivalTime, let departure = spot.departureTime {
+                arrivalTime = arrival
+                departureTime = departure
+                hasCustomTimes = true
+            } else {
+                // デフォルトの時間を設定
+                let calendar = Calendar.current
+                let now = Date()
+                arrivalTime = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: now) ?? now
+                departureTime = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
+                hasCustomTimes = false
+            }
         }
         .onChange(of: selectedImage) { oldValue, newValue in
             Task {
@@ -232,6 +275,83 @@ struct SpotEditView: View {
         spot.imageData = imageData
         spot.detailImagesData = detailImagesData.isEmpty ? nil : detailImagesData
         
+        // 時間データの保存
+        if hasCustomTimes {
+            spot.arrivalTime = arrivalTime
+            spot.departureTime = departureTime
+            
+            // timeRangeも更新
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            spot.timeRange = "\(formatter.string(from: arrivalTime))-\(formatter.string(from: departureTime))"
+        } else {
+            spot.arrivalTime = nil
+            spot.departureTime = nil
+            spot.timeRange = ""
+        }
+        
+        // ローカルに変更を保存
+        saveSpotChangesLocally()
+        
         onSave()
+    }
+    
+    func loadLocalSpotChanges() {
+        let key = "spot_changes_\(spot.id.uuidString)"
+        
+        if let changes = UserDefaults.standard.dictionary(forKey: key) {
+            print("📱 ローカル変更を読み込み: \(spot.name)")
+            
+            if let name = changes["name"] as? String {
+                spot.name = name
+            }
+            if let address = changes["address"] as? String {
+                spot.address = address
+            }
+            if let notes = changes["notes"] as? String {
+                spot.notes = notes
+            }
+            if let activity = changes["activity"] as? String {
+                spot.activity = activity
+            }
+            if let stayDuration = changes["stayDuration"] as? Int {
+                spot.stayDuration = stayDuration
+            }
+            if let spotCost = changes["spotCost"] as? Int {
+                spot.spotCost = spotCost
+            }
+            if let timeRange = changes["timeRange"] as? String {
+                spot.timeRange = timeRange
+            }
+            if let hasCustomTimes = changes["hasCustomTimes"] as? Bool, hasCustomTimes {
+                if let arrivalInterval = changes["arrivalTime"] as? Double, arrivalInterval > 0 {
+                    spot.arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
+                }
+                if let departureInterval = changes["departureTime"] as? Double, departureInterval > 0 {
+                    spot.departureTime = Date(timeIntervalSince1970: departureInterval)
+                }
+            }
+        }
+    }
+    
+    func saveSpotChangesLocally() {
+        // デバイス固有のキーを使用して変更を保存
+        let key = "spot_changes_\(spot.id.uuidString)"
+        
+        let changes: [String: Any] = [
+            "name": spot.name,
+            "address": spot.address,
+            "notes": spot.notes,
+            "activity": spot.activity,
+            "stayDuration": spot.stayDuration,
+            "spotCost": spot.spotCost,
+            "timeRange": spot.timeRange,
+            "hasCustomTimes": hasCustomTimes,
+            "arrivalTime": spot.arrivalTime?.timeIntervalSince1970 ?? 0,
+            "departureTime": spot.departureTime?.timeIntervalSince1970 ?? 0
+        ]
+        
+        UserDefaults.standard.set(changes, forKey: key)
+        print("💾 スポット変更をローカルに保存: \(spot.name)")
     }
 }

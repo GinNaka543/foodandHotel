@@ -606,9 +606,9 @@ struct VideoGalleryScreen: View {
     // フローティングボタン
     var floatingButton: some View {
         Group {
-            if showAlbum {
+            if showAlbum && !albums.isEmpty {
                 Button(action: { showTagInput = true }) {
-                    Image(systemName: "number")
+                    Text("#")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 56, height: 56)

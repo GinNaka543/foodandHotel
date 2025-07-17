@@ -880,10 +880,10 @@ struct AnimeArtworkScreen: View {
                     }
                 }
             }
-            // Albumタブ時のみ右下に＋ボタン
-            if showAlbum {
+            // Albumタブ時のみ右下に＋ボタン（アルバムが1つ以上ある場合のみ）
+            if showAlbum && !albums.isEmpty {
                 Button(action: { showTagInput = true }) {
-                    Image(systemName: "number")
+                    Text("#")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 56, height: 56)
@@ -1908,14 +1908,14 @@ struct AnimeVideoScreen: View {
                     }
                 }
             }
-            // Albumタブ時のみ右下に＋ボタン
-            if showAlbum {
+            // Albumタブ時のみ右下に＋ボタン（アルバムが1つ以上ある場合のみ）
+            if showAlbum && !albums.isEmpty {
                 Button(action: { showTagInput = true }) {
-                    Image(systemName: "number")
+                    Text("#")
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.white)
                         .frame(width: 56, height: 56)
-                        .background(Color.purple)
+                        .background(Color.black)
                         .clipShape(Circle())
                         .shadow(radius: 6)
                         .padding(.bottom, 32)

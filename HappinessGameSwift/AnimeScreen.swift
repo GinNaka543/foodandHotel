@@ -578,51 +578,43 @@ struct AnimeArtworkScreen: View {
         .frame(maxWidth: .infinity, maxHeight: 120)
     }
     
-    var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            VStack(spacing: 0) {
-                // Header
-                headerView
-                    .zIndex(2) // ヘッダーを最前面に
-                // Banner
-                bannerView
-                    .allowsHitTesting(false) // バナーのタップを無効化
-                    .zIndex(1)
-                
-                // タブバー - カプセル型デザイン（左寄せ）
-                HStack {
-                    HStack(spacing: 12) {
-                        Button(action: { showAlbum = false }) {
-                            Text("ArtWork")
-                                .font(.caption2)
-                                .foregroundColor(!showAlbum ? .white : .black)
-                                .padding(.horizontal, 18)
-                                .padding(.vertical, 12)
-                                .background(
-                                    Capsule()
-                                        .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
-                                )
-                        }
-                        
-                        Button(action: { showAlbum = true }) {
-                            Text("Album")
-                                .font(.caption2)
-                                .foregroundColor(showAlbum ? .white : .black)
-                                .padding(.horizontal, 18)
-                                .padding(.vertical, 12)
-                                .background(
-                                    Capsule()
-                                        .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
-                                )
-                        }
-                    }
-                    .padding(.leading, 16)
-                    Spacer()
+    // タブビュー
+    var tabView: some View {
+        HStack {
+            HStack(spacing: 12) {
+                Button(action: { showAlbum = false }) {
+                    Text("ArtWork")
+                        .font(.caption2)
+                        .foregroundColor(!showAlbum ? .white : .black)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(
+                            Capsule()
+                                .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                        )
                 }
-                .padding(.vertical, 8)
                 
-                // 画像リスト or Album
-                ZStack {
+                Button(action: { showAlbum = true }) {
+                    Text("Album")
+                        .font(.caption2)
+                        .foregroundColor(showAlbum ? .white : .black)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(
+                            Capsule()
+                                .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                        )
+                }
+            }
+            .padding(.leading, 16)
+            Spacer()
+        }
+        .padding(.vertical, 8)
+    }
+    
+    // コンテンツビュー
+    var contentView: some View {
+        ZStack {
                     if showAlbum {
                         if albums.isEmpty {
                             VStack(spacing: 20) {
@@ -678,8 +670,8 @@ struct AnimeArtworkScreen: View {
                                                         .cornerRadius(8)
                                                 } else if let pixivURL = firstArtwork.pixivURL {
                                                     PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: 80, height: 80)
                                                         .aspectRatio(contentMode: .fill)
+                                                        .frame(width: 80, height: 80)
                                                         .clipped()
                                                         .cornerRadius(8)
                                                 } else {
@@ -734,8 +726,11 @@ struct AnimeArtworkScreen: View {
                                         .shadow(radius: 1)
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 2)
                                 }
                             }
+                            .padding(.bottom, 20)
                         }
                         .fullScreenCover(item: $selectedAlbum) { album in
                             AlbumArtworkListScreenTemp(
@@ -900,27 +895,49 @@ struct AnimeArtworkScreen: View {
                     }
                 }
             }
-            
-            // Albumタブ時のみ右下に#ボタン（アルバムが1つ以上ある場合のみ）
+        }
+    
+    // メインコンテンツ
+    var mainContent: some View {
+        VStack(spacing: 0) {
+            tabView
+            contentView
+        }
+    }
+    
+    // フローティングボタン
+    var floatingButton: some View {
+        Group {
             if showAlbum && !albums.isEmpty {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: { showTagInput = true }) {
-                            Text("#")
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 56, height: 56)
-                                .background(Color.black)
-                                .clipShape(Circle())
-                                .shadow(radius: 6)
-                        }
-                    }
+                Button(action: { showTagInput = true }) {
+                    Text("#")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 56, height: 56)
+                        .background(Color.black)
+                        .clipShape(Circle())
+                        .shadow(radius: 6)
+                        .padding(.bottom, 32)
+                        .padding(.trailing, 24)
                 }
-                .padding(.bottom, 32)
-                .padding(.trailing, 24)
             }
+        }
+    }
+    
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            VStack(spacing: 0) {
+                // Header
+                headerView
+                    .zIndex(2) // ヘッダーを最前面に
+                // Banner
+                bannerView
+                    .allowsHitTesting(false) // バナーのタップを無効化
+                    .zIndex(1)
+                // Main content
+                mainContent
+            }
+            floatingButton
         }
         .onAppear {
             loadArtworks()
@@ -1376,7 +1393,6 @@ struct AnimeArtworkScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
             }
-        }
         }
     }
     

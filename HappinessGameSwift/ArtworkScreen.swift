@@ -34,7 +34,7 @@ struct Artwork: Identifiable, Codable, Hashable {
 }
 
 // Album model for grouping artworks by tags
-struct ArtworkAlbum: Identifiable, Hashable, Equatable {
+struct ArtworkAlbum: Identifiable, Hashable, Equatable, Codable {
     let id = UUID()
     let tag: String
     var videos: [Artwork]
@@ -89,6 +89,8 @@ struct ArtworkScreen: View {
     @State private var showPixivRedirect = false
     @State private var pixivRedirectURL: String = ""
     @State private var pixivRedirectArtwork: Artwork? = nil
+    @State private var showDeleteArtworkAlbumAlert = false
+    @State private var deletingArtworkAlbum: ArtworkAlbum? = nil
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -305,43 +307,76 @@ struct ArtworkScreen: View {
                                             Button(action: {
                                                 selectedAlbum = album
                                             }) {
-                                                VStack(alignment: .leading, spacing: 0) {
+                                                HStack(spacing: 12) {
+                                                    // サムネイル
                                                     if let firstArtwork = album.videos.first {
-                                                        GeometryReader { geometry in
-                                                            if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                                Image(uiImage: uiImage)
-                                                                    .resizable()
-                                                                    .aspectRatio(contentMode: .fit)
-                                                                    .frame(width: geometry.size.width, height: 233)
-                                                            } else if let pixivURL = firstArtwork.pixivURL {
-                                                                PixivThumbnailView(pixivURL: pixivURL)
-                                                                    .frame(width: geometry.size.width)
-                                                                    .aspectRatio(contentMode: .fit)
-                                                            } else {
-                                                                RoundedRectangle(cornerRadius: 0, style: .continuous)
-                                                                    .fill(Color.gray.opacity(0.3))
-                                                                    .frame(width: geometry.size.width, height: 233)
-                                                            }
-                                                        }
-                                                        .frame(height: 233)
-                                                    } else {
-                                                        GeometryReader { geometry in
-                                                            RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                        if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                                                            Image(uiImage: uiImage)
+                                                                .resizable()
+                                                                .aspectRatio(contentMode: .fill)
+                                                                .frame(width: 80, height: 80)
+                                                                .clipped()
+                                                                .cornerRadius(8)
+                                                        } else if let pixivURL = firstArtwork.pixivURL {
+                                                            PixivThumbnailView(pixivURL: pixivURL)
+                                                                .frame(width: 80, height: 80)
+                                                                .aspectRatio(contentMode: .fill)
+                                                                .clipped()
+                                                                .cornerRadius(8)
+                                                        } else {
+                                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                                 .fill(Color.gray.opacity(0.3))
-                                                                .frame(width: geometry.size.width, height: 233)
+                                                                .frame(width: 80, height: 80)
                                                         }
-                                                        .frame(height: 233)
+                                                    } else {
+                                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 80, height: 80)
                                                     }
+                                                    
+                                                    // 右側のコンテンツ
                                                     VStack(alignment: .leading, spacing: 4) {
                                                         Text("#" + album.tag)
-                                                            .font(.system(size: 15.5, weight: .semibold))
+                                                            .font(.system(size: 16, weight: .semibold))
                                                             .foregroundColor(.black)
+                                                        
+                                                        if let firstArtwork = album.videos.first {
+                                                            Text(firstArtwork.tags.isEmpty ? "タグなし" : firstArtwork.tags.joined(separator: ", "))
+                                                                .font(.system(size: 14))
+                                                                .foregroundColor(.gray)
+                                                                .lineLimit(2)
+                                                        }
+                                                        
+                                                        Text("\(album.videos.count)件")
+                                                            .font(.system(size: 12))
+                                                            .foregroundColor(.gray)
                                                     }
-                                                    .padding(.top, 8)
-                                                    .padding(.leading, 8)
+                                                    
+                                                    Spacer()
+                                                    
+                                                    // 3点ボタン
+                                                    Button(action: {
+                                                        deletingArtworkAlbum = album
+                                                        showDeleteArtworkAlbumAlert = true
+                                                    }) {
+                                                        Image(systemName: "ellipsis")
+                                                            .font(.system(size: 16, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                            .frame(width: 32, height: 32)
+                                                            .background(Color.black.opacity(0.7))
+                                                            .clipShape(Circle())
+                                                            .shadow(radius: 4)
+                                                    }
                                                 }
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 8)
+                                                .background(Color.white)
+                                                .cornerRadius(8)
+                                                .shadow(radius: 1)
                                             }
                                             .buttonStyle(PlainButtonStyle())
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 4)
                                         }
                                     }
                                 }
@@ -478,7 +513,7 @@ struct ArtworkScreen: View {
                                                     pixivRedirectArtwork = artwork
                                                     showPixivRedirect = true
                                                 } else {
-                                                    activeSheet = .artworkDetail(artwork)
+                                                    selectedArtwork = artwork
                                                 }
                                             }
                                         }
@@ -491,7 +526,9 @@ struct ArtworkScreen: View {
                             ArtworkPlayerScreenTemp(artwork: artwork, onDelete: {
                                 if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
                                     artworks.remove(at: idx)
+                                    updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                                     saveArtworksToUserDefaults()
+                                    saveAlbumsToUserDefaults()
                                 }
                             }, onEdit: { newTitle, newTags in
                                 if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
@@ -521,6 +558,7 @@ struct ArtworkScreen: View {
         }
         .onAppear {
             loadArtworks()
+            loadAlbumsFromUserDefaults()
         }
         .fullScreenCover(isPresented: $showPixivRedirect) {
             PixivRedirectView(
@@ -538,7 +576,9 @@ struct ArtworkScreen: View {
                     if let artwork = pixivRedirectArtwork,
                        let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
                         artworks.remove(at: idx)
+                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                         saveArtworksToUserDefaults()
+                        saveAlbumsToUserDefaults()
                     }
                     showPixivRedirect = false
                 }
@@ -573,6 +613,7 @@ struct ArtworkScreen: View {
                             let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
                             if !tagArtworks.isEmpty {
                                 albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
+                                saveAlbumsToUserDefaults()
                             }
                         }
                         newTag = ""
@@ -846,7 +887,9 @@ struct ArtworkScreen: View {
                                         if let deletingID = deletingArtworkID,
                                            let idx = artworks.firstIndex(where: { $0.id == deletingID }) {
                                             artworks.remove(at: idx)
+                                            updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletingID)
                                             saveArtworksToUserDefaults()
+                                            saveAlbumsToUserDefaults()
                                         }
                                         showDeleteAlert = false
                                     }) {
@@ -910,6 +953,21 @@ struct ArtworkScreen: View {
                 }
             }
         }
+        .alert(isPresented: $showDeleteArtworkAlbumAlert) {
+            Alert(
+                title: Text("アルバムを削除しますか？"),
+                message: Text("このアルバムは完全に削除されます。"),
+                primaryButton: .destructive(Text("削除")) {
+                    if let album = deletingArtworkAlbum {
+                        deleteArtworkAlbum(album)
+                    }
+                    deletingArtworkAlbum = nil
+                },
+                secondaryButton: .cancel(Text("キャンセル")) {
+                    deletingArtworkAlbum = nil
+                }
+            )
+        }
         .sheet(isPresented: $showTagInput) {
             VStack(spacing: 24) {
                 Text("同じタグからアルバムを作れます")
@@ -923,6 +981,7 @@ struct ArtworkScreen: View {
                         let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
                         if !tagArtworks.isEmpty {
                             albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
+                            saveAlbumsToUserDefaults()
                         }
                     }
                     newTag = ""
@@ -957,6 +1016,23 @@ struct ArtworkScreen: View {
         let key = "character_artworks_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(artworks) {
             UserDefaults.standard.set(encodedData, forKey: key)
+        }
+    }
+    
+    private func saveAlbumsToUserDefaults() {
+        let key = "artwork_albums_\(character.id.uuidString)"
+        if let encodedData = try? JSONEncoder().encode(albums) {
+            UserDefaults.standard.set(encodedData, forKey: key)
+            print("[DEBUG] ArtworkScreen: アルバムをUserDefaultsに保存しました")
+        }
+    }
+    
+    private func loadAlbumsFromUserDefaults() {
+        let key = "artwork_albums_\(character.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
+            albums = decodedAlbums
+            print("[DEBUG] ArtworkScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
         }
     }
     
@@ -1010,6 +1086,14 @@ struct ArtworkScreen: View {
                 return nil
             }
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
+        }
+    }
+    
+    func deleteArtworkAlbum(_ album: ArtworkAlbum) {
+        if let index = albums.firstIndex(where: { $0.id == album.id }) {
+            albums.remove(at: index)
+            saveAlbumsToUserDefaults()
+            print("[DEBUG] ArtworkScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     

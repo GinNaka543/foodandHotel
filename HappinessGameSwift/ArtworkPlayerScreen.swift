@@ -17,7 +17,7 @@ struct ArtworkPlayerScreen: View {
             ZStack(alignment: .topLeading) {
                 VStack(spacing: 0) {
                     ZStack(alignment: .topLeading) {
-                        if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                        if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
@@ -183,12 +183,15 @@ struct FullScreenArtworkView: View {
     let pixivURL: String?
     var onDismiss: () -> Void
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack {
             Color.black.ignoresSafeArea()
-            if let imagePath = imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+            
+            // 画像を中央に配置
+            if let imagePath = imagePath, let uiImage = loadImageFromPath(imagePath) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .edgesIgnoringSafeArea(.all)
             } else if let pixivURL = pixivURL {
                 VStack {
@@ -208,17 +211,25 @@ struct FullScreenArtworkView: View {
             } else {
                 Color.gray
             }
-            Button(action: { onDismiss() }) {
-                Text("戻る")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Color.black.opacity(0.8))
-                    .cornerRadius(20)
+            
+            // 戻るボタンを右上に配置
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: { onDismiss() }) {
+                        Text("戻る")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.8))
+                            .cornerRadius(20)
+                    }
+                    .padding(.trailing, 24)
+                    .padding(.top, 24)
+                }
+                Spacer()
             }
-            .padding(.trailing, 24)
-            .padding(.top, 24)
         }
     }
 } 

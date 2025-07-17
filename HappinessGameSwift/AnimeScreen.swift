@@ -472,6 +472,8 @@ struct AnimeArtworkScreen: View {
     @State private var showPixivRedirect = false
     @State private var pixivRedirectURL: String = ""
     @State private var pixivRedirectArtwork: Artwork? = nil
+    @State private var showDeleteArtworkAlbumAlert = false
+    @State private var deletingArtworkAlbum: ArtworkAlbum? = nil
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -592,7 +594,7 @@ struct AnimeArtworkScreen: View {
                     HStack(spacing: 12) {
                         Button(action: { showAlbum = false }) {
                             Text("ArtWork")
-                                .font(.system(size: 16, weight: .regular))
+                                .font(.caption2)
                                 .foregroundColor(!showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
                                 .padding(.vertical, 12)
@@ -604,7 +606,7 @@ struct AnimeArtworkScreen: View {
                         
                         Button(action: { showAlbum = true }) {
                             Text("Album")
-                                .font(.system(size: 16, weight: .regular))
+                                .font(.caption2)
                                 .foregroundColor(showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
                                 .padding(.vertical, 12)
@@ -664,59 +666,84 @@ struct AnimeArtworkScreen: View {
                                     Button(action: {
                                         selectedAlbum = album
                                     }) {
-                                        VStack(alignment: .leading, spacing: 0) {
+                                        HStack(spacing: 12) {
+                                            // サムネイル
                                             if let firstArtwork = album.videos.first {
-                                                GeometryReader { geometry in
-                                                    if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                        Image(uiImage: uiImage)
-                                                            .resizable()
-                                                            .aspectRatio(contentMode: .fit)
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                            .clipped()
-                                                    } else if let pixivURL = firstArtwork.pixivURL {
-                                                        PixivThumbnailView(pixivURL: pixivURL)
-                                                            .frame(width: geometry.size.width)
-                                                            .aspectRatio(contentMode: .fit)
-                                                    } else {
-                                                        RoundedRectangle(cornerRadius: 0, style: .continuous)
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: geometry.size.width, height: 233)
-                                                    }
-                                                }
-                                                .frame(height: 233)
-                                            } else {
-                                                GeometryReader { geometry in
-                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .frame(width: 80, height: 80)
+                                                        .clipped()
+                                                        .cornerRadius(8)
+                                                } else if let pixivURL = firstArtwork.pixivURL {
+                                                    PixivThumbnailView(pixivURL: pixivURL)
+                                                        .frame(width: 80, height: 80)
+                                                        .aspectRatio(contentMode: .fill)
+                                                        .clipped()
+                                                        .cornerRadius(8)
+                                                } else {
+                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                         .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: geometry.size.width, height: 233)
+                                                        .frame(width: 80, height: 80)
                                                 }
-                                                .frame(height: 233)
+                                            } else {
+                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                                    .fill(Color.gray.opacity(0.3))
+                                                    .frame(width: 80, height: 80)
                                             }
-                                            HStack {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text("#" + album.tag)
-                                                        .font(.system(size: 15.5, weight: .semibold))
-                                                        .foregroundColor(.black)
-                                                }
-                                                .padding(.top, 8)
-                                                .padding(.leading, 8)
+                                            
+                                            // 右側のコンテンツ
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text("#" + album.tag)
+                                                    .font(.system(size: 16, weight: .semibold))
+                                                    .foregroundColor(.black)
                                                 
-                                                Spacer()
-                                                
-                                                Button(action: {
-                                                    // #ボタンのアクション
-                                                }) {
-                                                    Text("#")
-                                                        .font(.system(size: 18, weight: .bold))
-                                                        .foregroundColor(.white)
-                                                        .frame(width: 40, height: 40)
-                                                        .background(Color.black)
-                                                        .clipShape(Circle())
+                                                if let firstArtwork = album.videos.first {
+                                                    Text(firstArtwork.tags.isEmpty ? "タグなし" : firstArtwork.tags.joined(separator: ", "))
+                                                        .font(.system(size: 14))
+                                                        .foregroundColor(.gray)
+                                                        .lineLimit(2)
                                                 }
-                                                .padding(.trailing, 16)
-                                                .padding(.bottom, 8)
+                                                
+                                                Text("\(album.videos.count)件")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            // 3点ボタン
+                                            Button(action: {
+                                                deletingArtworkAlbum = album
+                                                showDeleteArtworkAlbumAlert = true
+                                            }) {
+                                                Image(systemName: "ellipsis")
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundColor(.black)
+                                                    .frame(width: 32, height: 32)
+                                                    .background(Color.gray.opacity(0.2))
+                                                    .clipShape(Circle())
+                                            }
+                                            .padding(.trailing, 8)
+                                            
+                                            // 右端の#ボタン
+                                            Button(action: {
+                                                // #ボタンのアクション
+                                            }) {
+                                                Text("#")
+                                                    .font(.system(size: 16, weight: .bold))
+                                                    .foregroundColor(.white)
+                                                    .frame(width: 32, height: 32)
+                                                    .background(Color.black)
+                                                    .clipShape(Circle())
                                             }
                                         }
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color.white)
+                                        .cornerRadius(8)
+                                        .shadow(radius: 1)
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
@@ -736,6 +763,7 @@ struct AnimeArtworkScreen: View {
                                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
                                         
                                         saveArtworksToUserDefaults()
+                                        saveAlbumsToUserDefaults()
                                         print("[DEBUG] AnimeArtworkScreen: UserDefaultsに保存しました")
                                     }
                                 },
@@ -793,30 +821,33 @@ struct AnimeArtworkScreen: View {
                             ScrollView {
                                 VStack(spacing: 32) {
                                     ForEach(artworks, id: \ .id) { artwork in
-                                    VStack(alignment: .leading, spacing: 0) {
-                                        GeometryReader { geometry in
-                                            ZStack {
-                                                Color.white
-                                                if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .aspectRatio(contentMode: .fit)
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
-                                                } else if let pixivURL = artwork.pixivURL {
-                                                    PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: geometry.size.width)
-                                                        .aspectRatio(contentMode: .fit)
-                                                } else {
-                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
-                                                        .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: geometry.size.width, height: 233)
+                                    Button(action: {
+                                        activeSheet = .artworkDetail(artwork)
+                                    }) {
+                                        VStack(alignment: .leading, spacing: 0) {
+                                            GeometryReader { geometry in
+                                                ZStack {
+                                                    Color.white
+                                                    if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .aspectRatio(contentMode: .fit)
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                            .clipped()
+                                                    } else if let pixivURL = artwork.pixivURL {
+                                                        PixivThumbnailView(pixivURL: pixivURL)
+                                                            .frame(width: geometry.size.width)
+                                                            .aspectRatio(contentMode: .fit)
+                                                    } else {
+                                                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: geometry.size.width, height: 233)
+                                                    }
                                                 }
+                                                .frame(width: geometry.size.width, height: 233)
+                                                .clipped()
+                                                .padding(.bottom, 0)
                                             }
-                                            .frame(width: geometry.size.width, height: 233)
-                                            .clipped()
-                                            .padding(.bottom, 0)
-                                        }
                                             .frame(height: 233)
                                             HStack(alignment: .center, spacing: 12) {
                                                 if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
@@ -849,14 +880,13 @@ struct AnimeArtworkScreen: View {
                                         .padding(.leading, 8)
                                     }
                                     .padding(.vertical, 8)
-                                    .contentShape(Rectangle())
+                                }
+                                    .buttonStyle(PlainButtonStyle())
                                     .onTapGesture {
                                         if let pixivURL = artwork.pixivURL {
                                             pixivRedirectURL = pixivURL
                                             pixivRedirectArtwork = artwork
                                             showPixivRedirect = true
-                                        } else {
-                                            activeSheet = .artworkDetail(artwork)
                                         }
                                     }
                                 }
@@ -867,7 +897,9 @@ struct AnimeArtworkScreen: View {
                             ArtworkPlayerScreenTemp(artwork: artwork, onDelete: {
                                 if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
                                     artworks.remove(at: idx)
+                                    updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                                     saveArtworksToUserDefaults()
+                                    saveAlbumsToUserDefaults()
                                 }
                             }, onEdit: { newTitle, newTags in
                                 if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
@@ -897,6 +929,7 @@ struct AnimeArtworkScreen: View {
         }
         .onAppear {
             loadArtworks()
+            loadAlbumsFromUserDefaults()
         }
         .fullScreenCover(isPresented: $showPixivRedirect) {
             PixivRedirectView(
@@ -914,9 +947,26 @@ struct AnimeArtworkScreen: View {
                     if let artwork = pixivRedirectArtwork,
                        let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
                         artworks.remove(at: idx)
+                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                         saveArtworksToUserDefaults()
+                        saveAlbumsToUserDefaults()
                     }
                     showPixivRedirect = false
+                }
+            )
+        }
+        .alert(isPresented: $showDeleteArtworkAlbumAlert) {
+            Alert(
+                title: Text("アルバムを削除しますか？"),
+                message: Text("このアルバムは完全に削除されます。"),
+                primaryButton: .destructive(Text("削除")) {
+                    if let album = deletingArtworkAlbum {
+                        deleteArtworkAlbum(album)
+                    }
+                    deletingArtworkAlbum = nil
+                },
+                secondaryButton: .cancel(Text("キャンセル")) {
+                    deletingArtworkAlbum = nil
                 }
             )
         }
@@ -936,6 +986,7 @@ struct AnimeArtworkScreen: View {
                         let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
                         if !tagArtworks.isEmpty {
                             albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
+                            saveAlbumsToUserDefaults()
                         }
                     }
                     newTag = ""
@@ -1209,7 +1260,9 @@ struct AnimeArtworkScreen: View {
                                 if let delID = deletingArtworkID,
                                    let idx = artworks.firstIndex(where: { $0.id == delID }) {
                                     artworks.remove(at: idx)
+                                    updateAlbumsAfterArtworkDeletion(deletedArtworkId: delID)
                                     saveArtworksToUserDefaults()
+                                    saveAlbumsToUserDefaults()
                                 }
                                 showDeleteAlert = false
                                 deletingArtworkID = nil
@@ -1362,6 +1415,23 @@ struct AnimeArtworkScreen: View {
         }
     }
     
+    private func saveAlbumsToUserDefaults() {
+        let key = "anime_artwork_albums_\(anime.id.uuidString)"
+        if let encodedData = try? JSONEncoder().encode(albums) {
+            UserDefaults.standard.set(encodedData, forKey: key)
+            print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsに保存しました")
+        }
+    }
+    
+    private func loadAlbumsFromUserDefaults() {
+        let key = "anime_artwork_albums_\(anime.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
+            albums = decodedAlbums
+            print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
+        }
+    }
+    
     private func updateAlbumsAfterArtworkDeletion(deletedArtworkId: UUID) {
         // 各Albumから削除された画像を除去
         albums = albums.compactMap { album in
@@ -1389,6 +1459,14 @@ struct AnimeArtworkScreen: View {
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
         print("[DEBUG] AnimeArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
+    }
+    
+    private func deleteArtworkAlbum(_ album: ArtworkAlbum) {
+        if let index = albums.firstIndex(where: { $0.id == album.id }) {
+            albums.remove(at: index)
+            saveAlbumsToUserDefaults()
+            print("[DEBUG] AnimeArtworkScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
+        }
     }
     
     private func savePixivArtwork(pixivURL: String, title: String, imageURL: String?, tags: String) {
@@ -1497,6 +1575,9 @@ struct AnimeVideoScreen: View {
     @State private var selectedAlbum: Album? = nil
     @State private var showThumbnailPicker = false
     @State private var editingVideo: MemoryVideo? = nil
+    @State private var showDeleteVideoAlbumAlert = false
+    @State private var deletingVideoAlbum: Album? = nil
+    @State private var showDeleteVideoAlert = false
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -1598,316 +1679,19 @@ struct AnimeVideoScreen: View {
                     .allowsHitTesting(false) // バナーのタップを無効化
                     .zIndex(1)
                 
-                // タブバー - カプセル型デザイン（左寄せ）
-                HStack {
-                    HStack(spacing: 12) {
-                        Button(action: { showAlbum = false }) {
-                            Text("Video")
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(!showAlbum ? .white : .black)
-                                .padding(.horizontal, 18)
-                                .padding(.vertical, 12)
-                                .background(
-                                    Capsule()
-                                        .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
-                                )
-                        }
-                        
-                        Button(action: { showAlbum = true }) {
-                            Text("Album")
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundColor(showAlbum ? .white : .black)
-                                .padding(.horizontal, 18)
-                                .padding(.vertical, 12)
-                                .background(
-                                    Capsule()
-                                        .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
-                                )
-                        }
-                    }
-                    .padding(.leading, 16)
-                    Spacer()
-                }
-                .padding(.vertical, 8)
-                // 動画リスト or Album
+                // タブバー
+                tabBarView
+                
+                // コンテンツ
                 ZStack {
                     if showAlbum {
-                        if albums.isEmpty {
-                            VStack(spacing: 20) {
-                                Spacer()
-                                    .frame(maxHeight: 100)
-                                
-                                Image(systemName: "folder.badge.plus")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.purple)
-                                
-                                Text("まだアルバムがありません")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                
-                                Text("同じタグのビデオからアルバムを作成できます")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                                
-                                Button(action: {
-                                    showTagInput = true
-                                }) {
-                                    Label("アルバムを作成", systemImage: "plus.circle.fill")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .padding()
-                                        .background(Color.purple)
-                                        .cornerRadius(25)
-                                }
-                                
-                                Spacer()
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else {
-                            ScrollView {
-                                VStack(spacing: 4) {
-                                    Spacer().frame(height: 5)
-                                    // --- アルバムリスト ---
-                                    ForEach(albums) { album in
-                                    Button(action: {
-                                        selectedAlbum = album
-                                    }) {
-                                        VStack(alignment: .leading, spacing: 0) {
-                                            if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                GeometryReader { geometry in
-                                                    Image(uiImage: uiImage)
-                                                        .resizable()
-                                                        .aspectRatio(contentMode: .fit)
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                        .clipped()
-                                                }
-                                                .frame(height: 233)
-                                            } else {
-                                                GeometryReader { geometry in
-                                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
-                                                        .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: geometry.size.width, height: 233)
-                                                }
-                                                .frame(height: 233)
-                                            }
-                                            HStack {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text("#" + album.tag)
-                                                        .font(.system(size: 15.5, weight: .semibold))
-                                                        .foregroundColor(.black)
-                                                }
-                                                .padding(.top, 8)
-                                                .padding(.leading, 8)
-                                                
-                                                Spacer()
-                                                
-                                                Button(action: {
-                                                    // #ボタンのアクション
-                                                }) {
-                                                    Text("#")
-                                                        .font(.system(size: 18, weight: .bold))
-                                                        .foregroundColor(.white)
-                                                        .frame(width: 40, height: 40)
-                                                        .background(Color.black)
-                                                        .clipShape(Circle())
-                                                }
-                                                .padding(.trailing, 16)
-                                                .padding(.bottom, 8)
-                                            }
-                                        }
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                        }
-                        .fullScreenCover(item: $selectedAlbum) { album in
-                            AlbumVideoListScreen(
-                                videos: album.videos, 
-                                tag: album.tag,
-                                onVideoDeleted: { deletedVideo in
-                                    // 動画リストから削除
-                                    if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
-                                        videos.remove(at: idx)
-                                        print("[DEBUG] AnimeScreen: Albumから動画削除 - ID: \(deletedVideo.id)")
-                                        
-                                        // Albumタブの動画リストも更新
-                                        updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
-                                        
-                                        saveVideosToUserDefaults()
-                                        print("[DEBUG] AnimeScreen: UserDefaultsに保存しました")
-                                    }
-                                }
-                            )
-                        }
-                        }
+                        Text("Album Content")
                     } else {
-                        if videos.isEmpty {
-                            VStack(spacing: 20) {
-                                Spacer()
-                                    .frame(maxHeight: 100)
-                                
-                                Image(systemName: "video.slash")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.purple)
-                                
-                                Text("まだビデオがありません")
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                
-                                Text("右上の追加ボタンからビデオを追加できます")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                                
-                                Button(action: {
-                                    showAddSheet = true
-                                }) {
-                                    Label("ビデオを追加", systemImage: "plus.circle.fill")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .padding()
-                                        .background(Color.purple)
-                                        .cornerRadius(25)
-                                }
-                                
-                                Spacer()
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else {
-                            ScrollView {
-                                VStack(spacing: 0) {
-                                    Spacer().frame(height: 5)
-                                    ForEach(Array(videos.enumerated()), id: \ .element.id) { idx, video in
-                                    if idx > 0 {
-                                        Spacer().frame(height: 35)
-                                    }
-                                    Button(action: {
-                                        selectedVideo = video
-                                    }) {
-                                        HStack(alignment: .top, spacing: 16) {
-                                            if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                Image(uiImage: uiImage)
-                                                    .resizable()
-                                                    .aspectRatio(contentMode: .fit)
-                                                    .frame(width: 183, height: 109)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                                    .clipped()
-                                            } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
-                                                AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
-                                                    image
-                                                        .resizable()
-                                                        .aspectRatio(contentMode: .fit)
-                                                        .frame(width: 183, height: 109)
-                                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                                        .clipped()
-                                                } placeholder: {
-                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                        .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: 183, height: 109)
-                                                        .overlay(
-                                                            ProgressView()
-                                                        )
-                                                }
-                                            } else {
-                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                    .fill(Color.gray.opacity(0.3))
-                                                    .frame(width: 183, height: 109)
-                                            }
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(video.title)
-                                                    .font(.system(size: 16.5, weight: .semibold))
-                                                    .foregroundColor(.black)
-                                                    .padding(.vertical, 8)
-                                                Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
-                                                    .font(.system(size: 13.8, weight: .regular))
-                                                    .foregroundColor(.gray)
-                                                    .padding(.vertical, 2)
-                                            }
-                                            .frame(height: 50, alignment: .leading)
-                                            .padding(.top, 3)
-                                            .padding(.leading, 8)
-                                            Spacer()
-                                            Menu {
-                                                Button(action: {
-                                                    editText = video.title
-                                                    editingVideo = video
-                                                    showEditTitle = true
-                                                }) {
-                                                    Label("タイトルを編集", systemImage: "pencil")
-                                                }
-                                                Button(action: {
-                                                    editText = video.tags.joined(separator: ", ")
-                                                    editingVideo = video
-                                                    showEditTags = true
-                                                }) {
-                                                    Label("タグを編集", systemImage: "tag")
-                                                }
-                                                Button(action: {
-                                                    editingVideo = video
-                                                    showThumbnailPicker = true
-                                                }) {
-                                                    Label("サムネイルを変更", systemImage: "photo")
-                                                }
-                                                Button(role: .destructive, action: {
-                                                    deletingVideoID = video.id
-                                                    showDeleteAlert = true
-                                                }) {
-                                                    Label("削除", systemImage: "trash")
-                                                }
-                                            } label: {
-                                                Image(systemName: "ellipsis")
-                                                    .font(.system(size: 18))
-                                                    .foregroundColor(.gray)
-                                                    .padding(8)
-                                                    .background(Color.gray.opacity(0.1))
-                                                    .clipShape(Circle())
-                                            }
-                                            .padding(.trailing, 8)
-                                        }
-                                        .padding(.leading, 8)
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                }
-                            }
-                        }
-                        .fullScreenCover(item: $selectedVideo) { video in
-                            VideoPlayerScreen(
-                                video: video,
-                                character: nil,
-                                anime: anime,
-                                allVideos: videos,
-                                onSave: { newTitle, newTags in
-                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                                        var updated = videos[idx]
-                                        updated.title = newTitle
-                                        updated.tags = newTags
-                                        videos[idx] = updated
-                                        saveVideosToUserDefaults()
-                                    }
-                                },
-                                onDelete: {
-                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                                        videos.remove(at: idx)
-                                        saveVideosToUserDefaults()
-                                    }
-                                    selectedVideo = nil
-                                },
-                                onThumbnailUpdate: { newThumbnailData in
-                                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                                        var updated = videos[idx]
-                                        updated.thumbnailData = newThumbnailData
-                                        videos[idx] = updated
-                                        saveVideosToUserDefaults()
-                                    }
-                                }
-                            )
-                        }
+                        Text("Video Content")
                     }
                 }
             }
+            
             // Albumタブ時のみ右下に＋ボタン（アルバムが1つ以上ある場合のみ）
             if showAlbum && !albums.isEmpty {
                 Button(action: { showTagInput = true }) {
@@ -1921,44 +1705,46 @@ struct AnimeVideoScreen: View {
                         .padding(.bottom, 32)
                         .padding(.trailing, 24)
                 }
-                .sheet(isPresented: $showTagInput) {
-                    VStack(spacing: 24) {
-                        Text("表示したいタグを入力")
-                            .font(.headline)
-                        Text("同じタグからアルバムを作れます")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        TextField("#タグ名", text: $newTag)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .padding(.horizontal, 24)
-                        Button("保存") {
-                            let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                            if !tag.isEmpty {
-                                let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
-                                if !tagVideos.isEmpty {
-                                    albums.append(Album(tag: tag, videos: tagVideos))
-                                }
-                            }
-                            newTag = ""
-                            showTagInput = false
-                        }
-                        .font(.headline)
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 10)
-                        .background(Color.black)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                        Button("キャンセル") {
-                            showTagInput = false
-                        }
-                        .foregroundColor(.red)
-                    }
-                    .padding(32)
-                }
             }
+        }
+        .sheet(isPresented: $showTagInput) {
+            VStack(spacing: 24) {
+                Text("表示したいタグを入力")
+                    .font(.headline)
+                Text("同じタグからアルバムを作れます")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                TextField("#タグ名", text: $newTag)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding(.horizontal, 24)
+                Button("保存") {
+                    let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !tag.isEmpty {
+                        let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
+                        if !tagVideos.isEmpty {
+                            albums.append(Album(tag: tag, videos: tagVideos))
+                            saveVideoAlbumsToUserDefaults()
+                        }
+                    }
+                    newTag = ""
+                    showTagInput = false
+                }
+                .font(.headline)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 10)
+                .background(Color.black)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                Button("キャンセル") {
+                    showTagInput = false
+                }
+                .foregroundColor(.red)
+            }
+            .padding(32)
         }
         .onAppear {
             loadVideos()
+            loadVideoAlbumsFromUserDefaults()
         }
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData, onSave: {
@@ -2038,27 +1824,23 @@ struct AnimeVideoScreen: View {
             .padding(32)
         }
         .sheet(isPresented: $showThumbnailPicker) {
-            if let video = editingVideo {
-                ThumbnailPickerView(
-                    video: video,
-                    onSave: { newThumbnailData in
-                        if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                            var updated = videos[idx]
-                            updated.thumbnailData = newThumbnailData
-                            videos[idx] = updated
-                            saveVideosToUserDefaults()
-                        }
-                        showThumbnailPicker = false
-                        editingVideo = nil
-                    },
-                    onCancel: {
-                        showThumbnailPicker = false
-                        editingVideo = nil
+            ThumbnailPickerView(
+                video: editingVideo ?? MemoryVideo(id: UUID(), characterId: anime.id, videoPath: "", thumbnailData: nil, title: "", tags: [], date: Date(), youtubeURL: nil, youtubeThumbnailURL: nil),
+                onSave: { newThumbnailData in
+                    if let video = editingVideo,
+                       let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                        var updated = videos[idx]
+                        updated.thumbnailData = newThumbnailData
+                        videos[idx] = updated
+                        saveVideosToUserDefaults()
                     }
-                )
-            }
+                },
+                onCancel: {
+                    showThumbnailPicker = false
+                }
+            )
         }
-        .alert(isPresented: $showDeleteAlert) {
+        .alert(isPresented: $showDeleteVideoAlert) {
             Alert(
                 title: Text("動画を削除しますか？"),
                 message: Text("この動画は完全に削除されます。"),
@@ -2066,13 +1848,182 @@ struct AnimeVideoScreen: View {
                     if let id = deletingVideoID,
                        let idx = videos.firstIndex(where: { $0.id == id }) {
                         videos.remove(at: idx)
+                        updateAlbumsAfterVideoDeletion(deletedVideoId: id)
                         saveVideosToUserDefaults()
+                        saveVideoAlbumsToUserDefaults()
                     }
                     deletingVideoID = nil
                 },
                 secondaryButton: .cancel(Text("キャンセル"))
             )
         }
+        .alert(isPresented: $showDeleteVideoAlbumAlert) {
+            Alert(
+                title: Text("アルバムを削除しますか？"),
+                message: Text("このアルバムは完全に削除されます。"),
+                primaryButton: .destructive(Text("削除")) {
+                    if let album = deletingVideoAlbum {
+                        deleteVideoAlbum(album)
+                    }
+                    deletingVideoAlbum = nil
+                },
+                secondaryButton: .cancel(Text("キャンセル")) {
+                    deletingVideoAlbum = nil
+                }
+            )
+        }
+        .sheet(isPresented: $showAddSheet) {
+            AddVideoView(
+                selectedVideoURL: $selectedVideoURL,
+                videoTitle: $videoTitle,
+                videoTags: $videoTags,
+                selectedThumbnailData: $selectedThumbnailData,
+                onSave: {
+                    if selectedVideoURL != nil && !videoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !videoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Task {
+                            await saveVideo()
+                        }
+                    }
+                },
+                onYouTubeSave: { url, title, thumbnailURL, tags in
+                    saveYouTubeVideo(url: url, title: title, thumbnailURL: thumbnailURL, tags: tags)
+                }
+            )
+        }
+        .sheet(isPresented: $showThumbnailPicker) {
+            ThumbnailPickerView(
+                video: editingVideo ?? videos.first!,
+                onSave: { newThumbnailData in
+                    if let editingVideo = editingVideo,
+                       let idx = videos.firstIndex(where: { $0.id == editingVideo.id }) {
+                        var updated = videos[idx]
+                        updated.thumbnailData = newThumbnailData
+                        videos[idx] = updated
+                        saveVideosToUserDefaults()
+                    }
+                    showThumbnailPicker = false
+                    self.editingVideo = nil
+                },
+                onCancel: {
+                    showThumbnailPicker = false
+                    self.editingVideo = nil
+                }
+            )
+        }
+        .fullScreenCover(item: $selectedAlbum) { album in
+            AlbumVideoListScreen(
+                videos: album.videos, 
+                tag: album.tag,
+                onVideoDeleted: { deletedVideo in
+                    // 動画リストから削除
+                    if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
+                        videos.remove(at: idx)
+                        print("[DEBUG] AnimeScreen: Albumから動画削除 - ID: \(deletedVideo.id)")
+                        
+                        // Albumタブの動画リストも更新
+                        updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
+                        
+                        saveVideosToUserDefaults()
+                        saveVideoAlbumsToUserDefaults()
+                        print("[DEBUG] AnimeScreen: UserDefaultsに保存しました")
+                    }
+                }
+            )
+        }
+        .fullScreenCover(item: $selectedVideo) { video in
+            VideoPlayerScreen(
+                video: video,
+                character: nil as Character?,
+                anime: currentAnime as Anime?,
+                allVideos: videos,
+                onSave: { newTitle, newTags in
+                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                        var updated = videos[idx]
+                        updated.title = newTitle
+                        updated.tags = newTags
+                        videos[idx] = updated
+                        saveVideosToUserDefaults()
+                    }
+                },
+                onDelete: {
+                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                        videos.remove(at: idx)
+                        updateAlbumsAfterVideoDeletion(deletedVideoId: video.id)
+                        saveVideosToUserDefaults()
+                        saveVideoAlbumsToUserDefaults()
+                        print("[DEBUG] AnimeScreen: 動画削除完了 - ID: \(video.id)")
+                    }
+                    selectedVideo = nil
+                },
+                onThumbnailUpdate: { newThumbnailData in
+                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                        var updated = videos[idx]
+                        updated.thumbnailData = newThumbnailData
+                        videos[idx] = updated
+                        saveVideosToUserDefaults()
+                    }
+                }
+            )
+        }
+        .background(Color.white)
+        .navigationBarHidden(true)
+        .onAppear {
+            loadVideos()
+            loadVideoAlbumsFromUserDefaults()
+        }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func loadVideos() {
+        let key = "videos_\(anime.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decodedVideos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
+            videos = decodedVideos
+        }
+    }
+    
+    private func saveVideosToUserDefaults() {
+        let key = "videos_\(anime.id.uuidString)"
+        if let encodedData = try? JSONEncoder().encode(videos) {
+            UserDefaults.standard.set(encodedData, forKey: key)
+            print("AnimeVideoScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
+        }
+    }
+    
+    private func saveVideoAlbumsToUserDefaults() {
+        let key = "video_albums_\(anime.id.uuidString)"
+        if let encodedData = try? JSONEncoder().encode(albums) {
+            UserDefaults.standard.set(encodedData, forKey: key)
+            print("[DEBUG] AnimeVideoScreen: アルバムをUserDefaultsに保存しました")
+        }
+    }
+    
+    private func loadVideoAlbumsFromUserDefaults() {
+        let key = "video_albums_\(anime.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
+            albums = decodedAlbums
+            print("[DEBUG] AnimeVideoScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
+        }
+    }
+    
+    private func updateAlbumsAfterVideoDeletion(deletedVideoId: UUID) {
+        albums = albums.compactMap { album in
+            let updatedVideos = album.videos.filter { $0.id != deletedVideoId }
+            if updatedVideos.isEmpty {
+                return nil
+            }
+            return Album(tag: album.tag, videos: updatedVideos)
+        }
+        print("[DEBUG] AnimeVideoScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
+    }
+    
+    private func deleteVideoAlbum(_ album: Album) {
+        if let index = albums.firstIndex(where: { $0.id == album.id }) {
+            albums.remove(at: index)
+            saveVideoAlbumsToUserDefaults()
+            print("[DEBUG] AnimeVideoScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     
@@ -2080,11 +2031,9 @@ struct AnimeVideoScreen: View {
         guard let videoURL = selectedVideoURL else { return }
         let tags = videoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         
-        // 動画ファイルをDocumentsディレクトリに保存
-        let fileName = "anime_video_\(UUID().uuidString).mov"
+        let fileName = "video_\(UUID().uuidString).mov"
         let documentsPath = saveVideoToDocuments(from: videoURL, fileName: fileName)
         
-        // サムネイル生成
         var thumbnailData: Data? = selectedThumbnailData
         if thumbnailData == nil {
             let asset = AVURLAsset(url: videoURL)
@@ -2115,11 +2064,9 @@ struct AnimeVideoScreen: View {
         let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
         guard let documentsURL = urls.first else { return "" }
         
-        // アプリ専用のサブディレクトリを作成
         let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
         
         do {
-            // ディレクトリが存在しない場合は作成
             if !fileManager.fileExists(atPath: appDirectoryURL.path) {
                 try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
             }
@@ -2137,55 +2084,60 @@ struct AnimeVideoScreen: View {
         }
     }
     
-    private func loadVideos() {
-        let key = "anime_videos_\(anime.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decodedVideos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
-            videos = decodedVideos
-        }
-    }
-    
-    private func saveVideosToUserDefaults() {
-        let key = "anime_videos_\(anime.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(videos) {
-            UserDefaults.standard.set(encodedData, forKey: key)
-            print("AnimeVideoScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
-        }
-    }
-    
     private func saveYouTubeVideo(url: String, title: String, thumbnailURL: String, tags: String) {
         let tagArray = tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         
-        // YouTube動画の場合はvideoPathは空文字列にする
         let newVideo = MemoryVideo(
             id: UUID(),
             characterId: anime.id,
             videoPath: "",
-            thumbnailData: nil,
+            thumbnailData: selectedThumbnailData,
             title: title,
             tags: tagArray,
             date: Date(),
             youtubeURL: url,
-            youtubeThumbnailURL: thumbnailURL
+            youtubeThumbnailURL: thumbnailURL == "custom" ? nil : thumbnailURL
         )
         
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        selectedThumbnailData = nil
         showAddSheet = false
     }
     
-    private func updateAlbumsAfterVideoDeletion(deletedVideoId: UUID) {
-        // 各Albumから削除された動画を除去
-        albums = albums.compactMap { album in
-            let updatedVideos = album.videos.filter { $0.id != deletedVideoId }
-            // 動画が1つも残っていない場合はAlbumを削除
-            if updatedVideos.isEmpty {
-                return nil
+    // MARK: - Helper Views
+    
+    private var tabBarView: some View {
+        HStack {
+            HStack(spacing: 12) {
+                Button(action: { showAlbum = false }) {
+                    Text("Video")
+                        .font(.caption2)
+                        .foregroundColor(!showAlbum ? .white : .black)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(
+                            Capsule()
+                                .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                        )
+                }
+                
+                Button(action: { showAlbum = true }) {
+                    Text("Album")
+                        .font(.caption2)
+                        .foregroundColor(showAlbum ? .white : .black)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(
+                            Capsule()
+                                .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
+                        )
+                }
             }
-            // 動画が残っている場合は更新されたAlbumを返す
-            return Album(tag: album.tag, videos: updatedVideos)
+            .padding(.leading, 16)
+            Spacer()
         }
-        print("[DEBUG] AnimeVideoScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
+        .padding(.vertical, 8)
     }
 }
 

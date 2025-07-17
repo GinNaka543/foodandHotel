@@ -36,7 +36,7 @@ struct AlbumArtworkListScreen: View {
                             selectedArtwork = artwork
                         }) {
                             HStack(alignment: .top, spacing: 16) {
-                                if let imagePath = artwork.imagePath, let uiImage = UIImage(contentsOfFile: imagePath) {
+                                if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .scaledToFill()

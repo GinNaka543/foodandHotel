@@ -19,7 +19,7 @@ struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
     var youtubeThumbnailURL: String? // YouTube サムネイルURL
 }
 
-struct Album: Identifiable, Hashable, Equatable {
+struct Album: Identifiable, Hashable, Equatable, Codable {
     let id = UUID()
     let tag: String
     let videos: [MemoryVideo]
@@ -52,13 +52,26 @@ struct VideoGalleryScreen: View {
     @State private var editText = ""
     @State private var showThumbnailPicker = false
     @State private var isSelectingThumbnail = false
-    @State private var showDeleteAlert = false
-    @State private var deletingVideoID: UUID? = nil
+    @State private var activeAlert: ActiveAlert? = nil
     @State private var activeSheet: ActiveSheet? = nil
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
         characterManager.characters.first(where: { $0.id == character.id }) ?? character
+    }
+    
+    enum ActiveAlert: Identifiable {
+        case deleteVideo(UUID)
+        case deleteAlbum(Album)
+        case youtubeError(String)
+        
+        var id: String {
+            switch self {
+            case .deleteVideo: return "deleteVideo"
+            case .deleteAlbum: return "deleteAlbum"
+            case .youtubeError: return "youtubeError"
+            }
+        }
     }
     
     enum ActiveSheet: Identifiable {
@@ -262,53 +275,80 @@ struct VideoGalleryScreen: View {
                 VStack(spacing: 4) {
                     Spacer().frame(height: 5)
                     ForEach(albums) { album in
-                    Button(action: {
-                        selectedAlbum = album
-                    }) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                GeometryReader { geometry in
+                        Button(action: {
+                            selectedAlbum = album
+                        }) {
+                            HStack(spacing: 12) {
+                                // サムネイル
+                                if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
                                     Image(uiImage: uiImage)
                                         .resizable()
-                                        .scaledToFill()
-                                        .frame(width: geometry.size.width, height: 233)
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 80, height: 80)
                                         .clipped()
-                                }
-                                .frame(height: 233)
-                            } else if let firstVideo = album.videos.first, let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
-                                GeometryReader { geometry in
+                                        .cornerRadius(8)
+                                } else if let firstVideo = album.videos.first, let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
                                     AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
                                         image
                                             .resizable()
-                                            .scaledToFill()
-                                            .frame(width: geometry.size.width, height: 233)
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 80, height: 80)
                                             .clipped()
+                                            .cornerRadius(8)
                                     } placeholder: {
-                                        RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                                             .fill(Color.gray.opacity(0.3))
-                                            .frame(width: geometry.size.width, height: 233)
+                                            .frame(width: 80, height: 80)
                                             .overlay(ProgressView())
                                     }
-                                }
-                                .frame(height: 233)
-                            } else {
-                                GeometryReader { geometry in
-                                    RoundedRectangle(cornerRadius: 0, style: .continuous)
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: geometry.size.width, height: 233)
+                                        .frame(width: 80, height: 80)
                                 }
-                                .frame(height: 233)
+                                
+                                // 右側のコンテンツ
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("#" + album.tag)
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.black)
+                                    
+                                    if let firstVideo = album.videos.first {
+                                        Text(firstVideo.tags.isEmpty ? "タグなし" : firstVideo.tags.joined(separator: ", "))
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.gray)
+                                            .lineLimit(2)
+                                    }
+                                    
+                                    Text("\(album.videos.count)件")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
+                                
+                                // 3点ボタン
+                                Button(action: {
+                                    activeAlert = .deleteAlbum(album)
+                                }) {
+                                    Image(systemName: "ellipsis")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 32, height: 32)
+                                        .background(Color.black.opacity(0.7))
+                                        .clipShape(Circle())
+                                        .shadow(radius: 4)
+                                }
                             }
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("#" + album.tag)
-                                    .font(.system(size: 15.5, weight: .semibold))
-                                    .foregroundColor(.black)
-                            }
-                            .padding(.top, 8)
-                            .padding(.leading, 8)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .shadow(radius: 1)
                         }
-                    }
-                    .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
                     }
                 }
             }
@@ -323,6 +363,7 @@ struct VideoGalleryScreen: View {
                         videos.remove(at: idx)
                         updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
                         saveVideosToUserDefaults()
+                        saveAlbumsToUserDefaults()
                     }
                 }
             )
@@ -396,11 +437,8 @@ struct VideoGalleryScreen: View {
                     }
                 },
                 onDelete: {
-                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                        videos.remove(at: idx)
-                        updateAlbumsAfterVideoDeletion(deletedVideoId: video.id)
-                        saveVideosToUserDefaults()
-                    }
+                    deleteVideo(id: video.id)
+                    selectedVideo = nil
                 },
                 onThumbnailUpdate: { newThumbnailData in
                     if let idx = videos.firstIndex(where: { $0.id == video.id }) {
@@ -491,8 +529,9 @@ struct VideoGalleryScreen: View {
                     }
                     Divider()
                     Button(role: .destructive, action: {
-                        deletingVideoID = video.id
-                        showDeleteAlert = true
+                        print("[DEBUG] 削除ボタンが押されました - Video ID: \(video.id)")
+                        activeAlert = .deleteVideo(video.id)
+                        print("[DEBUG] activeAlert set to deleteVideo")
                     }) {
                         Label("削除", systemImage: "trash")
                     }
@@ -527,11 +566,9 @@ struct VideoGalleryScreen: View {
             floatingButton
         }
         .overlay(loadingOverlay)
-        .alert(isPresented: Binding<Bool>(get: { youtubeDownloadError != nil && !isDownloadingYouTube }, set: { _ in youtubeDownloadError = nil })) {
-            Alert(title: Text("YouTubeダウンロードエラー"), message: Text(youtubeDownloadError ?? ""), dismissButton: .default(Text("OK")))
-        }
         .onAppear {
             loadVideos()
+            loadAlbumsFromUserDefaults()
         }
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(
@@ -581,17 +618,39 @@ struct VideoGalleryScreen: View {
                 tagInputSheet
             }
         }
-        .alert(isPresented: $showDeleteAlert) {
-            Alert(
-                title: Text("動画を削除しますか？"),
-                message: Text("この動画は完全に削除されます。"),
-                primaryButton: .destructive(Text("削除")) {
-                    if let id = deletingVideoID {
-                        deleteVideo(id: id)
+        .alert(item: $activeAlert) { alertType in
+            switch alertType {
+            case .deleteVideo(let videoId):
+                print("[DEBUG] 削除アラートが表示されようとしています - Video ID: \(videoId)")
+                return Alert(
+                    title: Text("動画を削除しますか？"),
+                    message: Text("この動画は完全に削除されます。"),
+                    primaryButton: .destructive(Text("削除")) {
+                        print("[DEBUG] 削除確認アラートの削除ボタンが押されました")
+                        print("[DEBUG] Video ID: \(videoId)")
+                        deleteVideo(id: videoId)
+                        print("[DEBUG] 削除処理完了")
+                    },
+                    secondaryButton: .cancel(Text("キャンセル")) {
+                        print("[DEBUG] 削除キャンセルボタンが押されました")
                     }
-                },
-                secondaryButton: .cancel(Text("キャンセル"))
-            )
+                )
+            case .deleteAlbum(let album):
+                return Alert(
+                    title: Text("アルバムを削除しますか？"),
+                    message: Text("このアルバムは完全に削除されます。"),
+                    primaryButton: .destructive(Text("削除")) {
+                        deleteAlbum(album)
+                    },
+                    secondaryButton: .cancel(Text("キャンセル"))
+                )
+            case .youtubeError(let message):
+                return Alert(
+                    title: Text("YouTubeダウンロードエラー"),
+                    message: Text(message),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
     }
     
@@ -639,6 +698,7 @@ struct VideoGalleryScreen: View {
                     let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
                     if !tagVideos.isEmpty {
                         albums.append(Album(tag: tag, videos: tagVideos))
+                        saveAlbumsToUserDefaults()
                     }
                 }
                 newTag = ""
@@ -818,19 +878,6 @@ struct VideoGalleryScreen: View {
                 }
             )
         }
-        .alert(isPresented: $showDeleteAlert) {
-            Alert(
-                title: Text("動画を削除しますか？"),
-                message: Text("この動画は完全に削除されます。"),
-                primaryButton: .destructive(Text("削除")) {
-                    if let id = deletingVideoID {
-                        deleteVideo(id: id)
-                        expandedVideo = nil
-                    }
-                },
-                secondaryButton: .cancel(Text("キャンセル"))
-            )
-        }
     }
     
     // YouTube確認ページ
@@ -960,8 +1007,7 @@ struct VideoGalleryScreen: View {
                 .padding(.leading, 42)
             }
             Button(action: {
-                deletingVideoID = video.id
-                showDeleteAlert = true
+                activeAlert = .deleteVideo(video.id)
             }) {
                 ZStack {
                     Color.clear
@@ -986,9 +1032,6 @@ struct VideoGalleryScreen: View {
             }
             if showEditTags {
                 editTagsDialog(video: video)
-            }
-            if showDeleteAlert {
-                deleteConfirmDialog()
             }
         }
     }
@@ -1096,51 +1139,6 @@ struct VideoGalleryScreen: View {
     }
     
     // 削除確認ダイアログ
-    func deleteConfirmDialog() -> some View {
-        ZStack {
-            Color.black.opacity(0.25)
-                .edgesIgnoringSafeArea(.all)
-            VStack(spacing: 20) {
-                Text("本当に削除しますか？")
-                    .font(.headline)
-                    .padding(.top, 12)
-                HStack(spacing: 24) {
-                    Button(action: {
-                        showDeleteAlert = false
-                        deletingVideoID = nil
-                    }) {
-                        Text("キャンセル")
-                            .foregroundColor(.blue)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                    }
-                    Button(action: {
-                        if let delID = deletingVideoID,
-                           let idx = videos.firstIndex(where: { $0.id == delID }) {
-                            videos.remove(at: idx)
-                            saveVideosToUserDefaults()
-                        }
-                        showDeleteAlert = false
-                        deletingVideoID = nil
-                        expandedVideo = nil
-                    }) {
-                        Text("削除")
-                            .foregroundColor(.red)
-                            .fontWeight(.bold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 8)
-            }
-            .background(Color.white)
-            .cornerRadius(18)
-            .shadow(radius: 16)
-            .frame(maxWidth: 340)
-            .padding(.horizontal, 32)
-        }
-    }
     
     private func saveVideo() async {
         guard let videoURL = selectedVideoURL else { return }
@@ -1219,11 +1217,37 @@ struct VideoGalleryScreen: View {
         }
     }
     
+    private func saveAlbumsToUserDefaults() {
+        let key = "video_albums_\(character.id.uuidString)"
+        if let encodedData = try? JSONEncoder().encode(albums) {
+            UserDefaults.standard.set(encodedData, forKey: key)
+            print("[DEBUG] VideoGalleryScreen: アルバムをUserDefaultsに保存しました")
+        }
+    }
+    
+    private func loadAlbumsFromUserDefaults() {
+        let key = "video_albums_\(character.id.uuidString)"
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
+            albums = decodedAlbums
+            print("[DEBUG] VideoGalleryScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
+        }
+    }
+    
     private func deleteVideo(id: UUID) {
+        print("[DEBUG] deleteVideo called with ID: \(id)")
+        print("[DEBUG] Current videos count: \(videos.count)")
         if let idx = videos.firstIndex(where: { $0.id == id }) {
+            print("[DEBUG] Found video at index: \(idx)")
             videos.remove(at: idx)
+            print("[DEBUG] After removal, videos count: \(videos.count)")
             print("VideoAlbumGridView: 動画削除 - ID: \(id)")
+            updateAlbumsAfterVideoDeletion(deletedVideoId: id)
             saveVideosToUserDefaults()
+            saveAlbumsToUserDefaults()
+            print("[DEBUG] Delete process completed")
+        } else {
+            print("[DEBUG] Video with ID \(id) not found in videos array")
         }
     }
     
@@ -1239,6 +1263,14 @@ struct VideoGalleryScreen: View {
             return Album(tag: album.tag, videos: updatedVideos)
         }
         print("[DEBUG] VideoGalleryScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
+    }
+    
+    private func deleteAlbum(_ album: Album) {
+        if let index = albums.firstIndex(where: { $0.id == album.id }) {
+            albums.remove(at: index)
+            saveAlbumsToUserDefaults()
+            print("[DEBUG] VideoGalleryScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
+        }
     }
     
     private func saveYouTubeVideo(url: String, title: String, thumbnailURL: String, tags: String) {
@@ -1407,8 +1439,6 @@ struct VideoAlbumGridView: View {
     var onVideoTap: ((MemoryVideo) -> Void)? = nil
     var onVideosChanged: (() -> Void)? = nil
     @State private var expandedVideo: MemoryVideo? = nil // 拡大用
-    @State private var showDeleteAlert: Bool = false
-    @State private var deletingVideoID: UUID? = nil
     @State private var showEditTitle: Bool = false
     @State private var showEditTags: Bool = false
     @State private var editText: String = ""

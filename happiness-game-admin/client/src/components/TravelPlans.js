@@ -29,8 +29,16 @@ const TravelPlans = () => {
     imageUrl: '',
     thumbnailUrl: '',
     numberOfDays: 1,
-    startTime: '09:00'
+    startTime: '09:00',
+    streamingUrls: []
   });
+  const [streamingServices] = useState([
+    { name: 'Netflix', icon: '🎬', color: '#E50914' },
+    { name: 'Amazon Prime Video', icon: '📺', color: '#00A8E1' },
+    { name: 'U-NEXT', icon: '🎥', color: '#FF6600' },
+    { name: 'Hulu', icon: '📹', color: '#1CE783' },
+    { name: 'DMM TV', icon: '🎞️', color: '#FF1493' }
+  ]);
   const [currentSpot, setCurrentSpot] = useState({
     name: '',
     address: '',
@@ -170,6 +178,33 @@ const TravelPlans = () => {
     }
   };
 
+  // ストリーミングサービスURLの管理
+  const addStreamingUrl = (serviceName) => {
+    const url = prompt(`${serviceName}の視聴URLを入力してください:`);
+    if (url) {
+      setFormData(prev => ({
+        ...prev,
+        streamingUrls: [...prev.streamingUrls, { name: serviceName, url }]
+      }));
+    }
+  };
+
+  const removeStreamingUrl = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      streamingUrls: prev.streamingUrls.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateStreamingUrl = (index, newUrl) => {
+    setFormData(prev => ({
+      ...prev,
+      streamingUrls: prev.streamingUrls.map((service, i) => 
+        i === index ? { ...service, url: newUrl } : service
+      )
+    }));
+  };
+
   const startEditPlan = (plan) => {
     setEditingPlan(plan);
     setFormData({
@@ -183,7 +218,8 @@ const TravelPlans = () => {
       imageUrl: plan.imageUrl || '',
       thumbnailUrl: plan.thumbnailUrl || '',
       numberOfDays: plan.numberOfDays || 1,
-      startTime: plan.startTime || '09:00'
+      startTime: plan.startTime || '09:00',
+      streamingUrls: plan.streamingUrls || []
     });
     setShowCreateForm(true);
   };
@@ -202,7 +238,8 @@ const TravelPlans = () => {
       imageUrl: '',
       thumbnailUrl: '',
       numberOfDays: 1,
-      startTime: '09:00'
+      startTime: '09:00',
+      streamingUrls: []
     });
     setCurrentSpot({
       name: '',
@@ -394,6 +431,56 @@ const TravelPlans = () => {
                   value={formData.startTime}
                   onChange={handleInputChange}
                 />
+              </div>
+
+              <div className="form-group">
+                <label>ストリーミングサービス:</label>
+                <div className="streaming-services">
+                  {streamingServices.map((service) => {
+                    const existingService = formData.streamingUrls.find(s => s.name === service.name);
+                    return (
+                      <div key={service.name} className="streaming-service-item">
+                        <div className="service-header" style={{ backgroundColor: service.color + '20', borderLeft: `4px solid ${service.color}` }}>
+                          <span className="service-icon">{service.icon}</span>
+                          <span className="service-name">{service.name}</span>
+                          {!existingService && (
+                            <button
+                              type="button"
+                              className="add-service-btn"
+                              onClick={() => addStreamingUrl(service.name)}
+                            >
+                              URLを追加
+                            </button>
+                          )}
+                        </div>
+                        {existingService && (
+                          <div className="service-url-container">
+                            <input
+                              type="url"
+                              value={existingService.url}
+                              onChange={(e) => {
+                                const index = formData.streamingUrls.findIndex(s => s.name === service.name);
+                                updateStreamingUrl(index, e.target.value);
+                              }}
+                              placeholder="https://..."
+                              className="streaming-url-input"
+                            />
+                            <button
+                              type="button"
+                              className="remove-url-btn"
+                              onClick={() => {
+                                const index = formData.streamingUrls.findIndex(s => s.name === service.name);
+                                removeStreamingUrl(index);
+                              }}
+                            >
+                              削除
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="form-group">

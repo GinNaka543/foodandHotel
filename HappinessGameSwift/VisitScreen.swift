@@ -95,7 +95,9 @@ public struct VisitScreen: View {
                     numberOfDays: plan.numberOfDays,
                     startTime: plan.startTime,
                     onClose: nil,
-                    planId: UUID(uuidString: plan.id)
+                    planId: UUID(uuidString: plan.id),
+                    streamingUrls: plan.streamingUrls,
+                    thumbnailUrl: plan.thumbnailUrl
                 )
             }
             .alert("プランを削除しますか？", isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
@@ -545,7 +547,8 @@ public struct VisitScreen: View {
                     purchasedBy: [],
                     createdAt: plan.createdDate,
                     updatedAt: plan.createdDate,
-                    isDraft: plan.isDraft // 下書きフラグを設定
+                    isDraft: plan.isDraft, // 下書きフラグを設定
+                    streamingUrls: plan.streamingUrls // ストリーミングURLを追加
                 )
             }
             
@@ -570,7 +573,8 @@ public struct VisitScreen: View {
                     purchasedBy: [],
                     createdAt: plan.createdDate,
                     updatedAt: plan.createdDate,
-                    isDraft: false // 購入済みプランは下書きではない
+                    isDraft: false, // 購入済みプランは下書きではない
+                    streamingUrls: plan.streamingUrls // ストリーミングURLを追加
                 )
             }
             
@@ -938,7 +942,8 @@ public struct VisitScreen: View {
             createdDate: plan.createdDate,
             startTime: plan.startTime,
             numberOfDays: plan.numberOfDays,
-            isPurchased: true
+            isPurchased: true,
+            streamingUrls: plan.streamingUrls
         )
         
         // 既存の保存済みプランを読み込み

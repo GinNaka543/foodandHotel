@@ -1553,14 +1553,17 @@ app.get('/api/travel-plans', async (req, res) => {
 
 app.post('/api/travel-plans', async (req, res) => {
   try {
-    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays } = req.body;
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls } = req.body;
     
-    console.log('🔍 [DEBUG] 受信したデータ（ローカル保存のみ）:');
+    console.log('🔍 [DEBUG] 受信したデータ:');
     console.log('  title:', title);
     console.log('  animeName:', animeName);
     console.log('  duration:', duration);
     console.log('  spots:', spots);
     console.log('  spots length:', spots ? spots.length : 0);
+    console.log('  streamingUrls:', streamingUrls);
+    console.log('  streamingUrls type:', typeof streamingUrls);
+    console.log('  streamingUrls length:', streamingUrls ? streamingUrls.length : 0);
     
     if (!title || !animeName || !duration) {
       return res.status(400).json({ error: '必須フィールドが不足しています' });
@@ -1614,11 +1617,35 @@ app.post('/api/travel-plans', async (req, res) => {
       viewCount: 0,
       purchaseCount: 0,
       rating: 0,
-      reviewCount: 0
+      reviewCount: 0,
+      // ストリーミングサービスURL
+      streamingUrls: streamingUrls || []
     };
 
-    // Firebaseへの保存を削除し、ローカル表示のみ
-    console.log('ℹ️ [INFO] プランはローカル表示のみ（Firebase保存なし）');
+    // Firebaseに保存
+    try {
+      console.log('💾 [DEBUG] Firebaseに保存するプランデータ:');
+      console.log('  planId:', planId);
+      console.log('  streamingUrls:', planData.streamingUrls);
+      console.log('  全データ:', JSON.stringify(planData, null, 2));
+      
+      const docRef = db.collection('visitPlans').doc(planId);
+      await docRef.set(planData);
+      
+      // 保存後の確認
+      const savedDoc = await docRef.get();
+      if (savedDoc.exists) {
+        const savedData = savedDoc.data();
+        console.log('✅ [SUCCESS] Firebaseに旅行プランを保存しました:', planId);
+        console.log('✅ [SUCCESS] 保存されたstreamingUrls:', savedData.streamingUrls);
+      } else {
+        console.error('❌ [ERROR] 保存したドキュメントが見つかりません');
+      }
+    } catch (firebaseError) {
+      console.error('❌ [ERROR] Firebase保存エラー:', firebaseError);
+      console.error('❌ [ERROR] エラー詳細:', firebaseError.stack);
+      throw firebaseError;
+    }
     
     res.status(201).json({
       id: planId,
@@ -1634,8 +1661,16 @@ app.post('/api/travel-plans', async (req, res) => {
 app.delete('/api/travel-plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // Firebaseからは削除しない（ローカル表示のみ）
-    console.log('ℹ️ [INFO] プラン削除はローカル表示のみ（Firebase削除なし）');
+    
+    // Firebaseから削除
+    try {
+      await db.collection('visitPlans').doc(id).delete();
+      console.log('✅ [SUCCESS] Firebaseから旅行プランを削除しました:', id);
+    } catch (firebaseError) {
+      console.error('❌ [ERROR] Firebase削除エラー:', firebaseError);
+      throw firebaseError;
+    }
+    
     res.json({ success: true });
   } catch (error) {
     console.error('旅行プラン削除エラー:', error);
@@ -1647,14 +1682,17 @@ app.delete('/api/travel-plans/:id', async (req, res) => {
 app.put('/api/travel-plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays } = req.body;
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls } = req.body;
     
-    console.log('🔍 [DEBUG] 更新データ（ローカル表示のみ）:');
+    console.log('🔍 [DEBUG] 更新データ:');
     console.log('  id:', id);
     console.log('  title:', title);
     console.log('  animeName:', animeName);
     console.log('  duration:', duration);
     console.log('  spots:', spots);
+    console.log('  streamingUrls:', streamingUrls);
+    console.log('  streamingUrls type:', typeof streamingUrls);
+    console.log('  streamingUrls length:', streamingUrls ? streamingUrls.length : 0);
     
     if (!title || !animeName || !duration) {
       return res.status(400).json({ error: '必須フィールドが不足しています' });
@@ -1711,10 +1749,34 @@ app.put('/api/travel-plans/:id', async (req, res) => {
       numberOfDays: numberOfDays !== undefined ? parseInt(numberOfDays) : existingData.numberOfDays,
       totalCost: parseInt(price) || 0,
       updatedAt: now.getTime() / 1000,
+      // ストリーミングサービスURL
+      streamingUrls: streamingUrls || []
     };
 
-    // Firebaseへの保存を削除し、ローカル表示のみ
-    console.log('ℹ️ [INFO] プラン更新はローカル表示のみ（Firebase保存なし）');
+    // Firebaseに更新
+    try {
+      console.log('💾 [DEBUG] Firebaseで更新するプランデータ:');
+      console.log('  id:', id);
+      console.log('  streamingUrls:', planData.streamingUrls);
+      console.log('  全データ:', JSON.stringify(planData, null, 2));
+      
+      const docRef = db.collection('visitPlans').doc(id);
+      await docRef.update(planData);
+      
+      // 更新後の確認
+      const updatedDoc = await docRef.get();
+      if (updatedDoc.exists) {
+        const updatedData = updatedDoc.data();
+        console.log('✅ [SUCCESS] Firebaseで旅行プランを更新しました:', id);
+        console.log('✅ [SUCCESS] 更新されたstreamingUrls:', updatedData.streamingUrls);
+      } else {
+        console.error('❌ [ERROR] 更新したドキュメントが見つかりません');
+      }
+    } catch (firebaseError) {
+      console.error('❌ [ERROR] Firebase更新エラー:', firebaseError);
+      console.error('❌ [ERROR] エラー詳細:', firebaseError.stack);
+      throw firebaseError;
+    }
     
     res.json({
       id: id,

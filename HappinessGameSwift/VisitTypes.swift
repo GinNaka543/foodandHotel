@@ -95,8 +95,9 @@ struct VisitPlanData: Identifiable, Codable {
     var isPurchased: Bool = false
     var isDraft: Bool = false
     var lastVisitedDate: Date?
+    var streamingUrls: [StreamingService] = []
     
-    init(id: UUID = UUID(), animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, thumbnailUrl: String? = nil, createdDate: Date = Date(), startTime: Date = Date(), numberOfDays: Int = 1, isPurchased: Bool = false, isDraft: Bool = false, lastVisitedDate: Date? = nil) {
+    init(id: UUID = UUID(), animeName: String, title: String, duration: String, spots: [VisitSpot], thumbnailData: Data? = nil, thumbnailUrl: String? = nil, createdDate: Date = Date(), startTime: Date = Date(), numberOfDays: Int = 1, isPurchased: Bool = false, isDraft: Bool = false, lastVisitedDate: Date? = nil, streamingUrls: [StreamingService] = []) {
         self.id = id
         self.animeName = animeName
         self.title = title
@@ -110,5 +111,12 @@ struct VisitPlanData: Identifiable, Codable {
         self.isPurchased = isPurchased
         self.isDraft = isDraft
         self.lastVisitedDate = lastVisitedDate
+        self.streamingUrls = streamingUrls
     }
+}
+
+struct StreamingService: Codable {
+    var name: String
+    var url: String
+    var icon: String? // Optional icon name or URL
 } 

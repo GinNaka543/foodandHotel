@@ -230,13 +230,16 @@ struct VisitGameScreen: View {
     @State private var showCompletionPopup = false
     @State private var showSpotEditSheet = false
     @State private var selectedSpotForEdit: VisitSpot?
+    @State private var showStreamingSheet = false
     let numberOfDays: Int
     let startTime: Date
     let onClose: (() -> Void)?
     let planId: UUID?
     let isReadOnly: Bool
+    let streamingUrls: [StreamingService]
+    let thumbnailUrl: String?
     
-    init(animeName: String, duration: String, planTitle: String, spots: [VisitSpot], numberOfDays: Int, startTime: Date, onClose: (() -> Void)? = nil, planId: UUID? = nil, isReadOnly: Bool = false) {
+    init(animeName: String, duration: String, planTitle: String, spots: [VisitSpot], numberOfDays: Int, startTime: Date, onClose: (() -> Void)? = nil, planId: UUID? = nil, isReadOnly: Bool = false, streamingUrls: [StreamingService] = [], thumbnailUrl: String? = nil) {
         self.animeName = animeName
         self.duration = duration
         self.planTitle = planTitle
@@ -246,6 +249,8 @@ struct VisitGameScreen: View {
         self.onClose = onClose
         self.planId = planId
         self.isReadOnly = isReadOnly
+        self.streamingUrls = streamingUrls
+        self.thumbnailUrl = thumbnailUrl
     }
     
     let dateFormatter: DateFormatter = {
@@ -440,6 +445,14 @@ struct VisitGameScreen: View {
                 )
             }
         }
+        .sheet(isPresented: $showStreamingSheet) {
+            StreamingServicesSheet(
+                animeName: animeName,
+                streamingServices: streamingUrls,
+                isPresented: $showStreamingSheet,
+                thumbnailUrl: thumbnailUrl
+            )
+        }
         }
         .onAppear {
             print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
@@ -447,6 +460,9 @@ struct VisitGameScreen: View {
             print("🎮 [DEBUG] animeName: \(animeName)")
             print("🎮 [DEBUG] spots.count: \(viewModel.spots.count)")
             print("🎮 [DEBUG] numberOfDays: \(numberOfDays)")
+            print("🎮 [DEBUG] streamingUrls.count: \(streamingUrls.count)")
+            print("🎮 [DEBUG] streamingUrls: \(streamingUrls.map { $0.name + ": " + $0.url })")
+            print("🎮 [DEBUG] streamingUrls.isEmpty: \(streamingUrls.isEmpty)")
             print("🎮 [DEBUG] spots dayNumber distribution:")
             for spot in viewModel.spots {
                 print("  - \(spot.name): day \(spot.dayNumber)")
@@ -506,14 +522,7 @@ struct VisitGameScreen: View {
             
             Spacer()
             
-            // タイトル
-            Text(planTitle)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.black)
-            
-            Spacer()
-            
-            // 進捗表示
+            // スポットカウントを中央に配置
             HStack(spacing: 4) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 14))
@@ -521,6 +530,31 @@ struct VisitGameScreen: View {
                 Text("\(completedSpotsCount)/\(viewModel.spots.count)")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            // Watchボタン
+            Button(action: {
+                showStreamingSheet = true
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 14))
+                    Text("Watch")
+                        .font(.system(size: 14, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill(LinearGradient(
+                            gradient: Gradient(colors: [Color.purple, Color.yellow]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
+                )
             }
         }
         .padding(.horizontal, 16)
@@ -695,20 +729,36 @@ struct VisitGameScreen: View {
                 .padding(.top, 60) // ステータスバーを考慮して余白を増やす
                 
                 // プランのサムネイル
-                if let firstSpot = viewModel.spots.first(where: { $0.dayNumber == selectedDay }),
-                   (firstSpot.imageData != nil || !firstSpot.imageUrl.isEmpty) {
-                    ZStack {
-                        Circle()
-                            .fill(LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color.white,
-                                    Color(red: 0.95, green: 0.97, blue: 1.0)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ))
-                            .frame(width: 104, height: 104) // 80 * 1.3 = 104
-                        
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white,
+                                Color(red: 0.95, green: 0.97, blue: 1.0)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 104, height: 104) // 80 * 1.3 = 104
+                    
+                    if let thumbnailUrl = thumbnailUrl,
+                       !thumbnailUrl.isEmpty,
+                       let url = URL(string: thumbnailUrl) {
+                        // プランのサムネイルを表示
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 91, height: 91) // 70 * 1.3 = 91
+                                .clipShape(Circle())
+                        } placeholder: {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                                .frame(width: 91, height: 91)
+                        }
+                    } else if let firstSpot = viewModel.spots.first(where: { $0.dayNumber == selectedDay }),
+                              (firstSpot.imageData != nil || !firstSpot.imageUrl.isEmpty) {
+                        // フォールバック: スポットの画像を表示
                         if let imageData = firstSpot.imageData, let uiImage = UIImage(data: imageData) {
                             Image(uiImage: uiImage)
                                 .resizable()
@@ -720,16 +770,22 @@ struct VisitGameScreen: View {
                                 image
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
+                                    .frame(width: 91, height: 91)
+                                    .clipShape(Circle())
                             } placeholder: {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                                    .frame(width: 91, height: 91)
                             }
-                            .frame(width: 91, height: 91) // 70 * 1.3 = 91
-                            .clipShape(Circle())
                         }
+                    } else {
+                        // デフォルトアイコン
+                        Image(systemName: "map.fill")
+                            .font(.system(size: 36))
+                            .foregroundColor(.blue)
                     }
-                    .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
                 }
+                .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
                 
                 // タイトル
                 Text(planTitle)
@@ -2313,5 +2369,174 @@ struct ConfettiPiece: View {
                     opacity = 0.0
                 }
             }
+    }
+}
+
+// Streaming Services Sheet
+struct StreamingServicesSheet: View {
+    let animeName: String
+    let streamingServices: [StreamingService]
+    @Binding var isPresented: Bool
+    let thumbnailUrl: String?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 16) {
+                    // プランのサムネイル
+                    if let thumbnailUrl = thumbnailUrl,
+                       let url = URL(string: thumbnailUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 80, height: 80)
+                                .clipped()
+                                .cornerRadius(12)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color(.systemGray5))
+                                .frame(width: 80, height: 80)
+                                .cornerRadius(12)
+                                .overlay(
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                )
+                        }
+                    }
+                    
+                    VStack(spacing: 8) {
+                        Text("アニメを観る")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
+                        
+                        Text(animeName)
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                    }
+                }
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+                
+                ScrollView {
+                    VStack(spacing: 12) {
+                        if streamingServices.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "tv.slash")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.gray)
+                                Text("ストリーミングサービスが設定されていません")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
+                                Text("管理者による設定が必要です")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .padding(.vertical, 40)
+                        } else {
+                            ForEach(Array(streamingServices.enumerated()), id: \.offset) { index, service in
+                                StreamingServiceRow(service: service)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+                
+                // Close button
+                Button(action: {
+                    isPresented = false
+                }) {
+                    Text("閉じる")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.black)
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+            }
+            .background(Color(.systemBackground))
+            .navigationBarHidden(true)
+        }
+    }
+}
+
+struct StreamingServiceRow: View {
+    let service: StreamingService
+    
+    var body: some View {
+        Button(action: {
+            if let url = URL(string: service.url) {
+                UIApplication.shared.open(url)
+            }
+        }) {
+            HStack(spacing: 16) {
+                // Service icon or default play icon
+                ZStack {
+                    Circle()
+                        .fill(serviceColor(for: service.name))
+                        .frame(width: 48, height: 48)
+                    
+                    Image(systemName: serviceIcon(for: service.name))
+                        .font(.system(size: 20))
+                        .foregroundColor(.white)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(service.name)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.black)
+                    
+                    Text("タップして視聴")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "arrow.up.right.square")
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+            }
+            .padding(16)
+            .background(Color(.systemGray6))
+            .cornerRadius(12)
+        }
+    }
+    
+    func serviceColor(for name: String) -> Color {
+        switch name.lowercased() {
+        case "netflix":
+            return Color.red
+        case "amazon prime", "prime video":
+            return Color.blue
+        case "disney+", "disney plus":
+            return Color(red: 0.0, green: 0.3, blue: 0.7)
+        case "hulu":
+            return Color.green
+        case "u-next":
+            return Color.orange
+        case "abema":
+            return Color.purple
+        default:
+            return Color.gray
+        }
+    }
+    
+    func serviceIcon(for name: String) -> String {
+        switch name.lowercased() {
+        case "netflix", "amazon prime", "prime video", "disney+", "disney plus", "hulu", "u-next", "abema":
+            return "play.fill"
+        default:
+            return "play.circle.fill"
+        }
     }
 }

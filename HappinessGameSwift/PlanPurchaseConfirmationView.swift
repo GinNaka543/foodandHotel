@@ -9,6 +9,7 @@ struct PlanPurchaseConfirmationView: View {
     @State private var isLoadingPoints = true
     @State private var isProcessing = false
     @State private var showingPurchaseSheet = false
+    @State private var showStreamingSheet = false
     
     var body: some View {
         let _ = print("💰 [DEBUG] PlanPurchaseConfirmationView.body 呼び出し")
@@ -24,6 +25,30 @@ struct PlanPurchaseConfirmationView: View {
                     Text("プラン購入確認")
                         .font(.system(size: 20, weight: .bold))
                     Spacer()
+                    
+                    // Watch Anime Button - 常に表示
+                    Button(action: {
+                        showStreamingSheet = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 14))
+                            Text("Watch")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple, Color.yellow]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ))
+                        )
+                    }
+                    
                     Button(action: onCancel) {
                         Image(systemName: "xmark")
                             .font(.system(size: 20))
@@ -37,13 +62,30 @@ struct PlanPurchaseConfirmationView: View {
                     VStack(spacing: 24) {
                         // 確認メッセージ
                         VStack(spacing: 16) {
-                            Image(systemName: "cart.fill")
-                                .font(.system(size: 60))
-                                .foregroundColor(.blue)
-                            
                             Text("プランを購入しますか？")
                                 .font(.system(size: 20, weight: .semibold))
                                 .multilineTextAlignment(.center)
+                        }
+                        
+                        // プランサムネイル
+                        if let thumbnailUrl = plan.thumbnailUrl,
+                           let url = URL(string: thumbnailUrl) {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 160)
+                                    .clipped()
+                                    .cornerRadius(12)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(height: 160)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        ProgressView()
+                                    )
+                            }
                         }
                         
                         // プラン情報
@@ -242,6 +284,14 @@ struct PlanPurchaseConfirmationView: View {
                 onPurchaseComplete: {
                     loadUserPoints()
                 }
+            )
+        }
+        .sheet(isPresented: $showStreamingSheet) {
+            StreamingServicesSheet(
+                animeName: plan.animeName,
+                streamingServices: plan.streamingUrls,
+                isPresented: $showStreamingSheet,
+                thumbnailUrl: plan.thumbnailUrl
             )
         }
     }

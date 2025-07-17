@@ -40,6 +40,28 @@ struct PlanPurchaseCompletionView: View {
                             .font(.system(size: 16))
                             .foregroundColor(.gray)
                         
+                        // プランサムネイル
+                        if let thumbnailUrl = plan.thumbnailUrl,
+                           let url = URL(string: thumbnailUrl) {
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 120, height: 80)
+                                    .clipped()
+                                    .cornerRadius(8)
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color(.systemGray5))
+                                    .frame(width: 120, height: 80)
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        ProgressView()
+                                            .scaleEffect(0.7)
+                                    )
+                            }
+                        }
+                        
                         VStack(spacing: 8) {
                             Text(plan.title)
                                 .font(.system(size: 18, weight: .semibold))

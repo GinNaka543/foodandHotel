@@ -477,7 +477,8 @@ struct VisitPlanningScreen: View {
                 onClose: {
                     showingItinerary = false
                 },
-                isReadOnly: true  // 読み取り専用モード
+                isReadOnly: true,  // 読み取り専用モード
+                thumbnailUrl: nil
             )
         }
     }

@@ -11,6 +11,7 @@ struct PlanPurchaseView: View {
     @State private var userPoints: Int = 0
     @State private var isLoadingPoints = true
     @State private var showingPurchaseSheet = false
+    @State private var showStreamingSheet = false
     
     var body: some View {
         NavigationView {
@@ -20,6 +21,30 @@ struct PlanPurchaseView: View {
                     Text("プランを購入")
                         .font(.system(size: 20, weight: .bold))
                     Spacer()
+                    
+                    // Watch Anime Button - 常に表示
+                    Button(action: {
+                        showStreamingSheet = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 14))
+                            Text("Watch")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple, Color.yellow]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ))
+                        )
+                    }
+                    
                     Button(action: { isPresented = false }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 20))
@@ -209,6 +234,14 @@ struct PlanPurchaseView: View {
                 onPurchaseComplete: {
                     loadUserPoints()
                 }
+            )
+        }
+        .sheet(isPresented: $showStreamingSheet) {
+            StreamingServicesSheet(
+                animeName: plan.animeName,
+                streamingServices: plan.streamingUrls,
+                isPresented: $showStreamingSheet,
+                thumbnailUrl: plan.thumbnailUrl
             )
         }
         .alert("購入完了", isPresented: $showingSuccess) {

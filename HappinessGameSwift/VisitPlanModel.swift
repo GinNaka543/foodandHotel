@@ -22,12 +22,13 @@ struct VisitPlanModel: Codable, Identifiable {
     let updatedAt: Date
     let isDraft: Bool // 下書きかどうか
     let isConfirmed: Bool? // 確定済みかどうか
+    let streamingUrls: [StreamingService] // ストリーミングサービスURL
     
     // 標準的な初期化子
     init(id: String, userId: String, animeName: String, title: String, description: String,
          duration: String, spots: [VisitSpot], thumbnailUrl: String?, price: Int, budget: Int,
          createdDate: Date, startTime: Date, numberOfDays: Int, totalCost: Int,
-         isPublic: Bool, purchasedBy: [String], createdAt: Date, updatedAt: Date, isDraft: Bool = false, isConfirmed: Bool? = nil) {
+         isPublic: Bool, purchasedBy: [String], createdAt: Date, updatedAt: Date, isDraft: Bool = false, isConfirmed: Bool? = nil, streamingUrls: [StreamingService] = []) {
         self.id = id
         self.userId = userId
         self.animeName = animeName
@@ -48,6 +49,7 @@ struct VisitPlanModel: Codable, Identifiable {
         self.updatedAt = updatedAt
         self.isDraft = isDraft
         self.isConfirmed = isConfirmed
+        self.streamingUrls = streamingUrls
     }
     
     // Firebaseとの連携用
@@ -92,7 +94,14 @@ struct VisitPlanModel: Codable, Identifiable {
             "createdAt": createdAt.timeIntervalSince1970,
             "updatedAt": updatedAt.timeIntervalSince1970,
             "isDraft": isDraft,
-            "isConfirmed": isConfirmed ?? false
+            "isConfirmed": isConfirmed ?? false,
+            "streamingUrls": streamingUrls.map { service in
+                [
+                    "name": service.name,
+                    "url": service.url,
+                    "icon": service.icon ?? ""
+                ]
+            }
         ]
     }
     
@@ -236,6 +245,19 @@ struct VisitPlanModel: Codable, Identifiable {
         self.createdDate = self.createdAt
         self.isDraft = dictionary["isDraft"] as? Bool ?? false
         self.isConfirmed = dictionary["isConfirmed"] as? Bool
+        
+        // Streaming URLsの変換
+        if let streamingUrlsData = dictionary["streamingUrls"] as? [[String: Any]] {
+            self.streamingUrls = streamingUrlsData.compactMap { serviceDict in
+                guard let name = serviceDict["name"] as? String,
+                      let url = serviceDict["url"] as? String else {
+                    return nil
+                }
+                return StreamingService(name: name, url: url, icon: serviceDict["icon"] as? String)
+            }
+        } else {
+            self.streamingUrls = []
+        }
         
         // Spotsの変換
         print("🔍 [DEBUG] spotsData変換開始 - 要素数: \(spotsData.count)")

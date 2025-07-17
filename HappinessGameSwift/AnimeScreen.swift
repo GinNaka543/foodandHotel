@@ -215,6 +215,7 @@ struct AnimeScreen: View {
     @State private var selectedTab: AnimeTab = .all
     @State private var selectedAnime: Anime? = nil
     @State private var showNavigationMenu = false
+    @State private var showAnimeOrderModal = false
     
     enum AnimeTab: String, CaseIterable {
         case all = "すべて"
@@ -338,14 +339,27 @@ struct AnimeScreen: View {
             
             // ナビゲーションメニューをオーバーレイ
             if showNavigationMenu {
-                NavigationMenuView(isPresented: $showNavigationMenu)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .transition(.opacity)
-                    .zIndex(2)
+                NavigationMenuView(
+                    isPresented: $showNavigationMenu,
+                    onShowCharacterOrder: nil,
+                    onShowAnimeOrder: {
+                        showAnimeOrderModal = true
+                    }
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .transition(.opacity)
+                .zIndex(2)
             }
         }
         .sheet(isPresented: $showAddSheet) {
             AddAnimeSheet(animes: $animeManager.animes)
+                .environmentObject(animeManager)
+        }
+        .sheet(isPresented: $showAnimeOrderModal, onDismiss: {
+            // モーダルを閉じたときにデータを再読み込み
+            animeManager.loadAnimes()
+        }) {
+            AnimeOrderModal()
                 .environmentObject(animeManager)
         }
         .fullScreenCover(item: $selectedAnime) { anime in

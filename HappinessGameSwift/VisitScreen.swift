@@ -500,9 +500,13 @@ public struct VisitScreen: View {
         .overlay(
             Group {
                 if showNavigationMenu {
-                    NavigationMenuView(isPresented: $showNavigationMenu)
-                        .transition(.opacity)
-                        .zIndex(2)
+                    NavigationMenuView(
+                        isPresented: $showNavigationMenu,
+                        onShowCharacterOrder: nil,
+                        onShowAnimeOrder: nil
+                    )
+                    .transition(.opacity)
+                    .zIndex(2)
                 }
             }
         )

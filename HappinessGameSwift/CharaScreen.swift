@@ -262,6 +262,7 @@ struct CharaScreen: View {
     @State private var selectedCharacter: Character? = nil
     @State private var showRankingAdmin = false
     @State private var showNavigationMenu = false
+    @State private var showCharacterOrderModal = false
     
     var filteredCharacters: [Character] {
         // Filter out characters without names first
@@ -269,7 +270,7 @@ struct CharaScreen: View {
         
         let result: [Character]
         if searchText.isEmpty { 
-            result = charactersWithNames 
+            result = charactersWithNames.sorted(by: { $0.order < $1.order })
         } else {
             result = charactersWithNames.filter {
                 $0.name.localizedCaseInsensitiveContains(searchText) ||
@@ -370,6 +371,13 @@ struct CharaScreen: View {
         .sheet(isPresented: $showRankingAdmin) {
             CharacterRankingAdminView()
         }
+        .sheet(isPresented: $showCharacterOrderModal, onDismiss: {
+            // モーダルを閉じたときにデータを再読み込み
+            characterManager.loadCharacters()
+        }) {
+            CharacterOrderModal()
+                .environmentObject(characterManager)
+        }
         .fullScreenCover(item: $selectedCharacter) { character in
             CharacterDetailView(character: Binding(
                 get: { character },
@@ -392,9 +400,15 @@ struct CharaScreen: View {
     .overlay(
         Group {
             if showNavigationMenu {
-                NavigationMenuView(isPresented: $showNavigationMenu)
-                    .transition(.opacity)
-                    .zIndex(2)
+                NavigationMenuView(
+                    isPresented: $showNavigationMenu,
+                    onShowCharacterOrder: {
+                        showCharacterOrderModal = true
+                    },
+                    onShowAnimeOrder: nil
+                )
+                .transition(.opacity)
+                .zIndex(2)
             }
         }
     )

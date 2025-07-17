@@ -3,10 +3,8 @@ import SwiftUI
 struct NavigationMenuView: View {
     @Binding var isPresented: Bool
     @EnvironmentObject var mainTab: MainTabSelection
-    @State private var showingCharacterOrderModal = false
-    @State private var showingAnimeOrderModal = false
-    @StateObject private var characterManager = CharacterManager()
-    @StateObject private var animeManager = AnimeManager()
+    var onShowCharacterOrder: (() -> Void)?
+    var onShowAnimeOrder: (() -> Void)?
     
     var body: some View {
         ZStack {
@@ -98,9 +96,10 @@ struct NavigationMenuView: View {
                         NavigationMenuItem(
                             title: "キャラの順番変更"
                         ) {
+                            print("キャラの順番変更ボタンが押されました")
                             isPresented = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                showingCharacterOrderModal = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                onShowCharacterOrder?()
                             }
                         }
                         
@@ -108,9 +107,10 @@ struct NavigationMenuView: View {
                         NavigationMenuItem(
                             title: "アニメの順番変更"
                         ) {
+                            print("アニメの順番変更ボタンが押されました")
                             isPresented = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                showingAnimeOrderModal = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                onShowAnimeOrder?()
                             }
                         }
                     }
@@ -134,14 +134,6 @@ struct NavigationMenuView: View {
             }
             .offset(x: isPresented ? 0 : -280)
             .animation(.easeOut(duration: 0.25), value: isPresented)
-        }
-        .sheet(isPresented: $showingCharacterOrderModal) {
-            CharacterOrderModal()
-                .environmentObject(characterManager)
-        }
-        .sheet(isPresented: $showingAnimeOrderModal) {
-            AnimeOrderModal()
-                .environmentObject(animeManager)
         }
     }
 }

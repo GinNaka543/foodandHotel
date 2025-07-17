@@ -548,7 +548,7 @@ struct VideoGalleryScreen: View {
     // タグ入力シート
     var tagInputSheet: some View {
         VStack(spacing: 24) {
-            Text("表示したいタグを入力")
+            Text("同じタグからアルバムを作れます")
                 .font(.headline)
             TextField("#タグ名", text: $newTag)
                 .textFieldStyle(RoundedBorderTextFieldStyle())

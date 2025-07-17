@@ -69,23 +69,31 @@ struct CharacterOrderModal: View {
     }
     
     private func loadCharacters() {
+        print("CharacterOrderModal: キャラクターを読み込み中...")
+        print("CharacterOrderModal: characterManager.characters.count = \(characterManager.characters.count)")
         characters = characterManager.characters.sorted(by: { $0.order < $1.order })
+        print("CharacterOrderModal: 読み込み完了. characters.count = \(characters.count)")
     }
     
     private func moveCharacter(from source: IndexSet, to destination: Int) {
         characters.move(fromOffsets: source, toOffset: destination)
         
         // 順番を更新
-        for (index, _) in characters.enumerated() {
+        for index in 0..<characters.count {
             characters[index].order = index
         }
     }
     
     private func saveOrder() {
-        for character in characters {
+        print("CharacterOrderModal: 順番を保存中...")
+        for (index, var character) in characters.enumerated() {
+            character.order = index
+            print("CharacterOrderModal: \(character.name) の順番を \(index) に設定")
             characterManager.updateCharacter(character)
         }
+        characterManager.saveCharacters()
         characterManager.refreshUI()
+        print("CharacterOrderModal: 保存完了")
     }
     
     private func loadImageFromPath(_ imagePath: String) -> UIImage? {

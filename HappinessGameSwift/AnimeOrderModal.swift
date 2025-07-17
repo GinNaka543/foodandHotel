@@ -69,23 +69,31 @@ struct AnimeOrderModal: View {
     }
     
     private func loadAnimes() {
+        print("AnimeOrderModal: アニメを読み込み中...")
+        print("AnimeOrderModal: animeManager.animes.count = \(animeManager.animes.count)")
         animes = animeManager.animes.sorted(by: { $0.order < $1.order })
+        print("AnimeOrderModal: 読み込み完了. animes.count = \(animes.count)")
     }
     
     private func moveAnime(from source: IndexSet, to destination: Int) {
         animes.move(fromOffsets: source, toOffset: destination)
         
         // 順番を更新
-        for (index, _) in animes.enumerated() {
+        for index in 0..<animes.count {
             animes[index].order = index
         }
     }
     
     private func saveOrder() {
-        for anime in animes {
+        print("AnimeOrderModal: 順番を保存中...")
+        for (index, var anime) in animes.enumerated() {
+            anime.order = index
+            print("AnimeOrderModal: \(anime.title) の順番を \(index) に設定")
             animeManager.updateAnime(anime)
         }
+        animeManager.saveAnimes()
         animeManager.refreshUI()
+        print("AnimeOrderModal: 保存完了")
     }
     
     private func loadImageFromPath(_ imagePath: String) -> UIImage? {

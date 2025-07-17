@@ -97,9 +97,18 @@ struct VisitPlanningScreen: View {
                         VStack(spacing: 16) {
                             // タイトル入力
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("プランタイトル")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
+                                HStack {
+                                    Text("プランタイトル")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    Text("必須")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.red)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.red.opacity(0.1))
+                                        .cornerRadius(4)
+                                }
                                 TextField("例: 京都の聖地巡礼", text: $planTitle)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
@@ -107,9 +116,18 @@ struct VisitPlanningScreen: View {
                             
                             // アニメ名入力
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("アニメ名")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
+                                HStack {
+                                    Text("アニメ名")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    Text("必須")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.red)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.red.opacity(0.1))
+                                        .cornerRadius(4)
+                                }
                                 TextField("例: 響け！ユーフォニアム", text: $animeName)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
@@ -1277,7 +1295,22 @@ struct AddSpotView: View {
             transportSection
                 
                 Section("スポット情報 - Day \(selectedDay)") {
-                    TextField("スポット名", text: $spotName)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("スポット名")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.gray)
+                            Text("必須")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.red.opacity(0.1))
+                                .cornerRadius(4)
+                        }
+                        TextField("例: 清水寺", text: $spotName)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
                     
                     // 滞在時間帯選択
                     VStack(alignment: .leading, spacing: 8) {

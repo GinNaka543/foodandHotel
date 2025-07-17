@@ -153,7 +153,7 @@ struct VideoPlayerScreen: View {
                                     .foregroundColor(.white)
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 16)
-                                    .background(Color.blue)
+                                    .background(Color.black)
                                     .cornerRadius(8)
                             }
                             .padding(.trailing, 4)

@@ -220,10 +220,45 @@ struct VideoGalleryScreen: View {
     
     // アルバムビュー
     var albumView: some View {
-        ScrollView {
-            VStack(spacing: 4) {
-                Spacer().frame(height: 5)
-                ForEach(albums) { album in
+        if albums.isEmpty {
+            VStack(spacing: 20) {
+                Spacer()
+                    .frame(maxHeight: 100)
+                
+                Image(systemName: "folder.badge.plus")
+                    .font(.system(size: 60))
+                    .foregroundColor(.purple)
+                
+                Text("まだアルバムがありません")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                
+                Text("同じタグのビデオからアルバムを作成できます")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                
+                Button(action: {
+                    activeSheet = .tagInput
+                }) {
+                    Label("アルバムを作成", systemImage: "plus.circle.fill")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.purple)
+                        .cornerRadius(25)
+                }
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ScrollView {
+                VStack(spacing: 4) {
+                    Spacer().frame(height: 5)
+                    ForEach(albums) { album in
                     Button(action: {
                         selectedAlbum = album
                     }) {
@@ -271,6 +306,7 @@ struct VideoGalleryScreen: View {
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
+                    }
                 }
             }
         }

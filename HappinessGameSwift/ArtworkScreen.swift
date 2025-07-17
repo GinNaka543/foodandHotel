@@ -261,11 +261,46 @@ struct ArtworkScreen: View {
                 // 画像リスト or Album
                 ZStack {
                     if showAlbum {
-                        ScrollView {
-                            VStack(spacing: 4) {
-                                Spacer().frame(height: 5)
-                                // --- アルバムリスト ---
-                                ForEach(albums) { album in
+                        if albums.isEmpty {
+                            VStack(spacing: 20) {
+                                Spacer()
+                                    .frame(maxHeight: 100)
+                                
+                                Image(systemName: "folder.badge.plus")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.purple)
+                                
+                                Text("まだアルバムがありません")
+                                    .font(.title2)
+                                    .fontWeight(.semibold)
+                                
+                                Text("同じタグのアートワークからアルバムを作成できます")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                                
+                                Button(action: {
+                                    showTagInput = true
+                                }) {
+                                    Label("アルバムを作成", systemImage: "plus.circle.fill")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 20)
+                                        .padding(.vertical, 12)
+                                        .background(Color.purple)
+                                        .cornerRadius(25)
+                                }
+                                
+                                Spacer()
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 4) {
+                                    Spacer().frame(height: 5)
+                                    // --- アルバムリスト ---
+                                    ForEach(albums) { album in
                                     Button(action: {
                                         selectedAlbum = album
                                     }) {
@@ -306,6 +341,7 @@ struct ArtworkScreen: View {
                                         }
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                    }
                                 }
                             }
                         }

@@ -291,48 +291,50 @@ struct VideoGalleryScreen: View {
     
     // ビデオリストビュー
     var videoListView: some View {
-        if videos.isEmpty {
-            VStack(spacing: 20) {
-                Spacer()
-                
-                Image(systemName: "video.slash")
-                    .font(.system(size: 60))
-                    .foregroundColor(.gray)
-                
-                Text("まだビデオがありません")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                
-                Text("右上の追加ボタンからビデオを追加できます")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                
-                Button(action: {
-                    showAddSheet = true
-                }) {
-                    Label("ビデオを追加", systemImage: "plus.circle.fill")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Color.blue)
-                        .cornerRadius(25)
+        Group {
+            if videos.isEmpty {
+                VStack(spacing: 20) {
+                    Spacer()
+                    
+                    Image(systemName: "video.slash")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                    
+                    Text("まだビデオがありません")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("右上の追加ボタンからビデオを追加できます")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Button(action: {
+                        showAddSheet = true
+                    }) {
+                        Label("ビデオを追加", systemImage: "plus.circle.fill")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.blue)
+                            .cornerRadius(25)
+                    }
+                    
+                    Spacer()
                 }
-                
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            ScrollView {
-                VStack(spacing: 0) {
-                    Spacer().frame(height: 5)
-                    ForEach(Array(videos.enumerated()), id: \.element.id) { idx, video in
-                        if idx > 0 {
-                            Spacer().frame(height: 35)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 5)
+                        ForEach(Array(videos.enumerated()), id: \.element.id) { idx, video in
+                            if idx > 0 {
+                                Spacer().frame(height: 35)
+                            }
+                            videoRowView(video: video)
                         }
-                        videoRowView(video: video)
                     }
                 }
             }

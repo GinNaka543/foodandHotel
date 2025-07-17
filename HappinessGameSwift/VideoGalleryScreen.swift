@@ -702,6 +702,7 @@ struct VideoGalleryScreen: View {
                     }
                 }
                 newTag = ""
+                activeSheet = nil
                 showTagInput = false
             }
             .font(.headline)
@@ -711,6 +712,7 @@ struct VideoGalleryScreen: View {
             .foregroundColor(.white)
             .cornerRadius(10)
             Button("キャンセル") {
+                activeSheet = nil
                 showTagInput = false
             }
             .foregroundColor(.red)

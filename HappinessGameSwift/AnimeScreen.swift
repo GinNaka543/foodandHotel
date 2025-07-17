@@ -805,7 +805,13 @@ struct AnimeArtworkScreen: View {
                                 VStack(spacing: 32) {
                                     ForEach(artworks, id: \ .id) { artwork in
                                     Button(action: {
-                                        activeSheet = .artworkDetail(artwork)
+                                        if let pixivURL = artwork.pixivURL {
+                                            pixivRedirectURL = pixivURL
+                                            pixivRedirectArtwork = artwork
+                                            showPixivRedirect = true
+                                        } else {
+                                            selectedArtwork = artwork
+                                        }
                                     }) {
                                         VStack(alignment: .leading, spacing: 0) {
                                             GeometryReader { geometry in
@@ -865,13 +871,6 @@ struct AnimeArtworkScreen: View {
                                     .padding(.vertical, 8)
                                 }
                                     .buttonStyle(PlainButtonStyle())
-                                    .onTapGesture {
-                                        if let pixivURL = artwork.pixivURL {
-                                            pixivRedirectURL = pixivURL
-                                            pixivRedirectArtwork = artwork
-                                            showPixivRedirect = true
-                                        }
-                                    }
                                 }
                             }
                             .padding(.top, 8)

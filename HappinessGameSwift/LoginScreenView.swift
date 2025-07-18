@@ -118,6 +118,23 @@ struct LoginScreenView: View {
                                 .foregroundColor(.blue)
                         }
                         
+                        // アカウント復元の説明
+                        VStack(spacing: 8) {
+                            Text("IDとユーザー名を忘れた場合")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.orange)
+                            
+                            Text("もう一度アカウントを作成してください。\nアカウントを作成すると履歴が復元されます。")
+                                .font(.system(size: 12))
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(4)
+                        }
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 12)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(8)
+                        
                         // 利用規約ボタン
                         Button(action: {
                             showingTermsOfService = true

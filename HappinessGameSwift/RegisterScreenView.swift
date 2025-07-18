@@ -142,20 +142,68 @@ struct RegisterScreenView: View {
         
         FirebaseManager.shared.saveUserProfile(profile) { result in
             DispatchQueue.main.async {
-                isLoading = false
                 switch result {
                 case .success:
-                    alertTitle = "登録完了"
-                    alertMessage = """
-                    ユーザーIDが発行されました。
+                    // デバイスで初回登録かチェック
+                    let hasReceivedBonus = UserDefaults.standard.bool(forKey: "hasReceivedFirstTimeBonus")
                     
-                    ユーザーID: \(generatedUserId)
-                    
-                    このIDは次回ログイン時に必要です。
-                    必ずメモやスクリーンショットで保存してください。
-                    """
-                    showingAlert = true
+                    if !hasReceivedBonus {
+                        // 初回登録時のみ50ポイントを付与
+                        FirebaseManager.shared.addPointsToUser(
+                            userId: generatedUserId,
+                            points: 50,
+                            description: "新規登録ボーナス"
+                        ) { pointsResult in
+                            DispatchQueue.main.async {
+                                isLoading = false
+                                switch pointsResult {
+                                case .success:
+                                    // ボーナス付与済みフラグを設定
+                                    UserDefaults.standard.set(true, forKey: "hasReceivedFirstTimeBonus")
+                                    alertTitle = "登録完了"
+                                    alertMessage = """
+                                    ユーザーIDが発行されました。
+                                    
+                                    ユーザーID: \(generatedUserId)
+                                    
+                                    🎉 新規登録ボーナスとして50ポイントが付与されました！
+                                    
+                                    このIDは次回ログイン時に必要です。
+                                    必ずメモやスクリーンショットで保存してください。
+                                    """
+                                    showingAlert = true
+                                case .failure(let error):
+                                    print("ポイント付与エラー: \(error)")
+                                    // ポイント付与に失敗してもユーザー登録は成功しているので続行
+                                    alertTitle = "登録完了"
+                                    alertMessage = """
+                                    ユーザーIDが発行されました。
+                                    
+                                    ユーザーID: \(generatedUserId)
+                                    
+                                    このIDは次回ログイン時に必要です。
+                                    必ずメモやスクリーンショットで保存してください。
+                                    """
+                                    showingAlert = true
+                                }
+                            }
+                        }
+                    } else {
+                        // 2回目以降の登録（ボーナスなし）
+                        isLoading = false
+                        alertTitle = "登録完了"
+                        alertMessage = """
+                        ユーザーIDが発行されました。
+                        
+                        ユーザーID: \(generatedUserId)
+                        
+                        このIDは次回ログイン時に必要です。
+                        必ずメモやスクリーンショットで保存してください。
+                        """
+                        showingAlert = true
+                    }
                 case .failure(let error):
+                    isLoading = false
                     alertTitle = "登録エラー"
                     alertMessage = error.localizedDescription
                     showingAlert = true

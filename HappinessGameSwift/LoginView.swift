@@ -184,13 +184,45 @@ struct LoginView: View {
         
         FirebaseManager.shared.saveUserProfile(profile) { result in
             DispatchQueue.main.async {
-                isLoading = false
                 switch result {
                 case .success:
-                    alertTitle = "登録完了"
-                    alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\nこのIDは次回ログイン時に必要です。"
-                    showingAlert = true
+                    // デバイスで初回登録かチェック
+                    let hasReceivedBonus = UserDefaults.standard.bool(forKey: "hasReceivedFirstTimeBonus")
+                    
+                    if !hasReceivedBonus {
+                        // 初回登録時のみ50ポイントを付与
+                        FirebaseManager.shared.addPointsToUser(
+                            userId: generatedUserId,
+                            points: 50,
+                            description: "新規登録ボーナス"
+                        ) { pointsResult in
+                            DispatchQueue.main.async {
+                                isLoading = false
+                                switch pointsResult {
+                                case .success:
+                                    // ボーナス付与済みフラグを設定
+                                    UserDefaults.standard.set(true, forKey: "hasReceivedFirstTimeBonus")
+                                    alertTitle = "登録完了"
+                                    alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\n🎉 新規登録ボーナスとして50ポイントが付与されました！\n\nこのIDは次回ログイン時に必要です。"
+                                    showingAlert = true
+                                case .failure(let error):
+                                    print("ポイント付与エラー: \(error)")
+                                    // ポイント付与に失敗してもユーザー登録は成功しているので続行
+                                    alertTitle = "登録完了"
+                                    alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\nこのIDは次回ログイン時に必要です。"
+                                    showingAlert = true
+                                }
+                            }
+                        }
+                    } else {
+                        // 2回目以降の登録（ボーナスなし）
+                        isLoading = false
+                        alertTitle = "登録完了"
+                        alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\nこのIDは次回ログイン時に必要です。"
+                        showingAlert = true
+                    }
                 case .failure(let error):
+                    isLoading = false
                     alertTitle = "登録エラー"
                     alertMessage = error.localizedDescription
                     showingAlert = true

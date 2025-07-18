@@ -15,32 +15,32 @@ struct PointsView: View {
         NavigationView {
             VStack(spacing: 0) {
                 // ヘッダー
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 20))
-                            .foregroundColor(.gray)
-                            .frame(width: 30, height: 30)
-                    }
-                    
-                    Spacer()
-                    
+                ZStack {
                     Text("ポイント")
                         .font(.system(size: 24, weight: .bold))
                     
-                    Spacer()
-                    
-                    Button(action: { showingPurchaseSheet = true }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "plus.circle.fill")
-                            Text("購入")
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 20))
+                                .foregroundColor(.gray)
+                                .frame(width: 30, height: 30)
                         }
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.purple)
-                        .cornerRadius(20)
+                        
+                        Spacer()
+                        
+                        Button(action: { showingPurchaseSheet = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                Text("購入")
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.purple)
+                            .cornerRadius(20)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -94,7 +94,7 @@ struct PointsView: View {
                                     .font(.system(size: 18, weight: .semibold))
                                 
                                 VStack(spacing: 8) {
-                                    PointUsageRow(icon: "globe", title: "プラン公開", points: "5,000ポイント", description: "自分のプランを他のユーザーに公開")
+                                    PointUsageRow(icon: "map", title: "プラン作成", points: "50ポイント", description: "オリジナルの旅行プランを作成")
                                     PointUsageRow(icon: "doc.text", title: "プラン購入", points: "設定価格", description: "他のユーザーのプランを購入")
                                 }
                             }

@@ -132,12 +132,11 @@ struct AddVideoView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("YouTube URL")
                                 .font(.headline)
-                            TextField("https://www.youtube.com/watch?v=...", text: $youtubeURL)
+                            TextField("URLを入力してください", text: $youtubeURL)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
                                 .foregroundColor(.primary)
-                                .accentColor(.gray)
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {

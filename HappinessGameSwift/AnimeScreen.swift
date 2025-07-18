@@ -3040,96 +3040,170 @@ struct AddAnimeSheet: View {
     @State private var selectedWatchStatuses: Set<WatchStatus> = []
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    PhotosPicker(selection: $selectedItem, matching: .images) {
-                        HStack {
-                            if let image = image {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 60, height: 60)
-                                    .overlay(
-                                        Image(systemName: "film")
-                                            .font(.system(size: 28))
-                                            .foregroundColor(.gray)
+            VStack(spacing: 0) {
+                // ヘッダー
+                ZStack {
+                    Text("アニメ追加")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                    
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Text("キャンセル")
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 8)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color(red: 0.6, green: 0.4, blue: 0.9), Color(red: 0.8, green: 0.5, blue: 0.9)]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
                                     )
-                            }
-                            Text("画像を選択")
-                                .foregroundColor(.blue)
+                                )
+                                .cornerRadius(20)
                         }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: Date(), watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
+                            animeManager.addAnimeAtTop(newAnime)
+                            dismiss()
+                        }) {
+                            Text("追加")
+                                .foregroundColor(.white)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 8)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            (title.isEmpty || hashtag.isEmpty) ? Color.gray.opacity(0.3) : Color(red: 0.6, green: 0.4, blue: 0.9),
+                                            (title.isEmpty || hashtag.isEmpty) ? Color.gray.opacity(0.3) : Color(red: 0.8, green: 0.5, blue: 0.9)
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(20)
+                        }
+                        .disabled(title.isEmpty || hashtag.isEmpty)
                     }
-                    .onChange(of: selectedItem) { _, newValue in
-                        if let newItem = newValue {
-                            Task {
-                                if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
-                                    image = uiImage
-                                    let fileName = "anime_icon_\(UUID().uuidString).png"
-                                    if let path = saveImageToDocuments(uiImage, fileName: fileName) {
-                                        savedImagePath = path
+                }
+                .padding()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // タイトル入力
+                        TextField("アニメタイトル", text: $title)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .multilineTextAlignment(.center)
+                            .padding(.vertical, 8)
+                            .overlay(
+                                VStack {
+                                    Spacer()
+                                    Divider()
+                                        .background(Color.gray.opacity(0.5))
+                                }
+                            )
+                            .padding(.horizontal)
+                        
+                        // アイコン画像（四角形）
+                        VStack(spacing: 12) {
+                            PhotosPicker(selection: $selectedItem, matching: .images) {
+                                if let image = image {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 168, height: 168)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 168, height: 168)
+                                        .overlay(
+                                            Image(systemName: "camera.fill")
+                                                .font(.system(size: 56))
+                                                .foregroundColor(.gray.opacity(0.6))
+                                        )
+                                }
+                            }
+                            Text("アイコン画像を選択")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .onChange(of: selectedItem) { _, newValue in
+                            if let newItem = newValue {
+                                Task {
+                                    if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
+                                        image = uiImage
+                                        let fileName = "anime_icon_\(UUID().uuidString).png"
+                                        if let path = saveImageToDocuments(uiImage, fileName: fileName) {
+                                            savedImagePath = path
+                                        }
                                     }
                                 }
                             }
                         }
+                        
+                        // ハッシュタグ入力
+                        TextField("ハッシュタグ", text: $hashtag)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(.vertical, 8)
+                            .overlay(
+                                VStack {
+                                    Spacer()
+                                    Divider()
+                                        .background(Color.gray.opacity(0.5))
+                                }
+                            )
+                            .padding(.horizontal)
+                        
+                        // 視聴ステータス
+                        VStack(spacing: 8) {
+                            VStack(spacing: 0) {
+                                ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
+                                    HStack {
+                                        Text(status.rawValue)
+                                            .font(.system(size: 15))
+                                        Spacer()
+                                        if selectedWatchStatuses.contains(status) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.blue)
+                                        } else {
+                                            Image(systemName: "circle")
+                                                .foregroundColor(.gray.opacity(0.4))
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color.gray.opacity(0.05))
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        if selectedWatchStatuses.contains(status) {
+                                            selectedWatchStatuses.remove(status)
+                                        } else {
+                                            selectedWatchStatuses.insert(status)
+                                        }
+                                    }
+                                    
+                                    if status != WatchStatus.allCases.filter({ $0 != .none }).last {
+                                        Divider()
+                                    }
+                                }
+                            }
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        .padding(.horizontal)
+                        
+                        Spacer(minLength: 40)
                     }
-                    TextField("タイトル", text: $title)
-                    TextField("ハッシュタグ", text: $hashtag)
-                }
-                Section {
-                    HStack {
-                        Text("公開日")
-                        Spacer()
-                        Picker(selection: $selectedMonth, label: Text("月")) {
-                            ForEach(1...12, id: \.self) { month in
-                                Text("\(month)月").tag(month)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                        Picker(selection: $selectedDay, label: Text("日")) {
-                            ForEach(1...daysInMonth(selectedMonth), id: \.self) { day in
-                                Text("\(day)日").tag(day)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                    }
-                }
-                Section(header: Text("視聴ステータス（複数選択可）")) {
-                    ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
-                        HStack {
-                            Text(status.rawValue)
-                            Spacer()
-                            if selectedWatchStatuses.contains(status) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.blue)
-                            } else {
-                                Image(systemName: "circle")
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if selectedWatchStatuses.contains(status) {
-                                selectedWatchStatuses.remove(status)
-                            } else {
-                                selectedWatchStatuses.insert(status)
-                            }
-                        }
-                    }
-                }
-                Button("追加") {
-                    let calendar = Calendar.current
-                    let year = calendar.component(.year, from: Date())
-                    let date = calendar.date(from: DateComponents(year: year, month: selectedMonth, day: selectedDay)) ?? Date()
-                    let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: date, watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
-                    animeManager.addAnimeAtTop(newAnime)
-                    dismiss()
+                    .padding(.top, 20)
                 }
             }
+            .background(Color.white)
+            .navigationBarHidden(true)
         }
     }
 }

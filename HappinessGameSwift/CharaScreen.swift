@@ -540,86 +540,185 @@ struct AddCharacterSheet: View {
 
     var body: some View {
         NavigationView {
-            Form {
-                Section {
-                    PhotosPicker(selection: $selectedItem, matching: .images) {
-                        HStack {
-                            if let image = image {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 60, height: 60)
-                                    .overlay(
-                                        Image(systemName: "person")
-                                            .font(.system(size: 28))
-                                            .foregroundColor(.gray)
+            VStack(spacing: 0) {
+                // ヘッダー
+                ZStack {
+                    Text("キャラ追加")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                    
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Text("キャンセル")
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 8)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color(red: 0.6, green: 0.4, blue: 0.9), Color(red: 0.8, green: 0.5, blue: 0.9)]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
                                     )
-                            }
-                            Text("画像を選択")
-                                .foregroundColor(.blue)
+                                )
+                                .cornerRadius(20)
                         }
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            print("[DEBUG] 追加ボタンタップ")
+                            let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
+                            let calendar = Calendar.current
+                            let date = calendar.date(from: components) ?? Date()
+                            let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
+                            print("[AddCharacterSheet] 新しいキャラクター作成: name=\(name), imageIdentifier=\(savedImagePath ?? "nil")")
+                            characterManager.addCharacterAtTop(newChar)
+                            dismiss()
+                        }) {
+                            Text("追加")
+                                .foregroundColor(.white)
+                                .fontWeight(.bold)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 8)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            (name.isEmpty || tag.isEmpty) ? Color.gray.opacity(0.3) : Color(red: 0.6, green: 0.4, blue: 0.9),
+                                            (name.isEmpty || tag.isEmpty) ? Color.gray.opacity(0.3) : Color(red: 0.8, green: 0.5, blue: 0.9)
+                                        ]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(20)
+                        }
+                        .disabled(name.isEmpty || tag.isEmpty)
                     }
-                    .onChange(of: selectedItem) { newValue in
-                        if let newItem = newValue {
-                            Task {
-                                if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
-                                    image = uiImage
-                                    // 画像を一時的に保存してパスを記録
-                                    let fileName = "icon_\(UUID().uuidString).png"
-                                    if let path = saveImageToDocuments(uiImage, fileName: fileName) {
-                                        savedImagePath = path
-                                        print("[AddCharacterSheet] 画像を保存: \(path)")
+                }
+                .padding()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // 名前入力
+                        TextField("キャラクター名", text: $name)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .multilineTextAlignment(.center)
+                            .padding(.vertical, 8)
+                            .overlay(
+                                VStack {
+                                    Spacer()
+                                    Divider()
+                                        .background(Color.gray.opacity(0.5))
+                                }
+                            )
+                            .padding(.horizontal)
+                        
+                        // アイコン画像
+                        VStack(spacing: 12) {
+                            PhotosPicker(selection: $selectedItem, matching: .images) {
+                                if let image = image {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 168, height: 168)
+                                        .clipShape(Circle())
+                                } else {
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.2))
+                                        .frame(width: 168, height: 168)
+                                        .overlay(
+                                            Image(systemName: "camera.fill")
+                                                .font(.system(size: 56))
+                                                .foregroundColor(.gray.opacity(0.6))
+                                        )
+                                }
+                            }
+                            Text("アイコン画像を選択")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .onChange(of: selectedItem) { newValue in
+                            if let newItem = newValue {
+                                Task {
+                                    if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
+                                        image = uiImage
+                                        let fileName = "icon_\(UUID().uuidString).png"
+                                        if let path = saveImageToDocuments(uiImage, fileName: fileName) {
+                                            savedImagePath = path
+                                            print("[AddCharacterSheet] 画像を保存: \(path)")
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    TextField("名前", text: $name)
-                    TextField("タグ", text: $tag)
-                    TextField("声優", text: $voiceActor)
-                }
-                Section {
-                    // --- ここから月日Picker ---
-                    HStack {
-                        Text("誕生日")
-                        Spacer()
-                        Picker(selection: $selectedMonth, label: Text("月")) {
-                            ForEach(1...12, id: \.self) { month in
-                                Text("\(month)月").tag(month)
+                        
+                        // タグ入力
+                        TextField("タグ", text: $tag)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(.vertical, 8)
+                            .overlay(
+                                VStack {
+                                    Spacer()
+                                    Divider()
+                                        .background(Color.gray.opacity(0.5))
+                                }
+                            )
+                            .padding(.horizontal)
+                        
+                        // 声優入力
+                        TextField("声優名", text: $voiceActor)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(.vertical, 8)
+                            .overlay(
+                                VStack {
+                                    Spacer()
+                                    Divider()
+                                        .background(Color.gray.opacity(0.5))
+                                }
+                            )
+                            .padding(.horizontal)
+                        
+                        // 誕生日
+                        VStack(spacing: 12) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "gift.fill")
+                                    .foregroundColor(.gray.opacity(0.6))
+                                    .font(.system(size: 20))
+                                Text("誕生日")
+                                    .foregroundColor(.gray.opacity(0.8))
+                                    .font(.system(size: 16))
+                                Spacer()
+                                
+                                HStack(spacing: 4) {
+                                    Picker(selection: $selectedMonth, label: Text("月")) {
+                                        ForEach(1...12, id: \.self) { month in
+                                            Text("\(month)月").tag(month)
+                                        }
+                                    }
+                                    .pickerStyle(MenuPickerStyle())
+                                    
+                                    Picker(selection: $selectedDay, label: Text("日")) {
+                                        ForEach(1...daysInMonth(selectedMonth), id: \.self) { day in
+                                            Text("\(day)日").tag(day)
+                                        }
+                                    }
+                                    .pickerStyle(MenuPickerStyle())
+                                }
                             }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
                         }
-                        .pickerStyle(MenuPickerStyle())
-                        Picker(selection: $selectedDay, label: Text("日")) {
-                            ForEach(1...daysInMonth(selectedMonth), id: \.self) { day in
-                                Text("\(day)日").tag(day)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
+                        .padding(.horizontal)
+                        
+                        Spacer(minLength: 40)
                     }
+                    .padding(.top, 20)
                 }
             }
-            .navigationTitle("キャラ追加")
-            .navigationBarItems(
-                leading: Button("キャンセル") { dismiss() },
-                trailing: Button("追加") {
-                    print("[DEBUG] 追加ボタンタップ")
-                    // 年は固定値（例：2000年）でDateを生成
-                    let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
-                    let calendar = Calendar.current
-                    let date = calendar.date(from: components) ?? Date()
-                    // 既に保存済みのパスを使用
-                    let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
-                    print("[AddCharacterSheet] 新しいキャラクター作成: name=\(name), imageIdentifier=\(savedImagePath ?? "nil")")
-                    // CharacterManagerのみを使用して追加（重複を防ぐ）
-                    characterManager.addCharacterAtTop(newChar)
-                    dismiss()
-                }.disabled(name.isEmpty || tag.isEmpty)
-            )
+            .background(Color.white)
+            .navigationBarHidden(true)
         }
     }
     // 月ごとの日数を返す

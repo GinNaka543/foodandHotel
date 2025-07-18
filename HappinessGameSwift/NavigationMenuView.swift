@@ -5,6 +5,7 @@ struct NavigationMenuView: View {
     @EnvironmentObject var mainTab: MainTabSelection
     var onShowCharacterOrder: (() -> Void)?
     var onShowAnimeOrder: (() -> Void)?
+    var onShowTermsOfService: (() -> Void)?
     
     var body: some View {
         ZStack {
@@ -117,6 +118,26 @@ struct NavigationMenuView: View {
                     .padding(.top, 8)
                     
                     Spacer()
+                    
+                    // 利用規約
+                    Divider()
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 8)
+                    
+                    NavigationMenuItem(
+                        title: "利用規約",
+                        action: {
+                            isPresented = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                NotificationCenter.default.post(
+                                    name: Notification.Name("ShowTermsOfService"),
+                                    object: nil
+                                )
+                            }
+                        },
+                        isGrayed: true
+                    )
+                    .padding(.bottom, 20)
                 }
                 .frame(width: 280)
                 .background(Color.white)
@@ -141,13 +162,14 @@ struct NavigationMenuView: View {
 struct NavigationMenuItem: View {
     let title: String
     let action: () -> Void
+    var isGrayed: Bool = false
     
     var body: some View {
         Button(action: action) {
             HStack(spacing: 20) {
                 Text(title)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
+                    .foregroundColor(isGrayed ? .gray : .primary)
                 
                 Spacer()
             }

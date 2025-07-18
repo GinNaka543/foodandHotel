@@ -11,8 +11,18 @@ extension DateFormatter {
     }()
 }
 
-enum ListTab: Int {
-    case chara, anime, birthday
+enum ListTab: Int, CaseIterable {
+    case chara = 0
+    case anime = 1
+    case birthday = 2
+    
+    var debugDescription: String {
+        switch self {
+        case .chara: return "chara"
+        case .anime: return "anime"
+        case .birthday: return "birthday"
+        }
+    }
 }
 
 // Temporary copy of UserProfile structures until UserProfileScreen.swift is added to project
@@ -84,10 +94,37 @@ struct HomeScreen: View {
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     @State private var showListPage = false
-    @State private var initialTab: ListTab = .chara
+    @State private var selectedListTab: ListTab = .chara
+    @State private var showCharacterList = false
+    @State private var showAnimeList = false
+    @State private var showBirthdayList = false
     @StateObject private var profileManager = UserProfileManager()
     @State private var showingProfile = false
     @State private var showingPoints = false
+    @State private var hasLoadedData = false
+    
+    // リストページを表示する関数（現在未使用）
+    /*
+    private func showListPageWithTab(_ tab: ListTab) {
+        print("[DEBUG] ===== showListPageWithTab =====")
+        print("[DEBUG] Requested tab: \(tab.debugDescription) (raw value: \(tab.rawValue))")
+        print("[DEBUG] Before: selectedListTab = \(selectedListTab.debugDescription)")
+        
+        selectedListTab = tab
+        
+        print("[DEBUG] After: selectedListTab = \(selectedListTab.debugDescription)")
+        print("[DEBUG] Setting showListPage to true...")
+        
+        // 確実に値が設定されるように、メインスレッドで実行
+        DispatchQueue.main.async { [self] in
+            print("[DEBUG] Main thread: selectedListTab = \(self.selectedListTab.debugDescription)")
+            self.showListPage = true
+            print("[DEBUG] Main thread: showListPage = \(self.showListPage)")
+        }
+        
+        print("[DEBUG] ================================")
+    }
+    */
     
     // キャラクター名を30文字以内で表示する関数
     private func getCharacterNamesText() -> String {
@@ -283,7 +320,6 @@ struct HomeScreen: View {
                         HStack {
                             FriendListIconView(
                                 images: getBirthdayReminderCharacters().prefix(4).compactMap { char in
-                                    print("[HomeScreen] Birthday Character: \(char.name), imageIdentifier: \(char.imageIdentifier ?? "nil")")
                                     if let path = char.imageIdentifier {
                                         return loadImageFromPath(path)
                                     }
@@ -307,8 +343,10 @@ struct HomeScreen: View {
                         .padding(.vertical, 6)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            initialTab = .birthday
-                            showListPage = true
+                            print("[DEBUG] ===== BIRTHDAY TAP DETECTED =====")
+                            showBirthdayList = true
+                            print("[DEBUG] showBirthdayList set to: \(showBirthdayList)")
+                            print("[DEBUG] =================================")
                         }
                     }
                     
@@ -316,7 +354,6 @@ struct HomeScreen: View {
                     HStack {
                         FriendListIconView(
                             images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).compactMap { char in
-                                print("[HomeScreen] Character: \(char.name), imageIdentifier: \(char.imageIdentifier ?? "nil")")
                                 if let path = char.imageIdentifier {
                                     return loadImageFromPath(path)
                                 }
@@ -340,15 +377,17 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        initialTab = .chara
-                        showListPage = true
+                        print("[DEBUG] ===== CHARACTER TAP DETECTED =====")
+                        print("[DEBUG] characterManager.characters.count: \(characterManager.characters.count)")
+                        showCharacterList = true
+                        print("[DEBUG] showCharacterList set to: \(showCharacterList)")
+                        print("[DEBUG] ==================================")
                     }
                     
                     // Animes
                     HStack {
                         FriendListIconView(
                             images: animeManager.animes.prefix(4).compactMap { anime in
-                                print("[HomeScreen] Anime: \(anime.title), imageIdentifier: \(anime.imageIdentifier ?? "nil")")
                                 if let path = anime.imageIdentifier {
                                     return loadImageFromPath(path)
                                 }
@@ -372,8 +411,11 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        initialTab = .anime
-                        showListPage = true
+                        print("[DEBUG] ===== ANIME TAP DETECTED =====")
+                        print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
+                        showAnimeList = true
+                        print("[DEBUG] showAnimeList set to: \(showAnimeList)")
+                        print("[DEBUG] =============================")
                     }
                 }
                 .padding(.horizontal, 20)
@@ -419,13 +461,39 @@ struct HomeScreen: View {
             }
         }
         .background(Color.white)
-        .fullScreenCover(isPresented: $showListPage) {
+        .fullScreenCover(isPresented: $showCharacterList) {
+            let _ = print("[DEBUG] ===== PRESENTING CHARACTER LIST =====")
             ListPageScreen(
-                selectedTab: initialTab,
+                selectedTab: .chara,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
                 animes: animeManager.animes,
                 birthdays: getBirthdayReminderCharacters()
             )
+            .environmentObject(characterManager)
+            .environmentObject(animeManager)
+        }
+        .fullScreenCover(isPresented: $showAnimeList) {
+            let _ = print("[DEBUG] ===== PRESENTING ANIME LIST =====")
+            let _ = print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
+            ListPageScreen(
+                selectedTab: .anime,
+                characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
+                animes: animeManager.animes,
+                birthdays: getBirthdayReminderCharacters()
+            )
+            .environmentObject(characterManager)
+            .environmentObject(animeManager)
+        }
+        .fullScreenCover(isPresented: $showBirthdayList) {
+            let _ = print("[DEBUG] ===== PRESENTING BIRTHDAY LIST =====")
+            ListPageScreen(
+                selectedTab: .birthday,
+                characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
+                animes: animeManager.animes,
+                birthdays: getBirthdayReminderCharacters()
+            )
+            .environmentObject(characterManager)
+            .environmentObject(animeManager)
         }
         .sheet(isPresented: $showingProfile) {
             // Temporary inline UserProfileScreen until file is added to project
@@ -436,8 +504,13 @@ struct HomeScreen: View {
             PointsView()
         }
         .onAppear {
-            characterManager.loadCharacters()
-            animeManager.loadAnimes()
+            if !hasLoadedData {
+                print("[DEBUG] HomeScreen onAppear - Loading data")
+                characterManager.loadCharacters()
+                animeManager.loadAnimes()
+                hasLoadedData = true
+                print("[DEBUG] After loading - animes count: \(animeManager.animes.count)")
+            }
         }
     }
 }
@@ -600,6 +673,7 @@ struct UserProfileScreenTemp: View {
     @State private var birthday = Date()
     @State private var showBirthdayPicker = false
     @State private var animeQuote: String = ""
+    @State private var showingLogoutConfirmation = false
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -675,9 +749,9 @@ struct UserProfileScreenTemp: View {
                                             )
                                     }
                                 }
-                                .onChange(of: selectedIconItem) { _ in
+                                .onChange(of: selectedIconItem) { oldValue, newValue in
                                     Task {
-                                        if let data = try? await selectedIconItem?.loadTransferable(type: Data.self),
+                                        if let data = try? await newValue?.loadTransferable(type: Data.self),
                                            let uiImage = UIImage(data: data) {
                                             iconImage = uiImage
                                             saveProfile()
@@ -705,7 +779,7 @@ struct UserProfileScreenTemp: View {
                                         .padding(.horizontal, 16)
                                         .background(Color(.systemGray6))
                                         .cornerRadius(8)
-                                        .onChange(of: username) { _ in
+                                        .onChange(of: username) { oldValue, newValue in
                                             saveProfile()
                                         }
                                 }
@@ -748,7 +822,7 @@ struct UserProfileScreenTemp: View {
                                         .padding(.horizontal, 16)
                                         .background(Color(.systemGray6))
                                         .cornerRadius(8)
-                                        .onChange(of: animeQuote) { _ in
+                                        .onChange(of: animeQuote) { oldValue, newValue in
                                             saveProfile()
                                         }
                                 }
@@ -762,11 +836,7 @@ struct UserProfileScreenTemp: View {
                                     .padding(.horizontal, 16)
                                 
                                 Button(action: {
-                                    dismiss()
-                                    // 少し遅延させてからログアウト
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        authManager.logout()
-                                    }
+                                    showingLogoutConfirmation = true
                                 }) {
                                     HStack {
                                         Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -830,8 +900,19 @@ struct UserProfileScreenTemp: View {
         .onAppear {
             loadCurrentProfile()
         }
-        .onChange(of: profileManager.currentUser) { _ in
+        .onChange(of: profileManager.currentUser) { oldValue, newValue in
             loadCurrentProfile()
+        }
+        .fullScreenCover(isPresented: $showingLogoutConfirmation) {
+            LogoutConfirmationView(
+                isPresented: $showingLogoutConfirmation,
+                onLogout: {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        authManager.logout()
+                    }
+                }
+            )
         }
     }
     
@@ -896,6 +977,189 @@ struct UserProfileScreenTemp: View {
                     print("❌ Firebase保存エラー: \(error)")
                 }
             }
+        }
+    }
+}
+
+struct LogoutConfirmationView: View {
+    @Binding var isPresented: Bool
+    let onLogout: () -> Void
+    @EnvironmentObject var profileManager: UserProfileManager
+    @State private var copiedUserId = false
+    @State private var copiedUsername = false
+    
+    private var userId: String {
+        UserDefaults.standard.string(forKey: "userId") ?? "IDが見つかりません"
+    }
+    
+    private var username: String {
+        if let savedUsername = UserDefaults.standard.string(forKey: "username"), !savedUsername.isEmpty {
+            return savedUsername
+        }
+        return profileManager.currentUser.username.isEmpty ? "未設定" : profileManager.currentUser.username
+    }
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // ヘッダー
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.orange)
+                    
+                    Text("重要：ログアウト前に確認")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+                .padding(.top, 40)
+                .padding(.bottom, 20)
+                
+                // 警告メッセージ
+                VStack(spacing: 16) {
+                    Text("以下の情報を必ず保存してください")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.red)
+                    
+                    Text("これらの情報がないと、アカウントの復元ができません")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+                
+                // ユーザー情報
+                VStack(spacing: 16) {
+                    // ユーザーID
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ユーザーID")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            Text(userId)
+                                .font(.system(size: 16).monospaced())
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                UIPasteboard.general.string = userId
+                                copiedUserId = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedUserId = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedUserId ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 14))
+                                    Text(copiedUserId ? "コピー済み" : "コピー")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(copiedUserId ? .green : .blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    
+                    // ユーザー名
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ユーザー名")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            Text(username)
+                                .font(.system(size: 16))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                UIPasteboard.general.string = username
+                                copiedUsername = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedUsername = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedUsername ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 14))
+                                    Text(copiedUsername ? "コピー済み" : "コピー")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(copiedUsername ? .green : .blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // 注意事項
+                VStack(spacing: 12) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(.orange)
+                        Text("スクリーンショットを撮るか、メモに保存してください")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Text("ログアウト後はこれらの情報がないとアカウントにアクセスできません")
+                        .font(.system(size: 12))
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // ボタン
+                HStack(spacing: 16) {
+                    Button(action: {
+                        isPresented = false
+                    }) {
+                        Text("キャンセル")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(25)
+                    }
+                    
+                    Button(action: {
+                        isPresented = false
+                        onLogout()
+                    }) {
+                        Text("ログアウト")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.red)
+                            .cornerRadius(25)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+            .frame(maxWidth: 400)
+            .background(Color.white)
+            .cornerRadius(24)
+            .shadow(radius: 30)
+            .padding(.horizontal, 20)
         }
     }
 }

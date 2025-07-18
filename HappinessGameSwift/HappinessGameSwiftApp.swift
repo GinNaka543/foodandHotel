@@ -87,6 +87,7 @@ struct MainContainerView: View {
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     @EnvironmentObject var authManager: AuthenticationManager
+    @State private var showingTermsOfService = false
     
     enum Tab: Int, CaseIterable {
         case home = 0
@@ -180,6 +181,12 @@ struct MainContainerView: View {
             .edgesIgnoringSafeArea(.bottom)
         }
         .background(Color.white)
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowTermsOfService"))) { _ in
+            showingTermsOfService = true
+        }
+        .fullScreenCover(isPresented: $showingTermsOfService) {
+            TermsOfServiceView()
+        }
     }
 }
 

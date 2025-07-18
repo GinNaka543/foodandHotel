@@ -54,18 +54,6 @@ struct PointPurchaseView: View {
                         
                         // ポイントパッケージ
                         LazyVStack(spacing: 12) {
-                            ForEach(pointPackages, id: \.points) { package in
-                                PointPackageCard(
-                                    package: package,
-                                    isSelected: selectedPackage?.points == package.points && !showCustomAmount,
-                                    onSelect: { 
-                                        selectedPackage = package
-                                        showCustomAmount = false
-                                        customAmount = ""
-                                    }
-                                )
-                            }
-                            
                             // カスタム金額入力
                             Button(action: {
                                 showCustomAmount.toggle()
@@ -117,6 +105,18 @@ struct PointPurchaseView: View {
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
+                            
+                            ForEach(pointPackages, id: \.points) { package in
+                                PointPackageCard(
+                                    package: package,
+                                    isSelected: selectedPackage?.points == package.points && !showCustomAmount,
+                                    onSelect: { 
+                                        selectedPackage = package
+                                        showCustomAmount = false
+                                        customAmount = ""
+                                    }
+                                )
+                            }
                         }
                         
                         // エラーメッセージ

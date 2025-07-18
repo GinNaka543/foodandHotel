@@ -163,10 +163,11 @@ struct ProductScreen: View {
             .padding(.vertical, 8)
             
             if selectedTab == "おすすめ" {
-                // Firebase広告
+                // Firebase広告と商品を表示
                 ScrollView {
                     VStack(spacing: 0) {
-                        FirebaseAdView(placement: "product")
+                        // 複数の広告を一度に表示
+                        MultipleFirebaseAdView(placement: "product")
                             .padding(.top, 8)
                         
                         // おすすめ商品リスト

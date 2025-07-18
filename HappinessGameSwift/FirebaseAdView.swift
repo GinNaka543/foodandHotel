@@ -122,6 +122,7 @@ struct FirebaseAdView: View {
                     Button(action: {
                         handleAdClick(ad)
                     }) {
+                        ZStack(alignment: .topTrailing) {
                         HStack(spacing: 16) {
                             if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
                                 let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
@@ -171,6 +172,16 @@ struct FirebaseAdView: View {
                         }
                         .padding(16)
                         .cornerRadius(12)
+                        
+                        Text("PR")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.purple)
+                            .cornerRadius(4)
+                            .padding(8)
+                        }
                     }
                     .buttonStyle(PlainButtonStyle())
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -274,6 +285,17 @@ struct FirebaseAdView: View {
                                                     .opacity(0.7)
                                             )
                                         }
+                                        
+                                        // PR表示
+                                        Text("PR")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 3)
+                                            .background(Color.black)
+                                            .cornerRadius(4)
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                                            .padding(6)
                                     }
                                     .frame(width: 260, height: 144)
                                     .cornerRadius(10)

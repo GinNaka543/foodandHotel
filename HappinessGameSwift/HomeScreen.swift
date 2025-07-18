@@ -397,10 +397,21 @@ struct HomeScreen: View {
                 // 広告バナー（1つの広告を表示、高さを1.3倍に）
                 HStack {
                     Spacer()
-                    FirebaseAdView(placement: "home", adIndex: 0)
-                        .frame(width: 360, height: 245.7) // 189 * 1.3 = 245.7
-                        .cornerRadius(10)
-                        .clipped()
+                    ZStack(alignment: .topTrailing) {
+                        FirebaseAdView(placement: "home", adIndex: 0)
+                            .frame(width: 360, height: 245.7) // 189 * 1.3 = 245.7
+                            .cornerRadius(10)
+                            .clipped()
+                        
+                        Text("PR")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.purple)
+                            .cornerRadius(4)
+                            .padding(8)
+                    }
                     Spacer()
                 }
                 .padding(.top, 20)

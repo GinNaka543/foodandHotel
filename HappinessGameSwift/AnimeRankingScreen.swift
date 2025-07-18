@@ -21,10 +21,15 @@ struct AnimeRankingScreen: View {
                     
                     Spacer()
                     
-                    Text("今おすすめのアニメ")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity, alignment: .center)
+                    HStack(spacing: 6) {
+                        Text("今おすすめのアニメ")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.black)
+                        Text("プロモーション")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.gray)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
                     
                     Spacer()
                     

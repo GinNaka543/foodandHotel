@@ -234,6 +234,22 @@ public struct VisitScreen: View {
                     .padding(8),
                     alignment: .bottomTrailing
                 )
+                .overlay(
+                    // 管理者プランの場合は「PR」バッジを右上に表示
+                    Group {
+                        if plan.userId == "admin" && selectedTab == .all {
+                            Text("PR")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.purple)
+                                .cornerRadius(4)
+                                .padding(8)
+                        }
+                    },
+                    alignment: .topTrailing
+                )
                 
                 // プラン情報
                 HStack(alignment: .center, spacing: 12) {
@@ -329,6 +345,18 @@ public struct VisitScreen: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: 233)
                 .clipped()
+                .overlay(
+                    // 広告の場合は「PR」バッジを右上に表示
+                    Text("PR")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.black)
+                        .cornerRadius(4)
+                        .padding(8),
+                    alignment: .topTrailing
+                )
                 
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {

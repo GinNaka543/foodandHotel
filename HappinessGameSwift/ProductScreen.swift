@@ -9,6 +9,7 @@ struct WishlistItem: Identifiable, Codable {
     var link: String
     var imageData: Data?
     var createdDate = Date()
+    var characterCategoryId: UUID?
 }
 
 // 欲しい商品管理用のクラス
@@ -42,6 +43,14 @@ class WishlistManager: ObservableObject {
         items.removeAll { $0.id == item.id }
         saveItems()
     }
+    
+    func getItemsForCategory(_ categoryId: UUID) -> [WishlistItem] {
+        items.filter { $0.characterCategoryId == categoryId }
+    }
+    
+    func getItemsWithoutCategory() -> [WishlistItem] {
+        items.filter { $0.characterCategoryId == nil }
+    }
 }
 
 struct ProductScreen: View {
@@ -55,6 +64,11 @@ struct ProductScreen: View {
     @State private var showingAdminPanel = false
     @State private var selectedTab = "おすすめ"
     @State private var showAddWishlistItem = false
+    @State private var navigateToCategoryList = false
+    @State private var selectedCategory: CharacterCategory?
+    @State private var showCategorySelection = false
+    @State private var showCategoryListFullScreen = false
+    @State private var showNewCategoryCreation = false
     
     var filteredProducts: [Product] {
         let activeProducts = productManager.activeProducts
@@ -66,7 +80,8 @@ struct ProductScreen: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
+        NavigationStack {
+            VStack(spacing: 0) {
             // ヘッダー
             HStack {
                 Button(action: {
@@ -83,7 +98,10 @@ struct ProductScreen: View {
                 
                 // 商品を追加ボタン
                 Button(action: {
-                    showAddWishlistItem = true
+                    print("DEBUG: 商品を追加ボタンがタップされました")
+                    print("DEBUG: showCategorySelection = true を設定します")
+                    showCategorySelection = true
+                    print("DEBUG: showCategorySelection = \(showCategorySelection)")
                 }) {
                     Text("商品を追加")
                         .font(.system(size: 16, weight: .semibold))
@@ -191,10 +209,10 @@ struct ProductScreen: View {
                     .padding(.bottom, 100)
                 }
             } else {
-                // 欲しい商品リスト
+                // キャラクター・アニメ別バナー表示
                 ScrollView {
-                    VStack(spacing: 0) {
-                        if wishlistManager.items.isEmpty {
+                    VStack(spacing: 12) {
+                        if productManager.characterCategories.isEmpty && wishlistManager.items.isEmpty {
                             VStack(spacing: 16) {
                                 Image(systemName: "cart")
                                     .font(.system(size: 50))
@@ -209,37 +227,175 @@ struct ProductScreen: View {
                             .frame(maxWidth: .infinity)
                             .padding(.top, 100)
                         } else {
-                            ForEach(wishlistManager.items) { item in
-                                WishlistItemRow(item: item, wishlistManager: wishlistManager)
+                            // カテゴリー別バナー表示（商品がある場合のみ表示）
+                            ForEach(productManager.characterCategories) { category in
+                                let itemsForCategory = wishlistManager.getItemsForCategory(category.id)
+                                if !itemsForCategory.isEmpty {
+                                    NavigationLink(destination: CategoryListView(
+                                        category: category,
+                                        wishlistManager: wishlistManager,
+                                        productManager: productManager
+                                    )) {
+                                        CategoryBannerView(
+                                            title: category.name,
+                                            itemCount: itemsForCategory.count,
+                                            bannerImageData: category.bannerImageData
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                     .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
+                                }
+                            }
+                            
+                            // カテゴリーなしの商品がある場合
+                            if !wishlistManager.getItemsWithoutCategory().isEmpty {
+                                NavigationLink(destination: CategoryListView(
+                                    category: nil,
+                                    wishlistManager: wishlistManager,
+                                    productManager: productManager
+                                )) {
+                                    CategoryBannerView(
+                                        title: "その他",
+                                        itemCount: wishlistManager.getItemsWithoutCategory().count,
+                                        bannerImageData: nil
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .padding(.horizontal, 16)
                             }
                         }
                     }
+                    .padding(.top, 8)
                     .padding(.bottom, 100)
                 }
-                .padding(.top, 8)
             }
-        }
-        .sheet(item: $selectedProduct) { product in
-            ProductDetailView(product: product)
-        }
-        .sheet(isPresented: $showAddWishlistItem) {
-            AddWishlistItemView(wishlistManager: wishlistManager)
-        }
-        .overlay(
-            Group {
-                if showNavigationMenu {
-                    NavigationMenuView(
-                        isPresented: $showNavigationMenu,
-                        onShowCharacterOrder: nil,
-                        onShowAnimeOrder: nil
-                    )
-                    .transition(.opacity)
-                    .zIndex(2)
+            }
+            .sheet(item: $selectedProduct) { product in
+                ProductDetailView(product: product)
+            }
+            .sheet(isPresented: $showAddWishlistItem) {
+                AddWishlistItemView(wishlistManager: wishlistManager, categoryId: selectedCategory?.id)
+            }
+            .sheet(isPresented: $showingAdminPanel) {
+                ProductAdminPanel(productManager: productManager)
+            }
+            .sheet(isPresented: $showCategorySelection) {
+                CategorySelectionView(
+                    productManager: productManager,
+                    wishlistManager: wishlistManager,
+                    onCategorySelected: { category in
+                        print("DEBUG: onCategorySelectedが呼ばれました。category = \(String(describing: category))")
+                        showCategorySelection = false
+                        
+                        if category == nil {
+                            // 新規カテゴリー作成
+                            print("DEBUG: 新規カテゴリー作成を開始します")
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                print("DEBUG: showNewCategoryCreation = true を設定します")
+                                showNewCategoryCreation = true
+                                print("DEBUG: showNewCategoryCreation = \(showNewCategoryCreation)")
+                            }
+                        } else {
+                            // 既存カテゴリーを選択した場合、商品追加画面を表示
+                            print("DEBUG: 既存カテゴリーが選択されました: \(category!.name)")
+                            selectedCategory = category
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                print("DEBUG: showAddWishlistItem = true を設定します")
+                                showAddWishlistItem = true
+                            }
+                        }
+                    }
+                )
+            }
+            .overlay(
+                Group {
+                    if showNavigationMenu {
+                        NavigationMenuView(
+                            isPresented: $showNavigationMenu,
+                            onShowCharacterOrder: nil,
+                            onShowAnimeOrder: nil
+                        )
+                        .transition(.opacity)
+                        .zIndex(2)
+                    }
+                }
+            )
+            .sheet(isPresented: $showNewCategoryCreation) {
+                SimpleCategoryCreationView(
+                    productManager: productManager,
+                    wishlistManager: wishlistManager,
+                    onComplete: {
+                        print("DEBUG: SimpleCategoryCreationView完了")
+                        showNewCategoryCreation = false
+                    }
+                )
+                .onAppear {
+                    print("DEBUG: SimpleCategoryCreationViewが表示されました")
                 }
             }
-        )
+        }
+    }
+}
+
+// カテゴリーバナー表示
+struct CategoryBannerView: View {
+    let title: String
+    let itemCount: Int
+    let bannerImageData: Data?
+    
+    var body: some View {
+        ZStack {
+                // 背景画像またはデフォルト背景
+                if let imageData = bannerImageData,
+                   let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 120)
+                        .clipped()
+                } else {
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(height: 120)
+                }
+                
+                // グラデーションオーバーレイ
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.black.opacity(0.4), Color.clear]),
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                    )
+                    .frame(height: 120)
+                
+                // テキスト情報
+                VStack(alignment: .leading, spacing: 4) {
+                    Spacer()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(title)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                            Text("\(itemCount)個の商品")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+                }
+        }
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -257,13 +413,13 @@ struct WishlistItemRow: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 168.48, height: 99)
+                    .frame(width: 126.36, height: 93)
                     .cornerRadius(8)
                     .clipped()
             } else {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray.opacity(0.3))
-                    .frame(width: 168.48, height: 99)
+                    .frame(width: 126.36, height: 93)
                     .overlay(
                         Image(systemName: "cart.fill")
                             .font(.system(size: 30))
@@ -309,14 +465,149 @@ struct WishlistItemRow: View {
 }
 
 // 欲しい商品追加画面
+// カテゴリー選択画面
+struct CategorySelectionView: View {
+    @ObservedObject var productManager: ProductManager
+    @ObservedObject var wishlistManager: WishlistManager
+    let onCategorySelected: (CharacterCategory?) -> Void
+    @Environment(\.dismiss) var dismiss
+    @State private var showNewCategoryView = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // 新規カテゴリー作成ボタン
+                Button(action: {
+                    print("DEBUG: 新規カテゴリー作成ボタンがタップされました")
+                    print("DEBUG: showNewCategoryView = \(showNewCategoryView)")
+                    
+                    // 一旦このモーダルを閉じて、新規作成画面を開く
+                    print("DEBUG: dismissを呼び出します")
+                    dismiss()
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        print("DEBUG: onCategorySelected(nil)を呼び出します")
+                        onCategorySelected(nil)
+                    }
+                }) {
+                    HStack {
+                        VStack(spacing: 16) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 50))
+                                .foregroundColor(.blue)
+                            Text("新規キャラ/アニメを追加")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.black)
+                            Text("誰の商品なのか指定します")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 30)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                
+                Text("または")
+                    .font(.system(size: 16))
+                    .foregroundColor(.gray)
+                    .padding(.vertical, 20)
+                
+                Text("既存のキャラ/アニメを選択")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+                    .padding(.bottom, 16)
+                
+                // 既存カテゴリーリスト
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(productManager.characterCategories) { category in
+                            Button(action: {
+                                onCategorySelected(category)
+                            }) {
+                                HStack {
+                                    // カテゴリー画像
+                                    if let imageData = category.bannerImageData,
+                                       let uiImage = UIImage(data: imageData) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 60, height: 60)
+                                            .clipShape(Circle())
+                                    } else {
+                                        Circle()
+                                            .fill(
+                                                LinearGradient(
+                                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                                    startPoint: .topLeading,
+                                                    endPoint: .bottomTrailing
+                                                )
+                                            )
+                                            .frame(width: 60, height: 60)
+                                            .overlay(
+                                                Text(String(category.name.prefix(1)))
+                                                    .font(.system(size: 24, weight: .bold))
+                                                    .foregroundColor(.white)
+                                            )
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(category.name)
+                                            .font(.system(size: 16, weight: .semibold))
+                                            .foregroundColor(.black)
+                                        Text(category.type.rawValue)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.gray)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(Color.gray.opacity(0.05))
+                                .cornerRadius(10)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            .navigationTitle("商品を追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                leading: Button("キャンセル") {
+                    dismiss()
+                }
+            )
+        }
+    }
+}
+
 struct AddWishlistItemView: View {
     let wishlistManager: WishlistManager
+    var categoryId: UUID?
     @Environment(\.dismiss) var dismiss
     @State private var name = ""
     @State private var priceText = ""
     @State private var link = ""
     @State private var selectedImage: UIImage?
     @State private var selectedPhotoItem: PhotosPickerItem?
+    @StateObject private var productManager = ProductManager()
     
     var body: some View {
         NavigationView {
@@ -358,7 +649,8 @@ struct AddWishlistItemView: View {
                             name: name,
                             price: price,
                             link: link,
-                            imageData: imageData
+                            imageData: imageData,
+                            characterCategoryId: categoryId
                         )
                         wishlistManager.addItem(item)
                         dismiss()
@@ -513,10 +805,46 @@ struct ProductAdminPanel: View {
     @ObservedObject var productManager: ProductManager
     @State private var showingAddProduct = false
     @State private var editingProduct: Product?
+    @State private var showingAddCategory = false
+    @State private var editingCategory: CharacterCategory?
     
     var body: some View {
         NavigationView {
             List {
+                Section("カテゴリー管理") {
+                    Button(action: {
+                        showingAddCategory = true
+                    }) {
+                        Label("新規カテゴリー追加", systemImage: "plus.circle.fill")
+                            .foregroundColor(.blue)
+                    }
+                }
+                
+                Section("カテゴリー一覧") {
+                    ForEach(productManager.characterCategories) { category in
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(category.name)
+                                    .font(.headline)
+                                Text(category.type.rawValue)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            editingCategory = category
+                        }
+                    }
+                    .onDelete { indexSet in
+                        let categories = productManager.characterCategories
+                        for index in indexSet {
+                            productManager.deleteCharacterCategory(categories[index])
+                        }
+                    }
+                }
+                
                 Section("商品管理") {
                     Button(action: {
                         showingAddProduct = true
@@ -535,6 +863,12 @@ struct ProductAdminPanel: View {
                                 Text("¥\(product.price)")
                                     .font(.caption)
                                     .foregroundColor(.secondary)
+                                if let categoryId = product.characterCategoryId,
+                                   let category = productManager.characterCategories.first(where: { $0.id == categoryId }) {
+                                    Text(category.name)
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
                             }
                             Spacer()
                             if !product.isActive {
@@ -571,6 +905,108 @@ struct ProductAdminPanel: View {
         .sheet(item: $editingProduct) { product in
             AddEditProductView(productManager: productManager, editingProduct: product)
         }
+        .sheet(isPresented: $showingAddCategory) {
+            AddEditCategoryView(productManager: productManager)
+        }
+        .sheet(item: $editingCategory) { category in
+            AddEditCategoryView(productManager: productManager, editingCategory: category)
+        }
+    }
+}
+
+struct CategoryListView: View {
+    let category: CharacterCategory?
+    @ObservedObject var wishlistManager: WishlistManager
+    @ObservedObject var productManager: ProductManager
+    @State private var showAddWishlistItem = false
+    
+    var categoryItems: [WishlistItem] {
+        if let category = category {
+            return wishlistManager.getItemsForCategory(category.id)
+        } else {
+            return wishlistManager.getItemsWithoutCategory()
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            
+            // バナー部分（アルバムリストページと同様のデザイン）
+            ZStack {
+                    // 背景画像またはデフォルト背景
+                    if let category = category,
+                       let imageData = category.bannerImageData,
+                       let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 120)
+                            .clipped()
+                    } else {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(height: 120)
+                    }
+                    
+                    // グラデーションオーバーレイ
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.black.opacity(0.6), Color.clear]),
+                                startPoint: .bottom,
+                                endPoint: .top
+                            )
+                        )
+                        .frame(height: 120)
+                    
+                }
+                
+                // 商品リスト
+                ScrollView {
+                    VStack(spacing: 0) {
+                        if categoryItems.isEmpty {
+                            VStack(spacing: 16) {
+                                Image(systemName: "cart")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray)
+                                Text("商品がありません")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
+                                Text("右上の「商品追加」から追加してください")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 100)
+                        } else {
+                            ForEach(categoryItems) { item in
+                                WishlistItemRow(item: item, wishlistManager: wishlistManager)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                            }
+                        }
+                    }
+                    .padding(.bottom, 100)
+                }
+        }
+        .navigationTitle(category?.name ?? "その他")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("商品追加") {
+                    showAddWishlistItem = true
+                }
+            }
+        }
+        .sheet(isPresented: $showAddWishlistItem) {
+            AddWishlistItemView(wishlistManager: wishlistManager, categoryId: category?.id)
+        }
     }
 }
 
@@ -587,6 +1023,7 @@ struct AddEditProductView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isActive = true
     @State private var selectedPlacements: Set<AdPlacement> = []
+    @State private var selectedCategoryId: UUID?
     
     var body: some View {
         NavigationView {
@@ -614,6 +1051,17 @@ struct AddEditProductView: View {
                         Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
                               systemImage: "photo")
                     }
+                }
+                
+                Section("カテゴリー") {
+                    Picker("キャラクター・アニメ", selection: $selectedCategoryId) {
+                        Text("なし").tag(nil as UUID?)
+                        ForEach(productManager.characterCategories) { category in
+                            Text("\(category.name) (\(category.type.rawValue))")
+                                .tag(category.id as UUID?)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
                 }
                 
                 Section("表示設定") {
@@ -669,6 +1117,7 @@ struct AddEditProductView: View {
                 link = product.link
                 isActive = product.isActive
                 selectedPlacements = product.adPlacements
+                selectedCategoryId = product.characterCategoryId
                 if let imageData = product.imageData {
                     selectedImage = UIImage(data: imageData)
                 }
@@ -691,6 +1140,7 @@ struct AddEditProductView: View {
             productManager.products[index].imageData = imageData
             productManager.products[index].isActive = isActive
             productManager.products[index].adPlacements = selectedPlacements
+            productManager.products[index].characterCategoryId = selectedCategoryId
         } else {
             // 新規追加
             let newProduct = Product(
@@ -702,12 +1152,549 @@ struct AddEditProductView: View {
                 link: link,
                 createdDate: Date(),
                 isActive: isActive,
-                adPlacements: selectedPlacements
+                adPlacements: selectedPlacements,
+                characterCategoryId: selectedCategoryId
             )
             productManager.products.append(newProduct)
         }
         
         productManager.saveProducts()
+        dismiss()
+    }
+}
+
+// シンプルな新規カテゴリー作成画面
+struct SimpleCategoryCreationView: View {
+    @ObservedObject var productManager: ProductManager
+    @ObservedObject var wishlistManager: WishlistManager
+    let onComplete: () -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var categoryName = ""
+    @State private var selectedType: CharacterType = .character
+    @State private var categoryImage: UIImage?
+    @State private var categoryPhotoItem: PhotosPickerItem?
+    
+    @State private var productName = ""
+    @State private var priceText = ""
+    @State private var link = ""
+    @State private var productImage: UIImage?
+    @State private var productPhotoItem: PhotosPickerItem?
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("カテゴリー情報") {
+                    TextField("名前", text: $categoryName)
+                    
+                    Picker("タイプ", selection: $selectedType) {
+                        ForEach(CharacterType.allCases, id: \.self) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    
+                    // カテゴリー画像
+                    if let image = categoryImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 150)
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    PhotosPicker(selection: $categoryPhotoItem, matching: .images) {
+                        Label(categoryImage == nil ? "バナー画像を選択" : "バナー画像を変更", 
+                              systemImage: "photo")
+                    }
+                }
+                
+                Section("最初の商品（必須）") {
+                    TextField("商品名", text: $productName)
+                    TextField("価格", text: $priceText)
+                        .keyboardType(.numberPad)
+                    TextField("リンク（任意）", text: $link)
+                        .autocapitalization(.none)
+                    
+                    // 商品画像
+                    if let image = productImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 150)
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    PhotosPicker(selection: $productPhotoItem, matching: .images) {
+                        Label(productImage == nil ? "商品画像を選択" : "商品画像を変更", 
+                              systemImage: "photo")
+                    }
+                }
+            }
+            .navigationTitle("新規\(selectedType.rawValue)追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                leading: Button("キャンセル") {
+                    dismiss()
+                },
+                trailing: Button("作成") {
+                    createCategoryWithProduct()
+                }
+                .disabled(categoryName.isEmpty || productName.isEmpty || priceText.isEmpty)
+            )
+        }
+        .onChange(of: categoryPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    categoryImage = image
+                }
+            }
+        }
+        .onChange(of: productPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    productImage = image
+                }
+            }
+        }
+    }
+    
+    private func createCategoryWithProduct() {
+        print("DEBUG: createCategoryWithProductが呼ばれました")
+        guard let price = Int(priceText) else { 
+            print("DEBUG: 価格の変換に失敗しました: \(priceText)")
+            return 
+        }
+        
+        print("DEBUG: カテゴリーを作成します: \(categoryName)")
+        // カテゴリーを作成
+        let category = CharacterCategory(
+            name: categoryName,
+            type: selectedType,
+            bannerImageData: categoryImage?.jpegData(compressionQuality: 0.8)
+        )
+        productManager.addCharacterCategory(category)
+        print("DEBUG: カテゴリーが作成されました: \(category.id)")
+        
+        print("DEBUG: 商品を作成します: \(productName)")
+        // 商品を作成
+        let item = WishlistItem(
+            name: productName,
+            price: price,
+            link: link,
+            imageData: productImage?.jpegData(compressionQuality: 0.8),
+            characterCategoryId: category.id
+        )
+        wishlistManager.addItem(item)
+        print("DEBUG: 商品が作成されました: \(item.id)")
+        
+        print("DEBUG: onCompleteを呼び出します")
+        onComplete()
+    }
+}
+
+// 新規カテゴリー作成画面
+struct NewCategoryCreationView: View {
+    @ObservedObject var productManager: ProductManager
+    @ObservedObject var wishlistManager: WishlistManager
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var name = ""
+    @State private var selectedType: CharacterType = .character
+    @State private var selectedImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var showProductAdd = false
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("基本情報") {
+                    TextField("名前", text: $name)
+                    Picker("タイプ", selection: $selectedType) {
+                        ForEach(CharacterType.allCases, id: \.self) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                
+                Section("バナー画像") {
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 200)
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                              systemImage: "photo")
+                    }
+                }
+            }
+            .navigationTitle("新規\(selectedType.rawValue)追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                leading: Button("キャンセル") {
+                    dismiss()
+                },
+                trailing: Button("次へ") {
+                    showProductAdd = true
+                }
+                .disabled(name.isEmpty)
+            )
+        }
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
+                }
+            }
+        }
+        .sheet(isPresented: $showProductAdd) {
+            NavigationView {
+                VStack(spacing: 0) {
+                    // カテゴリー情報表示
+                    HStack {
+                        if let image = selectedImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 60, height: 60)
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .fill(Color.purple.opacity(0.7))
+                                .frame(width: 60, height: 60)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(name)
+                                .font(.system(size: 18, weight: .semibold))
+                            Text("最初の商品を追加してください")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                        Spacer()
+                    }
+                    .padding()
+                    .background(Color.gray.opacity(0.1))
+                    
+                    AddWishlistItemForm(
+                        name: name,
+                        selectedType: selectedType,
+                        bannerImageData: selectedImage?.jpegData(compressionQuality: 0.8),
+                        productManager: productManager,
+                        wishlistManager: wishlistManager,
+                        onComplete: {
+                            // すべてのモーダルを閉じる
+                            showProductAdd = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                dismiss()
+                            }
+                        }
+                    )
+                }
+                .navigationTitle("商品を追加")
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .interactiveDismissDisabled()
+        }
+    }
+}
+
+// 商品追加フォーム（新規カテゴリー用）
+struct AddWishlistItemForm: View {
+    let name: String
+    let selectedType: CharacterType
+    let bannerImageData: Data?
+    @ObservedObject var productManager: ProductManager
+    @ObservedObject var wishlistManager: WishlistManager
+    let onComplete: () -> Void
+    
+    @State private var productName = ""
+    @State private var priceText = ""
+    @State private var link = ""
+    @State private var selectedImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    
+    var body: some View {
+        Form {
+            Section("商品画像") {
+                if let image = selectedImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 200)
+                        .frame(maxWidth: .infinity)
+                }
+                
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                          systemImage: "photo")
+                }
+            }
+            
+            Section("商品情報") {
+                TextField("商品名", text: $productName)
+                TextField("価格", text: $priceText)
+                    .keyboardType(.numberPad)
+                TextField("リンク", text: $link)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+            }
+            
+            Section {
+                Button(action: {
+                    if let price = Int(priceText), !productName.isEmpty {
+                        // カテゴリーを作成・保存
+                        let category = CharacterCategory(
+                            name: name,
+                            type: selectedType,
+                            bannerImageData: bannerImageData
+                        )
+                        productManager.addCharacterCategory(category)
+                        
+                        // 商品を保存
+                        let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
+                        let item = WishlistItem(
+                            name: productName,
+                            price: price,
+                            link: link,
+                            imageData: imageData,
+                            characterCategoryId: category.id
+                        )
+                        wishlistManager.addItem(item)
+                        
+                        // 完了処理
+                        DispatchQueue.main.async {
+                            onComplete()
+                        }
+                    }
+                }) {
+                    Text("完了")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.blue)
+                                .opacity(productName.isEmpty || priceText.isEmpty ? 0.5 : 1.0)
+                        )
+                }
+                .disabled(productName.isEmpty || priceText.isEmpty)
+            }
+        }
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
+                }
+            }
+        }
+    }
+}
+
+// 新規カテゴリー作成時の必須商品追加画面
+struct NewCategoryProductAddView: View {
+    let category: CharacterCategory
+    @ObservedObject var productManager: ProductManager
+    @ObservedObject var wishlistManager: WishlistManager
+    let onComplete: () -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var name = ""
+    @State private var priceText = ""
+    @State private var link = ""
+    @State private var selectedImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // カテゴリー情報表示
+                HStack {
+                    if let imageData = category.bannerImageData,
+                       let uiImage = UIImage(data: imageData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 60, height: 60)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color.purple.opacity(0.7))
+                            .frame(width: 60, height: 60)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(category.name)
+                            .font(.system(size: 18, weight: .semibold))
+                        Text("最初の商品を追加してください")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    Spacer()
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                
+                Form {
+                    Section("商品画像") {
+                        if let image = selectedImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 200)
+                                .frame(maxWidth: .infinity)
+                        }
+                        
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                                  systemImage: "photo")
+                        }
+                    }
+                    
+                    Section("商品情報") {
+                        TextField("商品名", text: $name)
+                        TextField("価格", text: $priceText)
+                            .keyboardType(.numberPad)
+                        TextField("リンク", text: $link)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                    }
+                }
+            }
+            .navigationTitle("商品を追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                trailing: Button("完了") {
+                    if let price = Int(priceText), !name.isEmpty {
+                        // カテゴリーを保存
+                        productManager.addCharacterCategory(category)
+                        
+                        // 商品を保存
+                        let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
+                        let item = WishlistItem(
+                            name: name,
+                            price: price,
+                            link: link,
+                            imageData: imageData,
+                            characterCategoryId: category.id
+                        )
+                        wishlistManager.addItem(item)
+                        
+                        onComplete()
+                    }
+                }
+                .disabled(name.isEmpty || priceText.isEmpty)
+            )
+        }
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
+                }
+            }
+        }
+        .interactiveDismissDisabled()  // スワイプで閉じるのを無効化
+    }
+}
+
+struct AddEditCategoryView: View {
+    @Environment(\.dismiss) var dismiss
+    @ObservedObject var productManager: ProductManager
+    var editingCategory: CharacterCategory?
+    
+    @State private var name = ""
+    @State private var selectedType: CharacterType = .character
+    @State private var selectedImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("基本情報") {
+                    TextField("カテゴリー名", text: $name)
+                    Picker("タイプ", selection: $selectedType) {
+                        ForEach(CharacterType.allCases, id: \.self) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                }
+                
+                Section("バナー画像") {
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 200)
+                            .frame(maxWidth: .infinity)
+                    }
+                    
+                    PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                              systemImage: "photo")
+                    }
+                }
+            }
+            .navigationTitle(editingCategory == nil ? "新規カテゴリー" : "カテゴリー編集")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                leading: Button("キャンセル") {
+                    dismiss()
+                },
+                trailing: Button("保存") {
+                    saveCategory()
+                }
+                .disabled(name.isEmpty)
+            )
+        }
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
+                }
+            }
+        }
+        .onAppear {
+            if let category = editingCategory {
+                name = category.name
+                selectedType = category.type
+                if let imageData = category.bannerImageData {
+                    selectedImage = UIImage(data: imageData)
+                }
+            }
+        }
+    }
+    
+    private func saveCategory() {
+        let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
+        
+        if let editingCategory = editingCategory {
+            var updatedCategory = editingCategory
+            updatedCategory.name = name
+            updatedCategory.type = selectedType
+            updatedCategory.bannerImageData = imageData
+            productManager.updateCharacterCategory(updatedCategory)
+        } else {
+            let newCategory = CharacterCategory(
+                name: name,
+                type: selectedType,
+                bannerImageData: imageData
+            )
+            productManager.addCharacterCategory(newCategory)
+        }
+        
         dismiss()
     }
 }

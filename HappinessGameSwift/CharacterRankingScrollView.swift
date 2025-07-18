@@ -192,27 +192,22 @@ struct RankingSelectionView: View {
     var body: some View {
         VStack(spacing: 0) {
             // ヘッダー
-            HStack {
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(.black)
-                }
-                
-                Spacer()
-                
+            ZStack {
                 Text("ランキング選択")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
-                    .frame(maxWidth: .infinity, alignment: .center)
                 
-                Spacer()
-                
-                // 空のスペーサーで右側のバランスを保つ
-                Spacer()
-                    .frame(width: 44)
+                HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.black)
+                    }
+                    
+                    Spacer()
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -221,60 +216,6 @@ struct RankingSelectionView: View {
             
             ScrollView {
                 VStack(spacing: 16) {
-                    // デフォルトランキング
-                    Button(action: {
-                        customRankingManager.selectedRanking = nil
-                        dismiss()
-                    }) {
-                        ZStack(alignment: .bottom) {
-                            // デフォルト背景画像
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.blue, Color.purple]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .frame(height: 144)
-                            .overlay(
-                                Image(systemName: "star.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.white.opacity(0.3))
-                            )
-                            
-                            // タイトルオーバーレイ
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Popular Character Ranking")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(.white)
-                                            .lineLimit(1)
-                                        Text("デフォルトランキング")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.white.opacity(0.8))
-                                            .lineLimit(1)
-                                    }
-                                    Spacer()
-                                    if currentRankingTitle == "Popular Character Ranking" {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.white)
-                                    }
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
-                            }
-                            .background(
-                                VisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialDark))
-                                    .opacity(0.7)
-                            )
-                        }
-                        .frame(maxWidth: .infinity)
-                        .cornerRadius(10)
-                        .clipped()
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    
                     // カスタムランキング
                     ForEach(customRankingManager.activeRankings) { ranking in
                         Button(action: {

@@ -15,9 +15,17 @@ class AuthenticationManager: ObservableObject {
     
     func login() {
         isLoggedIn = true
+        // 既存データの移行を実行
+        UserDefaultsHelper.shared.migrateDataIfNeeded()
+        // ログイン後に通知を送信して、各Managerにデータを再読み込みさせる
+        NotificationCenter.default.post(name: Notification.Name("UserDidLogin"), object: nil)
     }
     
     func logout() {
+        // 現在のユーザーのローカルデータをクリア
+        UserDefaultsHelper.shared.clearCurrentUserData()
+        
+        // ユーザー認証情報を削除
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "username")
         UserDefaults.standard.removeObject(forKey: "isLoggedIn")
@@ -59,6 +67,11 @@ struct HappinessGameSwiftApp: App {
                         // ユーザーIDを確認
                         if let userId = UserDefaults.standard.string(forKey: "userId") {
                             print("✅ ログイン済み: userId=\(userId)")
+                            // 既存データの移行を実行
+                            UserDefaultsHelper.shared.migrateDataIfNeeded()
+                            // データを再読み込み
+                            characterManager.loadCharacters()
+                            animeManager.loadAnimes()
                         }
                     }
             } else {

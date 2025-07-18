@@ -22,27 +22,37 @@ class AnimeManager: ObservableObject {
     
     init() {
         loadAnimes()
+        
+        // ログイン時にデータを再読み込み
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("UserDidLogin"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            self.loadAnimes()
+        }
     }
     
     func loadAnimes() {
-        if let data = UserDefaults.standard.data(forKey: "animes"),
+        if let data = UserDefaultsHelper.shared.getData(forKey: "animes"),
            let decoded = try? JSONDecoder().decode([Anime].self, from: data) {
             print("[DEBUG] loadAnimes: 読み込んだアニメ数=\(decoded.count)")
             for a in decoded { print("[DEBUG] アニメID=\(a.id), title=\(a.title), customFields=\(String(describing: a.customFields))") }
             animes = decoded
         } else {
             print("[DEBUG] loadAnimes: データなし or デコード失敗")
+            animes = []
         }
     }
     
     func saveAnimes() {
         if let data = try? JSONEncoder().encode(animes) {
-            UserDefaults.standard.set(data, forKey: "animes")
+            UserDefaultsHelper.shared.setData(data, forKey: "animes")
             print("[DEBUG] saveAnimes: 保存アニメ数=\(animes.count)")
             for a in animes { print("[DEBUG] 保存アニメID=\(a.id), title=\(a.title), customFields=\(String(describing: a.customFields))") }
             
             // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
-            if let profileData = UserDefaults.standard.data(forKey: "currentUserProfile"),
+            if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
                 print("アニメ変更のFirebase同期開始")
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
@@ -313,27 +323,41 @@ struct AnimeScreen: View {
                     .padding(.bottom, 0)
                 
                 if filteredAnimes.isEmpty {
-                    VStack(spacing: 24) {
-                        Spacer()
-                        
+                    VStack(spacing: 16) {
                         Image(systemName: "tv")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray.opacity(0.6))
+                            .font(.system(size: 50))
+                            .foregroundColor(.purple)
+                        Text("好きなアニメを登録しよう")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.black)
+                        Text("視聴状況を管理して、見逃しを防ぎましょう")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
                         
-                        VStack(spacing: 12) {
-                            Text("アニメがまだありません")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.black)
-                            
-                            Text("右上の「+」ボタンからアニメを追加してください")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
-                                .multilineTextAlignment(.center)
+                        Button(action: { showAddSheet = true }) {
+                            HStack {
+                                Image(systemName: "plus")
+                                Text("アニメを追加")
+                            }
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color(red: 0.6, green: 0.4, blue: 0.9), Color(red: 0.8, green: 0.5, blue: 0.9)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(25)
                         }
-                        
-                        Spacer()
+                        .padding(.top, 20)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 400)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 100)
                 } else {
                     ForEach(filteredAnimes, id: \.id) { anime in
                         Button(action: {
@@ -1424,7 +1448,7 @@ struct AnimeArtworkScreen: View {
     
     private func loadArtworks() {
         let key = "anime_artworks_\(anime.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
+        if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
             artworks = decodedArtworks
             checkPixivArtworks()
@@ -1486,21 +1510,21 @@ struct AnimeArtworkScreen: View {
     private func saveArtworksToUserDefaults() {
         let key = "anime_artworks_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(artworks) {
-            UserDefaults.standard.set(encodedData, forKey: key)
+            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
         }
     }
     
     private func saveAlbumsToUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaults.standard.set(encodedData, forKey: key)
+            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
             print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
     private func loadAlbumsFromUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
+        if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
             print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")

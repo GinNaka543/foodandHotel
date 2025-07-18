@@ -1074,7 +1074,7 @@ struct ArtworkScreen: View {
     func loadArtworks() {
         let key = "character_artworks_\(character.id.uuidString)"
         print("[DEBUG] loadArtworks - key: \(key)")
-        if let data = UserDefaults.standard.data(forKey: key),
+        if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
             artworks = decodedArtworks
             print("[DEBUG] アートワーク読み込み成功: \(artworks.count)件")
@@ -1142,21 +1142,21 @@ struct ArtworkScreen: View {
     func saveArtworksToUserDefaults() {
         let key = "character_artworks_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(artworks) {
-            UserDefaults.standard.set(encodedData, forKey: key)
+            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
         }
     }
     
     private func saveAlbumsToUserDefaults() {
         let key = "artwork_albums_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaults.standard.set(encodedData, forKey: key)
+            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
             print("[DEBUG] ArtworkScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
     private func loadAlbumsFromUserDefaults() {
         let key = "artwork_albums_\(character.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
+        if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
             print("[DEBUG] ArtworkScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")

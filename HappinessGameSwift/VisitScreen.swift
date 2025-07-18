@@ -404,17 +404,40 @@ public struct VisitScreen: View {
         let _ = print("🔍 [DEBUG] planListView - displayPlans.count: \(displayPlans.count)")
         
         if displayPlans.isEmpty && (selectedTab != .all || visitAds.isEmpty) {
+            Spacer()
             VStack(spacing: 16) {
                 Image(systemName: "map")
                     .font(.system(size: 50))
-                    .foregroundColor(.gray)
-                Text(selectedTab == .purchased ? "購入したプランがありません" : "まだプランがありません")
-                    .font(.system(size: 16))
-                    .foregroundColor(.gray)
+                    .foregroundColor(.purple)
+                Text(selectedTab == .purchased ? "購入したプランがありません" : selectedTab == .original ? "オリジナルの旅行プランを作ろう" : "まだプランがありません")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.black)
                 if selectedTab == .original {
-                    Text("右下のCreateボタンから作成してください")
+                    Text("アニメの聖地を巡る、あなただけの旅行プランを作成しましょう")
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                    
+                    Button(action: { showingPlanningScreen = true }) {
+                        HStack {
+                            Image(systemName: "plus")
+                            Text("オリジナルプランを追加")
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color(red: 0.6, green: 0.4, blue: 0.9), Color(red: 0.8, green: 0.5, blue: 0.9)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(25)
+                    }
+                    .padding(.top, 20)
                 } else if selectedTab == .purchased {
                     Text("オールタブからプランを購入してください")
                         .font(.system(size: 14))
@@ -422,7 +445,7 @@ public struct VisitScreen: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, 100)
+            Spacer()
         } else {
             ForEach(Array(combinedItems.enumerated()), id: \.offset) { index, item in
                 if let plan = item as? VisitPlanModel {
@@ -548,8 +571,10 @@ public struct VisitScreen: View {
     
     func loadSavedPlans() {
         print("DEBUG: loadSavedPlans開始")
-        guard let data = UserDefaults.standard.data(forKey: "savedPlans") else {
+        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans") else {
             print("DEBUG: UserDefaultsにデータがありません")
+            savedPlans = []
+            userOriginalPlans = []
             return
         }
         
@@ -1028,13 +1053,18 @@ public struct VisitScreen: View {
     // 非表示のプランIDを保存
     func saveHiddenPlanIds() {
         let idsArray = Array(hiddenPlanIds)
-        UserDefaults.standard.set(idsArray, forKey: "hiddenPlanIds_\(currentUserId)")
+        if let data = try? JSONEncoder().encode(idsArray) {
+            UserDefaultsHelper.shared.setData(data, forKey: "hiddenPlanIds")
+        }
     }
     
     // 非表示のプランIDを読み込み
     func loadHiddenPlanIds() {
-        if let idsArray = UserDefaults.standard.stringArray(forKey: "hiddenPlanIds_\(currentUserId)") {
+        if let data = UserDefaultsHelper.shared.getData(forKey: "hiddenPlanIds"),
+           let idsArray = try? JSONDecoder().decode([String].self, from: data) {
             hiddenPlanIds = Set(idsArray)
+        } else {
+            hiddenPlanIds = []
         }
     }
     

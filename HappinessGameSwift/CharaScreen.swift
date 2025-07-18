@@ -11,27 +11,37 @@ class CharacterManager: ObservableObject {
     init() {
         // ★ 一時的なリセット処理は削除しました
         loadCharacters()
+        
+        // ログイン時にデータを再読み込み
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("UserDidLogin"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            self.loadCharacters()
+        }
     }
     
     func loadCharacters() {
-        if let data = UserDefaults.standard.data(forKey: "characters"),
+        if let data = UserDefaultsHelper.shared.getData(forKey: "characters"),
            let decoded = try? JSONDecoder().decode([Character].self, from: data) {
             print("[DEBUG] loadCharacters: 読み込んだキャラ数=\(decoded.count)")
             for c in decoded { print("[DEBUG] キャラID=\(c.id), name=\(c.name), customFields=\(String(describing: c.customFields))") }
             characters = decoded
         } else {
             print("[DEBUG] loadCharacters: データなし or デコード失敗")
+            characters = []
         }
     }
     
     func saveCharacters() {
         if let data = try? JSONEncoder().encode(characters) {
-            UserDefaults.standard.set(data, forKey: "characters")
+            UserDefaultsHelper.shared.setData(data, forKey: "characters")
             print("[DEBUG] saveCharacters: 保存キャラ数=\(characters.count)")
             for c in characters { print("[DEBUG] 保存キャラID=\(c.id), name=\(c.name), customFields=\(String(describing: c.customFields))") }
             
             // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
-            if let profileData = UserDefaults.standard.data(forKey: "currentUserProfile"),
+            if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
                 print("キャラクター変更のFirebase同期開始")
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
@@ -144,10 +154,19 @@ class CharacterRankingManager: ObservableObject {
     
     init() {
         loadRankings()
+        
+        // ログイン時にデータを再読み込み
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("UserDidLogin"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            self.loadRankings()
+        }
     }
     
     func loadRankings() {
-        if let data = UserDefaults.standard.data(forKey: "characterRankings"),
+        if let data = UserDefaultsHelper.shared.getData(forKey: "characterRankings"),
            let decoded = try? JSONDecoder().decode([CharacterRanking].self, from: data) {
             rankings = decoded.sorted { $0.rank < $1.rank }
         }
@@ -155,7 +174,7 @@ class CharacterRankingManager: ObservableObject {
     
     func saveRankings() {
         if let data = try? JSONEncoder().encode(rankings) {
-            UserDefaults.standard.set(data, forKey: "characterRankings")
+            UserDefaultsHelper.shared.setData(data, forKey: "characterRankings")
         }
     }
     
@@ -345,20 +364,60 @@ struct CharaScreen: View {
                     .padding(.top, 8)
                     .padding(.bottom, 0)
                 // キャラリストのみスクロール
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(filteredCharacters, id: \.id) { character in
-                            Button(action: {
-                                selectedCharacter = character
-                            }) {
-                                CharacterRow(character: character, characterManager: characterManager)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
+                if filteredCharacters.isEmpty {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.2.square.stack")
+                            .font(.system(size: 50))
+                            .foregroundColor(.purple)
+                        Text("お気に入りのキャラクターを追加しよう")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.black)
+                        Text("推しキャラの情報を管理して、いつでも確認できます")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                        
+                        Button(action: { showAddSheet = true }) {
+                            HStack {
+                                Image(systemName: "plus")
+                                Text("キャラクターを追加")
                             }
-                            .buttonStyle(PlainButtonStyle())
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color(red: 0.6, green: 0.4, blue: 0.9), Color(red: 0.8, green: 0.5, blue: 0.9)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(25)
                         }
+                        .padding(.top, 20)
                     }
-                    .padding(.bottom, 75) // ナビゲーションバーの高さ分のパディング
+                    .frame(maxWidth: .infinity)
+                    .offset(y: -30)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(filteredCharacters, id: \.id) { character in
+                                Button(action: {
+                                    selectedCharacter = character
+                                }) {
+                                    CharacterRow(character: character, characterManager: characterManager)
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.bottom, 75) // ナビゲーションバーの高さ分のパディング
+                    }
                 }
             }
         }

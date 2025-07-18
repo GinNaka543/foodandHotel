@@ -282,8 +282,12 @@ struct HomeScreen: View {
                     if !getBirthdayReminderCharacters().isEmpty {
                         HStack {
                             FriendListIconView(
-                                images: getBirthdayReminderCharacters().prefix(4).map { char in
-                                    if let path = char.imageIdentifier, let img = loadImageFromPath(path) { return img } else { return nil }
+                                images: getBirthdayReminderCharacters().prefix(4).compactMap { char in
+                                    print("[HomeScreen] Birthday Character: \(char.name), imageIdentifier: \(char.imageIdentifier ?? "nil")")
+                                    if let path = char.imageIdentifier {
+                                        return loadImageFromPath(path)
+                                    }
+                                    return nil
                                 },
                                 fallbackSystemName: "person",
                                 color: Color.gray.opacity(0.3)
@@ -311,8 +315,12 @@ struct HomeScreen: View {
                     // Characters
                     HStack {
                         FriendListIconView(
-                            images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).map { char in
-                                if let path = char.imageIdentifier, let img = loadImageFromPath(path) { return img } else { return nil }
+                            images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).compactMap { char in
+                                print("[HomeScreen] Character: \(char.name), imageIdentifier: \(char.imageIdentifier ?? "nil")")
+                                if let path = char.imageIdentifier {
+                                    return loadImageFromPath(path)
+                                }
+                                return nil
                             },
                             fallbackSystemName: "person",
                             color: Color.gray.opacity(0.3)
@@ -339,8 +347,12 @@ struct HomeScreen: View {
                     // Animes
                     HStack {
                         FriendListIconView(
-                            images: animeManager.animes.prefix(4).map { anime in
-                                if let path = anime.imageIdentifier, let img = loadImageFromPath(path) { return img } else { return nil }
+                            images: animeManager.animes.prefix(4).compactMap { anime in
+                                print("[HomeScreen] Anime: \(anime.title), imageIdentifier: \(anime.imageIdentifier ?? "nil")")
+                                if let path = anime.imageIdentifier {
+                                    return loadImageFromPath(path)
+                                }
+                                return nil
                             },
                             fallbackSystemName: "film",
                             color: Color.gray.opacity(0.3)
@@ -425,6 +437,7 @@ struct FriendListIconView: View {
     let fallbackSystemName: String
     let color: Color
     var body: some View {
+        let _ = print("[FriendListIconView] 画像数: \(images.count), nilでない画像数: \(images.compactMap { $0 }.count)")
         ZStack {
             if images.count == 1 {
                 iconImage(images[0], fallback: fallbackSystemName, color: color)

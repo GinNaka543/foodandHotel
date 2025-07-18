@@ -96,14 +96,16 @@ func saveImageToDocumentsAsJPEG(_ image: UIImage, fileName: String, quality: CGF
 // ファイルパスからUIImageを取得
 func loadImageFromPath(_ path: String?) -> UIImage? {
     guard let path = path else { 
-        print("画像パスがnil")
+        print("[loadImageFromPath] 画像パスがnil")
         return nil 
     }
+    
+    print("[loadImageFromPath] 読み込み開始: path=\(path)")
     
     // 相対パスから絶対パスを構築
     let fileManager = FileManager.default
     guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-        print("Documentsディレクトリの取得に失敗")
+        print("[loadImageFromPath] Documentsディレクトリの取得に失敗")
         return nil
     }
     
@@ -111,15 +113,25 @@ func loadImageFromPath(_ path: String?) -> UIImage? {
     if path.hasPrefix("/") {
         // 既存の絶対パスの場合（互換性のため）
         absolutePath = path
+        print("[loadImageFromPath] 絶対パスを使用: \(absolutePath)")
     } else {
         // 相対パスの場合
         let fileURL = documentsURL.appendingPathComponent(path)
         absolutePath = fileURL.path
+        print("[loadImageFromPath] 相対パスから絶対パスを構築: \(absolutePath)")
+    }
+    
+    // ファイルの存在確認
+    if !fileManager.fileExists(atPath: absolutePath) {
+        print("[loadImageFromPath] ❌ ファイルが存在しません: \(absolutePath)")
+        return nil
     }
     
     let image = UIImage(contentsOfFile: absolutePath)
     if image == nil {
-        print("画像読み込み失敗: \(absolutePath) (元のパス: \(path))")
+        print("[loadImageFromPath] ❌ 画像読み込み失敗: \(absolutePath) (元のパス: \(path))")
+    } else {
+        print("[loadImageFromPath] ✅ 画像読み込み成功: \(path)")
     }
     return image
 }

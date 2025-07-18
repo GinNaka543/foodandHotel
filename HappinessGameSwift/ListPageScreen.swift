@@ -77,7 +77,7 @@ public struct ListPageScreen: View {
                         ForEach(filteredCharacters, id: \ .id) { character in
                             Button(action: { selectedCharacter = character }) {
                                 HStack(spacing: 16) {
-                                    if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                    if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                         Image(uiImage: image)
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
@@ -110,7 +110,7 @@ public struct ListPageScreen: View {
                         ForEach(filteredAnimes, id: \ .id) { anime in
                             Button(action: { selectedAnime = anime }) {
                                 HStack(spacing: 16) {
-                                    if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                    if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                         Image(uiImage: image)
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
@@ -142,7 +142,7 @@ public struct ListPageScreen: View {
                     VStack(spacing: 0) {
                         ForEach(filteredBirthdays, id: \ .id) { character in
                             HStack(spacing: 16) {
-                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                     Image(uiImage: image)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)

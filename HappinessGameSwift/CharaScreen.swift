@@ -533,6 +533,7 @@ struct AddCharacterSheet: View {
     @State private var birthday = Date()
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var image: UIImage? = nil
+    @State private var savedImagePath: String? = nil
     // 月日Picker用
     @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var selectedDay: Int = Calendar.current.component(.day, from: Date())
@@ -568,11 +569,12 @@ struct AddCharacterSheet: View {
                             Task {
                                 if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                     image = uiImage
-                                    // 画像をドキュメントディレクトリに保存
+                                    // 画像を一時的に保存してパスを記録
                                     let fileName = "icon_\(UUID().uuidString).png"
-                                    _ = saveImageToDocuments(uiImage, fileName: fileName)
-                                    // CharacterのimageIdentifierにパスを保存
-                                    // 追加時に利用するため、必要ならここで変数にセット
+                                    if let path = saveImageToDocuments(uiImage, fileName: fileName) {
+                                        savedImagePath = path
+                                        print("[AddCharacterSheet] 画像を保存: \(path)")
+                                    }
                                 }
                             }
                         }
@@ -610,12 +612,9 @@ struct AddCharacterSheet: View {
                     let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
                     let calendar = Calendar.current
                     let date = calendar.date(from: components) ?? Date()
-                    var imageIdentifier: String? = nil
-                    if let image = image {
-                        let fileName = "icon_\(UUID().uuidString).png"
-                        imageIdentifier = saveImageToDocuments(image, fileName: fileName)
-                    }
-                    let newChar = Character(id: UUID(), imageIdentifier: imageIdentifier, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
+                    // 既に保存済みのパスを使用
+                    let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
+                    print("[AddCharacterSheet] 新しいキャラクター作成: name=\(name), imageIdentifier=\(savedImagePath ?? "nil")")
                     // CharacterManagerのみを使用して追加（重複を防ぐ）
                     characterManager.addCharacterAtTop(newChar)
                     dismiss()

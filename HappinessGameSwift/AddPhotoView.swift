@@ -127,6 +127,8 @@ struct AddPhotoView: View {
                             .font(.headline)
                         TextField("https://www.pixiv.net/artworks/...", text: $pixivURL)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .foregroundColor(.primary)
+                            .accentColor(.gray)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {

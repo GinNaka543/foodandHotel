@@ -136,6 +136,8 @@ struct AddVideoView: View {
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
+                                .foregroundColor(.primary)
+                                .accentColor(.gray)
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {

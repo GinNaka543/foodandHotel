@@ -500,29 +500,8 @@ struct VisitGameScreen: View {
     
     // アニメページスタイルのヘッダー
     var animeStyleHeader: some View {
-        HStack {
-            // 戻るボタン
-            Button(action: {
-                print("×ボタンがタップされました")
-                if let onClose = onClose {
-                    print("onCloseを実行します")
-                    onClose()
-                } else {
-                    print("dismissを実行します")
-                    dismiss()
-                }
-            }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.black)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .zIndex(999)
-            
-            Spacer()
-            
-            // スポットカウントを中央に配置
+        ZStack {
+            // スポットカウントを真の中央に配置
             HStack(spacing: 4) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 14))
@@ -531,30 +510,53 @@ struct VisitGameScreen: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.gray)
             }
+            .frame(maxWidth: .infinity)
             
-            Spacer()
-            
-            // Watchボタン
-            Button(action: {
-                showStreamingSheet = true
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 14))
-                    Text("Watch")
-                        .font(.system(size: 14, weight: .medium))
+            // 左右のボタンをHStackで配置
+            HStack {
+                // 戻るボタン
+                Button(action: {
+                    print("×ボタンがタップされました")
+                    if let onClose = onClose {
+                        print("onCloseを実行します")
+                        onClose()
+                    } else {
+                        print("dismissを実行します")
+                        dismiss()
+                    }
+                }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.black)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule()
-                        .fill(LinearGradient(
-                            gradient: Gradient(colors: [Color.purple, Color.yellow]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ))
-                )
+                .zIndex(999)
+                
+                Spacer()
+                
+                // Watchボタン
+                Button(action: {
+                    showStreamingSheet = true
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 14))
+                        Text("Watch")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        Capsule()
+                            .fill(LinearGradient(
+                                gradient: Gradient(colors: [Color.purple, Color.yellow]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            ))
+                    )
+                }
             }
         }
         .padding(.horizontal, 16)

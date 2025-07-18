@@ -1611,15 +1611,58 @@ struct AlbumVideoListScreen: View {
     @State private var selectedVideo: MemoryVideo? = nil
     var body: some View {
         VStack(spacing: 0) {
+            // アルバムバナー
+            if let firstVideo = videos.first {
+                ZStack(alignment: .bottomLeading) {
+                    // バナー背景画像
+                    Group {
+                        if let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                        } else if let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
+                            AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            } placeholder: {
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                            }
+                        } else {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                        }
+                    }
+                    .frame(height: 180)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.black.opacity(0.6), Color.black.opacity(0)]),
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                    )
+                    
+                    // アルバム情報
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("#" + tag)
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("\(videos.count)件の動画")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
             HStack {
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 22, weight: .medium))
                         .foregroundColor(.black)
                 }
-                Text("#" + tag)
-                    .font(.system(size: 20, weight: .bold))
-                    .padding(.leading, 8)
                 Spacer()
             }
             .padding(.horizontal, 16)
@@ -1683,6 +1726,7 @@ struct AlbumVideoListScreen: View {
                 }
             }
         }
+        .background(Color.white)
         .fullScreenCover(item: $selectedVideo) { video in
             VideoPlayerScreen(
                 video: video,

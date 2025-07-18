@@ -11,6 +11,52 @@ struct AlbumArtworkListScreen: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // アルバムバナー
+            if let firstArtwork = artworks.first {
+                ZStack(alignment: .bottomLeading) {
+                    // バナー背景画像
+                    Group {
+                        if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                        } else if let pixivURL = firstArtwork.pixivURL {
+                            if let customThumbnailData = firstArtwork.customThumbnailData,
+                               let uiImage = UIImage(data: customThumbnailData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                            } else {
+                                PixivThumbnailView(pixivURL: pixivURL)
+                            }
+                        } else {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                        }
+                    }
+                    .frame(height: 180)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.black.opacity(0.6), Color.black.opacity(0)]),
+                            startPoint: .bottom,
+                            endPoint: .top
+                        )
+                    )
+                    
+                    // アルバム情報
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("#" + tag)
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("\(artworks.count)件の作品")
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
             HStack {
                 Button(action: { presentationMode.wrappedValue.dismiss() }) {
                     Image(systemName: "chevron.left")
@@ -18,10 +64,6 @@ struct AlbumArtworkListScreen: View {
                         .font(.system(size: 24, weight: .bold))
                 }
                 .padding(.leading, 16)
-                
-                Text("#" + tag)
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.leading, 8)
                 Spacer()
             }
             .padding(.top, 24)
@@ -86,6 +128,7 @@ struct AlbumArtworkListScreen: View {
                 }
             }
         }
+        .background(Color.white)
         .fullScreenCover(item: $selectedArtwork) { artwork in
             ArtworkPlayerScreen(
                 artwork: artwork,

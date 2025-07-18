@@ -40,6 +40,9 @@ public struct VisitScreen: View {
     
     public var body: some View {
         mainContent
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NavigateToVisitOriginalTab"))) { _ in
+                selectedTab = .original
+            }
             .fullScreenCover(isPresented: $showingPlanningScreen) {
                 VisitPlanningScreen(editingDraft: selectedDraftPlan)
                     .onDisappear {

@@ -759,6 +759,11 @@ struct VisitPlanningScreen: View {
             UserDefaults.standard.set(encoded, forKey: "savedPlans")
             
             DispatchQueue.main.async {
+                // オリジナルタブに遷移
+                NotificationCenter.default.post(
+                    name: Notification.Name("NavigateToVisitOriginalTab"),
+                    object: nil
+                )
                 self.dismiss()
             }
         } else {

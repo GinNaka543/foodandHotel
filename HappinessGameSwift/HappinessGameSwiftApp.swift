@@ -3,7 +3,7 @@ import FirebaseCore
 import StripePaymentSheet
 
 class MainTabSelection: ObservableObject {
-    @Published var selectedTab: MainContainerView.Tab = .home {
+    @Published var selectedTab: MainContainerView.Tab = .chara {
         didSet {
             print("🔄 [MainTabSelection] タブ変更: \(oldValue.title) → \(selectedTab.title)")
         }

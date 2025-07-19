@@ -160,12 +160,14 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var watchStatus: WatchStatus = .none  // 後方互換性のため残す
     var watchStatuses: [WatchStatus] = []  // 複数選択用の新しいフィールド
     var order: Int = 0  // 表示順序用フィールド
+    var rating: Double = 0.0  // レーティング（0.0〜5.0）
+    var voiceActors: [String] = []  // 声優リスト
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -179,6 +181,8 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(watchStatus, forKey: .watchStatus)
         try container.encode(watchStatuses, forKey: .watchStatuses)
         try container.encode(order, forKey: .order)
+        try container.encode(rating, forKey: .rating)
+        try container.encode(voiceActors, forKey: .voiceActors)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -203,8 +207,12 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         
         // orderを読み込む。古いデータの場合はデフォルト値を使用
         order = (try? container.decode(Int.self, forKey: .order)) ?? 0
+        
+        // ratingとvoiceActorsを読み込む。古いデータの場合はデフォルト値を使用
+        rating = (try? container.decode(Double.self, forKey: .rating)) ?? 0.0
+        voiceActors = (try? container.decode([String].self, forKey: .voiceActors)) ?? []
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = []) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -215,6 +223,8 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.watchStatus = watchStatus
         self.watchStatuses = watchStatuses.isEmpty && watchStatus != .none ? [watchStatus] : watchStatuses
         self.order = order
+        self.rating = rating
+        self.voiceActors = voiceActors
     }
 }
 
@@ -435,7 +445,8 @@ struct AnimeRow: View {
     @ObservedObject var animeManager: AnimeManager
     
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .top, spacing: 16) {
+            // 左側：サムネイルのみ
             if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
@@ -448,18 +459,50 @@ struct AnimeRow: View {
                     .fill(Color.gray.opacity(0.3))
                     .frame(width: 183, height: 229)
             }
-            VStack(alignment: .leading, spacing: 4) {
+            
+            // 右側：アニメ情報
+            VStack(alignment: .leading, spacing: 8) {
+                // タイトル
                 Text(anime.title)
-                    .font(.system(size: 15.5, weight: .semibold))
+                    .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.black)
-                    .frame(height: 20)
+                    .lineLimit(2)
+                
+                // ハッシュタグ
                 Text("#" + anime.hashtag)
-                    .font(.system(size: 12.8, weight: .regular))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundColor(.gray)
-                    .frame(height: 20)
+                    .lineLimit(1)
+                
+                // レーティング（常に表示）
+                HStack(spacing: 4) {
+                    ForEach(1...5, id: \.self) { index in
+                        Image(systemName: index <= Int(anime.rating.rounded()) ? "star.fill" : "star")
+                            .font(.system(size: 14))
+                            .foregroundColor(index <= Int(anime.rating.rounded()) ? .yellow : .gray.opacity(0.3))
+                    }
+                    Text(String(format: "%.1f", anime.rating))
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                
+                // 声優情報（常に表示）
+                if !anime.voiceActors.isEmpty {
+                    Text("声優: " + anime.voiceActors.prefix(3).joined(separator: ", "))
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                        .lineLimit(2)
+                } else {
+                    Text("声優: 声優情報を入力してください")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray.opacity(0.5))
+                        .italic()
+                }
+                
+                Spacer()
             }
-            .offset(y: -15)
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
         }
         .padding(.vertical, 6)
         .background(Color.clear)
@@ -2578,6 +2621,8 @@ struct AnimeAboutView: View {
     @State private var editedHashtag: String = ""
     @State private var editedReleaseDate: Date = Date()
     @State private var editedWatchStatuses: Set<WatchStatus> = []
+    @State private var editedRating: Double = 0.0
+    @State private var editedVoiceActors: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
     @State private var showEditSelection: Bool = false
@@ -2694,6 +2739,10 @@ struct AnimeAboutView: View {
                                 editableProfileRow(label: "ハッシュタグ", text: $editedHashtag)
                                 Divider().padding(.leading, 20)
                                 statusSelectionRow(label: "ステータス", statuses: $editedWatchStatuses)
+                                Divider().padding(.leading, 20)
+                                ratingSelectionRow(label: "レート", rating: $editedRating)
+                                Divider().padding(.leading, 20)
+                                editableProfileRow(label: "声優", text: $editedVoiceActors)
                             } else {
                                 profileRow(label: "タイトル", value: anime.title)
                                 Divider().padding(.leading, 20)
@@ -2701,6 +2750,10 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 let statusText = anime.watchStatuses.filter { $0 != .none }.map { $0.rawValue }.joined(separator: "、")
                                 profileRow(label: "ステータス", value: statusText.isEmpty ? "未設定" : statusText)
+                                Divider().padding(.leading, 20)
+                                profileRow(label: "レート", value: anime.rating > 0 ? String(format: "%.1f / 5.0", anime.rating) : "未設定")
+                                Divider().padding(.leading, 20)
+                                profileRow(label: "声優", value: anime.voiceActors.isEmpty ? "未設定" : anime.voiceActors.joined(separator: ", "))
                             }
                         }
                         .background(Color.white)
@@ -2801,6 +2854,8 @@ struct AnimeAboutView: View {
             editedHashtag = anime.hashtag
             editedReleaseDate = anime.releaseDate
             editedWatchStatuses = Set(anime.watchStatuses)
+            editedRating = anime.rating
+            editedVoiceActors = anime.voiceActors.joined(separator: ", ")
         }
         .onDisappear {
             saveAnime()
@@ -2954,6 +3009,38 @@ struct AnimeAboutView: View {
         .padding(.vertical, 8)
     }
     
+    private func ratingSelectionRow(label: String, rating: Binding<Double>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
+            
+            HStack(spacing: 4) {
+                ForEach(1...5, id: \.self) { index in
+                    Button(action: {
+                        rating.wrappedValue = Double(index)
+                    }) {
+                        Image(systemName: index <= Int(rating.wrappedValue) ? "star.fill" : "star")
+                            .font(.system(size: 20))
+                            .foregroundColor(index <= Int(rating.wrappedValue) ? .yellow : .gray)
+                    }
+                }
+                
+                if rating.wrappedValue > 0 {
+                    Text(String(format: "%.1f", rating.wrappedValue))
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .padding(.leading, 8)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+    
     // MARK: - Helper Methods
     private func loadAnimeDescription() {
         // カスタムフィールドから"概要"フィールドを探す
@@ -2973,6 +3060,14 @@ struct AnimeAboutView: View {
         updatedAnime.title = editedTitle
         updatedAnime.hashtag = editedHashtag
         updatedAnime.watchStatuses = Array(editedWatchStatuses)
+        updatedAnime.rating = editedRating
+        
+        // 声優リストを処理（カンマ区切りを配列に変換）
+        let voiceActorsList = editedVoiceActors
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        updatedAnime.voiceActors = voiceActorsList
         
         // 概要をカスタムフィールドに保存
         if updatedAnime.customFields == nil {

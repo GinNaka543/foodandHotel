@@ -37,7 +37,7 @@ struct VisitPlanningScreen: View {
     
     init(editingDraft: VisitPlanData? = nil) {
         if let draft = editingDraft {
-            print("DEBUG: 下書きデータを読み込み中: \(draft.title)")
+            // print("DEBUG: 下書きデータを読み込み中: \(draft.title)")
             self.editingDraftId = draft.id
             self._animeName = State(initialValue: draft.animeName)
             self._planTitle = State(initialValue: draft.title)

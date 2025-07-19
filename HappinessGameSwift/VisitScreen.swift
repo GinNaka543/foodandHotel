@@ -25,6 +25,7 @@ public struct VisitScreen: View {
     @State private var showNavigationMenu = false
     @State private var hiddenPlanIds: Set<String> = []
     @State private var selectedDraftPlan: VisitPlanData? = nil
+    @State private var isLoadingDraft = false
     @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
@@ -44,24 +45,27 @@ public struct VisitScreen: View {
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NavigateToVisitOriginalTab"))) { _ in
                 selectedTab = .original
             }
-            .fullScreenCover(isPresented: $showingPlanningScreen) {
-                VisitPlanningScreen(editingDraft: selectedDraftPlan)
-                    .onDisappear {
-                        print("🔥 DEBUG: プランニング画面が閉じられました - データを再読み込みします")
-                        print("🔥 DEBUG: selectedTab: \(selectedTab.rawValue)")
-                        selectedDraftPlan = nil // クリア
-                        loadSavedPlans()
-                        loadFirebasePlans()
-                        
-                        // タブごとのプラン数を確認
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            print("🔥 DEBUG: 再読み込み後の状態:")
-                            print("  - publicPlans: \(self.publicPlans.count)個")
-                            print("  - userOriginalPlans: \(self.userOriginalPlans.count)個")
-                            print("  - purchasedPlans: \(self.purchasedPlans.count)個")
-                            print("  - savedPlans: \(self.savedPlans.count)個")
-                        }
-                    }
+            .fullScreenCover(isPresented: $showingPlanningScreen, onDismiss: {
+                print("🔥 DEBUG: プランニング画面が閉じられました - データを再読み込みします")
+                print("🔥 DEBUG: selectedTab: \(selectedTab.rawValue)")
+                selectedDraftPlan = nil // クリア
+                loadSavedPlans()
+                loadFirebasePlans()
+                
+                // タブごとのプラン数を確認
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    print("🔥 DEBUG: 再読み込み後の状態:")
+                    print("  - publicPlans: \(self.publicPlans.count)個")
+                    print("  - userOriginalPlans: \(self.userOriginalPlans.count)個")
+                    print("  - purchasedPlans: \(self.purchasedPlans.count)個")
+                    print("  - savedPlans: \(self.savedPlans.count)個")
+                }
+            }) {
+                if let draft = selectedDraftPlan {
+                    VisitPlanningScreen(editingDraft: draft)
+                } else {
+                    VisitPlanningScreen()
+                }
             }
             .sheet(item: $planToPurchase) { plan in
                 let _ = print("💰 [DEBUG] purchase sheet が表示されます")
@@ -131,6 +135,7 @@ public struct VisitScreen: View {
                     print("DEBUG: 新しいユーザーIDを生成しました: \(newUserId)")
                 }
                 
+                // データを読み込む
                 loadHiddenPlanIds()
                 loadSavedPlans()
                 loadVisitAds()
@@ -560,7 +565,9 @@ public struct VisitScreen: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(VisitTab.allCases, id: \.self) { tab in
-                            Button(action: { selectedTab = tab }) {
+                            Button(action: { 
+                                selectedTab = tab
+                            }) {
                                 Text(tab.rawValue)
                                     .font(.system(size: 16, weight: .regular))
                                     .foregroundColor(selectedTab == tab ? .white : .black)
@@ -611,6 +618,33 @@ public struct VisitScreen: View {
                     )
                     .transition(.opacity)
                     .zIndex(2)
+                }
+            }
+        )
+        .overlay(
+            Group {
+                if isLoadingDraft {
+                    ZStack {
+                        Color.black.opacity(0.5)
+                            .edgesIgnoringSafeArea(.all)
+                        
+                        VStack(spacing: 20) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+                            
+                            Text("下書きプランを読み込み中...")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        .padding(40)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.black.opacity(0.8))
+                        )
+                    }
+                    .transition(.opacity)
+                    .zIndex(3)
                 }
             }
         )
@@ -921,10 +955,34 @@ public struct VisitScreen: View {
         // 下書きプランの場合は編集画面を開く
         if plan.isDraft {
             print("  → 下書きプランです。編集画面を開きます。")
-            // 対応するVisitPlanDataを見つける
+            
+            // ローディング開始
+            isLoadingDraft = true
+            
+            // 対応するVisitPlanDataを見つける（現在のsavedPlansから直接取得）
             if let draftData = savedPlans.first(where: { $0.id.uuidString == plan.id }) {
-                selectedDraftPlan = draftData
-                showingPlanningScreen = true
+                print("  → 下書きデータを見つけました: \(draftData.title)")
+                // 少し遅延を入れてスムーズな遷移を演出
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.selectedDraftPlan = draftData
+                    self.showingPlanningScreen = true
+                    self.isLoadingDraft = false
+                }
+            } else {
+                print("  → 下書きデータが見つかりません。最新データを読み込みます。")
+                // データが見つからない場合のみ再読み込み
+                loadSavedPlans()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    if let draftData = self.savedPlans.first(where: { $0.id.uuidString == plan.id }) {
+                        print("  → 再読み込み後、下書きデータを見つけました: \(draftData.title)")
+                        self.selectedDraftPlan = draftData
+                        self.showingPlanningScreen = true
+                    } else {
+                        print("  → エラー: 下書きデータが見つかりません")
+                    }
+                    self.isLoadingDraft = false
+                }
             }
             return
         }

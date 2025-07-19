@@ -237,52 +237,68 @@ struct ProductScreen: View {
                 // キャラクター・アニメ別バナー表示
                 ScrollView {
                     VStack(spacing: 12) {
-                        if productManager.characterCategories.isEmpty && wishlistManager.items.isEmpty {
-                            VStack(spacing: 16) {
-                                Image(systemName: "cart")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray)
-                                Text("欲しい商品がありません")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
-                                Text("右上の「商品を追加」から追加してください")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.gray)
+                        // 商品があるカテゴリーを探す
+                        let categoriesWithItems = productManager.characterCategories.filter { category in
+                            !wishlistManager.getItemsForCategory(category.id).isEmpty
+                        }
+                        
+                        if categoriesWithItems.isEmpty {
+                            // 商品が1つもない場合の表示
+                            VStack(spacing: 20) {
+                                Image(systemName: "bag.circle")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.gray.opacity(0.5))
+                                
+                                VStack(spacing: 8) {
+                                    Text("欲しい商品を登録しよう")
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(.black)
+                                    
+                                    Text("好きなキャラクターやアニメの\n商品を登録して管理できます")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                        .multilineTextAlignment(.center)
+                                        .lineSpacing(4)
+                                }
+                                
+                                Button(action: {
+                                    showCategorySelection = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.system(size: 18))
+                                        Text("商品を追加する")
+                                            .font(.system(size: 16, weight: .semibold))
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.cyan, Color.cyan.opacity(0.6)]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .cornerRadius(25)
+                                }
+                                .padding(.top, 10)
                             }
                             .frame(maxWidth: .infinity)
-                            .padding(.top, 100)
+                            .padding(.top, 80)
                         } else {
                             // カテゴリー別バナー表示（商品がある場合のみ表示）
-                            ForEach(productManager.characterCategories) { category in
+                            ForEach(categoriesWithItems) { category in
                                 let itemsForCategory = wishlistManager.getItemsForCategory(category.id)
-                                if !itemsForCategory.isEmpty {
-                                    NavigationLink(destination: CategoryListView(
-                                        category: category,
-                                        wishlistManager: wishlistManager,
-                                        productManager: productManager
-                                    )) {
-                                        CategoryBannerView(
-                                            title: category.name,
-                                            itemCount: itemsForCategory.count,
-                                            bannerImageData: category.bannerImageData
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    .padding(.horizontal, 16)
-                                }
-                            }
-                            
-                            // カテゴリーなしの商品がある場合
-                            if !wishlistManager.getItemsWithoutCategory().isEmpty {
                                 NavigationLink(destination: CategoryListView(
-                                    category: nil,
+                                    category: category,
                                     wishlistManager: wishlistManager,
                                     productManager: productManager
                                 )) {
                                     CategoryBannerView(
-                                        title: "その他",
-                                        itemCount: wishlistManager.getItemsWithoutCategory().count,
-                                        bannerImageData: nil
+                                        title: category.name,
+                                        itemCount: itemsForCategory.count,
+                                        bannerImageData: category.bannerImageData
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())

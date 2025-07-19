@@ -135,7 +135,7 @@ struct ProductScreen: View {
                         .padding(.vertical, 8)
                         .background(
                             LinearGradient(
-                                gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.7)]),
+                                gradient: Gradient(colors: [Color.cyan, Color.cyan.opacity(0.6)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -786,60 +786,63 @@ struct CategorySelectionView: View {
                     .foregroundColor(.black)
                     .padding(.bottom, 16)
                 
-                // 既存カテゴリーリスト
+                // 既存カテゴリーリスト（商品があるカテゴリーのみ表示）
                 ScrollView {
                     VStack(spacing: 12) {
                         ForEach(productManager.characterCategories) { category in
-                            Button(action: {
-                                onCategorySelected(category)
-                            }) {
-                                HStack {
-                                    // カテゴリー画像
-                                    if let imageData = category.bannerImageData,
-                                       let uiImage = UIImage(data: imageData) {
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 60, height: 60)
-                                            .clipShape(Circle())
-                                    } else {
-                                        Circle()
-                                            .fill(
-                                                LinearGradient(
-                                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
+                            let itemCount = wishlistManager.getItemsForCategory(category.id).count
+                            if itemCount > 0 {
+                                Button(action: {
+                                    onCategorySelected(category)
+                                }) {
+                                    HStack {
+                                        // カテゴリー画像
+                                        if let imageData = category.bannerImageData,
+                                           let uiImage = UIImage(data: imageData) {
+                                            Image(uiImage: uiImage)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 60, height: 60)
+                                                .clipShape(Circle())
+                                        } else {
+                                            Circle()
+                                                .fill(
+                                                    LinearGradient(
+                                                        gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                                        startPoint: .topLeading,
+                                                        endPoint: .bottomTrailing
+                                                    )
                                                 )
-                                            )
-                                            .frame(width: 60, height: 60)
-                                            .overlay(
-                                                Text(String(category.name.prefix(1)))
-                                                    .font(.system(size: 24, weight: .bold))
-                                                    .foregroundColor(.white)
-                                            )
-                                    }
-                                    
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(category.name)
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(.black)
-                                        Text(category.type.rawValue)
+                                                .frame(width: 60, height: 60)
+                                                .overlay(
+                                                    Text(String(category.name.prefix(1)))
+                                                        .font(.system(size: 24, weight: .bold))
+                                                        .foregroundColor(.white)
+                                                )
+                                        }
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text(category.name)
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .foregroundColor(.black)
+                                            Text("\(category.type.rawValue) ・ \(itemCount)個の商品")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.gray)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
                                             .font(.system(size: 14))
                                             .foregroundColor(.gray)
                                     }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Color.gray.opacity(0.05))
+                                    .cornerRadius(10)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
-                                .background(Color.gray.opacity(0.05))
-                                .cornerRadius(10)
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
                     }
                     .padding(.horizontal, 16)

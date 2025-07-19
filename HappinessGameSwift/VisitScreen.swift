@@ -26,6 +26,8 @@ public struct VisitScreen: View {
     @State private var hiddenPlanIds: Set<String> = []
     @State private var selectedDraftPlan: VisitPlanData? = nil
     @State private var isLoadingDraft = false
+    @State private var isLoadingPlan = false
+    @State private var loadingMessage = "プランを読み込み中..."
     @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
@@ -549,13 +551,13 @@ public struct VisitScreen: View {
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(width: 45, height: 36)
-                                .background(Color.red)
+                                .background(Color.black)
                         }
                     }
                     .cornerRadius(8)
                     .overlay(
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.red, lineWidth: 1)
+                            .stroke(Color.black, lineWidth: 1)
                     )
                 }
                 .padding(.horizontal, 16)
@@ -623,7 +625,7 @@ public struct VisitScreen: View {
         )
         .overlay(
             Group {
-                if isLoadingDraft {
+                if isLoadingDraft || isLoadingPlan {
                     ZStack {
                         Color.black.opacity(0.5)
                             .edgesIgnoringSafeArea(.all)
@@ -633,7 +635,7 @@ public struct VisitScreen: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(1.5)
                             
-                            Text("下書きプランを読み込み中...")
+                            Text(isLoadingDraft ? "下書きプランを読み込み中..." : loadingMessage)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.white)
                         }
@@ -644,6 +646,7 @@ public struct VisitScreen: View {
                         )
                     }
                     .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.3), value: isLoadingDraft || isLoadingPlan)
                     .zIndex(3)
                 }
             }
@@ -1024,11 +1027,15 @@ public struct VisitScreen: View {
         }
         
         // ローカル記録にない場合、Firebaseでチェック
+        loadingMessage = "購入状態を確認中..."
+        isLoadingPlan = true
+        
         firebaseManager.checkPlanPurchased(userId: currentUserId, planId: plan.id) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let isPurchased):
                     print("  → 購入チェック結果: \(isPurchased ? "購入済み" : "未購入")")
+                    self.isLoadingPlan = false
                     if isPurchased {
                         print("  → 購入済みなので直接表示します。")
                         // Firebaseで購入確認できた場合、ローカル記録も更新
@@ -1040,6 +1047,7 @@ public struct VisitScreen: View {
                     }
                 case .failure(let error):
                     print("  → 購入チェックエラー: \(error)")
+                    self.isLoadingPlan = false
                     // エラーが発生した場合も購入画面を表示
                     print("  → エラーのため購入画面を表示します。")
                     self.showPurchaseDialog(for: plan)
@@ -1055,8 +1063,16 @@ public struct VisitScreen: View {
         print("  - title: \(plan.title)")
         print("  - spots count: \(plan.spots.count)")
         
-        self.selectedPlanForNavigation = plan
-        print("DEBUG: showPlanDetail - selectedPlanForNavigation設定完了")
+        // ローディング開始
+        loadingMessage = "プランを読み込み中..."
+        isLoadingPlan = true
+        
+        // 少し遅延を入れてスムーズな遷移を演出
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            self.selectedPlanForNavigation = plan
+            self.isLoadingPlan = false
+            print("DEBUG: showPlanDetail - selectedPlanForNavigation設定完了")
+        }
     }
     
     // 購入ダイアログを表示

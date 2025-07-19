@@ -2324,55 +2324,64 @@ struct CategoryEditView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                // カテゴリー情報セクション
-                CategoryInfoSection(
-                    editedName: $editedName,
-                    selectedImage: $selectedImage,
-                    selectedPhotoItem: $selectedPhotoItem,
-                    category: category
-                )
-                
-                // 商品リストセクション
-                CategoryProductsSection(
-                    category: category,
-                    wishlistManager: wishlistManager,
-                    itemToDelete: $itemToDelete,
-                    showDeleteItemAlert: $showDeleteItemAlert
-                )
-                
-                // 削除セクション
-                Section {
-                    Button(action: {
-                        showDeleteAlert = true
-                    }) {
-                        HStack {
-                            Spacer()
-                            Image(systemName: "trash")
-                            Text("このカテゴリーを削除")
-                            Spacer()
+            VStack(spacing: 0) {
+                // カスタムヘッダー
+                ZStack {
+                    Text("カテゴリー編集")
+                        .font(.system(size: 17, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                    
+                    HStack {
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.black)
                         }
-                        .foregroundColor(.red)
-                        .font(.system(size: 16, weight: .medium))
+                        
+                        Spacer()
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+                .background(Color(UIColor.systemGray6))
+                
+                Form {
+                    // カテゴリー情報セクション
+                    CategoryInfoSection(
+                        editedName: $editedName,
+                        selectedImage: $selectedImage,
+                        selectedPhotoItem: $selectedPhotoItem,
+                        category: category
+                    )
+                    
+                    // 商品リストセクション
+                    CategoryProductsSection(
+                        category: category,
+                        wishlistManager: wishlistManager,
+                        itemToDelete: $itemToDelete,
+                        showDeleteItemAlert: $showDeleteItemAlert
+                    )
+                    
+                    // 削除セクション
+                    Section {
+                        Button(action: {
+                            showDeleteAlert = true
+                        }) {
+                            HStack {
+                                Spacer()
+                                Image(systemName: "trash")
+                                Text("このカテゴリーを削除")
+                                Spacer()
+                            }
+                            .foregroundColor(.red)
+                            .font(.system(size: 16, weight: .medium))
+                        }
                     }
                 }
             }
-            .navigationTitle("カテゴリー編集")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("キャンセル") {
-                    dismiss()
-                }
-            }
-            
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("保存") {
-                    saveChanges()
-                }
-                .disabled(editedName.isEmpty)
-            }
+            .navigationBarHidden(true)
         }
         .onAppear {
             editedName = category.name

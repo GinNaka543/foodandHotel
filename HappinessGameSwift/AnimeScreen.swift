@@ -440,13 +440,13 @@ struct AnimeRow: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 183, height: 99)
+                    .frame(width: 183, height: 229)
                     .clipped()
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             } else {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(Color.gray.opacity(0.3))
-                    .frame(width: 183, height: 99)
+                    .frame(width: 183, height: 229)
             }
             VStack(alignment: .leading, spacing: 4) {
                 Text(anime.title)

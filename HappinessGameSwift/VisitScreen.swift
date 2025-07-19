@@ -34,8 +34,9 @@ public struct VisitScreen: View {
         case purchased = "購入済み"
     }
     @State private var selectedTab: VisitTab = .all
-    @State private var showSearchBar = false
+    @State private var showSearchBar = true
     @State private var searchText = ""
+    @State private var activeSearchText = ""
     @State private var showingPlanningScreen = false
     
     public var body: some View {
@@ -46,10 +47,20 @@ public struct VisitScreen: View {
             .fullScreenCover(isPresented: $showingPlanningScreen) {
                 VisitPlanningScreen(editingDraft: selectedDraftPlan)
                     .onDisappear {
-                        print("プランニング画面が閉じられました - データを再読み込みします")
+                        print("🔥 DEBUG: プランニング画面が閉じられました - データを再読み込みします")
+                        print("🔥 DEBUG: selectedTab: \(selectedTab.rawValue)")
                         selectedDraftPlan = nil // クリア
                         loadSavedPlans()
                         loadFirebasePlans()
+                        
+                        // タブごとのプラン数を確認
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            print("🔥 DEBUG: 再読み込み後の状態:")
+                            print("  - publicPlans: \(self.publicPlans.count)個")
+                            print("  - userOriginalPlans: \(self.userOriginalPlans.count)個")
+                            print("  - purchasedPlans: \(self.purchasedPlans.count)個")
+                            print("  - savedPlans: \(self.savedPlans.count)個")
+                        }
                     }
             }
             .sheet(item: $planToPurchase) { plan in
@@ -404,8 +415,8 @@ public struct VisitScreen: View {
         let _ = print("🔍 [DEBUG] planListView - displayPlans.count: \(displayPlans.count)")
         
         if displayPlans.isEmpty && (selectedTab != .all || visitAds.isEmpty) {
-            Spacer()
-            VStack(spacing: 16) {
+            GeometryReader { geometry in
+                VStack(spacing: 16) {
                 Image(systemName: "map")
                     .font(.system(size: 50))
                     .foregroundColor(.purple)
@@ -439,13 +450,31 @@ public struct VisitScreen: View {
                     }
                     .padding(.top, 20)
                 } else if selectedTab == .purchased {
-                    Text("オールタブからプランを購入してください")
+                    Text("お気に入りのプランを購入して\nアニメの世界を体験しよう")
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                    
+                    Button(action: { selectedTab = .all }) {
+                        HStack {
+                            Image(systemName: "cart")
+                            Text("プランを購入する")
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color.red)
+                        .cornerRadius(25)
+                    }
+                    .padding(.top, 20)
                 }
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
             }
-            .frame(maxWidth: .infinity)
-            Spacer()
+            .frame(minHeight: 400)
         } else {
             ForEach(Array(combinedItems.enumerated()), id: \.offset) { index, item in
                 if let plan = item as? VisitPlanModel {
@@ -460,7 +489,13 @@ public struct VisitScreen: View {
     @ViewBuilder
     private var mainContent: some View {
         NavigationView {
-            ZStack(alignment: .bottomTrailing) {
+            mainBodyContent
+        }
+    }
+    
+    @ViewBuilder
+    private var mainBodyContent: some View {
+        ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
@@ -474,36 +509,49 @@ public struct VisitScreen: View {
                             .foregroundColor(.black)
                     }
                     Spacer()
-                    // 虫眼鏡
-                    if showSearchBar {
-                        HStack(spacing: 8) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 22, weight: .regular))
-                                .foregroundColor(.gray)
-                            TextField("Search", text: $searchText)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled(true)
-                                .font(.system(size: 16, weight: .regular))
+                    // Amazon風検索バー（常時表示）
+                    HStack(spacing: 0) {
+                        HStack {
+                            TextField("タイトルもしくはアニメから検索", text: $searchText)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .font(.system(size: 14))
                                 .foregroundColor(.black)
-                            Button(action: { withAnimation { showSearchBar = false; searchText = "" } }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 22, weight: .regular))
-                                    .foregroundColor(.gray)
+                            
+                            if !searchText.isEmpty {
+                                Button(action: {
+                                    searchText = ""
+                                    activeSearchText = ""
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(Color(.systemGray3))
+                                        .font(.system(size: 14))
+                                }
                             }
                         }
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 8)
                         .padding(.horizontal, 12)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                        .frame(height: 38)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                    } else {
-                        Button(action: { withAnimation { showSearchBar.toggle() } }) {
+                        .background(Color.white)
+                        
+                        // 検索ボタン
+                        Button(action: {
+                            // 検索を実行
+                            activeSearchText = searchText
+                            // キーボードを閉じる
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }) {
                             Image(systemName: "magnifyingglass")
-                                .font(.system(size: 24, weight: .regular))
-                                .foregroundColor(.black)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 45, height: 36)
+                                .background(Color.red)
                         }
                     }
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.red, lineWidth: 1)
+                    )
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 28) // さらに10px上げる
@@ -546,7 +594,7 @@ public struct VisitScreen: View {
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.purple)
+                            .fill(Color.red)
                     )
             }
             .padding(.bottom, 24)
@@ -566,13 +614,13 @@ public struct VisitScreen: View {
                 }
             }
         )
-        }
     }
     
     func loadSavedPlans() {
-        print("DEBUG: loadSavedPlans開始")
+        print("🔍 DEBUG: loadSavedPlans開始")
+        print("🔍 DEBUG: currentUserId: \(currentUserId)")
         guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans") else {
-            print("DEBUG: UserDefaultsにデータがありません")
+            print("🔍 DEBUG: UserDefaultsにデータがありません")
             savedPlans = []
             userOriginalPlans = []
             return
@@ -583,7 +631,15 @@ public struct VisitScreen: View {
             savedPlans = plans
             
             // オリジナル作成プランのみ（購入プランを除外）
-            userOriginalPlans = plans.filter { !$0.isPurchased }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+            print("🔍 DEBUG: フィルタリング前のプラン:")
+            for plan in plans {
+                print("  - \(plan.title): isPurchased=\(plan.isPurchased)")
+            }
+            
+            let originalPlans = plans.filter { !$0.isPurchased }
+            print("🔍 DEBUG: isPurchased=falseのプラン数: \(originalPlans.count)")
+            
+            userOriginalPlans = originalPlans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
                 VisitPlanModel(
                     id: plan.id.uuidString,
                     userId: currentUserId,
@@ -634,15 +690,29 @@ public struct VisitScreen: View {
                 )
             }
             
-            print("DEBUG: \(plans.count)個のプランを読み込みました")
-            print("DEBUG: オリジナルプラン: \(userOriginalPlans.count)個")
-            print("DEBUG: 購入済みプラン: \(purchasedPlans.count)個")
-            for plan in plans {
-                print("DEBUG: プラン: \(plan.title), スポット数: \(plan.spots.count), 購入済み: \(plan.isPurchased)")
+            print("🔍 DEBUG: 合計\(plans.count)個のプランを読み込みました")
+            print("🔍 DEBUG: オリジナルプラン: \(userOriginalPlans.count)個")
+            print("🔍 DEBUG: 購入済みプラン: \(purchasedPlans.count)個")
+            for (index, plan) in plans.enumerated() {
+                print("🔍 DEBUG: プラン[\(index)]: \(plan.title)")
+                print("  - ID: \(plan.id)")
+                print("  - スポット数: \(plan.spots.count)")
+                print("  - 購入済み: \(plan.isPurchased)")
+                print("  - 下書き: \(plan.isDraft)")
+                print("  - 作成日: \(plan.createdDate)")
             }
         } catch {
-            print("DEBUG: デコードエラー: \(error)")
+            print("🚨 DEBUG: デコードエラー: \(error)")
+            print("🚨 DEBUG: エラー詳細: \(error.localizedDescription)")
+            savedPlans = []
+            userOriginalPlans = []
+            purchasedPlans = []
         }
+        
+        print("🔍 DEBUG: loadSavedPlans完了")
+        print("  - savedPlans: \(savedPlans.count)個")
+        print("  - userOriginalPlans: \(userOriginalPlans.count)個")
+        print("  - purchasedPlans: \(purchasedPlans.count)個")
     }
     
     func loadVisitAds() {
@@ -710,13 +780,24 @@ public struct VisitScreen: View {
     }
     
     func getDisplayPlans() -> [VisitPlanModel] {
+        let basePlans: [VisitPlanModel]
         switch selectedTab {
         case .all:
-            return publicPlans
+            basePlans = publicPlans
         case .original:
-            return userOriginalPlans
+            basePlans = userOriginalPlans
         case .purchased:
-            return purchasedPlans
+            basePlans = purchasedPlans
+        }
+        
+        // 検索フィルタリング
+        if activeSearchText.isEmpty {
+            return basePlans
+        } else {
+            return basePlans.filter { plan in
+                plan.title.localizedCaseInsensitiveContains(activeSearchText) ||
+                plan.animeName.localizedCaseInsensitiveContains(activeSearchText)
+            }
         }
     }
     

@@ -410,7 +410,7 @@ struct VisitPlanningScreen: View {
                                 .padding(.vertical, 16)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.purple)
+                                        .fill(Color.red)
                                 )
                         }
                         .disabled(planTitle.isEmpty || animeName.isEmpty || spots.isEmpty)
@@ -535,12 +535,12 @@ struct VisitPlanningScreen: View {
         savedPlans.append(plan)
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
         }
     }
     
     func getSavedPlans() -> [VisitPlanData] {
-        guard let data = UserDefaults.standard.data(forKey: "savedPlans"),
+        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans"),
               let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
             return []
         }
@@ -682,7 +682,7 @@ struct VisitPlanningScreen: View {
         savedPlans.append(planData)
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
         }
         
         // Firebaseにも保存
@@ -709,11 +709,25 @@ struct VisitPlanningScreen: View {
             isConfirmed: true // 確定済みフラグ
         )
         
+        // ローカルに保存
+        var localPlans = getSavedPlans()
+        localPlans.append(planData)
+        
+        if let encoded = try? JSONEncoder().encode(localPlans) {
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
+            print("🔍 DEBUG: 確定プランをローカルに保存しました: \(planData.title)")
+        }
+        
         // Firebaseに保存
         firebaseManager.saveVisitPlan(plan) { result in
             switch result {
             case .success:
                 DispatchQueue.main.async {
+                    // オリジナルタブに遷移
+                    NotificationCenter.default.post(
+                        name: Notification.Name("NavigateToVisitOriginalTab"),
+                        object: nil
+                    )
                     self.dismiss()
                 }
             case .failure(let error):
@@ -756,7 +770,7 @@ struct VisitPlanningScreen: View {
         }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
             
             DispatchQueue.main.async {
                 // オリジナルタブに遷移
@@ -805,7 +819,7 @@ struct VisitPlanningScreen: View {
         }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encoded, forKey: "savedPlans")
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
         } else {
             print("自動下書き保存エラー")
         }

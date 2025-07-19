@@ -1163,6 +1163,7 @@ struct CategoryListView: View {
     @State private var showAddWishlistItem = false
     @Environment(\.dismiss) var dismiss
     @State private var searchText = ""
+    @State private var showCategoryEdit = false
     
     var categoryItems: [WishlistItem] {
         let items: [WishlistItem]
@@ -1331,27 +1332,53 @@ struct CategoryListView: View {
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showAddWishlistItem = true
-                }) {
-                    Text("商品追加")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.cyan, Color.cyan.opacity(0.6)]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                HStack(spacing: 10) {
+                    // ギアボタン
+                    if category != nil {
+                        Button(action: {
+                            showCategoryEdit = true
+                        }) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    
+                    // 商品追加ボタン
+                    Button(action: {
+                        showAddWishlistItem = true
+                    }) {
+                        Text("商品追加")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.cyan, Color.cyan.opacity(0.6)]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                        .cornerRadius(16)
+                            .cornerRadius(16)
+                    }
                 }
             }
         }
         .sheet(isPresented: $showAddWishlistItem) {
             AddWishlistItemView(wishlistManager: wishlistManager, categoryId: category?.id)
+        }
+        .sheet(isPresented: $showCategoryEdit) {
+            if let category = category {
+                CategoryEditView(
+                    category: category,
+                    productManager: productManager,
+                    wishlistManager: wishlistManager,
+                    onDelete: {
+                        dismiss()
+                    }
+                )
+            }
         }
     }
 }
@@ -2042,5 +2069,151 @@ struct AddEditCategoryView: View {
         }
         
         dismiss()
+    }
+}
+
+// カテゴリー編集ビュー（ポップアップ用）
+struct CategoryEditView: View {
+    let category: CharacterCategory
+    @ObservedObject var productManager: ProductManager
+    @ObservedObject var wishlistManager: WishlistManager
+    let onDelete: () -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var editedName: String = ""
+    @State private var selectedImage: UIImage?
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var showDeleteAlert = false
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section("カテゴリー情報") {
+                    // カテゴリー名
+                    TextField("カテゴリー名", text: $editedName)
+                        .font(.system(size: 16))
+                    
+                    // バナー画像
+                    VStack {
+                        if let image = selectedImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(12)
+                        } else if let imageData = category.bannerImageData,
+                                  let uiImage = UIImage(data: imageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(12)
+                        } else {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 150)
+                                .overlay(
+                                    VStack {
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.gray)
+                                        Text("バナー画像なし")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.gray)
+                                    }
+                                )
+                        }
+                        
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            HStack {
+                                Image(systemName: "photo")
+                                Text("バナー画像を変更")
+                            }
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
+                            .padding(.top, 8)
+                        }
+                    }
+                }
+                
+                Section {
+                    Button(action: {
+                        showDeleteAlert = true
+                    }) {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "trash")
+                            Text("このカテゴリーを削除")
+                            Spacer()
+                        }
+                        .foregroundColor(.red)
+                        .font(.system(size: 16, weight: .medium))
+                    }
+                }
+            }
+            .navigationTitle("カテゴリー編集")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        saveChanges()
+                    }
+                    .disabled(editedName.isEmpty)
+                }
+            }
+        }
+        .onAppear {
+            editedName = category.name
+        }
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    selectedImage = image
+                }
+            }
+        }
+        .alert("カテゴリーを削除", isPresented: $showDeleteAlert) {
+            Button("キャンセル", role: .cancel) {}
+            Button("削除", role: .destructive) {
+                deleteCategory()
+            }
+        } message: {
+            Text("「\(category.name)」を削除しますか？\nこのカテゴリーに含まれる商品も全て削除されます。")
+        }
+    }
+    
+    private func saveChanges() {
+        var updatedCategory = category
+        updatedCategory.name = editedName
+        
+        if let image = selectedImage {
+            updatedCategory.bannerImageData = image.jpegData(compressionQuality: 0.8)
+        }
+        
+        productManager.updateCharacterCategory(updatedCategory)
+        dismiss()
+    }
+    
+    private func deleteCategory() {
+        // カテゴリーに属する商品を削除
+        let itemsToDelete = wishlistManager.getItemsForCategory(category.id)
+        for item in itemsToDelete {
+            wishlistManager.removeItem(item)
+        }
+        
+        // カテゴリーを削除
+        productManager.deleteCharacterCategory(category)
+        
+        dismiss()
+        onDelete()
     }
 }

@@ -85,6 +85,7 @@ struct ProductScreen: View {
     @State private var showNavigationMenu = false
     @EnvironmentObject var mainTab: MainTabSelection
     @State private var searchText = ""
+    @State private var activeSearchText = ""
     @State private var selectedProduct: Product?
     @State private var showingAdminPanel = false
     @State private var selectedTab = "おすすめ"
@@ -97,10 +98,10 @@ struct ProductScreen: View {
     
     var filteredProducts: [Product] {
         let activeProducts = productManager.activeProducts
-        if searchText.isEmpty { return activeProducts }
+        if activeSearchText.isEmpty { return activeProducts }
         return activeProducts.filter {
-            $0.title.localizedCaseInsensitiveContains(searchText) ||
-            $0.description.localizedCaseInsensitiveContains(searchText)
+            $0.title.localizedCaseInsensitiveContains(activeSearchText) ||
+            $0.description.localizedCaseInsensitiveContains(activeSearchText)
         }
     }
     
@@ -146,64 +147,87 @@ struct ProductScreen: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             
-            // 検索バー
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(Color(.systemGray3))
-                    .font(.system(size: 18))
-                TextField("Search", text: $searchText)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                    .font(.system(size: 16))
-                    .foregroundColor(.black)
-            }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 10)
-            .background(Color.white)
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-            )
-            .frame(height: 38)
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-            
-            // タブUI - カプセル型デザイン（中央揃え）
-            HStack {
-                Spacer()
-                HStack(spacing: 12) {
-                    Button(action: {
-                        selectedTab = "おすすめ"
-                    }) {
-                        Text("おすすめ")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(selectedTab == "おすすめ" ? .white : .black)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(selectedTab == "おすすめ" ? Color(.darkGray) : Color(.systemGray5))
-                            )
-                    }
+            // 検索バー（Amazon風デザイン）
+            HStack(spacing: 0) {
+                HStack {
+                    TextField("アニメもしくはキャラから検索", text: $searchText)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .font(.system(size: 14))
+                        .foregroundColor(.black)
                     
-                    Button(action: {
-                        selectedTab = "欲しい商品"
-                    }) {
-                        Text("欲しい商品")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(selectedTab == "欲しい商品" ? .white : .black)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(selectedTab == "欲しい商品" ? Color(.darkGray) : Color(.systemGray5))
-                            )
+                    if !searchText.isEmpty {
+                        Button(action: {
+                            searchText = ""
+                            activeSearchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(Color(.systemGray3))
+                                .font(.system(size: 14))
+                        }
                     }
                 }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color.white)
+                
+                // 検索ボタン
+                Button(action: {
+                    // 検索を実行
+                    activeSearchText = searchText
+                    // キーボードを閉じる
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 45, height: 36)
+                        .background(Color.cyan)
+                }
+            }
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.cyan, lineWidth: 1)
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 12)
+            
+            // タブUI - カプセル型デザイン（左寄せ）
+            HStack(spacing: 8) {
+                Button(action: {
+                    selectedTab = "おすすめ"
+                }) {
+                    Text("おすすめ")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(selectedTab == "おすすめ" ? .white : .black)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(selectedTab == "おすすめ" ? Color(.darkGray) : Color(.systemGray5))
+                        )
+                }
+                
+                Button(action: {
+                    selectedTab = "欲しい商品"
+                }) {
+                    Text("欲しい商品")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(selectedTab == "欲しい商品" ? .white : .black)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(selectedTab == "欲しい商品" ? Color(.darkGray) : Color(.systemGray5))
+                        )
+                }
+                
                 Spacer()
             }
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
             
             if selectedTab == "おすすめ" {
                 // Firebase広告と商品を表示
@@ -242,7 +266,12 @@ struct ProductScreen: View {
                             !wishlistManager.getItemsForCategory(category.id).isEmpty
                         }
                         
-                        if categoriesWithItems.isEmpty {
+                        // 検索でフィルタリング
+                        let filteredCategories = activeSearchText.isEmpty ? categoriesWithItems : categoriesWithItems.filter { category in
+                            category.name.localizedCaseInsensitiveContains(activeSearchText)
+                        }
+                        
+                        if filteredCategories.isEmpty && categoriesWithItems.isEmpty {
                             // 商品が1つもない場合の表示
                             VStack(spacing: 20) {
                                 Image(systemName: "bag.circle")
@@ -286,9 +315,24 @@ struct ProductScreen: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.top, 80)
+                        } else if filteredCategories.isEmpty {
+                            // 検索結果がない場合
+                            VStack(spacing: 16) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 50))
+                                    .foregroundColor(.gray)
+                                Text("検索結果がありません")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
+                                Text("別のキーワードで検索してください")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 100)
                         } else {
-                            // カテゴリー別バナー表示（商品がある場合のみ表示）
-                            ForEach(categoriesWithItems) { category in
+                            // カテゴリー別バナー表示（検索結果に基づいて表示）
+                            ForEach(filteredCategories) { category in
                                 let itemsForCategory = wishlistManager.getItemsForCategory(category.id)
                                 NavigationLink(destination: CategoryListView(
                                     category: category,
@@ -1182,6 +1226,7 @@ struct CategoryListView: View {
     @State private var showAddWishlistItem = false
     @Environment(\.dismiss) var dismiss
     @State private var searchText = ""
+    @State private var activeSearchText = ""
     @State private var showCategoryEdit = false
     
     var categoryItems: [WishlistItem] {
@@ -1192,13 +1237,13 @@ struct CategoryListView: View {
             items = wishlistManager.getItemsWithoutCategory()
         }
         
-        if searchText.isEmpty {
+        if activeSearchText.isEmpty {
             return items
         } else {
             return items.filter { item in
-                item.name.localizedCaseInsensitiveContains(searchText) ||
-                item.siteName.localizedCaseInsensitiveContains(searchText) ||
-                item.memo.localizedCaseInsensitiveContains(searchText)
+                item.name.localizedCaseInsensitiveContains(activeSearchText) ||
+                item.siteName.localizedCaseInsensitiveContains(activeSearchText) ||
+                item.memo.localizedCaseInsensitiveContains(activeSearchText)
             }
         }
     }
@@ -1218,6 +1263,7 @@ struct CategoryListView: View {
                         if !searchText.isEmpty {
                             Button(action: {
                                 searchText = ""
+                                activeSearchText = ""
                             }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .foregroundColor(Color(.systemGray3))
@@ -1231,7 +1277,9 @@ struct CategoryListView: View {
                     
                     // 検索ボタン
                     Button(action: {
-                        // 検索を実行（キーボードを閉じる）
+                        // 検索を実行
+                        activeSearchText = searchText
+                        // キーボードを閉じる
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }) {
                         Image(systemName: "magnifyingglass")
@@ -1309,13 +1357,13 @@ struct CategoryListView: View {
                     VStack(spacing: 0) {
                     if categoryItems.isEmpty {
                         VStack(spacing: 16) {
-                            Image(systemName: searchText.isEmpty ? "cart" : "magnifyingglass")
+                            Image(systemName: activeSearchText.isEmpty ? "cart" : "magnifyingglass")
                                 .font(.system(size: 50))
                                 .foregroundColor(.gray)
-                            Text(searchText.isEmpty ? "商品がありません" : "検索結果がありません")
+                            Text(activeSearchText.isEmpty ? "商品がありません" : "検索結果がありません")
                                 .font(.system(size: 16))
                                 .foregroundColor(.gray)
-                            Text(searchText.isEmpty ? "右上の「商品追加」から追加してください" : "別のキーワードで検索してください")
+                            Text(activeSearchText.isEmpty ? "右上の「商品追加」から追加してください" : "別のキーワードで検索してください")
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }

@@ -10,6 +10,24 @@ struct WishlistItem: Identifiable, Codable {
     var imageData: Data?
     var createdDate = Date()
     var characterCategoryId: UUID?
+    var memo: String = ""
+    var rating: Int = 0
+    var deliveryDays: Int = 1
+    var siteName: String = ""
+    
+    init(id: UUID = UUID(), name: String, price: Int, link: String = "", imageData: Data? = nil, createdDate: Date = Date(), characterCategoryId: UUID? = nil, memo: String = "", rating: Int = 0, deliveryDays: Int = 1, siteName: String = "") {
+        self.id = id
+        self.name = name
+        self.price = price
+        self.link = link
+        self.imageData = imageData
+        self.createdDate = createdDate
+        self.characterCategoryId = characterCategoryId
+        self.memo = memo
+        self.rating = rating
+        self.deliveryDays = deliveryDays
+        self.siteName = siteName
+    }
 }
 
 // 欲しい商品管理用のクラス
@@ -42,6 +60,13 @@ class WishlistManager: ObservableObject {
     func removeItem(_ item: WishlistItem) {
         items.removeAll { $0.id == item.id }
         saveItems()
+    }
+    
+    func updateItem(_ item: WishlistItem) {
+        if let index = items.firstIndex(where: { $0.id == item.id }) {
+            items[index] = item
+            saveItems()
+        }
     }
     
     func getItemsForCategory(_ categoryId: UUID) -> [WishlistItem] {
@@ -404,46 +429,177 @@ struct WishlistItemRow: View {
     let item: WishlistItem
     let wishlistManager: WishlistManager
     @State private var showDeleteAlert = false
+    @State private var isEditingMemo = false
+    @State private var tempMemo: String = ""
+    @State private var showDeliveryPicker = false
+    @State private var tempDeliveryDays: Int = 1
+    @State private var showImagePicker = false
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedImage: UIImage?
+    @State private var isEditingTitle = false
+    @State private var tempTitle: String = ""
+    @State private var isEditingSite = false
+    @State private var tempSiteName: String = ""
     
     var body: some View {
-        HStack(spacing: 16) {
-            // アイコン部分
-            if let imageData = item.imageData,
-               let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 126.36, height: 93)
-                    .cornerRadius(8)
-                    .clipped()
-            } else {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 126.36, height: 93)
-                    .overlay(
-                        Image(systemName: "cart.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.gray)
-                    )
+        HStack(alignment: .top, spacing: 12) {
+            // 商品画像（縦長）
+            ZStack {
+                if let imageData = item.imageData,
+                   let uiImage = UIImage(data: imageData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 180, height: 240)
+                        .cornerRadius(4)
+                        .clipped()
+                } else {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.1))
+                        .frame(width: 180, height: 240)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 30))
+                                .foregroundColor(.gray.opacity(0.4))
+                        )
+                }
+            }
+            .onTapGesture {
+                showImagePicker = true
             }
             
             VStack(alignment: .leading, spacing: 6) {
-                Text(item.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                Text("¥\(item.price)")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.red)
+                // 商品名
+                if isEditingTitle {
+                    TextField("商品名", text: $tempTitle, onCommit: {
+                        saveTitle()
+                    })
+                    .font(.system(size: 14))
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                } else {
+                    Text(item.name)
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(UIColor.label))
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .onTapGesture {
+                            tempTitle = item.name
+                            isEditingTitle = true
+                        }
+                }
+                
+                // 評価（星）
+                HStack(spacing: 2) {
+                    ForEach(1...5, id: \.self) { star in
+                        Image(systemName: star <= item.rating ? "star.fill" : "star")
+                            .font(.system(size: 12))
+                            .foregroundColor(star <= item.rating ? .orange : .gray.opacity(0.3))
+                            .onTapGesture {
+                                updateRating(star)
+                            }
+                    }
+                    Text("(\(item.rating))")
+                        .font(.system(size: 11))
+                        .foregroundColor(.gray)
+                }
+                
+                // サイト名
+                if isEditingSite {
+                    TextField("サイト名", text: $tempSiteName, onCommit: {
+                        saveSiteName()
+                    })
+                    .font(.system(size: 12))
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                } else {
+                    HStack {
+                        Image(systemName: "globe")
+                            .font(.system(size: 10))
+                            .foregroundColor(.gray)
+                        Text(item.siteName.isEmpty ? "サイト名を追加" : item.siteName)
+                            .font(.system(size: 12))
+                            .foregroundColor(item.siteName.isEmpty ? .gray.opacity(0.6) : .gray)
+                    }
+                    .onTapGesture {
+                        tempSiteName = item.siteName
+                        isEditingSite = true
+                    }
+                }
+                
+                // 価格
+                HStack(spacing: 0) {
+                    Text("¥")
+                        .font(.system(size: 14))
+                        .foregroundColor(.red)
+                    Text(item.price.formatted())
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.red)
+                }
+                
+                // プライム配送風の表示
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.blue)
+                    Text(getDeliveryText())
+                        .font(.system(size: 11))
+                        .foregroundColor(.blue)
+                }
+                .onTapGesture {
+                    tempDeliveryDays = item.deliveryDays
+                    showDeliveryPicker = true
+                }
+                
+                // メモ欄
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("メモ:")
+                        .font(.system(size: 11))
+                        .foregroundColor(.gray)
+                    
+                    if isEditingMemo {
+                        TextField("メモを入力", text: $tempMemo, onCommit: {
+                            saveMemo()
+                        })
+                        .font(.system(size: 12))
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    } else {
+                        Text(item.memo.isEmpty ? "タップしてメモを追加" : item.memo)
+                            .font(.system(size: 12))
+                            .foregroundColor(item.memo.isEmpty ? .gray.opacity(0.6) : Color(UIColor.label))
+                            .lineLimit(2)
+                            .onTapGesture {
+                                tempMemo = item.memo
+                                isEditingMemo = true
+                            }
+                    }
+                }
+                .padding(.top, 4)
+                
+                // リンクボタン
+                if !item.link.isEmpty {
+                    Button(action: {
+                        if let url = URL(string: item.link) {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "safari")
+                                .font(.system(size: 10))
+                            Text("商品ページを開く")
+                                .font(.system(size: 11))
+                        }
+                        .foregroundColor(.blue)
+                    }
+                    .padding(.top, 8)
+                }
+                
+                Spacer()
             }
+            
             Spacer()
         }
+        .padding(.vertical, 16)
+        .background(Color(UIColor.systemBackground))
         .contentShape(Rectangle())
-        .onTapGesture {
-            if let url = URL(string: item.link) {
-                UIApplication.shared.open(url)
-            }
-        }
         .contextMenu {
             Button(action: {
                 showDeleteAlert = true
@@ -461,6 +617,92 @@ struct WishlistItemRow: View {
                 secondaryButton: .cancel(Text("キャンセル"))
             )
         }
+        .sheet(isPresented: $showDeliveryPicker) {
+            NavigationView {
+                VStack {
+                    Text("配送までの日数を選択")
+                        .font(.headline)
+                        .padding()
+                    
+                    Picker("配送日数", selection: $tempDeliveryDays) {
+                        ForEach(1...30, id: \.self) { days in
+                            Text("\(days)日後")
+                                .tag(days)
+                        }
+                    }
+                    .pickerStyle(WheelPickerStyle())
+                    .frame(height: 150)
+                    
+                    Spacer()
+                }
+                .navigationBarItems(
+                    leading: Button("キャンセル") {
+                        showDeliveryPicker = false
+                    },
+                    trailing: Button("保存") {
+                        updateDeliveryDays(tempDeliveryDays)
+                        showDeliveryPicker = false
+                    }
+                )
+            }
+        }
+        .photosPicker(isPresented: $showImagePicker, selection: $selectedPhotoItem, matching: .images)
+        .onChange(of: selectedPhotoItem) { newValue in
+            Task {
+                if let data = try? await newValue?.loadTransferable(type: Data.self),
+                   let uiImage = UIImage(data: data) {
+                    selectedImage = uiImage
+                    updateImage(uiImage)
+                }
+            }
+        }
+    }
+    
+    private func saveMemo() {
+        var updatedItem = item
+        updatedItem.memo = tempMemo
+        wishlistManager.updateItem(updatedItem)
+        isEditingMemo = false
+    }
+    
+    private func updateRating(_ rating: Int) {
+        var updatedItem = item
+        updatedItem.rating = rating
+        wishlistManager.updateItem(updatedItem)
+    }
+    
+    private func updateDeliveryDays(_ days: Int) {
+        var updatedItem = item
+        updatedItem.deliveryDays = days
+        wishlistManager.updateItem(updatedItem)
+    }
+    
+    private func getDeliveryText() -> String {
+        if item.deliveryDays == 1 {
+            return "明日配送可能"
+        } else {
+            return "\(item.deliveryDays)日後に配送"
+        }
+    }
+    
+    private func saveTitle() {
+        var updatedItem = item
+        updatedItem.name = tempTitle
+        wishlistManager.updateItem(updatedItem)
+        isEditingTitle = false
+    }
+    
+    private func saveSiteName() {
+        var updatedItem = item
+        updatedItem.siteName = tempSiteName
+        wishlistManager.updateItem(updatedItem)
+        isEditingSite = false
+    }
+    
+    private func updateImage(_ image: UIImage) {
+        var updatedItem = item
+        updatedItem.imageData = image.jpegData(compressionQuality: 0.8)
+        wishlistManager.updateItem(updatedItem)
     }
 }
 
@@ -919,88 +1161,192 @@ struct CategoryListView: View {
     @ObservedObject var wishlistManager: WishlistManager
     @ObservedObject var productManager: ProductManager
     @State private var showAddWishlistItem = false
+    @Environment(\.dismiss) var dismiss
+    @State private var searchText = ""
     
     var categoryItems: [WishlistItem] {
+        let items: [WishlistItem]
         if let category = category {
-            return wishlistManager.getItemsForCategory(category.id)
+            items = wishlistManager.getItemsForCategory(category.id)
         } else {
-            return wishlistManager.getItemsWithoutCategory()
+            items = wishlistManager.getItemsWithoutCategory()
+        }
+        
+        if searchText.isEmpty {
+            return items
+        } else {
+            return items.filter { item in
+                item.name.localizedCaseInsensitiveContains(searchText) ||
+                item.siteName.localizedCaseInsensitiveContains(searchText) ||
+                item.memo.localizedCaseInsensitiveContains(searchText)
+            }
         }
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            
-            // バナー部分（アルバムリストページと同様のデザイン）
-            ZStack {
-                    // 背景画像またはデフォルト背景
-                    if let category = category,
-                       let imageData = category.bannerImageData,
-                       let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 120)
-                            .clipped()
-                    } else {
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(height: 120)
-                    }
-                    
-                    // グラデーションオーバーレイ
-                    Rectangle()
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.black.opacity(0.6), Color.clear]),
-                                startPoint: .bottom,
-                                endPoint: .top
-                            )
-                        )
-                        .frame(height: 120)
-                    
-                }
-                
-                // 商品リスト
-                ScrollView {
-                    VStack(spacing: 0) {
-                        if categoryItems.isEmpty {
-                            VStack(spacing: 16) {
-                                Image(systemName: "cart")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray)
-                                Text("商品がありません")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
-                                Text("右上の「商品追加」から追加してください")
+        ScrollView {
+            VStack(spacing: 0) {
+                // 検索バー（Amazon風デザイン）
+                HStack(spacing: 0) {
+                    HStack {
+                        TextField("商品を検索", text: $searchText)
+                            .autocapitalization(.none)
+                            .disableAutocorrection(true)
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                        
+                        if !searchText.isEmpty {
+                            Button(action: {
+                                searchText = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(Color(.systemGray3))
                                     .font(.system(size: 14))
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 100)
-                        } else {
-                            ForEach(categoryItems) { item in
-                                WishlistItemRow(item: item, wishlistManager: wishlistManager)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
                             }
                         }
                     }
-                    .padding(.bottom, 100)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(Color.white)
+                    
+                    // 検索ボタン
+                    Button(action: {
+                        // 検索を実行（キーボードを閉じる）
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 45, height: 36)
+                            .background(Color.cyan)
+                    }
                 }
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.cyan, lineWidth: 1)
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+                    // バナー部分（角丸で両端に余白）
+                    ZStack {
+                        // 背景画像またはデフォルト背景
+                        if let category = category,
+                           let imageData = category.bannerImageData,
+                           let uiImage = UIImage(data: imageData) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 180)
+                                .clipped()
+                                .cornerRadius(16)
+                        } else {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(height: 180)
+                        }
+                        
+                        // グラデーションオーバーレイ
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.black.opacity(0.6), Color.clear]),
+                                    startPoint: .bottom,
+                                    endPoint: .top
+                                )
+                            )
+                            .frame(height: 180)
+                        
+                        // テキスト情報
+                        VStack(alignment: .leading, spacing: 4) {
+                            Spacer()
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(category?.name ?? "その他")
+                                        .font(.system(size: 24, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Text("\(categoryItems.count)個の商品")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 20)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+                    
+                    // 商品リスト
+                    VStack(spacing: 0) {
+                    if categoryItems.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: searchText.isEmpty ? "cart" : "magnifyingglass")
+                                .font(.system(size: 50))
+                                .foregroundColor(.gray)
+                            Text(searchText.isEmpty ? "商品がありません" : "検索結果がありません")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                            Text(searchText.isEmpty ? "右上の「商品追加」から追加してください" : "別のキーワードで検索してください")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 100)
+                    } else {
+                        ForEach(categoryItems) { item in
+                            VStack(spacing: 0) {
+                                WishlistItemRow(item: item, wishlistManager: wishlistManager)
+                                    .padding(.horizontal, 16)
+                                
+                                Divider()
+                                    .padding(.leading, 208)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.bottom, 100)
         }
         .navigationTitle(category?.name ?? "その他")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.black)
+                }
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("商品追加") {
+                Button(action: {
                     showAddWishlistItem = true
+                }) {
+                    Text("商品追加")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.cyan, Color.cyan.opacity(0.6)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(16)
                 }
             }
         }

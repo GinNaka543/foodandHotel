@@ -505,7 +505,7 @@ struct VisitGameScreen: View {
             HStack(spacing: 4) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 14))
-                    .foregroundColor(.green)
+                    .foregroundColor(.black)
                 Text("\(completedSpotsCount)/\(viewModel.spots.count)")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.gray)

@@ -380,7 +380,7 @@ struct VisitPlanningScreen: View {
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.green)
+                                    .fill(Color.black)
                             )
                     }
                     .disabled(spots.isEmpty)

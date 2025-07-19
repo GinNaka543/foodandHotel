@@ -162,12 +162,14 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var order: Int = 0  // 表示順序用フィールド
     var rating: Double = 0.0  // レーティング（0.0〜5.0）
     var voiceActors: [String] = []  // 声優リスト
+    var characters: [String] = []  // 出演キャラクターリスト
+    var watchLink: String = ""  // アニメ視聴リンク
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -183,6 +185,8 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(order, forKey: .order)
         try container.encode(rating, forKey: .rating)
         try container.encode(voiceActors, forKey: .voiceActors)
+        try container.encode(characters, forKey: .characters)
+        try container.encode(watchLink, forKey: .watchLink)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -211,8 +215,10 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         // ratingとvoiceActorsを読み込む。古いデータの場合はデフォルト値を使用
         rating = (try? container.decode(Double.self, forKey: .rating)) ?? 0.0
         voiceActors = (try? container.decode([String].self, forKey: .voiceActors)) ?? []
+        characters = (try? container.decode([String].self, forKey: .characters)) ?? []
+        watchLink = (try? container.decode(String.self, forKey: .watchLink)) ?? ""
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = []) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "") {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -225,6 +231,8 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.order = order
         self.rating = rating
         self.voiceActors = voiceActors
+        self.characters = characters
+        self.watchLink = watchLink
     }
 }
 
@@ -236,6 +244,7 @@ struct AnimeScreen: View {
     @State private var selectedAnime: Anime? = nil
     @State private var showNavigationMenu = false
     @State private var showAnimeOrderModal = false
+    @State private var bannerAnime: Anime? = nil
     
     enum AnimeTab: String, CaseIterable {
         case all = "すべて"
@@ -301,6 +310,86 @@ struct AnimeScreen: View {
         .padding(.bottom, 7)
     }
     
+    // バナービュー
+    private var bannerView: some View {
+        Group {
+            if let anime = bannerAnime ?? animeManager.animes.first {
+                ZStack(alignment: .bottomLeading) {
+                // 背景画像をfillで表示
+                if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 160)
+                        .clipped()
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 160)
+                }
+                
+                // グラデーションオーバーレイ
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.black.opacity(0.8), Color.clear]),
+                    startPoint: .bottom,
+                    endPoint: .top
+                )
+                
+                // アニメ情報
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(anime.title)
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    if !anime.hashtag.isEmpty {
+                        Text("#" + anime.hashtag)
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    
+                    HStack(spacing: 12) {
+                        if anime.rating > 0 {
+                            HStack(spacing: 2) {
+                                ForEach(1...5, id: \.self) { index in
+                                    Image(systemName: index <= Int(anime.rating.rounded()) ? "star.fill" : "star")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.yellow)
+                                }
+                            }
+                        }
+                        
+                        if !anime.watchLink.isEmpty {
+                            Link(destination: URL(string: anime.watchLink) ?? URL(string: "https://")!) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "play.circle.fill")
+                                        .font(.system(size: 14))
+                                    Text("視聴する")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.blue.opacity(0.8))
+                                .cornerRadius(6)
+                            }
+                        }
+                    }
+                }
+                .padding()
+            }
+            .frame(height: 160)
+            .cornerRadius(12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .onTapGesture {
+                selectedAnime = anime
+            }
+            } else {
+                EmptyView()
+            }
+        }
+    }
+    
     // タブビュー部分
     private var tabView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -328,10 +417,6 @@ struct AnimeScreen: View {
     private var animeListView: some View {
         ScrollView {
             VStack(spacing: 0) {
-                FirebaseAdView(placement: "anime")
-                    .padding(.top, 8)
-                    .padding(.bottom, 0)
-                
                 if filteredAnimes.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "tv")
@@ -390,6 +475,7 @@ struct AnimeScreen: View {
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
                     headerView
+                    bannerView
                     tabView
                     animeListView
                 }
@@ -407,6 +493,12 @@ struct AnimeScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.opacity)
                 .zIndex(2)
+            }
+        }
+        .onAppear {
+            // バナーアニメをランダムに選択
+            if !animeManager.animes.isEmpty {
+                bannerAnime = animeManager.animes.randomElement()
             }
         }
         .sheet(isPresented: $showAddSheet) {
@@ -487,16 +579,68 @@ struct AnimeRow: View {
                 }
                 
                 // 声優情報（常に表示）
-                if !anime.voiceActors.isEmpty {
-                    Text("声優: " + anime.voiceActors.prefix(3).joined(separator: ", "))
-                        .font(.system(size: 12))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("声優")
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.gray)
-                        .lineLimit(2)
+                    if !anime.voiceActors.isEmpty {
+                        Text(anime.voiceActors.prefix(3).joined(separator: ", "))
+                            .font(.system(size: 12))
+                            .foregroundColor(.black)
+                            .lineLimit(2)
+                    } else {
+                        Text("声優情報を入力してください")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray.opacity(0.5))
+                            .italic()
+                    }
+                }
+                
+                // キャラクター情報（常に表示）
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("キャラクター")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.gray)
+                    if !anime.characters.isEmpty {
+                        Text(anime.characters.prefix(3).joined(separator: ", "))
+                            .font(.system(size: 12))
+                            .foregroundColor(.black)
+                            .lineLimit(2)
+                    } else {
+                        Text("キャラクター情報を入力してください")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray.opacity(0.5))
+                            .italic()
+                    }
+                }
+                
+                // アニメを見るボタン
+                if !anime.watchLink.isEmpty {
+                    Link(destination: URL(string: anime.watchLink) ?? URL(string: "https://")!) {
+                        HStack {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 14))
+                            Text("アニメを見る")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue)
+                        .cornerRadius(6)
+                    }
                 } else {
-                    Text("声優: 声優情報を入力してください")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray.opacity(0.5))
-                        .italic()
+                    HStack {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 14))
+                        Text("アニメを見る")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(.white.opacity(0.7))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.gray.opacity(0.3))
+                    .cornerRadius(6)
                 }
                 
                 Spacer()
@@ -2623,6 +2767,8 @@ struct AnimeAboutView: View {
     @State private var editedWatchStatuses: Set<WatchStatus> = []
     @State private var editedRating: Double = 0.0
     @State private var editedVoiceActors: String = ""
+    @State private var editedCharacters: String = ""
+    @State private var editedWatchLink: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
     @State private var showEditSelection: Bool = false
@@ -2742,18 +2888,26 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 ratingSelectionRow(label: "レート", rating: $editedRating)
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "声優", text: $editedVoiceActors)
+                                editableProfileRow(label: "声優", text: $editedVoiceActors, placeholder: "最大5人まで（カンマ区切り）")
+                                Divider().padding(.leading, 20)
+                                editableProfileRow(label: "出演キャラ", text: $editedCharacters, placeholder: "最大5人まで（カンマ区切り）")
+                                Divider().padding(.leading, 20)
+                                editableProfileRow(label: "視聴リンク", text: $editedWatchLink)
                             } else {
-                                profileRow(label: "タイトル", value: anime.title)
+                                profileRow(label: "タイトル", value: currentAnime.title)
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "ハッシュタグ", value: anime.hashtag.isEmpty ? "未設定" : anime.hashtag)
+                                profileRow(label: "ハッシュタグ", value: currentAnime.hashtag.isEmpty ? "未設定" : currentAnime.hashtag)
                                 Divider().padding(.leading, 20)
-                                let statusText = anime.watchStatuses.filter { $0 != .none }.map { $0.rawValue }.joined(separator: "、")
+                                let statusText = currentAnime.watchStatuses.filter { $0 != .none }.map { $0.rawValue }.joined(separator: "、")
                                 profileRow(label: "ステータス", value: statusText.isEmpty ? "未設定" : statusText)
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "レート", value: anime.rating > 0 ? String(format: "%.1f / 5.0", anime.rating) : "未設定")
+                                profileRow(label: "レート", value: currentAnime.rating > 0 ? String(format: "%.1f / 5.0", currentAnime.rating) : "未設定")
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "声優", value: anime.voiceActors.isEmpty ? "未設定" : anime.voiceActors.joined(separator: ", "))
+                                profileRow(label: "声優", value: currentAnime.voiceActors.isEmpty ? "未設定" : currentAnime.voiceActors.joined(separator: ", "))
+                                Divider().padding(.leading, 20)
+                                profileRow(label: "出演キャラ", value: currentAnime.characters.isEmpty ? "未設定" : currentAnime.characters.joined(separator: ", "))
+                                Divider().padding(.leading, 20)
+                                profileRow(label: "視聴リンク", value: currentAnime.watchLink.isEmpty ? "未設定" : currentAnime.watchLink)
                             }
                         }
                         .background(Color.white)
@@ -2850,12 +3004,16 @@ struct AnimeAboutView: View {
         }
         .onAppear {
             loadAnimeDescription()
-            editedTitle = anime.title
-            editedHashtag = anime.hashtag
-            editedReleaseDate = anime.releaseDate
-            editedWatchStatuses = Set(anime.watchStatuses)
-            editedRating = anime.rating
-            editedVoiceActors = anime.voiceActors.joined(separator: ", ")
+            // 最新のデータを取得して初期化
+            let latestAnime = currentAnime
+            editedTitle = latestAnime.title
+            editedHashtag = latestAnime.hashtag
+            editedReleaseDate = latestAnime.releaseDate
+            editedWatchStatuses = Set(latestAnime.watchStatuses)
+            editedRating = latestAnime.rating
+            editedVoiceActors = latestAnime.voiceActors.joined(separator: ", ")
+            editedCharacters = latestAnime.characters.joined(separator: ", ")
+            editedWatchLink = latestAnime.watchLink
         }
         .onDisappear {
             saveAnime()
@@ -2945,13 +3103,13 @@ struct AnimeAboutView: View {
         .padding(.vertical, 12)
     }
     
-    private func editableProfileRow(label: String, text: Binding<String>) -> some View {
+    private func editableProfileRow(label: String, text: Binding<String>, placeholder: String = "未設定") -> some View {
         HStack {
             Text(label)
                 .font(.system(size: 16))
                 .foregroundColor(.secondary)
                 .frame(width: 120, alignment: .leading)
-            TextField("未設定", text: text)
+            TextField(placeholder, text: text)
                 .font(.system(size: 16))
                 .foregroundColor(.primary)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -3062,12 +3220,24 @@ struct AnimeAboutView: View {
         updatedAnime.watchStatuses = Array(editedWatchStatuses)
         updatedAnime.rating = editedRating
         
-        // 声優リストを処理（カンマ区切りを配列に変換）
+        // 声優リストを処理（カンマ区切りを配列に変換、最大5人まで）
         let voiceActorsList = editedVoiceActors
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-        updatedAnime.voiceActors = voiceActorsList
+            .prefix(5)
+        updatedAnime.voiceActors = Array(voiceActorsList)
+        
+        // キャラクターリストを処理（カンマ区切りを配列に変換、最大5人まで）
+        let charactersList = editedCharacters
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .prefix(5)
+        updatedAnime.characters = Array(charactersList)
+        
+        // 視聴リンクを保存
+        updatedAnime.watchLink = editedWatchLink
         
         // 概要をカスタムフィールドに保存
         if updatedAnime.customFields == nil {
@@ -3644,7 +3814,7 @@ struct AnimeDetailView: View {
                                 Image(uiImage: backgroundImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(height: 200)
+                                    .frame(height: 160)
                                     .clipped()
                                     .cornerRadius(12)
                             } else if let imagePath = anime.backgroundImagePath,
@@ -3652,13 +3822,13 @@ struct AnimeDetailView: View {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(height: 200)
+                                    .frame(height: 160)
                                     .clipped()
                                     .cornerRadius(12)
                             } else {
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(Color.gray.opacity(0.3))
-                                    .frame(height: 200)
+                                    .frame(height: 160)
                                     .overlay(
                                         VStack {
                                             Image(systemName: "photo.fill")

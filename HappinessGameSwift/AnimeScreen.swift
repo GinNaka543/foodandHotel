@@ -376,53 +376,95 @@ struct AnimeScreen: View {
                 firebaseAdBanner(adData: adData)
             } else if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                 ZStack(alignment: .bottomLeading) {
-                    // YouTubeサムネイルを表示
-                    AsyncImage(url: URL(string: getYouTubeThumbnailURLForBanner(from: youtubeURL))) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
+                    // カスタムサムネイルまたはYouTubeサムネイルを表示
+                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                        ZStack {
+                            Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: UIScreen.main.bounds.width - 32, height: 176)
                                 .clipped()
-                        case .failure(_), .empty:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
+                            
+                            // 暗いオーバーレイを追加
+                            Color.black.opacity(0.2)
                                 .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        @unknown default:
-                            EmptyView()
+                        }
+                    } else if let customThumbnailURL = video.youtubeThumbnailURL {
+                        ZStack {
+                            AsyncImage(url: URL(string: customThumbnailURL)) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                        .clipped()
+                                case .failure(_), .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+                            
+                            // 暗いオーバーレイを追加
+                            Color.black.opacity(0.2)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        }
+                    } else {
+                        ZStack {
+                            AsyncImage(url: URL(string: getYouTubeThumbnailURLForBanner(from: youtubeURL))) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                        .clipped()
+                                case .failure(_), .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+                            
+                            // 暗いオーバーレイを追加
+                            Color.black.opacity(0.2)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
                         }
                     }
                 
-                // グラデーションオーバーレイ
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.black.opacity(0.8), Color.clear]),
-                    startPoint: .bottom,
-                    endPoint: .top
-                )
-                
                 // 動画情報
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(video.title)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    if !video.tags.isEmpty {
-                        Text("#" + video.tags.joined(separator: " #"))
-                            .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.8))
-                            .lineLimit(1)
+                VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(video.title)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
+                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                        
+                        if !video.tags.isEmpty {
+                            Text("#" + video.tags.joined(separator: " #"))
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
+                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                                .lineLimit(1)
+                        }
                     }
                     
                     HStack(spacing: 4) {
                         Image(systemName: "play.circle.fill")
-                            .font(.system(size: 14))
-                        Text("動画を再生")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 16))
+                        Text("WATCH")
+                            .font(.system(size: 14, weight: .semibold))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(Color.black)
                     .cornerRadius(4)
                 }
@@ -563,7 +605,7 @@ struct AnimeScreen: View {
                     VStack(spacing: 0) {
                         bannerView
                         tabView
-                            .padding(.top, 8)
+                            .padding(.top, 0)
                         animeListContents
                     }
                 }
@@ -678,58 +720,78 @@ struct AnimeScreen: View {
     
     // Firebase広告バナー
     private func firebaseAdBanner(adData: [String: Any]) -> some View {
-        ZStack(alignment: .bottomLeading) {
-            // 広告画像
-            if let imageURL = adData["imageURL"] as? String {
-                AsyncImage(url: URL(string: imageURL)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                            .clipped()
-                    case .failure(_), .empty:
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                    @unknown default:
-                        EmptyView()
+        ZStack(alignment: .topTrailing) {
+            ZStack(alignment: .bottomLeading) {
+                // 広告画像
+                if let imageURL = adData["imageURL"] as? String {
+                    AsyncImage(url: URL(string: imageURL)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                .clipped()
+                        case .failure(_), .empty:
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        @unknown default:
+                            EmptyView()
+                        }
                     }
                 }
-            }
-            
-            // グラデーションオーバーレイ
-            LinearGradient(
-                gradient: Gradient(colors: [Color.black.opacity(0.8), Color.clear]),
-                startPoint: .bottom,
-                endPoint: .top
-            )
-            
-            // 広告情報
-            VStack(alignment: .leading, spacing: 4) {
-                if let title = adData["title"] as? String {
-                    Text(title)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                }
                 
-                if let description = adData["description"] as? String {
-                    Text(description)
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.8))
-                        .lineLimit(2)
-                }
+                // 暗いオーバーレイを追加
+                Color.black.opacity(0.2)
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 176)
                 
-                Text("広告")
-                    .font(.system(size: 12, weight: .semibold))
+                // 広告情報
+                VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let title = adData["title"] as? String {
+                            Text(title)
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
+                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                        }
+                        
+                        if let description = adData["description"] as? String {
+                            Text(description)
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
+                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                                .lineLimit(2)
+                        }
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 16))
+                        Text("WATCH")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(Color.black.opacity(0.6))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.black)
                     .cornerRadius(4)
+                }
+                .padding()
             }
-            .padding()
+            
+            // PR表示
+            Text("PR")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.black.opacity(0.7))
+                .cornerRadius(4)
+                .padding(.top, 8)
+                .padding(.trailing, 8)
         }
         .frame(width: UIScreen.main.bounds.width - 32, height: 176)
         .cornerRadius(12)
@@ -848,18 +910,27 @@ struct AnimeScreen: View {
     private func startBannerRotation() {
         bannerTimer?.invalidate()
         
-        // 初期状態を動画表示に設定
-        showFirebaseAd = false
-        
-        bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
-            self.showFirebaseAd.toggle()
-            
-            if self.showFirebaseAd {
-                // 広告に切り替わった時に新しい広告を読み込む
+        // YouTube動画がない場合は広告のみを表示
+        if allYouTubeVideos.isEmpty {
+            showFirebaseAd = true
+            bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
+                // 次の広告を読み込む
                 self.loadFirebaseAdvertisement()
-            } else {
-                // 動画に切り替わった時に新しい動画を選択
-                self.selectRandomYouTubeVideo()
+            }
+        } else {
+            // 初期状態を動画表示に設定
+            showFirebaseAd = false
+            
+            bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
+                self.showFirebaseAd.toggle()
+                
+                if self.showFirebaseAd {
+                    // 広告に切り替わった時に新しい広告を読み込む
+                    self.loadFirebaseAdvertisement()
+                } else {
+                    // 動画に切り替わった時に新しい動画を選択
+                    self.selectRandomYouTubeVideo()
+                }
             }
         }
     }

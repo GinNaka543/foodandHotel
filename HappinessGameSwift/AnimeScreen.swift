@@ -456,9 +456,8 @@ struct AnimeScreen: View {
     }
     
     // アニメリスト部分
-    private var animeListView: some View {
-        ScrollView {
-            VStack(spacing: 0) {
+    private var animeListContents: some View {
+        VStack(spacing: 0) {
                 if filteredAnimes.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "tv")
@@ -507,19 +506,21 @@ struct AnimeScreen: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
-            }
-            .padding(.bottom, 75)
         }
+        .padding(.bottom, 75)
     }
 
     var body: some View {
         ZStack {
-            ZStack(alignment: .bottom) {
-                VStack(spacing: 0) {
-                    headerView
-                    bannerView
-                    tabView
-                    animeListView
+            VStack(spacing: 0) {
+                headerView
+                ScrollView {
+                    VStack(spacing: 0) {
+                        bannerView
+                        tabView
+                            .padding(.top, 8)
+                        animeListContents
+                    }
                 }
             }
             

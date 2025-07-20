@@ -150,6 +150,18 @@ enum WatchStatus: String, Codable, CaseIterable {
     case thisTerm = "今期"
 }
 
+enum AnimeGenre: String, Codable, CaseIterable {
+    case serious = "シリアス"
+    case romcom = "ラブコメ"
+    case sports = "スポーツ"
+    case comedy = "コメディー"
+    case isekai = "異世界系"
+    case sf = "SF"
+    case art = "芸術系"
+    case brain = "頭脳系"
+    case healing = "癒し系"
+}
+
 struct Anime: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var imageIdentifier: String?
@@ -165,12 +177,13 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var voiceActors: [String] = []  // 声優リスト
     var characters: [String] = []  // 出演キャラクターリスト
     var watchLink: String = ""  // アニメ視聴リンク
+    var genres: [AnimeGenre] = []  // ジャンルリスト
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -188,6 +201,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(voiceActors, forKey: .voiceActors)
         try container.encode(characters, forKey: .characters)
         try container.encode(watchLink, forKey: .watchLink)
+        try container.encode(genres, forKey: .genres)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -218,8 +232,9 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         voiceActors = (try? container.decode([String].self, forKey: .voiceActors)) ?? []
         characters = (try? container.decode([String].self, forKey: .characters)) ?? []
         watchLink = (try? container.decode(String.self, forKey: .watchLink)) ?? ""
+        genres = (try? container.decode([AnimeGenre].self, forKey: .genres)) ?? []
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "") {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = []) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -234,6 +249,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.voiceActors = voiceActors
         self.characters = characters
         self.watchLink = watchLink
+        self.genres = genres
     }
 }
 
@@ -265,6 +281,16 @@ struct AnimeScreen: View {
         case thisTerm = "今期"
         case willWatch = "視聴予定"
         case watchAgain = "再視聴"
+        // ジャンル
+        case serious = "シリアス"
+        case romcom = "ラブコメ"
+        case sports = "スポーツ"
+        case comedy = "コメディー"
+        case isekai = "異世界系"
+        case sf = "SF"
+        case art = "芸術系"
+        case brain = "頭脳系"
+        case healing = "癒し系"
     }
     
     var filteredAnimes: [Anime] {
@@ -283,6 +309,25 @@ struct AnimeScreen: View {
             result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
         case .thisTerm:
             result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
+        // ジャンルフィルタ
+        case .serious:
+            result = animesWithTitles.filter { $0.genres.contains(.serious) }
+        case .romcom:
+            result = animesWithTitles.filter { $0.genres.contains(.romcom) }
+        case .sports:
+            result = animesWithTitles.filter { $0.genres.contains(.sports) }
+        case .comedy:
+            result = animesWithTitles.filter { $0.genres.contains(.comedy) }
+        case .isekai:
+            result = animesWithTitles.filter { $0.genres.contains(.isekai) }
+        case .sf:
+            result = animesWithTitles.filter { $0.genres.contains(.sf) }
+        case .art:
+            result = animesWithTitles.filter { $0.genres.contains(.art) }
+        case .brain:
+            result = animesWithTitles.filter { $0.genres.contains(.brain) }
+        case .healing:
+            result = animesWithTitles.filter { $0.genres.contains(.healing) }
         }
         
         // Sort by order
@@ -3868,64 +3913,74 @@ struct AnimeDetailView: View {
     @State private var tempIconImage: UIImage? = nil
     @State private var showEditWatchStatusModal = false
     @State private var editWatchStatuses: Set<WatchStatus> = []
+    @State private var showEditGenresModal = false
+    @State private var editGenres: Set<AnimeGenre> = []
     @State private var showEditBackgroundModal = false
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
     @State private var currentDisplayedIcon: UIImage? = nil
 
     var body: some View {
-        GeometryReader { geometry in
+        ZStack {
+            // 背景を最初に配置
             let currentAnime = animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
             let titleText = currentAnime.title
-            ZStack(alignment: .topLeading) {
-                // 背景画像
-                if let imagePath = currentAnime.backgroundImagePath,
-                   let uiImage = loadImageFromPath(imagePath) {
-                    GeometryReader { geo in
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: geo.size.width, height: geo.size.height)
-                            .clipped()
+            
+            // 背景画像 or グラデーション
+            if let imagePath = currentAnime.backgroundImagePath,
+               let uiImage = loadImageFromPath(imagePath) {
+                GeometryReader { geo in
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                }
+                .ignoresSafeArea()
+                .overlay(Color.black.opacity(0.3).ignoresSafeArea())
+                .onTapGesture {
+                    showEditBackgroundModal = true
+                }
+            } else {
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showEditBackgroundModal = true
+                }
+            }
+            
+            // コンテンツ
+            VStack(alignment: .leading) {
+                // 戻るボタン
+                HStack {
+                    Button(action: {
+                        if let onDismiss = onDismiss {
+                            onDismiss()
+                        } else {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .foregroundColor(.white)
+                            Text("Back")
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        }
                     }
-                    .ignoresSafeArea()
-                    .overlay(Color.black.opacity(0.3).ignoresSafeArea())
-                    .onTapGesture {
-                        showEditBackgroundModal = true
-                    }
-                } else {
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showEditBackgroundModal = true
-                    }
+                    .padding(.top, 24)
+                    .padding(.leading, 16)
+                    
+                    Spacer()
                 }
                 
-                Button(action: {
-                    if let onDismiss = onDismiss {
-                        onDismiss()
-                    } else {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.white)
-                            .font(.system(size: 18, weight: .medium))
-                        Text("Back")
-                            .foregroundColor(.white)
-                            .font(.system(size: 17, weight: .medium))
-                            .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
-                    }
-                }
-                .padding(.top, 24)
-                .padding(.leading, 16)
                 VStack {
-                    Spacer().frame(height: 180 + 50)
+                    Spacer().frame(height: 180)
+                    // アイコン
                     ZStack {
                         if let currentIcon = currentDisplayedIcon {
                             Image(uiImage: currentIcon)
@@ -3968,36 +4023,6 @@ struct AnimeDetailView: View {
                             showEditTitleModal = true
                         }
                     
-                    // 視聴ステータス
-                    VStack(spacing: 4) {
-                        Text("ステータス")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                        if currentAnime.watchStatuses.isEmpty {
-                            Text("なし")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.gray)
-                        } else {
-                            HStack(spacing: 8) {
-                                ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
-                                    Text(status.rawValue)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue)
-                                        .cornerRadius(12)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.top, 8)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .onTapGesture {
-                        editWatchStatuses = Set(currentAnime.watchStatuses)
-                        showEditWatchStatusModal = true
-                    }
-                    
                     // ナビゲーションバー（下部メニュー）
                     HStack {
                         Spacer()
@@ -4035,7 +4060,70 @@ struct AnimeDetailView: View {
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
                     }
-                    .padding(.top, 40)
+                    .padding(.top, 30)
+                    
+                    // 視聴ステータス
+                    VStack(spacing: 4) {
+                        Text("ステータス")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                        if currentAnime.watchStatuses.isEmpty {
+                            Text("なし")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.gray)
+                        } else {
+                            HStack(spacing: 8) {
+                                ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
+                                    Text(status.rawValue)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.top, 20)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .onTapGesture {
+                        editWatchStatuses = Set(currentAnime.watchStatuses)
+                        showEditWatchStatusModal = true
+                    }
+                    
+                    // ジャンル
+                    VStack(spacing: 8) {
+                        Text("ジャンル")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
+                        if currentAnime.genres.isEmpty {
+                            Text("未設定")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.gray)
+                        } else {
+                            HStack(spacing: 8) {
+                                ForEach(currentAnime.genres, id: \.self) { genre in
+                                    Text(genre.rawValue)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.purple)
+                                        .cornerRadius(12)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.top, 12)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .onTapGesture {
+                        editGenres = Set(currentAnime.genres)
+                        showEditGenresModal = true
+                    }
+                    
+                    Spacer()
                     .fullScreenCover(isPresented: $showArtwork) {
                         AnimeArtworkScreen(anime: $anime, animes: $animes, onClose: { showArtwork = false })
                     }
@@ -4047,8 +4135,7 @@ struct AnimeDetailView: View {
                             .environmentObject(animeManager)
                     }
                 }
-                .frame(width: geometry.size.width)
-                .zIndex(1) // 背景画像よりも前面に配置
+                .zIndex(1)
             }
         }
         .onAppear {
@@ -4140,6 +4227,67 @@ struct AnimeDetailView: View {
                         animes[idx] = updatedAnime
                         animeManager.updateAnime(updatedAnime)
                         showEditWatchStatusModal = false
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
+            .padding()
+            .background(Color(.systemBackground))
+            .cornerRadius(16)
+            .padding(40)
+        }
+        // ジャンル編集モーダル
+        .sheet(isPresented: $showEditGenresModal) {
+            VStack(spacing: 20) {
+                Text("ジャンルを選択（複数選択可）")
+                    .font(.headline)
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(AnimeGenre.allCases, id: \.self) { genre in
+                            Button(action: {
+                                if editGenres.contains(genre) {
+                                    editGenres.remove(genre)
+                                } else {
+                                    editGenres.insert(genre)
+                                }
+                            }) {
+                                HStack {
+                                    Text(genre.rawValue)
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                    if editGenres.contains(genre) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.purple)
+                                    } else {
+                                        Image(systemName: "circle")
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(editGenres.contains(genre) ? Color.purple.opacity(0.1) : Color(.systemGray6))
+                                )
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 400)
+                
+                HStack(spacing: 20) {
+                    Button("キャンセル") {
+                        showEditGenresModal = false
+                    }
+                    .foregroundColor(.red)
+                    
+                    Button("保存") {
+                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                        var updatedAnime = animes[idx]
+                        updatedAnime.genres = Array(editGenres)
+                        animes[idx] = updatedAnime
+                        animeManager.updateAnime(updatedAnime)
+                        showEditGenresModal = false
                     }
                     .foregroundColor(.blue)
                 }

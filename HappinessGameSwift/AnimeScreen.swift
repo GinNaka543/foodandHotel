@@ -6,6 +6,7 @@ import Foundation
 import Photos
 import AVFoundation
 import AVKit
+import FirebaseFirestore
 
 // Removed duplicate typealias - now defined in ArtworkScreen.swift
 
@@ -245,6 +246,18 @@ struct AnimeScreen: View {
     @State private var showNavigationMenu = false
     @State private var showAnimeOrderModal = false
     @State private var bannerAnime: Anime? = nil
+    @State private var bannerVideo: MemoryVideo? = nil
+    @State private var showVideoPlayer = false
+    @State private var selectedVideoId: UUID? = nil
+    @State private var selectedVideoAnime: Anime? = nil
+    @State private var showFirebaseAd = false
+    @State private var firebaseAdData: [String: Any]? = nil
+    @State private var currentAdDocument: DocumentSnapshot? = nil
+    @State private var bannerTimer: Timer? = nil
+    @State private var allYouTubeVideos: [MemoryVideo] = []
+    @State private var availableAds: [DocumentSnapshot] = []
+    @State private var displayedAdIds: Set<String> = []
+    @State private var displayedVideoIds: Set<UUID> = []
     
     enum AnimeTab: String, CaseIterable {
         case all = "すべて"
@@ -313,20 +326,28 @@ struct AnimeScreen: View {
     // バナービュー
     private var bannerView: some View {
         Group {
-            if let anime = bannerAnime ?? animeManager.animes.first {
+            if showFirebaseAd, let adData = firebaseAdData {
+                // Firebase広告を表示
+                firebaseAdBanner(adData: adData)
+            } else if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                 ZStack(alignment: .bottomLeading) {
-                // 背景画像をfillで表示
-                if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 160)
-                        .clipped()
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(height: 160)
-                }
+                    // YouTubeサムネイルを表示
+                    AsyncImage(url: URL(string: getYouTubeThumbnailURLForBanner(from: youtubeURL))) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                .clipped()
+                        case .failure(_), .empty:
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
                 
                 // グラデーションオーバーレイ
                 LinearGradient(
@@ -335,59 +356,80 @@ struct AnimeScreen: View {
                     endPoint: .top
                 )
                 
-                // アニメ情報
+                // 動画情報
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(anime.title)
-                        .font(.system(size: 24, weight: .bold))
+                    Text(video.title)
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                     
-                    if !anime.hashtag.isEmpty {
-                        Text("#" + anime.hashtag)
+                    if !video.tags.isEmpty {
+                        Text("#" + video.tags.joined(separator: " #"))
                             .font(.system(size: 14))
                             .foregroundColor(.white.opacity(0.8))
+                            .lineLimit(1)
                     }
                     
-                    HStack(spacing: 12) {
-                        if anime.rating > 0 {
-                            HStack(spacing: 2) {
-                                ForEach(1...5, id: \.self) { index in
-                                    Image(systemName: index <= Int(anime.rating.rounded()) ? "star.fill" : "star")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.yellow)
-                                }
-                            }
-                        }
-                        
-                        if !anime.watchLink.isEmpty {
-                            Link(destination: URL(string: anime.watchLink) ?? URL(string: "https://")!) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "play.circle.fill")
-                                        .font(.system(size: 14))
-                                    Text("視聴する")
-                                        .font(.system(size: 12, weight: .semibold))
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.blue.opacity(0.8))
-                                .cornerRadius(6)
-                            }
-                        }
+                    HStack(spacing: 4) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 14))
+                        Text("動画を再生")
+                            .font(.system(size: 12, weight: .semibold))
                     }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.black)
+                    .cornerRadius(4)
                 }
                 .padding()
             }
-            .frame(height: 160)
+            .frame(width: UIScreen.main.bounds.width - 32, height: 176)
             .cornerRadius(12)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
             .onTapGesture {
-                selectedAnime = anime
+                // 動画を再生
+                print("動画再生ボタンが押されました")
+                print("Video title: \(video.title)")
+                print("YouTube URL: \(video.youtubeURL ?? "nil")")
+                print("Video path: \(video.videoPath)")
+                
+                if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                    // YouTubeの場合は直接URLを開く
+                    print("YouTubeのURLを開きます: \(youtubeURL)")
+                    if let url = URL(string: youtubeURL) {
+                        UIApplication.shared.open(url)
+                    }
+                } else {
+                    // アップロード動画の場合はプレイヤーで再生
+                    print("アップロード動画をプレイヤーで再生します")
+                    if let anime = animeManager.animes.first(where: { anime in
+                        let key = "videos_\(anime.id.uuidString)"
+                        if let data = UserDefaults.standard.data(forKey: key),
+                           let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
+                            return videos.contains(where: { $0.id == video.id })
+                        }
+                        return false
+                    }) {
+                        print("対応するアニメが見つかりました: \(anime.title)")
+                        selectedVideoAnime = anime
+                        selectedVideoId = video.id
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            showVideoPlayer = true
+                        }
+                        print("showVideoPlayer: \(showVideoPlayer)")
+                        print("selectedVideoAnime: \(selectedVideoAnime?.title ?? "nil")")
+                        print("selectedVideoId: \(selectedVideoId?.uuidString ?? "nil")")
+                    } else {
+                        print("対応するアニメが見つかりませんでした")
+                    }
+                }
             }
             } else {
                 EmptyView()
             }
         }
+        .frame(height: 200)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
     
     // タブビュー部分
@@ -496,10 +538,18 @@ struct AnimeScreen: View {
             }
         }
         .onAppear {
-            // バナーアニメをランダムに選択
-            if !animeManager.animes.isEmpty {
-                bannerAnime = animeManager.animes.randomElement()
-            }
+            // YouTube動画を収集
+            loadYouTubeVideos()
+            
+            // 最初の動画を選択
+            selectRandomYouTubeVideo()
+            
+            // Firebase広告と動画を交互に表示
+            loadFirebaseAdvertisement()
+            startBannerRotation()
+        }
+        .onDisappear {
+            bannerTimer?.invalidate()
         }
         .sheet(isPresented: $showAddSheet) {
             AddAnimeSheet(animes: $animeManager.animes)
@@ -527,6 +577,264 @@ struct AnimeScreen: View {
                 animeManager.refreshUI()
             })
             .environmentObject(animeManager)
+        }
+        .fullScreenCover(isPresented: $showVideoPlayer, onDismiss: {
+            selectedVideoAnime = nil
+            selectedVideoId = nil
+        }) {
+            if showVideoPlayer, let anime = selectedVideoAnime, let videoId = selectedVideoId {
+                let key = "videos_\(anime.id.uuidString)"
+                if let data = UserDefaults.standard.data(forKey: key),
+                   let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data),
+                   let video = videos.first(where: { $0.id == videoId }) {
+                    VideoPlayerScreen(video: video, character: nil, anime: anime, allVideos: videos)
+                        .onAppear {
+                            print("VideoPlayerScreenが表示されました")
+                            print("Video: \(video.title)")
+                            print("Anime: \(anime.title)")
+                        }
+                } else {
+                    VStack {
+                        Text("動画が見つかりませんでした")
+                            .font(.title)
+                            .padding()
+                        Button("閉じる") {
+                            showVideoPlayer = false
+                        }
+                        .padding()
+                    }
+                    .onAppear {
+                        print("エラー: 動画が見つかりませんでした")
+                        print("selectedVideoAnime: \(anime.title)")
+                        print("selectedVideoId: \(videoId.uuidString)")
+                        print("key: videos_\(anime.id.uuidString)")
+                    }
+                }
+            } else {
+                VStack {
+                    Text("動画を読み込めませんでした")
+                        .font(.title)
+                        .padding()
+                    Button("閉じる") {
+                        showVideoPlayer = false
+                    }
+                    .padding()
+                }
+                .onAppear {
+                    print("エラー: 必要な情報がありません")
+                    print("showVideoPlayer: \(showVideoPlayer)")
+                    print("selectedVideoAnime: \(selectedVideoAnime?.title ?? "nil")")
+                    print("selectedVideoId: \(selectedVideoId?.uuidString ?? "nil")")
+                }
+            }
+        }
+    }
+    
+    // Firebase広告バナー
+    private func firebaseAdBanner(adData: [String: Any]) -> some View {
+        ZStack(alignment: .bottomLeading) {
+            // 広告画像
+            if let imageURL = adData["imageURL"] as? String {
+                AsyncImage(url: URL(string: imageURL)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                            .clipped()
+                    case .failure(_), .empty:
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+            
+            // グラデーションオーバーレイ
+            LinearGradient(
+                gradient: Gradient(colors: [Color.black.opacity(0.8), Color.clear]),
+                startPoint: .bottom,
+                endPoint: .top
+            )
+            
+            // 広告情報
+            VStack(alignment: .leading, spacing: 4) {
+                if let title = adData["title"] as? String {
+                    Text(title)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                
+                if let description = adData["description"] as? String {
+                    Text(description)
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.8))
+                        .lineLimit(2)
+                }
+                
+                Text("広告")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.black.opacity(0.6))
+                    .cornerRadius(4)
+            }
+            .padding()
+        }
+        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+        .cornerRadius(12)
+        .onTapGesture {
+            if let link = adData["link"] as? String, let url = URL(string: link) {
+                UIApplication.shared.open(url)
+                
+                // clicks カウントを更新
+                if let document = currentAdDocument {
+                    let clicks = (document.data()?["clicks"] as? Int ?? 0) + 1
+                    document.reference.updateData(["clicks": clicks])
+                }
+            }
+        }
+    }
+    
+    // Firebase広告を読み込む（初回のみ全広告を取得）
+    private func loadFirebaseAdvertisement() {
+        // 初回読み込み時は全広告を取得
+        if availableAds.isEmpty {
+            let db = Firestore.firestore()
+            
+            db.collection("advertisements")
+                .whereField("placements", arrayContains: "anime")
+                .whereField("isActive", isEqualTo: true)
+                .getDocuments { snapshot, error in
+                    if let error = error {
+                        print("広告データの取得エラー: \(error)")
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents, !documents.isEmpty else {
+                        return
+                    }
+                    
+                    DispatchQueue.main.async {
+                        self.availableAds = documents
+                        self.selectNextAd()
+                    }
+                }
+        } else {
+            // 既に広告がある場合は次の広告を選択
+            selectNextAd()
+        }
+    }
+    
+    // 次の広告を選択
+    private func selectNextAd() {
+        // 表示していない広告のみをフィルタリング
+        let unshownAds = availableAds.filter { !displayedAdIds.contains($0.documentID) }
+        
+        // 全て表示した場合はリセット
+        if unshownAds.isEmpty {
+            displayedAdIds.removeAll()
+            selectNextAd()
+            return
+        }
+        
+        // ランダムに1つ選択
+        guard let randomDocument = unshownAds.randomElement() else { return }
+        guard let data = randomDocument.data() else { return }
+        
+        // 表示済みとしてマーク
+        displayedAdIds.insert(randomDocument.documentID)
+        
+        // Firebaseから取得したデータを設定
+        self.firebaseAdData = [
+            "title": data["title"] as? String ?? "",
+            "description": data["description"] as? String ?? "",
+            "imageURL": data["imageURL"] as? String ?? "",
+            "link": data["linkURL"] as? String ?? ""
+        ]
+        self.currentAdDocument = randomDocument
+        
+        // impressions カウントを更新
+        let impressions = (data["impressions"] as? Int ?? 0) + 1
+        randomDocument.reference.updateData(["impressions": impressions])
+    }
+    
+    // YouTube動画を収集
+    private func loadYouTubeVideos() {
+        allYouTubeVideos = []
+        for anime in animeManager.animes {
+            let key = "videos_\(anime.id.uuidString)"
+            if let data = UserDefaults.standard.data(forKey: key),
+               let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
+                // YouTube URLを持つ動画のみをフィルタリング
+                let youtubeVideos = videos.filter { $0.youtubeURL != nil && !$0.youtubeURL!.isEmpty }
+                allYouTubeVideos.append(contentsOf: youtubeVideos)
+            }
+        }
+    }
+    
+    // ランダムなYouTube動画を選択
+    private func selectRandomYouTubeVideo() {
+        guard !allYouTubeVideos.isEmpty else { return }
+        
+        // 表示していない動画のみをフィルタリング
+        let unshownVideos = allYouTubeVideos.filter { !displayedVideoIds.contains($0.id) }
+        
+        // 全て表示した場合はリセット
+        if unshownVideos.isEmpty {
+            displayedVideoIds.removeAll()
+            selectRandomYouTubeVideo()
+            return
+        }
+        
+        // ランダムに1つ選択
+        if let randomVideo = unshownVideos.randomElement() {
+            bannerVideo = randomVideo
+            displayedVideoIds.insert(randomVideo.id)
+        }
+    }
+    
+    // バナーのローテーションを開始
+    private func startBannerRotation() {
+        bannerTimer?.invalidate()
+        
+        // 初期状態を動画表示に設定
+        showFirebaseAd = false
+        
+        bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
+            self.showFirebaseAd.toggle()
+            
+            if self.showFirebaseAd {
+                // 広告に切り替わった時に新しい広告を読み込む
+                self.loadFirebaseAdvertisement()
+            } else {
+                // 動画に切り替わった時に新しい動画を選択
+                self.selectRandomYouTubeVideo()
+            }
+        }
+    }
+    
+    // YouTubeサムネイルURLを取得（バナー用）
+    private func getYouTubeThumbnailURLForBanner(from url: String) -> String {
+        // YouTubeのビデオIDを抽出
+        let videoId: String?
+        if url.contains("youtu.be/") {
+            videoId = url.components(separatedBy: "youtu.be/").last?.components(separatedBy: "?").first
+        } else if url.contains("youtube.com/watch?v=") {
+            videoId = url.components(separatedBy: "v=").last?.components(separatedBy: "&").first
+        } else {
+            videoId = nil
+        }
+        
+        // サムネイルURLを返す
+        if let videoId = videoId {
+            return "https://img.youtube.com/vi/\(videoId)/maxresdefault.jpg"
+        } else {
+            return ""
         }
     }
 }
@@ -2276,6 +2584,26 @@ struct AnimeVideoScreen: View {
     
     // MARK: - Helper Functions
     
+    // YouTubeサムネイルURLを取得
+    private func getYouTubeThumbnailURL(from url: String) -> String {
+        // YouTubeのビデオIDを抽出
+        let videoId: String?
+        if url.contains("youtu.be/") {
+            videoId = url.components(separatedBy: "youtu.be/").last?.components(separatedBy: "?").first
+        } else if url.contains("youtube.com/watch?v=") {
+            videoId = url.components(separatedBy: "v=").last?.components(separatedBy: "&").first
+        } else {
+            videoId = nil
+        }
+        
+        // サムネイルURLを返す
+        if let videoId = videoId {
+            return "https://img.youtube.com/vi/\(videoId)/maxresdefault.jpg"
+        } else {
+            return ""
+        }
+    }
+    
     private func loadVideos() {
         let key = "videos_\(anime.id.uuidString)"
         if let data = UserDefaults.standard.data(forKey: key),
@@ -2687,6 +3015,25 @@ struct AnimeVideoScreen: View {
                         .frame(width: 160, height: 90)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .clipped()
+                } else if let youtubeURL = video.youtubeURL {
+                    // YouTubeサムネイルを表示
+                    AsyncImage(url: URL(string: getYouTubeThumbnailURL(from: youtubeURL))) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 160, height: 90)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                .clipped()
+                        case .failure(_), .empty:
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 160, height: 90)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
                 } else {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color.gray.opacity(0.3))
@@ -3814,7 +4161,7 @@ struct AnimeDetailView: View {
                                 Image(uiImage: backgroundImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(height: 160)
+                                    .frame(height: 176)
                                     .clipped()
                                     .cornerRadius(12)
                             } else if let imagePath = anime.backgroundImagePath,
@@ -3822,13 +4169,13 @@ struct AnimeDetailView: View {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(height: 160)
+                                    .frame(height: 176)
                                     .clipped()
                                     .cornerRadius(12)
                             } else {
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(Color.gray.opacity(0.3))
-                                    .frame(height: 160)
+                                    .frame(height: 176)
                                     .overlay(
                                         VStack {
                                             Image(systemName: "photo.fill")

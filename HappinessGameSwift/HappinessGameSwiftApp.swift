@@ -40,6 +40,7 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var animeManager = AnimeManager()
     @StateObject private var productManager = ProductManager()
     @StateObject private var authManager = AuthenticationManager()
+    @State private var showSplash = true
     
     init() {
         FirebaseApp.configure()
@@ -54,7 +55,17 @@ struct HappinessGameSwiftApp: App {
     
     var body: some Scene {
         WindowGroup {
-            if authManager.isLoggedIn {
+            if showSplash {
+                SplashScreenView()
+                    .onAppear {
+                        // 2秒後にスプラッシュ画面を非表示
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            withAnimation {
+                                showSplash = false
+                            }
+                        }
+                    }
+            } else if authManager.isLoggedIn {
                 MainContainerView()
                     .environmentObject(mainTab)
                     .environmentObject(characterManager)
@@ -545,6 +556,23 @@ struct CardContentView: View {
                 .font(.title)
             Text("Coming Soon...")
                 .foregroundColor(.gray)
+        }
+    }
+}
+
+// MARK: - SplashScreenView
+struct SplashScreenView: View {
+    var body: some View {
+        ZStack {
+            // 背景色（必要に応じて変更）
+            Color.white
+                .ignoresSafeArea()
+            
+            // ログインロゴを中央に表示
+            Image("loginLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 200, maxHeight: 200)
         }
     }
 }

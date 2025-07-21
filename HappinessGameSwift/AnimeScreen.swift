@@ -1517,21 +1517,7 @@ struct AnimeArtworkScreen: View {
     
     // フローティングボタン
     var floatingButton: some View {
-        Group {
-            if showAlbum && !albums.isEmpty {
-                Button(action: { showTagInput = true }) {
-                    Text("#")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                        .background(Color.black)
-                        .clipShape(Circle())
-                        .shadow(radius: 6)
-                        .padding(.bottom, 32)
-                        .padding(.trailing, 24)
-                }
-            }
-        }
+        EmptyView()
     }
     
     var body: some View {
@@ -1623,8 +1609,14 @@ struct AnimeArtworkScreen: View {
                 }
                 
                 // Add button moved here
-                Button(action: { showAddSheet = true }) {
-                    Text("写真を追加する")
+                Button(action: { 
+                    if showAlbum {
+                        showTagInput = true
+                    } else {
+                        showAddSheet = true
+                    }
+                }) {
+                    Text(showAlbum ? "アルバムを追加する" : "写真を追加する")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2448,6 +2440,7 @@ struct AnimeVideoScreen: View {
         case editTags(MemoryVideo)
         case thumbnailPicker(MemoryVideo)
         case youtubeConfirmation(MemoryVideo)
+        case tagInput
         
         var id: String {
             switch self {
@@ -2455,6 +2448,7 @@ struct AnimeVideoScreen: View {
             case .editTags: return "editTags"
             case .thumbnailPicker: return "thumbnailPicker"
             case .youtubeConfirmation: return "youtubeConfirmation"
+            case .tagInput: return "tagInput"
             }
         }
     }
@@ -2608,8 +2602,14 @@ struct AnimeVideoScreen: View {
                 }
                 
                 // Add button moved here
-                Button(action: { showAddSheet = true }) {
-                    Text("動画を追加する")
+                Button(action: { 
+                    if showAlbum {
+                        activeSheet = .tagInput
+                    } else {
+                        showAddSheet = true
+                    }
+                }) {
+                    Text(showAlbum ? "アルバムを追加する" : "動画を追加する")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2628,20 +2628,6 @@ struct AnimeVideoScreen: View {
                 }
             }
             
-            // Albumタブ時のみ右下に＋ボタン（アルバムが1つ以上ある場合のみ）
-            if showAlbum && !albums.isEmpty {
-                Button(action: { showTagInput = true }) {
-                    Text("#")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                        .background(Color.black)
-                        .clipShape(Circle())
-                        .shadow(radius: 6)
-                        .padding(.bottom, 32)
-                        .padding(.trailing, 24)
-                }
-            }
             
             // Navigation bar at bottom
             VStack {
@@ -2979,6 +2965,145 @@ struct AnimeVideoScreen: View {
                     }
                 }
             )
+        }
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .editTitle(let video):
+                VStack(spacing: 24) {
+                    Text("タイトルを編集")
+                        .font(.headline)
+                    TextField("タイトル", text: $editText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    HStack(spacing: 24) {
+                        Button(action: { 
+                            activeSheet = nil
+                        }) {
+                            Text("キャンセル")
+                                .foregroundColor(.red)
+                        }
+                        Button(action: {
+                            if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                var updated = videos[idx]
+                                updated.title = editText
+                                videos[idx] = updated
+                                saveVideosToUserDefaults()
+                            }
+                            activeSheet = nil
+                        }) {
+                            Text("保存")
+                                .foregroundColor(.blue)
+                                .fontWeight(.bold)
+                        }
+                    }
+                }
+                .padding(32)
+            case .editTags(let video):
+                VStack(spacing: 24) {
+                    Text("タグを編集")
+                        .font(.headline)
+                    TextField("タグ（カンマ区切り）", text: $editText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                    HStack(spacing: 24) {
+                        Button(action: { 
+                            activeSheet = nil
+                        }) {
+                            Text("キャンセル")
+                                .foregroundColor(.red)
+                        }
+                        Button(action: {
+                            if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                                var updated = videos[idx]
+                                updated.tags = editText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                                videos[idx] = updated
+                                saveVideosToUserDefaults()
+                            }
+                            activeSheet = nil
+                        }) {
+                            Text("保存")
+                                .foregroundColor(.blue)
+                                .fontWeight(.bold)
+                        }
+                    }
+                }
+                .padding(32)
+            case .thumbnailPicker(let video):
+                ThumbnailPickerView(
+                    video: video,
+                    onSave: { newThumbnailData in
+                        if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                            var updated = videos[idx]
+                            updated.thumbnailData = newThumbnailData
+                            videos[idx] = updated
+                            saveVideosToUserDefaults()
+                        }
+                        activeSheet = nil
+                    },
+                    onCancel: {
+                        activeSheet = nil
+                    }
+                )
+            case .youtubeConfirmation(let video):
+                VStack(spacing: 20) {
+                    Text(video.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Text("YouTubeで開きます")
+                        .foregroundColor(.secondary)
+                    Button(action: {
+                        if let url = video.youtubeURL, let youtubeURL = URL(string: url) {
+                            UIApplication.shared.open(youtubeURL)
+                        }
+                        activeSheet = nil
+                    }) {
+                        Text("YouTubeで開く")
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.red)
+                            .cornerRadius(10)
+                    }
+                    Button(action: {
+                        activeSheet = nil
+                    }) {
+                        Text("キャンセル")
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding()
+            case .tagInput:
+                VStack(spacing: 24) {
+                    Text("表示したいタグを入力")
+                        .font(.headline)
+                    Text("同じタグからアルバムを作れます")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    TextField("#タグ名", text: $newTag)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal, 24)
+                    Button("保存") {
+                        let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !tag.isEmpty {
+                            let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
+                            if !tagVideos.isEmpty {
+                                albums.append(Album(tag: tag, videos: tagVideos))
+                                saveVideoAlbumsToUserDefaults()
+                            }
+                        }
+                        newTag = ""
+                        activeSheet = nil
+                    }
+                    .font(.headline)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 10)
+                    .background(Color.black)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    Button("キャンセル") {
+                        activeSheet = nil
+                    }
+                    .foregroundColor(.red)
+                }
+                .padding(32)
+            }
         }
         .background(Color.white)
         .navigationBarHidden(true)

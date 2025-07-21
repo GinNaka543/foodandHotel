@@ -256,11 +256,15 @@ struct ArtworkScreen: View {
                 
                 // Add button moved here
                 Button(action: { 
-                    photoTitle = ""
-                    photoTags = ""
-                    activeSheet = .addPhoto
+                    if showAlbum {
+                        showTagInput = true
+                    } else {
+                        photoTitle = ""
+                        photoTags = ""
+                        activeSheet = .addPhoto
+                    }
                 }) {
-                    Text("写真を追加する")
+                    Text(showAlbum ? "アルバムを追加する" : "写真を追加する")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -630,20 +634,6 @@ struct ArtworkScreen: View {
                 }
             }
             
-            // Albumタブ時のみ右下に＋ボタン
-            if showAlbum && !albums.isEmpty {
-                Button(action: { showTagInput = true }) {
-                    Text("#")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                        .background(Color.black)
-                        .clipShape(Circle())
-                        .shadow(radius: 6)
-                        .padding(.bottom, 32)
-                        .padding(.trailing, 24)
-                }
-            }
             
             // Navigation bar at bottom
             VStack {

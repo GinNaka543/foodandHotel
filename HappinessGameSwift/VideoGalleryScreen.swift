@@ -757,11 +757,15 @@ struct VideoGalleryScreen: View {
                     
                     // Add button moved here
                     Button(action: { 
-                        videoTitle = ""
-                        videoTags = ""
-                        showAddSheet = true 
+                        if showAlbum {
+                            activeSheet = .tagInput
+                        } else {
+                            videoTitle = ""
+                            videoTags = ""
+                            showAddSheet = true 
+                        }
                     }) {
-                        Text("動画を追加する")
+                        Text(showAlbum ? "アルバムを追加する" : "動画を追加する")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -881,24 +885,7 @@ struct VideoGalleryScreen: View {
     
     // フローティングボタン
     var floatingButton: some View {
-        Group {
-            if showAlbum && !albums.isEmpty {
-                Button(action: { showTagInput = true }) {
-                    Text("#")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                        .background(Color.black)
-                        .clipShape(Circle())
-                        .shadow(radius: 6)
-                        .padding(.bottom, 32)
-                        .padding(.trailing, 24)
-                }
-                .sheet(isPresented: $showTagInput) {
-                    tagInputSheet
-                }
-            }
-        }
+        EmptyView()
     }
     
     // タグ入力シート

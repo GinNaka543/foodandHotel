@@ -48,5 +48,9 @@
 	</dict>
 	<key>UIAccentColor</key>
 	<string>AccentColor</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 </dict>
 </plist>

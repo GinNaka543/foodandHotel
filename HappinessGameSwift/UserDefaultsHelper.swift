@@ -26,6 +26,8 @@ class UserDefaultsHelper {
         let userKey = keyForUser(key)
         print("💾 [UserDefaultsHelper] setData - userId: \(userId), key: \(key), userKey: \(userKey)")
         UserDefaults.standard.set(data, forKey: userKey)
+        // 即座に同期して確実に保存
+        UserDefaults.standard.synchronize()
     }
     
     // データの読み込み

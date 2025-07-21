@@ -25,7 +25,7 @@ func saveImageToDocuments(_ image: UIImage, fileName: String, quality: CGFloat =
             try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
         }
         
-        let fileURL = appDirectoryURL.appendingPathComponent(fileName)
+        var fileURL = appDirectoryURL.appendingPathComponent(fileName)
         print("保存先パス: \(fileURL.path)")
         
         // 既存ファイルがある場合は削除
@@ -35,6 +35,11 @@ func saveImageToDocuments(_ image: UIImage, fileName: String, quality: CGFloat =
         }
         
         try data.write(to: fileURL)
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
         
         // ファイルが実際に保存されたか確認
         if fileManager.fileExists(atPath: fileURL.path) {
@@ -76,7 +81,7 @@ func saveImageToDocumentsAsJPEG(_ image: UIImage, fileName: String, quality: CGF
             try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
         }
         
-        let fileURL = appDirectoryURL.appendingPathComponent(fileName)
+        var fileURL = appDirectoryURL.appendingPathComponent(fileName)
         
         // 既存ファイルがある場合は削除
         if fileManager.fileExists(atPath: fileURL.path) {
@@ -84,6 +89,12 @@ func saveImageToDocumentsAsJPEG(_ image: UIImage, fileName: String, quality: CGF
         }
         
         try data.write(to: fileURL)
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
+        
         let relativePath = "AnirecoImages/\(fileName)"
         print("JPEG画像保存成功: \(relativePath)")
         return relativePath

@@ -621,7 +621,20 @@ struct ArtworkScreen: View {
                                         artworks[idx].title = newTitle
                                         artworks[idx].tags = newTags
                                         artworks[idx].customThumbnailData = currentThumbnailData
+                                        
+                                        // アルバムも更新
+                                        updateAlbumsAfterArtworkEdit(editedArtwork: artworks[idx])
+                                        
+                                        // 保存
                                         saveArtworksToUserDefaults()
+                                        saveAlbumsToUserDefaults()
+                                        
+                                        // キャラクターマネージャーにも変更を通知
+                                        if let characterIndex = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                            characterManager.updateCharacter(character)
+                                        }
+                                        
+                                        print("[DEBUG] ArtworkScreen: タイトル・タグ更新 - タイトル: \(newTitle), タグ: \(newTags)")
                                     }
                                 },
                                 onArtworkChange: { newArtwork in

@@ -1495,9 +1495,25 @@ struct AnimeArtworkScreen: View {
                                 }, 
                                 onEdit: { newTitle, newTags in
                                     if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                        // 現在のcustomThumbnailDataを保持しながら更新
+                                        let currentThumbnailData = artworks[idx].customThumbnailData
                                         artworks[idx].title = newTitle
                                         artworks[idx].tags = newTags
+                                        artworks[idx].customThumbnailData = currentThumbnailData
+                                        
+                                        // アルバムも更新
+                                        updateAlbumsAfterArtworkEdit(editedArtwork: artworks[idx])
+                                        
+                                        // 保存
                                         saveArtworksToUserDefaults()
+                                        saveAlbumsToUserDefaults()
+                                        
+                                        // アニメマネージャーにも変更を通知
+                                        if let animeIndex = animeManager.animes.firstIndex(where: { $0.id == anime.id }) {
+                                            animeManager.updateAnime(anime)
+                                        }
+                                        
+                                        print("[DEBUG] AnimeArtworkScreen: タイトル・タグ更新 - タイトル: \(newTitle), タグ: \(newTags)")
                                     }
                                 }
                             )
@@ -3240,12 +3256,18 @@ struct AnimeVideoScreen: View {
                 try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
             }
             
-            let fileURL = appDirectoryURL.appendingPathComponent(fileName)
+            var fileURL = appDirectoryURL.appendingPathComponent(fileName)
             
             if fileManager.fileExists(atPath: fileURL.path) {
                 try fileManager.removeItem(at: fileURL)
             }
             try fileManager.copyItem(at: url, to: fileURL)
+            
+            // iCloudバックアップを有効にする
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = false
+            try fileURL.setResourceValues(resourceValues)
+            
             return "AnirecoImages/\(fileName)"
         } catch {
             print("動画保存エラー: \(error)")

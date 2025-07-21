@@ -1394,12 +1394,18 @@ struct VideoGalleryScreen: View {
                 try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
             }
             
-            let fileURL = appDirectoryURL.appendingPathComponent(fileName)
+            var fileURL = appDirectoryURL.appendingPathComponent(fileName)
             
             if fileManager.fileExists(atPath: fileURL.path) {
                 try fileManager.removeItem(at: fileURL)
             }
             try fileManager.copyItem(at: url, to: fileURL)
+            
+            // iCloudバックアップを有効にする
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = false
+            try fileURL.setResourceValues(resourceValues)
+            
             return "AnirecoImages/\(fileName)"
         } catch {
             print("動画保存エラー: \(error)")

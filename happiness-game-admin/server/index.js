@@ -29,13 +29,26 @@ app.use((req, res, next) => {
 });
 
 // Firebase Admin初期化
-// 開発環境用の設定
 let adminApp;
 try {
-  const serviceAccount = require('./serviceAccountKey.json');
+  let serviceAccount;
+  
+  // Vercel環境では環境変数から取得
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    console.log('Firebase: 環境変数からサービスアカウントを取得中...');
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } else {
+    // ローカル環境ではファイルから取得
+    console.log('Firebase: ローカルファイルからサービスアカウントを取得中...');
+    serviceAccount = require('./serviceAccountKey.json');
+  }
+  
   adminApp = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount),
+    projectId: serviceAccount.project_id || 'ani-reco'
   });
+  
+  console.log('Firebase Admin SDK初期化成功');
 } catch (error) {
   console.log('Firebase Admin SDK初期化エラー:', error.message);
   console.log('開発環境用のダミー設定を使用します');

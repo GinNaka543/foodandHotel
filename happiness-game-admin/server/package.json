@@ -1,15 +1,19 @@
 {
-  "name": "happiness-game-admin-server",
+  "name": "happiness-game-api",
   "version": "1.0.0",
-  "description": "Admin panel server for Happiness Game",
+  "description": "Happiness Game API Server",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node index.js",
+    "build": "npm install",
     "dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["happiness-game", "api", "server"],
+  "author": "GinNaka543",
   "license": "ISC",
   "dependencies": {
     "axios": "^1.10.0",

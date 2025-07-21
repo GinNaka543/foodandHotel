@@ -1325,22 +1325,36 @@ app.get('/api/users/:userId/points', async (req, res) => {
 // Create payment intent for points purchase
 app.post('/api/create-payment-intent', async (req, res) => {
   try {
-    const { amount, userId, pointAmount } = req.body;
+    const { amount, userId, pointAmount, type } = req.body;
     
-    if (!amount || !userId || !pointAmount) {
-      return res.status(400).json({ error: '必須パラメータが不足しています' });
+    // サブスクリプション支払いの場合はpointAmountは不要
+    if (type === 'app_subscription') {
+      if (!amount || !userId) {
+        return res.status(400).json({ error: 'サブスクリプション支払いには amount と userId が必要です' });
+      }
+    } else {
+      // ポイント購入の場合
+      if (!amount || !userId || !pointAmount) {
+        return res.status(400).json({ error: '必須パラメータが不足しています' });
+      }
     }
     
     // Create payment intent
+    const metadata = {
+      userId: userId,
+      type: type || 'point_purchase'
+    };
+    
+    // ポイント購入の場合のみpointAmountを追加
+    if (pointAmount) {
+      metadata.pointAmount = pointAmount.toString();
+    }
+    
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount, // 金額（円）
       currency: 'jpy',
-      statement_descriptor: 'アニレコ',
-      metadata: {
-        userId: userId,
-        pointAmount: pointAmount.toString(),
-        type: 'point_purchase'
-      }
+      statement_descriptor_suffix: 'HAPPINESS',
+      metadata: metadata
     });
     
     res.json({
@@ -1785,6 +1799,276 @@ app.put('/api/travel-plans/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('旅行プラン更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// サブスクリプション管理エンドポイント
+app.get('/api/subscriptions', async (req, res) => {
+  console.log('🔥 /api/subscriptions endpoint called');
+  try {
+    // デバイスベースのサブスクリプションデータを取得
+    const deviceSubscriptionsSnapshot = await db.collection('device_subscriptions').get();
+    const subscriptions = [];
+    const processedDevices = new Set();
+    
+    // device_subscriptionsからデータを処理
+    for (const doc of deviceSubscriptionsSnapshot.docs) {
+      const subscription = { ...doc.data() };
+      processedDevices.add(doc.id);
+      
+      // currentUserIdを使用してユーザー名を取得
+      if (subscription.currentUserId) {
+        try {
+          const userDoc = await db.collection('users').doc(subscription.currentUserId).get();
+          if (userDoc.exists) {
+            subscription.username = userDoc.data().username || userDoc.data().displayName || '未設定';
+          }
+        } catch (error) {
+          console.log(`ユーザー ${subscription.currentUserId} の情報取得エラー:`, error.message);
+        }
+      }
+      
+      // deviceIdをプライマリIDとして使用
+      subscription.userId = subscription.deviceId || doc.id;
+      
+      subscriptions.push(subscription);
+    }
+    
+    // 移行期間のため、古いsubscriptionsコレクションからもデータを取得
+    const oldSubscriptionsSnapshot = await db.collection('subscriptions').get();
+    for (const doc of oldSubscriptionsSnapshot.docs) {
+      const oldSub = doc.data();
+      
+      // deviceIdが既に処理されている場合はスキップ
+      if (oldSub.deviceId && processedDevices.has(oldSub.deviceId)) {
+        continue;
+      }
+      
+      // ユーザー名を取得
+      const userId = oldSub.userId || doc.id;
+      try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          oldSub.username = userData.username || userData.displayName || '未設定';
+          oldSub.deviceId = userData.deviceId || 'legacy-' + userId.substring(0, 8);
+        }
+      } catch (error) {
+        console.log(`ユーザー ${userId} の情報取得エラー:`, error.message);
+      }
+      
+      // 古いデータもdeviceIdベースの形式に変換
+      const subscription = {
+        userId: oldSub.deviceId || userId,
+        deviceId: oldSub.deviceId || null, // 実際のdeviceIdがない場合はnull
+        currentUserId: userId,
+        username: oldSub.username || '未設定',
+        firstInstallDate: oldSub.firstInstallDate || oldSub.createdAt,
+        hasPaid: oldSub.hasPaid || false,
+        paymentDate: oldSub.paymentDate,
+        amount: oldSub.amount,
+        createdAt: oldSub.createdAt,
+        lastSeenAt: oldSub.updatedAt || oldSub.createdAt
+      };
+      
+      subscriptions.push(subscription);
+    }
+    
+    // サブスクリプションレコードがないユーザーも表示（移行期間のため）
+    const usersSnapshot = await db.collection('users').get();
+    console.log(`🔥 Found ${usersSnapshot.size} users in Firebase`);
+    const processedUserIds = new Set(subscriptions.map(s => s.currentUserId || s.userId));
+    console.log(`🔥 Already processed ${processedUserIds.size} user IDs`);
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+      
+      // 既に処理済みのユーザーはスキップ
+      if (processedUserIds.has(userId)) {
+        continue;
+      }
+      
+      // ユーザーデータから仮のサブスクリプションレコードを作成
+      let firstInstallDate = Math.floor(Date.now() / 1000) - 86400; // Default: 1 day ago
+      let createdAt = firstInstallDate;
+      let lastSeenAt = Math.floor(Date.now() / 1000);
+      
+      // Handle Firestore Timestamp objects
+      if (userData.createdAt) {
+        if (userData.createdAt.seconds) {
+          firstInstallDate = userData.createdAt.seconds;
+          createdAt = userData.createdAt.seconds;
+        } else if (typeof userData.createdAt === 'number') {
+          firstInstallDate = userData.createdAt;
+          createdAt = userData.createdAt;
+        }
+      }
+      
+      if (userData.updatedAt?.seconds) {
+        lastSeenAt = userData.updatedAt.seconds;
+      } else if (userData.lastLoginAt?.seconds) {
+        lastSeenAt = userData.lastLoginAt.seconds;
+      }
+      
+      const subscription = {
+        userId: userId, // userIdとしてはuserIdを使用
+        deviceId: userData.deviceId || null, // deviceIdは実際にある場合のみ表示（nullの場合は「未設定」になる）
+        currentUserId: userId,
+        username: userData.username || userData.displayName || '未設定',
+        firstInstallDate,
+        hasPaid: userData.hasPaidSubscription || false,
+        paymentDate: userData.subscriptionDate?.seconds || userData.subscriptionDate || null,
+        amount: userData.hasPaidSubscription ? 500 : null,
+        createdAt,
+        lastSeenAt
+      };
+      
+      subscriptions.push(subscription);
+    }
+    
+    // 初回インストール日でソート（新しい順）
+    subscriptions.sort((a, b) => (b.firstInstallDate || 0) - (a.firstInstallDate || 0));
+    
+    console.log(`🔥 Returning ${subscriptions.length} subscription records`);
+    res.json(subscriptions);
+  } catch (error) {
+    console.error('サブスクリプション取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 特定のユーザーのサブスクリプション情報を取得
+app.get('/api/subscriptions/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const subscriptionDoc = await db.collection('subscriptions').doc(userId).get();
+    
+    if (!subscriptionDoc.exists) {
+      return res.status(404).json({ error: 'サブスクリプション情報が見つかりません' });
+    }
+    
+    const subscription = { ...subscriptionDoc.data() };
+    
+    // ユーザー情報も取得
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      subscription.username = userDoc.data().username || userDoc.data().displayName || '未設定';
+      subscription.email = userDoc.data().email;
+    }
+    
+    res.json(subscription);
+  } catch (error) {
+    console.error('サブスクリプション取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// サブスクリプション統計情報を取得
+app.get('/api/subscriptions/stats', async (req, res) => {
+  try {
+    const subscriptionsSnapshot = await db.collection('device_subscriptions').get();
+    const now = new Date();
+    
+    let totalUsers = 0;
+    let paidUsers = 0;
+    let trialUsers = 0;
+    let expiredUsers = 0;
+    let expiringIn7Days = 0;
+    let totalRevenue = 0;
+    
+    subscriptionsSnapshot.forEach(doc => {
+      const sub = doc.data();
+      totalUsers++;
+      
+      if (sub.hasPaid) {
+        paidUsers++;
+        totalRevenue += (sub.amount || 500);
+      } else {
+        const firstInstallDate = new Date(sub.firstInstallDate * 1000);
+        const daysSinceInstall = Math.floor((now - firstInstallDate) / (1000 * 60 * 60 * 24));
+        const daysUntilPayment = Math.max(0, 60 - daysSinceInstall);
+        
+        if (daysUntilPayment === 0) {
+          expiredUsers++;
+        } else if (daysUntilPayment <= 7) {
+          expiringIn7Days++;
+        } else {
+          trialUsers++;
+        }
+      }
+    });
+    
+    res.json({
+      totalUsers,
+      paidUsers,
+      trialUsers,
+      expiredUsers,
+      expiringIn7Days,
+      totalRevenue,
+      conversionRate: totalUsers > 0 ? (paidUsers / totalUsers * 100).toFixed(2) : 0
+    });
+  } catch (error) {
+    console.error('サブスクリプション統計取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// サブスクリプションステータスをトグルするエンドポイント
+app.post('/api/subscriptions/toggle', async (req, res) => {
+  try {
+    const { userId, hasPaid } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'デバイスIDが必要です' });
+    }
+    
+    // デバイスIDでサブスクリプション情報を更新
+    const subscriptionRef = db.collection('device_subscriptions').doc(userId);
+    const subscriptionDoc = await subscriptionRef.get();
+    
+    if (!subscriptionDoc.exists) {
+      return res.status(404).json({ error: 'デバイスが見つかりません' });
+    }
+    
+    const subscriptionData = {
+      hasPaid,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (hasPaid) {
+      // 支払い済みにする場合
+      subscriptionData.paymentDate = Math.floor(Date.now() / 1000);
+      subscriptionData.amount = 500;
+    } else {
+      // 未払いに戻す場合、支払い情報を削除
+      subscriptionData.paymentDate = null;
+      subscriptionData.amount = null;
+    }
+    
+    await subscriptionRef.update(subscriptionData);
+    
+    // 現在のユーザーデータも更新（必要に応じて）
+    const currentUserId = subscriptionDoc.data().currentUserId;
+    if (currentUserId) {
+      const userRef = db.collection('users').doc(currentUserId);
+      const userDoc = await userRef.get();
+      if (userDoc.exists) {
+        await userRef.update({
+          hasPaidSubscription: hasPaid,
+          subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `デバイス ${userId} のサブスクリプションステータスを更新しました`,
+      hasPaid 
+    });
+  } catch (error) {
+    console.error('サブスクリプショントグルエラー:', error);
     res.status(500).json({ error: error.message });
   }
 });

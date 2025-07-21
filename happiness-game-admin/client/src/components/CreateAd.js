@@ -77,6 +77,10 @@ function CreateAd() {
         if (ad) {
           setFormData({
             ...ad,
+            targetAnimes: Array.isArray(ad.targetAnimes) ? ad.targetAnimes : [],
+            targetCharacters: Array.isArray(ad.targetCharacters) ? ad.targetCharacters : [],
+            targetVoiceActors: Array.isArray(ad.targetVoiceActors) ? ad.targetVoiceActors : [],
+            targetHashtags: Array.isArray(ad.targetHashtags) ? ad.targetHashtags : [],
             placements: Array.isArray(ad.placements) ? ad.placements : [],
             expiresAt: (ad.expiresAt && !isNaN(new Date(ad.expiresAt)))
               ? new Date(ad.expiresAt).toISOString().slice(0, 16)
@@ -299,7 +303,7 @@ function CreateAd() {
                   </button>
                 </div>
                 <div className="tag-list">
-                  {formData.targetAnimes.map(anime => (
+                  {(formData.targetAnimes || []).map(anime => (
                     <div key={anime} className="tag-item">
                       {anime}
                       <button type="button" onClick={() => removeItem('anime', anime)}>×</button>
@@ -329,7 +333,7 @@ function CreateAd() {
                   </button>
                 </div>
                 <div className="tag-list">
-                  {formData.targetCharacters.map(character => (
+                  {(formData.targetCharacters || []).map(character => (
                     <div key={character} className="tag-item">
                       {character}
                       <button type="button" onClick={() => removeItem('character', character)}>×</button>
@@ -359,7 +363,7 @@ function CreateAd() {
                   </button>
                 </div>
                 <div className="tag-list">
-                  {formData.targetVoiceActors.map(voiceActor => (
+                  {(formData.targetVoiceActors || []).map(voiceActor => (
                     <div key={voiceActor} className="tag-item">
                       {voiceActor}
                       <button type="button" onClick={() => removeItem('voiceActor', voiceActor)}>×</button>
@@ -389,7 +393,7 @@ function CreateAd() {
                   </button>
                 </div>
                 <div className="tag-list">
-                  {formData.targetHashtags.map(hashtag => (
+                  {(formData.targetHashtags || []).map(hashtag => (
                     <div key={hashtag} className="tag-item">
                       #{hashtag}
                       <button type="button" onClick={() => removeItem('hashtag', hashtag)}>×</button>

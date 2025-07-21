@@ -10,10 +10,12 @@ function Dashboard() {
     voiceActorStats: {},
     hashtagStats: {}
   });
+  const [subscriptionStats, setSubscriptionStats] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
 
   useEffect(() => {
     fetchStatistics();
+    fetchSubscriptionStats();
   }, []);
 
   const fetchStatistics = async () => {
@@ -28,6 +30,15 @@ function Dashboard() {
       setStatistics(response.data);
     } catch (error) {
       console.error('Error fetching statistics:', error);
+    }
+  };
+
+  const fetchSubscriptionStats = async () => {
+    try {
+      const response = await axios.get('/api/subscriptions/stats');
+      setSubscriptionStats(response.data);
+    } catch (error) {
+      console.error('Error fetching subscription stats:', error);
     }
   };
 
@@ -143,6 +154,36 @@ function Dashboard() {
           <h3>アクティブ広告数</h3>
           <div className="value">{statistics.totalAds}</div>
         </div>
+        
+        {subscriptionStats && (
+          <>
+            <div className="stat-card">
+              <h3>支払い済みユーザー</h3>
+              <div className="value">{subscriptionStats.paidUsers}</div>
+              <div className="sub-value">収益: ¥{subscriptionStats.totalRevenue.toLocaleString()}</div>
+            </div>
+            
+            <div className="stat-card">
+              <h3>試用期間中</h3>
+              <div className="value">{subscriptionStats.trialUsers}</div>
+              <div className="sub-value">期限切れ: {subscriptionStats.expiredUsers}</div>
+            </div>
+            
+            <div className="stat-card">
+              <h3>期限間近</h3>
+              <div className="value" style={{ color: subscriptionStats.expiringIn7Days > 0 ? '#ff9800' : '#4caf50' }}>
+                {subscriptionStats.expiringIn7Days}
+              </div>
+              <div className="sub-value">7日以内</div>
+            </div>
+            
+            <div className="stat-card">
+              <h3>課金率</h3>
+              <div className="value">{subscriptionStats.conversionRate}%</div>
+              <div className="sub-value">全{subscriptionStats.totalUsers}ユーザー中</div>
+            </div>
+          </>
+        )}
         
         <div className="stat-card">
           <h3>登録アニメ数</h3>

@@ -21,7 +21,7 @@ class FirebaseManager: ObservableObject {
     func verifyUser(username: String, userId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         print("🔥 [FirebaseManager] verifyUser開始: username=\(username), userId=\(userId)")
         
-        db.collection("users").document(userId).getDocument { snapshot, error in
+        db.collection("users").document(userId).getDocument { [weak self] snapshot, error in
             if let error = error {
                 print("❌ [FirebaseManager] ユーザー確認エラー: \(error)")
                 completion(.failure(error))
@@ -39,6 +39,22 @@ class FirebaseManager: ObservableObject {
             // ユーザー名が一致するか確認
             let isValid = storedUsername == username
             print(isValid ? "✅ ユーザー認証成功" : "❌ ユーザー名が一致しません")
+            
+            // ログイン成功時にdeviceIdを更新
+            if isValid {
+                let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+                self?.db.collection("users").document(userId).updateData([
+                    "deviceId": deviceId,
+                    "lastLoginAt": Timestamp(date: Date())
+                ]) { error in
+                    if let error = error {
+                        print("❌ deviceId更新エラー: \(error)")
+                    } else {
+                        print("✅ deviceId更新成功: \(deviceId)")
+                    }
+                }
+            }
+            
             completion(.success(isValid))
         }
     }
@@ -93,7 +109,8 @@ class FirebaseManager: ObservableObject {
             "createdAt": Timestamp(date: profile.createdAt),
             "updatedAt": Timestamp(date: profile.updatedAt),
             "platform": "iOS",
-            "appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+            "appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0",
+            "deviceId": UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
         ]
         
         // 誕生日がある場合は追加

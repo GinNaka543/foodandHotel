@@ -225,16 +225,6 @@ struct PointPurchaseView: View {
     }
 }
 
-struct PointPackage {
-    let points: Int
-    let price: Int
-    let isPopular: Bool
-    
-    var pricePerPoint: Double {
-        return Double(price) / Double(points)
-    }
-}
-
 struct PointPackageCard: View {
     let package: PointPackage
     let isSelected: Bool

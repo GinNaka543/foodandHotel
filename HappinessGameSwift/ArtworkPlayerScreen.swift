@@ -15,12 +15,52 @@ struct ArtworkPlayerScreen: View {
     @State private var showFullscreen = false
     @State private var selectedArtwork: Artwork?
     @State private var showPixivRedirect = false
+    
+    // Increment view count for an artwork
+    private func incrementViewCount(for artwork: Artwork) {
+        if let index = allArtworks.firstIndex(where: { $0.id == artwork.id }) {
+            // This is a local copy, in production you'd sync with parent
+        }
+    }
+    
+    // View count formatter
+    private func formatViewCount(_ count: Int) -> String {
+        if count >= 10000 {
+            let formatted = Double(count) / 10000.0
+            return String(format: "%.1f万", formatted)
+        } else {
+            return "\(count)"
+        }
+    }
+    
+    // Time ago formatter
+    private func timeAgo(from date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
+        
+        if let years = components.year, years > 0 {
+            return "\(years)年前"
+        } else if let months = components.month, months > 0 {
+            return "\(months)ヶ月前"
+        } else if let days = components.day, days > 0 {
+            return "\(days)日前"
+        } else if let hours = components.hour, hours > 0 {
+            return "\(hours)時間前"
+        } else if let minutes = components.minute, minutes > 0 {
+            return "\(minutes)分前"
+        } else {
+            return "たった今"
+        }
+    }
 
     var body: some View {
         GeometryReader { geometry in
-            ZStack(alignment: .topLeading) {
-                VStack(spacing: 0) {
-                    ZStack(alignment: .topLeading) {
+            ZStack(alignment: .bottomTrailing) {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // 画像表示部分
+                        ZStack(alignment: .topLeading) {
                         if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
@@ -78,10 +118,12 @@ struct ArtworkPlayerScreen: View {
                             Color.gray.opacity(0.2)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                         }
-                    }
-                    .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
-                    .background(Color.black)
-                    VStack(alignment: .leading, spacing: 12) {
+                        }
+                        .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                        .background(Color.black)
+                        
+                        // 画像情報・関連画像セクション
+                        VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .center) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(artwork.title)
@@ -128,68 +170,83 @@ struct ArtworkPlayerScreen: View {
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 16)
                                 
-                                ScrollView {
-                                    LazyVStack(spacing: 12) {
-                                        ForEach(allArtworks.filter { $0.id != artwork.id }, id: \.id) { relatedArtwork in
+                                LazyVStack(spacing: 0) {
+                                    Spacer().frame(height: 5)
+                                        ForEach(Array(allArtworks.filter { $0.id != artwork.id }.enumerated()), id: \.element.id) { idx, relatedArtwork in
+                                            if idx > 0 {
+                                                Spacer().frame(height: 15.9)
+                                            }
                                             Button(action: {
                                                 selectedArtwork = relatedArtwork
                                             }) {
-                                                HStack(spacing: 16) {
-                                                    // サムネイル画像
+                                                HStack(alignment: .top, spacing: 8) {
+                                                    // サムネイル
                                                     if let imagePath = relatedArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                         Image(uiImage: uiImage)
                                                             .resizable()
-                                                            .aspectRatio(contentMode: .fill)
-                                                            .frame(width: 160, height: 100)
+                                                            .scaledToFill()
+                                                            .frame(width: 165, height: 90)
+                                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                             .clipped()
-                                                            .cornerRadius(8)
                                                     } else if let pixivURL = relatedArtwork.pixivURL {
                                                         if let customThumbnailData = relatedArtwork.customThumbnailData,
                                                            let uiImage = UIImage(data: customThumbnailData) {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
-                                                                .aspectRatio(contentMode: .fill)
-                                                                .frame(width: 160, height: 100)
+                                                                .scaledToFill()
+                                                                .frame(width: 165, height: 90)
+                                                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                                 .clipped()
-                                                                .cornerRadius(8)
                                                         } else {
                                                             PixivThumbnailView(pixivURL: pixivURL)
-                                                                .frame(width: 160, height: 100)
+                                                                .frame(width: 165, height: 90)
+                                                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                                                 .clipped()
-                                                                .cornerRadius(8)
                                                         }
                                                     } else {
-                                                        Rectangle()
+                                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
                                                             .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: 160, height: 100)
-                                                            .cornerRadius(8)
+                                                            .frame(width: 165, height: 90)
                                                     }
                                                     
                                                     // タイトルとタグ
-                                                    VStack(alignment: .leading, spacing: 4) {
+                                                    VStack(alignment: .leading, spacing: 2) {
                                                         Text(relatedArtwork.title)
-                                                            .font(.system(size: 16, weight: .semibold))
+                                                            .font(.system(size: 16.5, weight: .semibold))
                                                             .foregroundColor(.black)
-                                                            .lineLimit(2)
-                                                        Text("#" + (relatedArtwork.tags.isEmpty ? "nakajimaginsei" : relatedArtwork.tags.joined(separator: " #")))
-                                                            .font(.system(size: 14))
+                                                            .padding(.vertical, 4)
+                                                        
+                                                        // ハッシュタグ
+                                                        if let firstTag = relatedArtwork.tags.first {
+                                                            Text("#\(firstTag)")
+                                                                .font(.system(size: 12, weight: .regular))
+                                                                .foregroundColor(.gray)
+                                                        }
+                                                        
+                                                        Text("\(formatViewCount(relatedArtwork.viewCount ?? 0))回・\(timeAgo(from: relatedArtwork.createdAt))")
+                                                            .font(.system(size: 13.8, weight: .regular))
                                                             .foregroundColor(.gray)
-                                                            .lineLimit(1)
+                                                            .padding(.vertical, 1)
                                                     }
+                                                    .frame(alignment: .leading)
+                                                    .padding(.top, 3)
+                                                    .padding(.leading, 8)
                                                     
                                                     Spacer()
                                                 }
-                                                .padding(.horizontal, 16)
+                                                .padding(.leading, 8)
                                             }
                                             .buttonStyle(PlainButtonStyle())
                                         }
-                                    }
-                                    .padding(.bottom, 100) // 戻るボタンのためのスペースを確保
                                 }
+                                .padding(.bottom, 100) // 戻るボタンのためのスペースを確保
                             }
+                        }
                         }
                     }
                 }
+                
+                // 戻るボタン
                 VStack {
                     Spacer()
                     HStack {

@@ -9,6 +9,44 @@ struct AlbumArtworkListScreen: View {
     @State private var selectedArtwork: Artwork? = nil
     @Environment(\.presentationMode) var presentationMode
     
+    // Increment view count for an artwork
+    private func incrementViewCount(for artwork: Artwork) {
+        if let index = artworks.firstIndex(where: { $0.id == artwork.id }) {
+            artworks[index].viewCount = (artworks[index].viewCount ?? 0) + 1
+        }
+    }
+    
+    // View count formatter
+    private func formatViewCount(_ count: Int) -> String {
+        if count >= 10000 {
+            let formatted = Double(count) / 10000.0
+            return String(format: "%.1f万", formatted)
+        } else {
+            return "\(count)"
+        }
+    }
+    
+    // Time ago formatter
+    private func timeAgo(from date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
+        
+        if let years = components.year, years > 0 {
+            return "\(years)年前"
+        } else if let months = components.month, months > 0 {
+            return "\(months)ヶ月前"
+        } else if let days = components.day, days > 0 {
+            return "\(days)日前"
+        } else if let hours = components.hour, hours > 0 {
+            return "\(hours)時間前"
+        } else if let minutes = components.minute, minutes > 0 {
+            return "\(minutes)分前"
+        } else {
+            return "たった今"
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // アルバムバナー
@@ -72,17 +110,19 @@ struct AlbumArtworkListScreen: View {
                     Spacer().frame(height: 10)
                     ForEach(Array(artworks.enumerated()), id: \.element.id) { idx, artwork in
                         if idx > 0 {
-                            Spacer().frame(height: 35)
+                            Spacer().frame(height: 15.9)
                         }
                         Button(action: {
                             selectedArtwork = artwork
+                            incrementViewCount(for: artwork)
                         }) {
-                            HStack(alignment: .top, spacing: 16) {
+                            HStack(alignment: .top, spacing: 8) {
+                                // サムネイル
                                 if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .scaledToFill()
-                                        .frame(width: 160, height: 90)
+                                        .frame(width: 165, height: 90)
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
                                 } else if let pixivURL = artwork.pixivURL {
@@ -91,37 +131,47 @@ struct AlbumArtworkListScreen: View {
                                         Image(uiImage: uiImage)
                                             .resizable()
                                             .scaledToFill()
-                                            .frame(width: 160, height: 90)
+                                            .frame(width: 165, height: 90)
                                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                             .clipped()
                                     } else {
                                         PixivThumbnailView(pixivURL: pixivURL)
-                                            .frame(width: 160, height: 90)
+                                            .frame(width: 165, height: 90)
                                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                             .clipped()
                                     }
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 160, height: 90)
+                                        .frame(width: 165, height: 90)
                                 }
-                                VStack(alignment: .leading, spacing: 4) {
+                                
+                                // タイトルとタグ
+                                VStack(alignment: .leading, spacing: 2) {
                                     Text(artwork.title)
                                         .font(.system(size: 16.5, weight: .semibold))
                                         .foregroundColor(.black)
-                                        .padding(.vertical, 8)
-                                    Text(artwork.tags.isEmpty ? "#nakajimaginsei" : "#" + artwork.tags.joined(separator: " #"))
+                                        .padding(.vertical, 4)
+                                    
+                                    // ハッシュタグ
+                                    if let firstTag = artwork.tags.first {
+                                        Text("#\(firstTag)")
+                                            .font(.system(size: 12, weight: .regular))
+                                            .foregroundColor(.gray)
+                                    }
+                                    
+                                    Text("\(formatViewCount(artwork.viewCount ?? 0))回・\(timeAgo(from: artwork.createdAt))")
                                         .font(.system(size: 13.8, weight: .regular))
                                         .foregroundColor(.gray)
-                                        .padding(.vertical, 2)
+                                        .padding(.vertical, 1)
                                 }
-                                .frame(height: 50, alignment: .leading)
+                                .frame(alignment: .leading)
                                 .padding(.top, 3)
                                 .padding(.leading, 8)
+                                
                                 Spacer()
                             }
                             .padding(.leading, 8)
-                            .background(Color.clear)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }

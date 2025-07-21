@@ -13,8 +13,9 @@ struct Artwork: Identifiable, Codable, Hashable {
     var pixivURL: String?
     var twitterURL: String?
     var customThumbnailData: Data?
+    var viewCount: Int? = 0
     
-    init(id: UUID = UUID(), characterId: UUID, imagePath: String? = nil, title: String, tags: [String] = [], createdAt: Date = Date(), pixivURL: String? = nil, twitterURL: String? = nil, customThumbnailData: Data? = nil) {
+    init(id: UUID = UUID(), characterId: UUID, imagePath: String? = nil, title: String, tags: [String] = [], createdAt: Date = Date(), pixivURL: String? = nil, twitterURL: String? = nil, customThumbnailData: Data? = nil, viewCount: Int? = 0) {
         self.id = id
         self.characterId = characterId
         self.imagePath = imagePath
@@ -24,6 +25,7 @@ struct Artwork: Identifiable, Codable, Hashable {
         self.pixivURL = pixivURL
         self.twitterURL = twitterURL
         self.customThumbnailData = customThumbnailData
+        self.viewCount = viewCount
     }
     
     static func == (lhs: Artwork, rhs: Artwork) -> Bool {
@@ -341,93 +343,105 @@ struct ArtworkScreen: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                             } else {
                                 ScrollView {
-                                    VStack(spacing: 4) {
-                                        Spacer().frame(height: 5)
+                                    VStack(spacing: 12) {
                                         ForEach(albums) { album in
                                             Button(action: {
                                                 selectedAlbum = album
                                             }) {
-                                                HStack(spacing: 12) {
-                                                    // サムネイル
+                                                ZStack {
+                                                    // 背景画像
                                                     if let firstArtwork = album.videos.first {
                                                         if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .aspectRatio(contentMode: .fill)
-                                                                .frame(width: 160, height: 90)
+                                                                .frame(height: 180)
                                                                 .clipped()
-                                                                .cornerRadius(8)
                                                         } else if let pixivURL = firstArtwork.pixivURL {
                                                             if let customThumbnailData = firstArtwork.customThumbnailData,
                                                                let uiImage = UIImage(data: customThumbnailData) {
                                                                 Image(uiImage: uiImage)
                                                                     .resizable()
                                                                     .aspectRatio(contentMode: .fill)
-                                                                    .frame(width: 160, height: 90)
+                                                                    .frame(height: 180)
                                                                     .clipped()
-                                                                    .cornerRadius(8)
                                                             } else {
                                                                 PixivThumbnailView(pixivURL: pixivURL)
-                                                                    .frame(width: 160, height: 90)
-                                                                    .aspectRatio(contentMode: .fill)
+                                                                    .frame(height: 180)
                                                                     .clipped()
-                                                                    .cornerRadius(8)
                                                             }
                                                         } else {
-                                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                                .fill(Color.gray.opacity(0.3))
-                                                                .frame(width: 160, height: 90)
+                                                            Rectangle()
+                                                                .fill(
+                                                                    LinearGradient(
+                                                                        gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                                                        startPoint: .topLeading,
+                                                                        endPoint: .bottomTrailing
+                                                                    )
+                                                                )
+                                                                .frame(height: 180)
                                                         }
                                                     } else {
-                                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: 160, height: 90)
+                                                        Rectangle()
+                                                            .fill(
+                                                                LinearGradient(
+                                                                    gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                                                    startPoint: .topLeading,
+                                                                    endPoint: .bottomTrailing
+                                                                )
+                                                            )
+                                                            .frame(height: 180)
                                                     }
                                                     
-                                                    // 右側のコンテンツ
+                                                    // グラデーションオーバーレイ
+                                                    Rectangle()
+                                                        .fill(
+                                                            LinearGradient(
+                                                                gradient: Gradient(colors: [Color.black.opacity(0.4), Color.clear]),
+                                                                startPoint: .bottom,
+                                                                endPoint: .top
+                                                            )
+                                                        )
+                                                        .frame(height: 180)
+                                                    
+                                                    // テキスト情報
                                                     VStack(alignment: .leading, spacing: 4) {
-                                                        Text("#" + album.tag)
-                                                            .font(.system(size: 16, weight: .semibold))
-                                                            .foregroundColor(.black)
-                                                        
-                                                        if let firstArtwork = album.videos.first {
-                                                            Text(firstArtwork.tags.isEmpty ? "タグなし" : firstArtwork.tags.joined(separator: ", "))
-                                                                .font(.system(size: 14))
-                                                                .foregroundColor(.gray)
-                                                                .lineLimit(2)
+                                                        Spacer()
+                                                        HStack {
+                                                            VStack(alignment: .leading, spacing: 2) {
+                                                                Text(album.tag)
+                                                                    .font(.system(size: 20, weight: .bold))
+                                                                    .foregroundColor(.white)
+                                                                Text("\(album.videos.count)個のアートワーク")
+                                                                    .font(.system(size: 14))
+                                                                    .foregroundColor(.white.opacity(0.8))
+                                                            }
+                                                            Spacer()
+                                                            
+                                                            // 3点ボタン
+                                                            Button(action: {
+                                                                deletingArtworkAlbum = album
+                                                                showDeleteArtworkAlbumAlert = true
+                                                            }) {
+                                                                Image(systemName: "ellipsis")
+                                                                    .font(.system(size: 18))
+                                                                    .foregroundColor(.white)
+                                                                    .rotationEffect(.degrees(90))
+                                                            }
                                                         }
-                                                        
-                                                        Text("\(album.videos.count)件")
-                                                            .font(.system(size: 12))
-                                                            .foregroundColor(.gray)
-                                                    }
-                                                    
-                                                    Spacer()
-                                                    
-                                                    // 3点ボタン
-                                                    Button(action: {
-                                                        deletingArtworkAlbum = album
-                                                        showDeleteArtworkAlbumAlert = true
-                                                    }) {
-                                                        Image(systemName: "ellipsis")
-                                                            .font(.system(size: 16, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                            .frame(width: 32, height: 32)
-                                                            .background(Color.black.opacity(0.7))
-                                                            .clipShape(Circle())
-                                                            .shadow(radius: 4)
+                                                        .padding(.horizontal, 16)
+                                                        .padding(.bottom, 12)
                                                     }
                                                 }
-                                                .padding(.horizontal, 8)
-                                                .padding(.vertical, 8)
-                                                .background(Color.white)
-                                                .cornerRadius(8)
+                                                .cornerRadius(12)
+                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                                             }
                                             .buttonStyle(PlainButtonStyle())
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
+                                            .padding(.horizontal, 16)
                                         }
                                     }
+                                    .padding(.top, 8)
+                                    .padding(.bottom, 8)
                                 }
                             }
                         }

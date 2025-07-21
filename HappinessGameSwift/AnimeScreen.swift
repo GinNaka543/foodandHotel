@@ -1250,87 +1250,100 @@ struct AnimeArtworkScreen: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                         } else {
                             ScrollView {
-                                VStack(spacing: 4) {
-                                    Spacer().frame(height: 5)
+                                VStack(spacing: 12) {
                                     // --- アルバムリスト ---
                                     ForEach(albums) { album in
                                     Button(action: {
                                         selectedAlbum = album
                                     }) {
-                                        HStack(spacing: 12) {
-                                            // サムネイル
+                                        ZStack {
+                                            // 背景画像
                                             if let firstArtwork = album.videos.first {
                                                 if let imagePath = firstArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
-                                                        .frame(width: 165, height: 90)
+                                                        .frame(height: 180)
                                                         .clipped()
-                                                        .cornerRadius(8)
                                                 } else if let pixivURL = firstArtwork.pixivURL {
                                                     PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: 165, height: 90)
+                                                        .frame(height: 180)
                                                         .clipped()
-                                                        .cornerRadius(8)
                                                 } else {
-                                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                        .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: 165, height: 90)
+                                                    Rectangle()
+                                                        .fill(
+                                                            LinearGradient(
+                                                                gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                                                startPoint: .topLeading,
+                                                                endPoint: .bottomTrailing
+                                                            )
+                                                        )
+                                                        .frame(height: 180)
                                                 }
                                             } else {
-                                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                    .fill(Color.gray.opacity(0.3))
-                                                    .frame(width: 165, height: 90)
+                                                Rectangle()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            gradient: Gradient(colors: [Color.purple.opacity(0.7), Color.blue.opacity(0.7)]),
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                    )
+                                                    .frame(height: 180)
                                             }
                                             
-                                            // 右側のコンテンツ
+                                            // グラデーションオーバーレイ
+                                            Rectangle()
+                                                .fill(
+                                                    LinearGradient(
+                                                        gradient: Gradient(colors: [Color.black.opacity(0.4), Color.clear]),
+                                                        startPoint: .bottom,
+                                                        endPoint: .top
+                                                    )
+                                                )
+                                                .frame(height: 180)
+                                            
+                                            // テキスト情報
                                             VStack(alignment: .leading, spacing: 4) {
-                                                Text("#" + album.tag)
-                                                    .font(.system(size: 16, weight: .semibold))
-                                                    .foregroundColor(.black)
-                                                
-                                                if let firstArtwork = album.videos.first {
-                                                    Text(firstArtwork.tags.isEmpty ? "タグなし" : firstArtwork.tags.joined(separator: ", "))
-                                                        .font(.system(size: 14))
-                                                        .foregroundColor(.gray)
-                                                        .lineLimit(2)
+                                                Spacer()
+                                                HStack {
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(album.tag)
+                                                            .font(.system(size: 20, weight: .bold))
+                                                            .foregroundColor(.white)
+                                                        Text("\(album.videos.count)個のアートワーク")
+                                                            .font(.system(size: 14))
+                                                            .foregroundColor(.white.opacity(0.8))
+                                                    }
+                                                    Spacer()
+                                                    
+                                                    // 3点ボタン
+                                                    Button(action: {
+                                                        deletingArtworkAlbum = album
+                                                        showDeleteArtworkAlbumAlert = true
+                                                    }) {
+                                                        Image(systemName: "ellipsis")
+                                                            .font(.system(size: 18))
+                                                            .foregroundColor(.white)
+                                                            .rotationEffect(.degrees(90))
+                                                    }
                                                 }
-                                                
-                                                Text("\(album.videos.count)件")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.gray)
-                                            }
-                                            
-                                            Spacer()
-                                            
-                                            // 3点ボタン
-                                            Button(action: {
-                                                deletingArtworkAlbum = album
-                                                showDeleteArtworkAlbumAlert = true
-                                            }) {
-                                                Image(systemName: "ellipsis")
-                                                    .font(.system(size: 16, weight: .bold))
-                                                    .foregroundColor(.white)
-                                                    .frame(width: 32, height: 32)
-                                                    .background(Color.black.opacity(0.7))
-                                                    .clipShape(Circle())
-                                                    .shadow(radius: 4)
+                                                .padding(.horizontal, 16)
+                                                .padding(.bottom, 12)
                                             }
                                         }
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 8)
-                                        .background(Color.white)
-                                        .cornerRadius(8)
+                                        .cornerRadius(12)
+                                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                                     }
                                     .buttonStyle(PlainButtonStyle())
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 2)
+                                    .padding(.horizontal, 16)
                                 }
+                                .padding(.top, 8)
+                                .padding(.bottom, 8)
                             }
-                            .padding(.bottom, 20)
                         }
                         .fullScreenCover(item: $selectedAlbum) { album in
-                            AlbumArtworkListScreenTemp(
+                            AlbumArtworkListScreen(
                                 artworks: album.videos, 
                                 tag: album.tag,
                                 onArtworkDeleted: { deletedArtwork in
@@ -3191,6 +3204,7 @@ struct AnimeVideoScreen: View {
     }
     
     // アルバムリストビュー
+    @ViewBuilder
     var albumListView: some View {
         Group {
             if albums.isEmpty {
@@ -3229,70 +3243,16 @@ struct AnimeVideoScreen: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    VStack(spacing: 4) {
-                        Spacer().frame(height: 5)
+                    VStack(spacing: 12) {
                         ForEach(albums) { album in
-                            Button(action: {
+                            AlbumRowView(album: album, onTap: {
                                 selectedAlbum = album
-                            }) {
-                                HStack(spacing: 12) {
-                                    // サムネイル
-                                    if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                        Image(uiImage: uiImage)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 165, height: 90)
-                                            .clipped()
-                                            .cornerRadius(8)
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                            .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 165, height: 90)
-                                    }
-                                    
-                                    // 右側のコンテンツ
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("#" + album.tag)
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(.black)
-                                        
-                                        if let firstVideo = album.videos.first {
-                                            Text(firstVideo.tags.isEmpty ? "タグなし" : firstVideo.tags.joined(separator: ", "))
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.gray)
-                                                .lineLimit(2)
-                                        }
-                                        
-                                        Text("\(album.videos.count)件")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.gray)
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    // 3点ボタン
-                                    Button(action: {
-                                        activeAlert = .deleteAlbum(album)
-                                    }) {
-                                        Image(systemName: "ellipsis")
-                                            .font(.system(size: 16, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .frame(width: 32, height: 32)
-                                            .background(Color.black.opacity(0.7))
-                                            .clipShape(Circle())
-                                            .shadow(radius: 4)
-                                    }
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 8)
-                                .background(Color.white)
-                                .cornerRadius(8)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 2)
+                            })
+                            .padding(.horizontal, 16)
                         }
                     }
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
                 }
             }
         }
@@ -3301,8 +3261,8 @@ struct AnimeVideoScreen: View {
                 videos: album.videos,
                 tag: album.tag,
                 onVideoDeleted: { deletedVideo in
-                    if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
-                        videos.remove(at: idx)
+                    if let idx = self.videos.firstIndex(where: { $0.id == deletedVideo.id }) {
+                        self.videos.remove(at: idx)
                         updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
@@ -4882,6 +4842,87 @@ struct AnimeDetailView: View {
         }
     }
     
+}
+
+// MARK: - AlbumRowView
+struct AlbumRowView: View {
+    let album: Album
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                // Background image
+                Group {
+                    if let firstVideo = album.videos.first, 
+                       let thumbnailData = firstVideo.thumbnailData, 
+                       let uiImage = UIImage(data: thumbnailData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } else if let firstVideo = album.videos.first, 
+                              let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
+                        AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .overlay(ProgressView())
+                        }
+                    } else {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.purple.opacity(0.6),
+                                        Color.blue.opacity(0.4)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+                }
+                .frame(height: 180)
+                .clipped()
+                
+                // Gradient overlay
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.clear,
+                        Color.black.opacity(0.7)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 180)
+                
+                // Text information
+                VStack(alignment: .leading) {
+                    Spacer()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(album.tag)
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            Text("\(album.videos.count)個の動画")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        Spacer()
+                    }
+                    .padding(16)
+                }
+                .frame(height: 180)
+            }
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
 }
 
 // Navigation button style that highlights on press

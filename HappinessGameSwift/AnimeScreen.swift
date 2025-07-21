@@ -1091,6 +1091,7 @@ struct AnimeArtworkScreen: View {
     @State private var photoTitle: String = ""
     @State private var photoTags: String = ""
     @State private var showAlbum = false
+    @State private var showAbout = false
     @State private var showTagInput = false
     @State private var newTag: String = ""
     @State private var filteredTags: [String] = []
@@ -1182,10 +1183,10 @@ struct AnimeArtworkScreen: View {
             HStack(spacing: 12) {
                 Button(action: { showAlbum = false }) {
                     Text("ArtWork")
-                        .font(.caption2)
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundColor(!showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -1194,10 +1195,10 @@ struct AnimeArtworkScreen: View {
                 
                 Button(action: { showAlbum = true }) {
                     Text("Album")
-                        .font(.caption2)
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundColor(showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -1522,14 +1523,15 @@ struct AnimeArtworkScreen: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                // Banner (no header)
-                bannerView
-                    .allowsHitTesting(false) // バナーのタップを無効化
-                    .zIndex(1)
-                
-                // Profile section
-                HStack(spacing: 12) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Banner (no header)
+                    bannerView
+                        .allowsHitTesting(false) // バナーのタップを無効化
+                        .zIndex(1)
+                    
+                    // Profile section
+                    HStack(spacing: 12) {
                     // Anime icon
                     if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                         Image(uiImage: image)
@@ -1622,6 +1624,7 @@ struct AnimeArtworkScreen: View {
                 
                 // Main content
                 mainContent
+                }
             }
             floatingButton
             
@@ -1629,20 +1632,21 @@ struct AnimeArtworkScreen: View {
             VStack {
                 Spacer()
                 HStack(spacing: 0) {
-                    // Home button
+                    // Back button
                     Button(action: {
                         dismiss()
                         onClose()
                     }) {
                         VStack(spacing: 4) {
-                            Image(systemName: "house")
+                            Image(systemName: "chevron.left")
                                 .font(.system(size: 24))
-                            Text("ホーム")
+                            Text("戻る")
                                 .font(.system(size: 10))
                         }
-                        .foregroundColor(.black)
+                        .foregroundColor(.gray)
                         .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(AnimeNavigationButtonStyle())
                     
                     // Artwork button
                     Button(action: {
@@ -1675,9 +1679,7 @@ struct AnimeArtworkScreen: View {
                     
                     // About button
                     Button(action: {
-                        // Navigate to About page
-                        dismiss()
-                        onClose()
+                        showAbout = true
                     }) {
                         VStack(spacing: 4) {
                             if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
@@ -1710,6 +1712,10 @@ struct AnimeArtworkScreen: View {
         .onAppear {
             loadArtworks()
             loadAlbumsFromUserDefaults()
+        }
+        .fullScreenCover(isPresented: $showAbout) {
+            AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
+                .environmentObject(animeManager)
         }
         .sheet(isPresented: $showPixivRedirect) {
             PixivRedirectView(
@@ -2402,6 +2408,7 @@ struct AnimeVideoScreen: View {
     @State private var videoTitle: String = ""
     @State private var videoTags: String = ""
     @State private var showAlbum = false
+    @State private var showAbout = false
     @State private var showTagInput = false
     @State private var newTag: String = ""
     @State private var filteredTags: [String] = []
@@ -2501,14 +2508,15 @@ struct AnimeVideoScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                // Banner (no header)
-                bannerView
-                    .allowsHitTesting(false) // バナーのタップを無効化
-                    .zIndex(1)
-                
-                // Profile section
-                HStack(spacing: 12) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Banner (no header)
+                    bannerView
+                        .allowsHitTesting(false) // バナーのタップを無効化
+                        .zIndex(1)
+                    
+                    // Profile section
+                    HStack(spacing: 12) {
                     // Anime icon
                     if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                         Image(uiImage: image)
@@ -2604,6 +2612,7 @@ struct AnimeVideoScreen: View {
                 
                 // コンテンツ
                 mainContent
+                }
             }
             
             // Albumタブ時のみ右下に＋ボタン（アルバムが1つ以上ある場合のみ）
@@ -2619,6 +2628,86 @@ struct AnimeVideoScreen: View {
                         .padding(.bottom, 32)
                         .padding(.trailing, 24)
                 }
+            }
+            
+            // Navigation bar at bottom
+            VStack {
+                Spacer()
+                HStack(spacing: 0) {
+                    // Back button
+                    Button(action: {
+                        dismiss()
+                        onClose()
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 24))
+                            Text("戻る")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.gray)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(AnimeNavigationButtonStyle())
+                    
+                    // Video button
+                    Button(action: {
+                        showAlbum = false
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "video")
+                                .font(.system(size: 24))
+                            Text("Video")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(!showAlbum ? .black : .gray)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Album button
+                    Button(action: {
+                        showAlbum = true
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "rectangle.grid.2x2")
+                                .font(.system(size: 24))
+                            Text("Album")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(showAlbum ? .black : .gray)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // About button
+                    Button(action: {
+                        showAbout = true
+                    }) {
+                        VStack(spacing: 4) {
+                            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 24, height: 24)
+                                    .clipShape(Circle())
+                            } else {
+                                Image(systemName: "person.circle")
+                                    .font(.system(size: 24))
+                            }
+                            Text("About")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.vertical, 8)
+                .background(Color.white)
+                .overlay(
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 0.5),
+                    alignment: .top
+                )
             }
         }
         .sheet(isPresented: $showTagInput) {
@@ -2655,92 +2744,14 @@ struct AnimeVideoScreen: View {
                 .foregroundColor(.red)
             }
             .padding(32)
-            
-            // Navigation bar at bottom
-            VStack {
-                Spacer()
-                HStack(spacing: 0) {
-                    // Home button
-                    Button(action: {
-                        dismiss()
-                        onClose()
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "house")
-                                .font(.system(size: 24))
-                            Text("ホーム")
-                                .font(.system(size: 10))
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    // Video button
-                    Button(action: {
-                        showAlbum = false
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "video")
-                                .font(.system(size: 24))
-                            Text("Video")
-                                .font(.system(size: 10))
-                        }
-                        .foregroundColor(!showAlbum ? .black : .gray)
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    // Album button
-                    Button(action: {
-                        // Navigate to album view
-                        showAlbum = true
-                    }) {
-                        VStack(spacing: 4) {
-                            Image(systemName: "rectangle.grid.2x2")
-                                .font(.system(size: 24))
-                            Text("Album")
-                                .font(.system(size: 10))
-                        }
-                        .foregroundColor(showAlbum ? .black : .gray)
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    // About button
-                    Button(action: {
-                        // Navigate to About page
-                        dismiss()
-                        onClose()
-                    }) {
-                        VStack(spacing: 4) {
-                            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 24, height: 24)
-                                    .clipShape(Circle())
-                            } else {
-                                Image(systemName: "person.circle")
-                                    .font(.system(size: 24))
-                            }
-                            Text("About")
-                                .font(.system(size: 10))
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                    }
-                }
-                .padding(.vertical, 8)
-                .background(Color.white)
-                .overlay(
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(height: 0.5),
-                    alignment: .top
-                )
-            }
         }
         .onAppear {
             loadVideos()
             loadVideoAlbumsFromUserDefaults()
+        }
+        .fullScreenCover(isPresented: $showAbout) {
+            AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
+                .environmentObject(animeManager)
         }
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData, onSave: {
@@ -3132,10 +3143,10 @@ struct AnimeVideoScreen: View {
             HStack(spacing: 12) {
                 Button(action: { showAlbum = false }) {
                     Text("Video")
-                        .font(.caption2)
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundColor(!showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -3144,10 +3155,10 @@ struct AnimeVideoScreen: View {
                 
                 Button(action: { showAlbum = true }) {
                     Text("Album")
-                        .font(.caption2)
+                        .font(.system(size: 16, weight: .regular))
                         .foregroundColor(showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
@@ -4822,4 +4833,12 @@ struct AnimeDetailView: View {
         }
     }
     
+}
+
+// Navigation button style that highlights on press
+struct AnimeNavigationButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundColor(configuration.isPressed ? .black : .gray)
+    }
 }

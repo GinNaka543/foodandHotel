@@ -166,11 +166,12 @@ struct ArtworkScreen: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                // バナー (no header)
-                bannerView
-                    .allowsHitTesting(false)
-                    .zIndex(1)
+            ScrollView {
+                VStack(spacing: 0) {
+                    // バナー (no header)
+                    bannerView
+                        .allowsHitTesting(false)
+                        .zIndex(1)
                 
                 // Profile section
                 HStack(spacing: 12) {
@@ -611,8 +612,10 @@ struct ArtworkScreen: View {
                             )
                         }
                     }
+                    }
                 }
             }
+            
             // Albumタブ時のみ右下に＋ボタン
             if showAlbum && !albums.isEmpty {
                 Button(action: { showTagInput = true }) {
@@ -632,19 +635,20 @@ struct ArtworkScreen: View {
             VStack {
                 Spacer()
                 HStack(spacing: 0) {
-                    // Home button
+                    // Back button
                     Button(action: {
                         dismiss()
                     }) {
                         VStack(spacing: 4) {
-                            Image(systemName: "house")
+                            Image(systemName: "chevron.left")
                                 .font(.system(size: 24))
-                            Text("ホーム")
+                            Text("戻る")
                                 .font(.system(size: 10))
                         }
-                        .foregroundColor(.black)
+                        .foregroundColor(.gray)
                         .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(ArtworkNavigationButtonStyle())
                     
                     // Artwork button
                     Button(action: {
@@ -1354,5 +1358,13 @@ struct ArtworkScreen: View {
             }
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
+    }
+}
+
+// Navigation button style that highlights on press
+struct ArtworkNavigationButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundColor(configuration.isPressed ? .black : .gray)
     }
 }

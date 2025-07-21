@@ -432,7 +432,7 @@ struct VideoGalleryScreen: View {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 183, height: 109)
+                        .frame(width: 160, height: 90)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .clipped()
                 } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
@@ -440,19 +440,19 @@ struct VideoGalleryScreen: View {
                         image
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 183, height: 109)
+                            .frame(width: 160, height: 90)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                             .clipped()
                     } placeholder: {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(Color.gray.opacity(0.3))
-                            .frame(width: 183, height: 109)
+                            .frame(width: 160, height: 90)
                             .overlay(ProgressView())
                     }
                 } else {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color.gray.opacity(0.3))
-                        .frame(width: 183, height: 109)
+                        .frame(width: 160, height: 90)
                 }
                 
                 // タイトルとタグ
@@ -602,19 +602,20 @@ struct VideoGalleryScreen: View {
         VStack {
             Spacer()
             HStack(spacing: 0) {
-                // Home button
+                // Back button
                 Button(action: {
                     dismiss()
                 }) {
                     VStack(spacing: 4) {
-                        Image(systemName: "house")
+                        Image(systemName: "chevron.left")
                             .font(.system(size: 24))
-                        Text("ホーム")
+                        Text("戻る")
                             .font(.system(size: 10))
                     }
-                    .foregroundColor(.black)
+                    .foregroundColor(.gray)
                     .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(VideoNavigationButtonStyle())
                 
                 // Video button
                 Button(action: {
@@ -680,37 +681,42 @@ struct VideoGalleryScreen: View {
     
     var body: some View {
         ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                // Banner (no header)
-                bannerView
-                    .allowsHitTesting(false) // バナーのタップを無効化
-                    .zIndex(1)
-                
-                // Profile section
-                profileSection
-                
-                // Description section
-                descriptionSection
-                
-                // Add button moved here
-                Button(action: { 
-                    videoTitle = ""
-                    videoTags = ""
-                    showAddSheet = true 
-                }) {
-                    Text("動画を追加する")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10.4)  // 12 / 1.15 = 10.4
-                        .background(Color.black)
-                        .cornerRadius(20)
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Banner (no header)
+                    bannerView
+                        .allowsHitTesting(false) // バナーのタップを無効化
+                        .zIndex(1)
+                    
+                    // Profile section
+                    profileSection
+                    
+                    // Description section
+                    descriptionSection
+                    
+                    // Add button moved here
+                    Button(action: { 
+                        videoTitle = ""
+                        videoTags = ""
+                        showAddSheet = true 
+                    }) {
+                        Text("動画を追加する")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10.4)  // 12 / 1.15 = 10.4
+                            .background(Color.black)
+                            .cornerRadius(20)
+                    }
+                    .padding(.horizontal, 16)  // Same as banner padding
+                    .padding(.bottom, 16)
+                    
+                    // Tab view
+                    tabView
+                    
+                    // Content view
+                    contentView
                 }
-                .padding(.horizontal, 16)  // Same as banner padding
-                .padding(.bottom, 16)
-                
-                // Main content
-                mainContent
             }
             floatingButton
             
@@ -811,12 +817,6 @@ struct VideoGalleryScreen: View {
     }
     
     // メインコンテンツ
-    var mainContent: some View {
-        VStack(spacing: 0) {
-            tabView
-            contentView
-        }
-    }
     
     // フローティングボタン
     var floatingButton: some View {
@@ -1839,7 +1839,7 @@ struct AlbumVideoListScreen: View {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .scaledToFill()
-                                        .frame(width: 183, height: 109)
+                                        .frame(width: 160, height: 90)
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
                                 } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
@@ -1847,13 +1847,13 @@ struct AlbumVideoListScreen: View {
                                         image
                                             .resizable()
                                             .scaledToFill()
-                                            .frame(width: 183, height: 109)
+                                            .frame(width: 160, height: 90)
                                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                             .clipped()
                                     } placeholder: {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                                             .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 183, height: 109)
+                                            .frame(width: 160, height: 90)
                                             .overlay(
                                                 ProgressView()
                                             )
@@ -1861,7 +1861,7 @@ struct AlbumVideoListScreen: View {
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 183, height: 109)
+                                        .frame(width: 160, height: 90)
                                 }
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(video.title)
@@ -1902,6 +1902,14 @@ struct AlbumVideoListScreen: View {
                 }
             )
         }
+    }
+}
+
+// Navigation button style that highlights on press
+struct VideoNavigationButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundColor(configuration.isPressed ? .black : .gray)
     }
 }
 

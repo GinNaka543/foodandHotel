@@ -8,7 +8,7 @@ class StripePaymentManager: NSObject, ObservableObject {
     
     // Stripe設定
     private let publishableKey = "pk_live_51RjjWjD7PsaPGu6xz0RGH0Gnw36ORTqI9pjec4ycPMlxAQ8biO4igeEMwoKZxdwhB8EJGeW947jmgaCWNKZi3ZTR005t6UHTLA"
-    private let baseURL = "https://server-hqyqs64mi-ginnaka543s-projects.vercel.app/api" // バックエンドURL
+    private let baseURL = "https://server-demaddadf-ginnaka543s-projects.vercel.app/api" // バックエンドURL
     
     @Published var paymentSheet: PaymentSheet?
     @Published var isLoading: Bool = false

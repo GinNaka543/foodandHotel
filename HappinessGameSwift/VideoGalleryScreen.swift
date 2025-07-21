@@ -149,43 +149,21 @@ struct VideoGalleryScreen: View {
     
     // バナービュー
     var bannerView: some View {
-        ZStack {
-            // 画像のロード
+        Group {
             if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
-                    .frame(maxWidth: .infinity, maxHeight: 120)
-            }
-            
-            // ダークオーバーレイ
-            Color.black.opacity(0.4)
-                .frame(maxWidth: .infinity, maxHeight: 120)
-            
-            // テキストオーバーレイ
-            VStack {
-                Spacer()
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("ビデオ")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.white)
-                        Text(currentCharacter.name)
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.white.opacity(0.9))
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                    .frame(maxWidth: .infinity, maxHeight: 60)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: 120)
+        .cornerRadius(12)
+        .padding(.horizontal, 16)
     }
     
     // タブビュー
@@ -559,6 +537,43 @@ struct VideoGalleryScreen: View {
                 bannerView
                     .allowsHitTesting(false) // バナーのタップを無効化
                     .zIndex(1)
+                
+                // Profile section
+                HStack(spacing: 12) {
+                    // Character icon
+                    if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 67, height: 67)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 67, height: 67)
+                            .overlay(
+                                Image(systemName: "person")
+                                    .font(.system(size: 33))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(currentCharacter.name)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
+                        Text("@\(currentCharacter.name)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                        Text("\(videos.count)本の動画・アルバム数\(albums.count)")
+                            .font(.system(size: 15.4))
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
                 // Main content
                 mainContent
             }

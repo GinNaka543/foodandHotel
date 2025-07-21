@@ -170,56 +170,17 @@ struct ArtworkScreen: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
-                    .overlay(
-                        Color.black.opacity(0.4)
-                    )
-                    .overlay(
-                        VStack {
-                            Spacer()
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("アートワーク")
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(.white)
-                                    
-                                    Text(currentCharacter.name)
-                                        .font(.system(size: 18, weight: .medium))
-                                        .foregroundColor(.white.opacity(0.9))
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
-                        }
-                    )
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
-                    .frame(maxWidth: .infinity, maxHeight: 120)
-                    .overlay(
-                        VStack {
-                            Spacer()
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("アートワーク")
-                                        .font(.system(size: 24, weight: .bold))
-                                        .foregroundColor(.white)
-                                    
-                                    Text(currentCharacter.name)
-                                        .font(.system(size: 18, weight: .medium))
-                                        .foregroundColor(.white.opacity(0.9))
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
-                        }
-                    )
+                    .frame(maxWidth: .infinity, maxHeight: 60)
             }
         }
         .buttonStyle(PlainButtonStyle())
+        .cornerRadius(12)
+        .padding(.horizontal, 16)
     }
     
     var body: some View {
@@ -232,6 +193,43 @@ struct ArtworkScreen: View {
                 bannerView
                     .allowsHitTesting(false)
                     .zIndex(1)
+                
+                // Profile section
+                HStack(spacing: 12) {
+                    // Character icon
+                    if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 67, height: 67)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 67, height: 67)
+                            .overlay(
+                                Image(systemName: "person")
+                                    .font(.system(size: 33))
+                                    .foregroundColor(.gray)
+                            )
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(currentCharacter.name)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
+                        Text("@\(currentCharacter.name)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                        Text("\(artworks.count)枚の画像・アルバム数\(albums.count)")
+                            .font(.system(size: 15.4))
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
 
                 // タブバー - カプセル型デザイン（左寄せ）
                 HStack {

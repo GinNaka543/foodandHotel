@@ -17,6 +17,7 @@ struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
     let date: Date
     var youtubeURL: String? // YouTube URL
     var youtubeThumbnailURL: String? // YouTube サムネイルURL
+    var viewCount: Int? = 0 // View count
 }
 
 struct Album: Identifiable, Hashable, Equatable, Codable {
@@ -249,7 +250,7 @@ struct VideoGalleryScreen: View {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                        .frame(width: 160, height: 90)
+                                        .frame(width: 165, height: 90)
                                         .clipped()
                                         .cornerRadius(8)
                                 } else if let firstVideo = album.videos.first, let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
@@ -257,19 +258,19 @@ struct VideoGalleryScreen: View {
                                         image
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
-                                            .frame(width: 160, height: 90)
+                                            .frame(width: 165, height: 90)
                                             .clipped()
                                             .cornerRadius(8)
                                     } placeholder: {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                                             .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 160, height: 90)
+                                            .frame(width: 165, height: 90)
                                             .overlay(ProgressView())
                                     }
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 160, height: 90)
+                                        .frame(width: 165, height: 90)
                                 }
                                 
                                 // 右側のコンテンツ
@@ -377,7 +378,7 @@ struct VideoGalleryScreen: View {
                         Spacer().frame(height: 5)
                         ForEach(Array(videos.enumerated()), id: \.element.id) { idx, video in
                             if idx > 0 {
-                                Spacer().frame(height: 35)
+                                Spacer().frame(height: 15.9)
                             }
                             videoRowView(video: video)
                         }
@@ -416,23 +417,68 @@ struct VideoGalleryScreen: View {
         }
     }
     
+    // Increment view count for a video
+    private func incrementViewCount(for video: MemoryVideo) {
+        if let index = videos.firstIndex(where: { $0.id == video.id }) {
+            var updatedVideo = videos[index]
+            updatedVideo.viewCount = (updatedVideo.viewCount ?? 0) + 1
+            videos[index] = updatedVideo
+            saveVideosToUserDefaults()
+        }
+    }
+    
+    // View count formatter
+    private func formatViewCount(_ count: Int) -> String {
+        if count >= 10000 {
+            let formatted = Double(count) / 10000.0
+            return String(format: "%.1f万", formatted)
+        } else {
+            return "\(count)"
+        }
+    }
+    
+    // Time ago formatter
+    private func timeAgo(from date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
+        
+        if let years = components.year, years > 0 {
+            return "\(years)年前"
+        } else if let months = components.month, months > 0 {
+            return "\(months)ヶ月前"
+        } else if let days = components.day, days > 0 {
+            return "\(days)日前"
+        } else if let hours = components.hour, hours > 0 {
+            return "\(hours)時間前"
+        } else if let minutes = components.minute, minutes > 0 {
+            return "\(minutes)分前"
+        } else {
+            return "たった今"
+        }
+    }
+    
     // ビデオ行ビュー
     func videoRowView(video: MemoryVideo) -> some View {
         Button(action: {
             // YouTube動画の場合は確認ページを表示
             if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                 activeSheet = .youtubeConfirmation(video)
+                // YouTubeの場合、開いた時点でカウント
+                incrementViewCount(for: video)
             } else {
                 selectedVideo = video
+                // 通常動画の場合もカウント
+                incrementViewCount(for: video)
             }
         }) {
-            HStack(alignment: .top, spacing: 16) {
+            HStack(alignment: .top, spacing: 8) {
                 // サムネイル
                 if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 160, height: 90)
+                        .frame(width: 165, height: 90)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .clipped()
                 } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
@@ -440,33 +486,41 @@ struct VideoGalleryScreen: View {
                         image
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 160, height: 90)
+                            .frame(width: 165, height: 90)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                             .clipped()
                     } placeholder: {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(Color.gray.opacity(0.3))
-                            .frame(width: 160, height: 90)
+                            .frame(width: 165, height: 90)
                             .overlay(ProgressView())
                     }
                 } else {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color.gray.opacity(0.3))
-                        .frame(width: 160, height: 90)
+                        .frame(width: 165, height: 90)
                 }
                 
                 // タイトルとタグ
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(video.title)
                         .font(.system(size: 16.5, weight: .semibold))
                         .foregroundColor(.black)
-                        .padding(.vertical, 8)
-                    Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
+                        .padding(.vertical, 4)
+                    
+                    // ハッシュタグ
+                    if let firstTag = video.tags.first {
+                        Text("#\(firstTag)")
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Text("\(formatViewCount(video.viewCount ?? 0))回・\(timeAgo(from: video.date))")
                         .font(.system(size: 13.8, weight: .regular))
                         .foregroundColor(.gray)
-                        .padding(.vertical, 2)
+                        .padding(.vertical, 1)
                 }
-                .frame(height: 50, alignment: .leading)
+                .frame(alignment: .leading)
                 .padding(.top, 3)
                 .padding(.leading, 8)
                 
@@ -503,11 +557,10 @@ struct VideoGalleryScreen: View {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 18))
                         .foregroundColor(.gray)
-                        .padding(8)
-                        .background(Color.gray.opacity(0.1))
-                        .clipShape(Circle())
+                        .rotationEffect(.degrees(90))
                 }
-                .padding(.trailing, 8)
+                .frame(height: 50)
+                .padding(.trailing, 16)
             }
             .padding(.leading, 8)
         }
@@ -1834,12 +1887,12 @@ struct AlbumVideoListScreen: View {
                         Button(action: {
                             selectedVideo = video
                         }) {
-                            HStack(alignment: .top, spacing: 16) {
+                            HStack(alignment: .top, spacing: 8) {
                                 if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .scaledToFill()
-                                        .frame(width: 160, height: 90)
+                                        .frame(width: 165, height: 90)
                                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                         .clipped()
                                 } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
@@ -1847,13 +1900,13 @@ struct AlbumVideoListScreen: View {
                                         image
                                             .resizable()
                                             .scaledToFill()
-                                            .frame(width: 160, height: 90)
+                                            .frame(width: 165, height: 90)
                                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                                             .clipped()
                                     } placeholder: {
                                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                                             .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 160, height: 90)
+                                            .frame(width: 165, height: 90)
                                             .overlay(
                                                 ProgressView()
                                             )
@@ -1861,7 +1914,7 @@ struct AlbumVideoListScreen: View {
                                 } else {
                                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 160, height: 90)
+                                        .frame(width: 165, height: 90)
                                 }
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(video.title)

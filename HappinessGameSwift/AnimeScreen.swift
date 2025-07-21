@@ -1112,6 +1112,7 @@ struct AnimeArtworkScreen: View {
     @State private var deletingArtworkAlbum: ArtworkAlbum? = nil
     @State private var showR18Alert = false
     @State private var r18ArtworkTitles: [String] = []
+    @State private var isShowingFullDescription = false
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -1149,26 +1150,7 @@ struct AnimeArtworkScreen: View {
             
             Spacer()
             
-            // タイトル
-            Text(currentAnime.title)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .multilineTextAlignment(.center)
-            
             Spacer()
-            
-            // 追加ボタン
-            Button(action: { activeSheet = .addPhoto }) {
-                Text("追加")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.purple)
-                    .clipShape(Capsule())
-            }
-            .frame(width: 60, alignment: .trailing)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8) // Reduced from 12 to 8
@@ -1205,7 +1187,7 @@ struct AnimeArtworkScreen: View {
                         .padding(.horizontal, 18)
                         .padding(.vertical, 12)
                         .background(
-                            Capsule()
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
                         )
                 }
@@ -1217,7 +1199,7 @@ struct AnimeArtworkScreen: View {
                         .padding(.horizontal, 18)
                         .padding(.vertical, 12)
                         .background(
-                            Capsule()
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
                         )
                 }
@@ -1574,8 +1556,8 @@ struct AnimeArtworkScreen: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.black)
                         Text("@\(currentAnime.title)")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                            .font(.system(size: 12.7))
+                            .foregroundColor(.black)
                         Text("\(artworks.count)枚の画像・アルバム数\(albums.count)")
                             .font(.system(size: 15.4))
                             .foregroundColor(.gray)
@@ -1585,6 +1567,61 @@ struct AnimeArtworkScreen: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
+                
+                // Description section
+                if let customFields = currentAnime.customFields,
+                   let descriptionField = customFields.first(where: { $0.name == "概要" }),
+                   !descriptionField.value.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if descriptionField.value.count > 13 && !isShowingFullDescription {
+                            HStack(spacing: 0) {
+                                Text(String(descriptionField.value.prefix(13)) + "... ")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.black)
+                                Text("さらに表示")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.black)
+                                    .underline()
+                                    .onTapGesture {
+                                        isShowingFullDescription = true
+                                    }
+                            }
+                        } else {
+                            Text(descriptionField.value)
+                                .font(.system(size: 14))
+                                .foregroundColor(.black)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            if descriptionField.value.count > 13 {
+                                Button(action: {
+                                    isShowingFullDescription = false
+                                }) {
+                                    Text("折りたたむ")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.black)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 12)
+                }
+                
+                // Add button moved here
+                Button(action: { showAddSheet = true }) {
+                    Text("写真を追加する")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10.4)  // 12 / 1.15 = 10.4
+                        .background(Color.black)
+                        .cornerRadius(20)
+                }
+                .padding(.horizontal, 16)  // Same as banner padding
+                .padding(.bottom, 16)
                 
                 // Main content
                 mainContent
@@ -2331,6 +2368,7 @@ struct AnimeVideoScreen: View {
     @State private var selectedAlbum: Album? = nil
     @State private var showThumbnailPicker = false
     @State private var editingVideo: MemoryVideo? = nil
+    @State private var isShowingFullDescription = false
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -2354,26 +2392,9 @@ struct AnimeVideoScreen: View {
             
             Spacer()
             
-            // タイトル
-            Text(currentAnime.title)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .multilineTextAlignment(.center)
-            
             Spacer()
             
-            // 追加ボタン
-            Button(action: { showAddSheet = true }) {
-                Text("追加")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.purple)
-                    .clipShape(Capsule())
-            }
-            .frame(width: 60, alignment: .trailing)
+            Spacer()
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8) // Reduced from 12 to 8
@@ -2435,8 +2456,8 @@ struct AnimeVideoScreen: View {
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.black)
                         Text("@\(currentAnime.title)")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                            .font(.system(size: 12.7))
+                            .foregroundColor(.black)
                         Text("\(videos.count)本の動画・アルバム数\(albums.count)")
                             .font(.system(size: 15.4))
                             .foregroundColor(.gray)
@@ -2446,6 +2467,61 @@ struct AnimeVideoScreen: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
+                
+                // Description section
+                if let customFields = currentAnime.customFields,
+                   let descriptionField = customFields.first(where: { $0.name == "概要" }),
+                   !descriptionField.value.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if descriptionField.value.count > 13 && !isShowingFullDescription {
+                            HStack(spacing: 0) {
+                                Text(String(descriptionField.value.prefix(13)) + "... ")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.black)
+                                Text("さらに表示")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.black)
+                                    .underline()
+                                    .onTapGesture {
+                                        isShowingFullDescription = true
+                                    }
+                            }
+                        } else {
+                            Text(descriptionField.value)
+                                .font(.system(size: 14))
+                                .foregroundColor(.black)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            if descriptionField.value.count > 13 {
+                                Button(action: {
+                                    isShowingFullDescription = false
+                                }) {
+                                    Text("折りたたむ")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.black)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 12)
+                }
+                
+                // Add button moved here
+                Button(action: { showAddSheet = true }) {
+                    Text("動画を追加する")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10.4)  // 12 / 1.15 = 10.4
+                        .background(Color.black)
+                        .cornerRadius(20)
+                }
+                .padding(.horizontal, 16)  // Same as banner padding
+                .padding(.bottom, 16)
                 
                 // タブバー
                 tabBarView
@@ -2903,7 +2979,7 @@ struct AnimeVideoScreen: View {
                         .padding(.horizontal, 18)
                         .padding(.vertical, 12)
                         .background(
-                            Capsule()
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(!showAlbum ? Color(.darkGray) : Color(.systemGray5))
                         )
                 }
@@ -2915,7 +2991,7 @@ struct AnimeVideoScreen: View {
                         .padding(.horizontal, 18)
                         .padding(.vertical, 12)
                         .background(
-                            Capsule()
+                            RoundedRectangle(cornerRadius: 8)
                                 .fill(showAlbum ? Color(.darkGray) : Color(.systemGray5))
                         )
                 }

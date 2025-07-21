@@ -72,6 +72,9 @@ class AuthenticationManager: ObservableObject {
             saveInitialSubscriptionTracking(userId: userId)
         }
         
+        // Sync subscription status from server
+        syncSubscriptionStatus()
+        
         // Check payment requirement after login
         checkPaymentRequirement()
     }
@@ -130,6 +133,36 @@ class AuthenticationManager: ObservableObject {
         
         // Save payment status to keychain with device ID
         savePaymentStatusToKeychain(deviceId: deviceId, hasPaid: true)
+        
+        // Update Firebase device subscription
+        let db = Firestore.firestore()
+        db.collection("device_subscriptions").document(deviceId).updateData([
+            "hasPaid": true,
+            "paymentDate": Date().timeIntervalSince1970,
+            "amount": 500,
+            "lastSeenAt": Date().timeIntervalSince1970
+        ]) { error in
+            if let error = error {
+                print("❌ Error updating device subscription: \(error)")
+            } else {
+                print("✅ Device subscription updated successfully")
+            }
+        }
+        
+        // Also update user document if logged in
+        if let userId = UserDefaults.standard.string(forKey: "userId") {
+            db.collection("users").document(userId).updateData([
+                "hasPaidSubscription": true,
+                "subscriptionDate": Timestamp(date: Date()),
+                "subscriptionUpdatedAt": Timestamp(date: Date())
+            ]) { error in
+                if let error = error {
+                    print("❌ Error updating user subscription: \(error)")
+                } else {
+                    print("✅ User subscription updated successfully")
+                }
+            }
+        }
     }
     
     func syncSubscriptionStatus() {
@@ -139,9 +172,22 @@ class AuthenticationManager: ObservableObject {
             if let document = document, document.exists {
                 let serverHasPaid = document.data()?["hasPaid"] as? Bool ?? false
                 
-                // If server says unpaid but locally is paid, reset local status
-                if !serverHasPaid && self?.hasPaid == true {
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    // Sync local status with server status
+                    if serverHasPaid && self?.hasPaid == false {
+                        // Server says paid but locally is unpaid, update local status
+                        print("📱 Syncing: Server says paid, updating local status")
+                        self?.hasPaid = true
+                        self?.requiresPayment = false
+                        UserDefaults.standard.set(true, forKey: "hasPaidSubscription")
+                        
+                        // Save payment status to keychain
+                        if let deviceId = self?.deviceId {
+                            self?.savePaymentStatusToKeychain(deviceId: deviceId, hasPaid: true)
+                        }
+                    } else if !serverHasPaid && self?.hasPaid == true {
+                        // Server says unpaid but locally is paid, reset local status
+                        print("📱 Syncing: Server says unpaid, resetting local status")
                         self?.hasPaid = false
                         self?.requiresPayment = true
                         UserDefaults.standard.set(false, forKey: "hasPaidSubscription")
@@ -151,7 +197,12 @@ class AuthenticationManager: ObservableObject {
                             self?.clearPaymentStatusFromKeychain(deviceId: deviceId)
                         }
                     }
+                    
+                    // Always check payment requirement after sync
+                    self?.checkPaymentRequirement()
                 }
+            } else {
+                print("📱 No device subscription document found for deviceId: \(self?.deviceId ?? "unknown")")
             }
         }
     }

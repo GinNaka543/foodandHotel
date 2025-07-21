@@ -1521,12 +1521,9 @@ struct AnimeArtworkScreen: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                // Header
-                headerView
-                    .zIndex(2) // ヘッダーを最前面に
-                // Banner
+                // Banner (no header)
                 bannerView
                     .allowsHitTesting(false) // バナーのタップを無効化
                     .zIndex(1)
@@ -1627,6 +1624,88 @@ struct AnimeArtworkScreen: View {
                 mainContent
             }
             floatingButton
+            
+            // Navigation bar at bottom
+            VStack {
+                Spacer()
+                HStack(spacing: 0) {
+                    // Home button
+                    Button(action: {
+                        dismiss()
+                        onClose()
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "house")
+                                .font(.system(size: 24))
+                            Text("ホーム")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Artwork button
+                    Button(action: {
+                        showAlbum = false
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "photo")
+                                .font(.system(size: 24))
+                            Text("Artwork")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(!showAlbum ? .black : .gray)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Album button
+                    Button(action: {
+                        // Navigate to album view
+                        showAlbum = true
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "rectangle.grid.2x2")
+                                .font(.system(size: 24))
+                            Text("Album")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(showAlbum ? .black : .gray)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // About button
+                    Button(action: {
+                        // Navigate to About page
+                        dismiss()
+                        onClose()
+                    }) {
+                        VStack(spacing: 4) {
+                            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 24, height: 24)
+                                    .clipShape(Circle())
+                            } else {
+                                Image(systemName: "person.circle")
+                                    .font(.system(size: 24))
+                            }
+                            Text("About")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.vertical, 8)
+                .background(Color.white)
+                .overlay(
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 0.5),
+                    alignment: .top
+                )
+            }
         }
         .onAppear {
             loadArtworks()
@@ -2421,12 +2500,9 @@ struct AnimeVideoScreen: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                // Header
-                headerView
-                    .zIndex(2) // ヘッダーを最前面に
-                // Banner
+                // Banner (no header)
                 bannerView
                     .allowsHitTesting(false) // バナーのタップを無効化
                     .zIndex(1)
@@ -2579,6 +2655,88 @@ struct AnimeVideoScreen: View {
                 .foregroundColor(.red)
             }
             .padding(32)
+            
+            // Navigation bar at bottom
+            VStack {
+                Spacer()
+                HStack(spacing: 0) {
+                    // Home button
+                    Button(action: {
+                        dismiss()
+                        onClose()
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "house")
+                                .font(.system(size: 24))
+                            Text("ホーム")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Video button
+                    Button(action: {
+                        showAlbum = false
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "video")
+                                .font(.system(size: 24))
+                            Text("Video")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(!showAlbum ? .black : .gray)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Album button
+                    Button(action: {
+                        // Navigate to album view
+                        showAlbum = true
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "rectangle.grid.2x2")
+                                .font(.system(size: 24))
+                            Text("Album")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(showAlbum ? .black : .gray)
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // About button
+                    Button(action: {
+                        // Navigate to About page
+                        dismiss()
+                        onClose()
+                    }) {
+                        VStack(spacing: 4) {
+                            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 24, height: 24)
+                                    .clipShape(Circle())
+                            } else {
+                                Image(systemName: "person.circle")
+                                    .font(.system(size: 24))
+                            }
+                            Text("About")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.vertical, 8)
+                .background(Color.white)
+                .overlay(
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 0.5),
+                    alignment: .top
+                )
+            }
         }
         .onAppear {
             loadVideos()

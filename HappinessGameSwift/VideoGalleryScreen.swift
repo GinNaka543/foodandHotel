@@ -49,6 +49,7 @@ struct VideoGalleryScreen: View {
     @State private var videoTitle: String = ""
     @State private var videoTags: String = ""
     @State private var showAlbum = false
+    @State private var showAbout = false
     @State private var showTagInput = false
     @State private var newTag: String = ""
     @State private var filteredTags: [String] = []
@@ -513,95 +514,183 @@ struct VideoGalleryScreen: View {
         .buttonStyle(PlainButtonStyle())
     }
 
+    @ViewBuilder
+    private var profileSection: some View {
+        HStack(spacing: 12) {
+            // Character icon
+            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 67, height: 67)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 67, height: 67)
+                    .overlay(
+                        Image(systemName: "person")
+                            .font(.system(size: 33))
+                            .foregroundColor(.gray)
+                    )
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(currentCharacter.name)
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(.black)
+                Text("@\(currentCharacter.name)")
+                    .font(.system(size: 12.7))
+                    .foregroundColor(.black)
+                Text("\(videos.count)本の動画・アルバム数\(albums.count)")
+                    .font(.system(size: 15.4))
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+    
+    @ViewBuilder
+    private var descriptionSection: some View {
+        if let customFields = currentCharacter.customFields,
+           let descriptionField = customFields.first(where: { $0.name == "概要" }),
+           !descriptionField.value.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                if descriptionField.value.count > 13 && !isShowingFullDescription {
+                    HStack(spacing: 0) {
+                        Text(String(descriptionField.value.prefix(13)) + "... ")
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                        Text("さらに表示")
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                            .underline()
+                            .onTapGesture {
+                                isShowingFullDescription = true
+                            }
+                    }
+                } else {
+                    Text(descriptionField.value)
+                        .font(.system(size: 14))
+                        .foregroundColor(.black)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    if descriptionField.value.count > 13 {
+                        Text(" 折りたたむ")
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                            .underline()
+                            .onTapGesture {
+                                isShowingFullDescription = false
+                            }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 16)
+            .padding(.trailing, 16)
+            .padding(.bottom, 12)
+        }
+    }
+    
+    @ViewBuilder
+    private var navigationBar: some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 0) {
+                // Home button
+                Button(action: {
+                    dismiss()
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "house")
+                            .font(.system(size: 24))
+                        Text("ホーム")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                }
+                
+                // Video button
+                Button(action: {
+                    showAlbum = false
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "video")
+                            .font(.system(size: 24))
+                        Text("Video")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(!showAlbum ? .black : .gray)
+                    .frame(maxWidth: .infinity)
+                }
+                
+                // Album button
+                Button(action: {
+                    showAlbum = true
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "rectangle.grid.2x2")
+                            .font(.system(size: 24))
+                        Text("Album")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(showAlbum ? .black : .gray)
+                    .frame(maxWidth: .infinity)
+                }
+                
+                // About button
+                Button(action: {
+                    showAbout = true
+                }) {
+                    VStack(spacing: 4) {
+                        if let imageIdentifier = currentCharacter.imageIdentifier, 
+                           let image = loadImageFromPath(imageIdentifier) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 24, height: 24)
+                                .clipShape(Circle())
+                        } else {
+                            Image(systemName: "person.circle")
+                                .font(.system(size: 24))
+                        }
+                        Text("About")
+                            .font(.system(size: 10))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.vertical, 8)
+            .background(Color.white)
+            .overlay(
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 0.5),
+                alignment: .top
+            )
+        }
+    }
+    
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
-                // Header
-                headerView
-                    .zIndex(2) // ヘッダーを最前面に
-                // Banner
+                // Banner (no header)
                 bannerView
                     .allowsHitTesting(false) // バナーのタップを無効化
                     .zIndex(1)
                 
                 // Profile section
-                HStack(spacing: 12) {
-                    // Character icon
-                    if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 67, height: 67)
-                            .clipShape(Circle())
-                    } else {
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 67, height: 67)
-                            .overlay(
-                                Image(systemName: "person")
-                                    .font(.system(size: 33))
-                                    .foregroundColor(.gray)
-                            )
-                    }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(currentCharacter.name)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.black)
-                        Text("@\(currentCharacter.name)")
-                            .font(.system(size: 12.7))
-                            .foregroundColor(.black)
-                        Text("\(videos.count)本の動画・アルバム数\(albums.count)")
-                            .font(.system(size: 15.4))
-                            .foregroundColor(.gray)
-                    }
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                profileSection
                 
                 // Description section
-                if let customFields = currentCharacter.customFields,
-                   let descriptionField = customFields.first(where: { $0.name == "概要" }),
-                   !descriptionField.value.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if descriptionField.value.count > 13 && !isShowingFullDescription {
-                            HStack(spacing: 0) {
-                                Text(String(descriptionField.value.prefix(13)) + "... ")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.black)
-                                Text("さらに表示")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.black)
-                                    .underline()
-                                    .onTapGesture {
-                                        isShowingFullDescription = true
-                                    }
-                            }
-                        } else {
-                            Text(descriptionField.value)
-                                .font(.system(size: 14))
-                                .foregroundColor(.black)
-                                .lineLimit(nil)
-                                .fixedSize(horizontal: false, vertical: true)
-                            
-                            if descriptionField.value.count > 13 {
-                                Text(" 折りたたむ")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.black)
-                                    .underline()
-                                    .onTapGesture {
-                                        isShowingFullDescription = false
-                                    }
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 16)
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 12)
-                }
+                descriptionSection
                 
                 // Add button moved here
                 Button(action: { 
@@ -624,11 +713,18 @@ struct VideoGalleryScreen: View {
                 mainContent
             }
             floatingButton
+            
+            // Navigation bar at bottom
+            navigationBar
         }
         .overlay(loadingOverlay)
         .onAppear {
             loadVideos()
             loadAlbumsFromUserDefaults()
+        }
+        .fullScreenCover(isPresented: $showAbout) {
+            AboutView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
+                .environmentObject(characterManager)
         }
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(

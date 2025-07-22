@@ -15,19 +15,45 @@ func saveImageToDocuments(_ image: UIImage, fileName: String, quality: CGFloat =
         return nil 
     }
     
-    let fileURL = documentsURL.appendingPathComponent(fileName)
+    // アプリ専用のサブディレクトリを作成
+    let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
     
     do {
+        // ディレクトリが存在しない場合は作成
+        if !fileManager.fileExists(atPath: appDirectoryURL.path) {
+            print("AnirecoImagesディレクトリを作成: \(appDirectoryURL.path)")
+            try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        var fileURL = appDirectoryURL.appendingPathComponent(fileName)
+        print("保存先パス: \(fileURL.path)")
+        
         // 既存ファイルがある場合は削除
         if fileManager.fileExists(atPath: fileURL.path) {
+            print("既存ファイルを削除: \(fileURL.path)")
             try fileManager.removeItem(at: fileURL)
         }
         
         try data.write(to: fileURL)
-        print("画像保存成功: \(fileURL.path)")
-        return fileURL.path
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
+        
+        // ファイルが実際に保存されたか確認
+        if fileManager.fileExists(atPath: fileURL.path) {
+            let relativePath = "AnirecoImages/\(fileName)"
+            print("画像保存成功: \(relativePath)")
+            print("ファイルサイズ: \(data.count) bytes")
+            return relativePath
+        } else {
+            print("エラー: ファイルが作成されませんでした")
+            return nil
+        }
     } catch {
         print("画像保存エラー: \(error)")
+        print("エラー詳細: \(error.localizedDescription)")
         return nil
     }
 }
@@ -46,17 +72,32 @@ func saveImageToDocumentsAsJPEG(_ image: UIImage, fileName: String, quality: CGF
         return nil 
     }
     
-    let fileURL = documentsURL.appendingPathComponent(fileName)
+    // アプリ専用のサブディレクトリを作成
+    let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
     
     do {
+        // ディレクトリが存在しない場合は作成
+        if !fileManager.fileExists(atPath: appDirectoryURL.path) {
+            try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        var fileURL = appDirectoryURL.appendingPathComponent(fileName)
+        
         // 既存ファイルがある場合は削除
         if fileManager.fileExists(atPath: fileURL.path) {
             try fileManager.removeItem(at: fileURL)
         }
         
         try data.write(to: fileURL)
-        print("JPEG画像保存成功: \(fileURL.path)")
-        return fileURL.path
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
+        
+        let relativePath = "AnirecoImages/\(fileName)"
+        print("JPEG画像保存成功: \(relativePath)")
+        return relativePath
     } catch {
         print("JPEG画像保存エラー: \(error)")
         return nil
@@ -66,15 +107,76 @@ func saveImageToDocumentsAsJPEG(_ image: UIImage, fileName: String, quality: CGF
 // ファイルパスからUIImageを取得
 func loadImageFromPath(_ path: String?) -> UIImage? {
     guard let path = path else { 
-        print("画像パスがnil")
+        print("[loadImageFromPath] 画像パスがnil")
         return nil 
     }
     
-    let image = UIImage(contentsOfFile: path)
+    print("[loadImageFromPath] 読み込み開始: path=\(path)")
+    
+    // 相対パスから絶対パスを構築
+    let fileManager = FileManager.default
+    guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        print("[loadImageFromPath] Documentsディレクトリの取得に失敗")
+        return nil
+    }
+    
+    let absolutePath: String
+    if path.hasPrefix("/") {
+        // 既存の絶対パスの場合（互換性のため）
+        absolutePath = path
+        print("[loadImageFromPath] 絶対パスを使用: \(absolutePath)")
+    } else {
+        // 相対パスの場合
+        let fileURL = documentsURL.appendingPathComponent(path)
+        absolutePath = fileURL.path
+        print("[loadImageFromPath] 相対パスから絶対パスを構築: \(absolutePath)")
+    }
+    
+    // ファイルの存在確認
+    if !fileManager.fileExists(atPath: absolutePath) {
+        print("[loadImageFromPath] ❌ ファイルが存在しません: \(absolutePath)")
+        return nil
+    }
+    
+    let image = UIImage(contentsOfFile: absolutePath)
     if image == nil {
-        print("画像読み込み失敗: \(path)")
+        print("[loadImageFromPath] ❌ 画像読み込み失敗: \(absolutePath) (元のパス: \(path))")
+    } else {
+        print("[loadImageFromPath] ✅ 画像読み込み成功: \(path)")
     }
     return image
+}
+
+// 動画パスからURLを取得
+func loadVideoURLFromPath(_ path: String?) -> URL? {
+    guard let path = path else {
+        print("動画パスがnil")
+        return nil
+    }
+    
+    // 相対パスから絶対パスを構築
+    let fileManager = FileManager.default
+    guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        print("Documentsディレクトリの取得に失敗")
+        return nil
+    }
+    
+    let absoluteURL: URL
+    if path.hasPrefix("/") {
+        // 既存の絶対パスの場合（互換性のため）
+        absoluteURL = URL(fileURLWithPath: path)
+    } else {
+        // 相対パスの場合
+        absoluteURL = documentsURL.appendingPathComponent(path)
+    }
+    
+    // ファイルが存在するかチェック
+    if fileManager.fileExists(atPath: absoluteURL.path) {
+        return absoluteURL
+    } else {
+        print("動画ファイルが見つかりません: \(absoluteURL.path) (元のパス: \(path))")
+        return nil
+    }
 }
 
 // 開発用: サンプル画像を生成する関数

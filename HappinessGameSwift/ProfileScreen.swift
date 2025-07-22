@@ -6,6 +6,8 @@ struct ProfileScreen: View {
     @State private var totalPhotos = 0
     @State private var totalVideos = 0
     @State private var showingSettings = false
+    @State private var showingLogoutConfirmation = false
+    @EnvironmentObject var authManager: AuthenticationManager
     
     var body: some View {
         NavigationView {
@@ -52,7 +54,7 @@ struct ProfileScreen: View {
                     
                     // ログアウトボタン
                     Button(action: {
-                        // ログアウト処理
+                        showingLogoutConfirmation = true
                     }) {
                         Text("ログアウト")
                             .font(.headline)
@@ -70,6 +72,193 @@ struct ProfileScreen: View {
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
             }
+        }
+        .fullScreenCover(isPresented: $showingLogoutConfirmation) {
+            ProfileLogoutConfirmationView(
+                isPresented: $showingLogoutConfirmation,
+                onLogout: {
+                    authManager.logout()
+                }
+            )
+        }
+    }
+}
+
+struct ProfileLogoutConfirmationView: View {
+    @Binding var isPresented: Bool
+    let onLogout: () -> Void
+    @State private var copiedUserId = false
+    @State private var copiedUsername = false
+    
+    private var userId: String {
+        UserDefaults.standard.string(forKey: "userId") ?? "IDが見つかりません"
+    }
+    
+    private var username: String {
+        UserDefaults.standard.string(forKey: "username") ?? "未設定"
+    }
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // ヘッダー
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.orange)
+                    
+                    Text("重要：ログアウト前に確認")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+                .padding(.top, 40)
+                .padding(.bottom, 20)
+                
+                // 警告メッセージ
+                VStack(spacing: 16) {
+                    Text("以下の情報を必ず保存してください")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.red)
+                    
+                    Text("これらの情報がないと、アカウントの復元ができません")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+                
+                // ユーザー情報
+                VStack(spacing: 16) {
+                    // ユーザーID
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ユーザーID")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            Text(userId)
+                                .font(.system(size: 16).monospaced())
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                UIPasteboard.general.string = userId
+                                copiedUserId = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedUserId = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedUserId ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 14))
+                                    Text(copiedUserId ? "コピー済み" : "コピー")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(copiedUserId ? .green : .blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    
+                    // ユーザー名
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ユーザー名")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            Text(username)
+                                .font(.system(size: 16))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                UIPasteboard.general.string = username
+                                copiedUsername = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedUsername = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedUsername ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 14))
+                                    Text(copiedUsername ? "コピー済み" : "コピー")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(copiedUsername ? .green : .blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // 注意事項
+                VStack(spacing: 12) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(.orange)
+                        Text("スクリーンショットを撮るか、メモに保存してください")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Text("ログアウト後はこれらの情報がないとアカウントにアクセスできません")
+                        .font(.system(size: 12))
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // ボタン
+                HStack(spacing: 16) {
+                    Button(action: {
+                        isPresented = false
+                    }) {
+                        Text("キャンセル")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(25)
+                    }
+                    
+                    Button(action: {
+                        isPresented = false
+                        onLogout()
+                    }) {
+                        Text("ログアウト")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.red)
+                            .cornerRadius(25)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+            .frame(maxWidth: 400)
+            .background(Color.white)
+            .cornerRadius(24)
+            .shadow(radius: 30)
+            .padding(.horizontal, 20)
         }
     }
 }

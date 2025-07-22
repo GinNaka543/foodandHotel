@@ -10,6 +10,7 @@ struct FirebaseAdView: View {
     @State private var isLoading = true
     @State private var scrollOffset: CGFloat = 0
     @State private var autoScrollTimer: Timer?
+    @State private var scrollSpeed: CGFloat = 0.8
     @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var animeManager: AnimeManager
     
@@ -21,8 +22,15 @@ struct FirebaseAdView: View {
     private func convertedAd() -> Advertisement? {
         guard !advertisements.isEmpty else { return nil }
         
-        // 複数の広告がある場合は、adIndexに基づいて異なる広告を表示
-        let index = advertisements.count > 1 ? (adIndex % advertisements.count) : (currentIndex % advertisements.count)
+        // 複数の広告がある場合は自動切り替え（currentIndex）、単一広告の場合はadIndexを使用
+        let index: Int
+        if advertisements.count > 1 {
+            // 複数広告の場合：10秒間隔でcurrentIndexを使用
+            index = currentIndex % advertisements.count
+        } else {
+            // 単一広告の場合：adIndexを使用（既存の挙動を維持）
+            index = adIndex % advertisements.count
+        }
         
         // 広告が1つしかない場合、2つ目のインスタンスはnilを返す
         if advertisements.count == 1 && adIndex > 0 {
@@ -32,7 +40,7 @@ struct FirebaseAdView: View {
         guard index < advertisements.count else { return nil }
         
         var ad = advertisements[index]
-        print("🎯 [FirebaseAdView] 広告表示: placement=\(placement), adIndex=\(adIndex), 選択された広告=\(ad.title)")
+        print("🎯 [FirebaseAdView] 広告表示: placement=\(placement), adIndex=\(adIndex), currentIndex=\(currentIndex), 選択された広告=\(ad.title)")
         
         // GitHub URLの場合はraw URLに変換
         if ad.imageURL.contains("github.com") && ad.imageURL.contains("/blob/") {
@@ -69,7 +77,6 @@ struct FirebaseAdView: View {
                                     .foregroundColor(.secondary)
                                     .lineLimit(2)
                             }
-                            .padding(.leading, 12)
                             Spacer()
                             if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
                                 let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
@@ -107,6 +114,7 @@ struct FirebaseAdView: View {
                             }
                         }
                         .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
                     }
                     .buttonStyle(PlainButtonStyle())
                 } else if placement == "product" {
@@ -114,6 +122,7 @@ struct FirebaseAdView: View {
                     Button(action: {
                         handleAdClick(ad)
                     }) {
+                        ZStack(alignment: .topTrailing) {
                         HStack(spacing: 16) {
                             if let url = URL(string: ad.imageURL), !ad.imageURL.isEmpty {
                                 let _ = print("📷 [FirebaseAdView] 画像読み込み: \(ad.imageURL)")
@@ -163,6 +172,16 @@ struct FirebaseAdView: View {
                         }
                         .padding(16)
                         .cornerRadius(12)
+                        
+                        Text("PR")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.purple)
+                            .cornerRadius(4)
+                            .padding(8)
+                        }
                     }
                     .buttonStyle(PlainButtonStyle())
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -192,14 +211,30 @@ struct FirebaseAdView: View {
                                 .foregroundColor(.black)
                             
                             Spacer()
+                            
+                            Button(action: {
+                                // Navigate to anime ranking page
+                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                   let window = windowScene.windows.first,
+                                   let rootViewController = window.rootViewController {
+                                    let animeRankingView = AnimeRankingScreen()
+                                    let hostingController = UIHostingController(rootView: animeRankingView)
+                                    hostingController.modalPresentationStyle = .fullScreen
+                                    rootViewController.present(hostingController, animated: true)
+                                }
+                            }) {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .padding(.horizontal, 16)
                         
                         ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    // 広告を二度表示することで無限ループを実現
-                                ForEach(0..<2, id: \.self) { setIndex in
-                                    ForEach(advertisements.prefix(5)) { ad in
+                            HStack(spacing: 12) {
+                                // 広告を3セット表示して無限ループを実現
+                                ForEach(0..<3, id: \.self) { setIndex in
+                                    ForEach(advertisements) { ad in
                                         Button(action: {
                                             handleAdClick(ad)
                                         }) {
@@ -250,6 +285,17 @@ struct FirebaseAdView: View {
                                                     .opacity(0.7)
                                             )
                                         }
+                                        
+                                        // PR表示
+                                        Text("PR")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 6)
+                                            .padding(.vertical, 3)
+                                            .background(Color.black)
+                                            .cornerRadius(4)
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                                            .padding(6)
                                     }
                                     .frame(width: 260, height: 144)
                                     .cornerRadius(10)
@@ -257,34 +303,28 @@ struct FirebaseAdView: View {
                                 }
                                     .buttonStyle(PlainButtonStyle())
                                     .onAppear {
-                                        if setIndex == 0 {
+                                        if setIndex == 0 { // 最初のセットでのみインプレッションを記録
                                             recordImpression(for: ad)
                                         }
                                     }
+                                        }
                                     }
                                 }
                                 .padding(.horizontal, 16)
                                 .offset(x: scrollOffset)
                                 .onAppear {
                                     startAutoScroll()
+                                    // 定期的に自動スクロール状態をチェック
+                                    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+                                        if autoScrollTimer == nil {
+                                            startAutoScroll()
+                                        }
+                                    }
                                 }
                                 .onDisappear {
                                     stopAutoScroll()
                                 }
-                                .gesture(
-                                    DragGesture()
-                                        .onChanged { _ in
-                                            // ユーザーがドラッグ中は自動スクロールを停止
-                                            stopAutoScroll()
-                                        }
-                                        .onEnded { _ in
-                                            // ドラッグ終了後、自動スクロールを再開
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                startAutoScroll()
-                                            }
-                                        }
-                                )
-                        }
+                                // ユーザー操作時も自動スクロールを止めない
                         }
                     }
                 } else {
@@ -338,6 +378,10 @@ struct FirebaseAdView: View {
         }
         .onAppear {
             loadAds()
+        }
+        .onDisappear {
+            stopTimer()
+            stopAutoScroll()
         }
     }
     
@@ -426,9 +470,8 @@ struct FirebaseAdView: View {
                     return ad1.priority > ad2.priority
                 }
                 
-                // 最大表示数の制限
-                let maxAds = placement == "anime" ? 5 : (placement == "home" ? 10 : Int.max)
-                self.advertisements = Array(candidateAds.prefix(maxAds))
+                // 制限なしで全ての広告を表示
+                self.advertisements = candidateAds
                 
                 print("🎬 [FirebaseAdView] 最終的に表示する広告: \(self.advertisements.count)件")
                 for (index, ad) in self.advertisements.enumerated() {
@@ -436,6 +479,11 @@ struct FirebaseAdView: View {
                 }
                 
                 self.isLoading = false
+                
+                // 広告が読み込まれた後にタイマーを開始
+                DispatchQueue.main.async {
+                    self.startTimer()
+                }
             case .failure(let error):
                 print("❌ [FirebaseAdView] 広告読み込みエラー: \(error)")
                 self.isLoading = false
@@ -446,7 +494,7 @@ struct FirebaseAdView: View {
     func startTimer() {
         guard advertisements.count > 1 else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-            withAnimation {
+            withAnimation(.easeInOut(duration: 0.5)) {
                 currentIndex = (currentIndex + 1) % advertisements.count
             }
         }
@@ -475,19 +523,21 @@ struct FirebaseAdView: View {
     private func startAutoScroll() {
         guard placement == "anime" && advertisements.count > 1 else { return }
         
-        autoScrollTimer?.invalidate()
-        scrollOffset = 0
+        stopAutoScroll()
         
-        let itemWidth: CGFloat = 260 + 12 // 画像幅 + spacing
+        let itemWidth: CGFloat = 272 // 260 (width) + 12 (spacing)
         let totalWidth = CGFloat(advertisements.count) * itemWidth
         
-        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { _ in
-            withAnimation(.linear(duration: 0.03)) {
-                scrollOffset -= 1
+        autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) { _ in
+            withAnimation(.linear(duration: 0.02)) {
+                scrollOffset -= scrollSpeed // 可変速度
                 
-                // 一セット分スクロールしたら、位置をリセット
+                // 1セット分スクロールしたらシームレスにリセット（アニメーションなし）
                 if scrollOffset <= -totalWidth {
-                    scrollOffset = 0
+                    // アニメーションを一時停止してリセット
+                    withAnimation(.none) {
+                        scrollOffset = 0
+                    }
                 }
             }
         }

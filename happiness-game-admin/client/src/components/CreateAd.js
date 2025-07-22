@@ -52,6 +52,7 @@ function CreateAd() {
     linkURL: '',
     targetAnimes: [],
     targetCharacters: [],
+    targetVoiceActors: [],
     targetHashtags: [],
     expiresAt: '',
     placements: generalPage ? [generalPage] : [],
@@ -62,6 +63,7 @@ function CreateAd() {
   const [inputValues, setInputValues] = useState({
     anime: '',
     character: '',
+    voiceActor: '',
     hashtag: ''
   });
 
@@ -75,6 +77,10 @@ function CreateAd() {
         if (ad) {
           setFormData({
             ...ad,
+            targetAnimes: Array.isArray(ad.targetAnimes) ? ad.targetAnimes : [],
+            targetCharacters: Array.isArray(ad.targetCharacters) ? ad.targetCharacters : [],
+            targetVoiceActors: Array.isArray(ad.targetVoiceActors) ? ad.targetVoiceActors : [],
+            targetHashtags: Array.isArray(ad.targetHashtags) ? ad.targetHashtags : [],
             placements: Array.isArray(ad.placements) ? ad.placements : [],
             expiresAt: (ad.expiresAt && !isNaN(new Date(ad.expiresAt)))
               ? new Date(ad.expiresAt).toISOString().slice(0, 16)
@@ -167,6 +173,9 @@ function CreateAd() {
     }
     if (inputValues.character.trim() && !updatedFormData.targetCharacters.includes(inputValues.character.trim())) {
       updatedFormData.targetCharacters = [...updatedFormData.targetCharacters, inputValues.character.trim()];
+    }
+    if (inputValues.voiceActor.trim() && !updatedFormData.targetVoiceActors.includes(inputValues.voiceActor.trim())) {
+      updatedFormData.targetVoiceActors = [...updatedFormData.targetVoiceActors, inputValues.voiceActor.trim()];
     }
     if (inputValues.hashtag.trim() && !updatedFormData.targetHashtags.includes(inputValues.hashtag.trim())) {
       updatedFormData.targetHashtags = [...updatedFormData.targetHashtags, inputValues.hashtag.trim()];
@@ -294,7 +303,7 @@ function CreateAd() {
                   </button>
                 </div>
                 <div className="tag-list">
-                  {formData.targetAnimes.map(anime => (
+                  {(formData.targetAnimes || []).map(anime => (
                     <div key={anime} className="tag-item">
                       {anime}
                       <button type="button" onClick={() => removeItem('anime', anime)}>×</button>
@@ -324,10 +333,40 @@ function CreateAd() {
                   </button>
                 </div>
                 <div className="tag-list">
-                  {formData.targetCharacters.map(character => (
+                  {(formData.targetCharacters || []).map(character => (
                     <div key={character} className="tag-item">
                       {character}
                       <button type="button" onClick={() => removeItem('character', character)}>×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>ターゲット声優</label>
+                <div className="tag-input">
+                  <input
+                    type="text"
+                    name="voiceActor"
+                    value={inputValues.voiceActor}
+                    onChange={handleInputChange}
+                    placeholder="声優名を入力"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addItem('voiceActor');
+                      }
+                    }}
+                  />
+                  <button type="button" className="btn btn-primary" onClick={() => addItem('voiceActor')}>
+                    追加
+                  </button>
+                </div>
+                <div className="tag-list">
+                  {(formData.targetVoiceActors || []).map(voiceActor => (
+                    <div key={voiceActor} className="tag-item">
+                      {voiceActor}
+                      <button type="button" onClick={() => removeItem('voiceActor', voiceActor)}>×</button>
                     </div>
                   ))}
                 </div>
@@ -354,7 +393,7 @@ function CreateAd() {
                   </button>
                 </div>
                 <div className="tag-list">
-                  {formData.targetHashtags.map(hashtag => (
+                  {(formData.targetHashtags || []).map(hashtag => (
                     <div key={hashtag} className="tag-item">
                       #{hashtag}
                       <button type="button" onClick={() => removeItem('hashtag', hashtag)}>×</button>
@@ -418,7 +457,7 @@ function CreateAd() {
 
           {/* ターゲット指定なしの場合の案内 */}
           <div style={{ margin: '1rem 0', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px', color: '#333', fontSize: '0.97rem' }}>
-            <b>「ターゲットアニメ」「ターゲットキャラクター」「ターゲットタグ」を全て空欄にすると、この広告は「一般広告（全ユーザー向け）」として作成されます。</b>
+            <b>「ターゲットアニメ」「ターゲットキャラクター」「ターゲット声優」「ターゲットタグ」を全て空欄にすると、この広告は「一般広告（全ユーザー向け）」として作成されます。</b>
             {generalPage && <div style={{ marginTop: 4 }}>※この広告は「{PLACEMENT_OPTIONS.find(opt => opt.key === generalPage)?.label}ページ」専用の一般広告です。</div>}
           </div>
 

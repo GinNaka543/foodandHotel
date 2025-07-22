@@ -20,6 +20,38 @@ struct VisitPlanningScreen: View {
     @State private var selectedDayForNewSpot: Int = 1
     @State private var showingCustomDaysPicker = false
     @State private var customDaysInput: String = ""
+    @State private var planDescription: String = ""
+    @State private var planPrice: Int = 0
+    @State private var planBudget: Int = 0
+    @State private var isPublic: Bool = false
+    @State private var showingConfirmation = false
+    @State private var showingPointPurchase = false
+    @State private var showingPaymentSheet = false
+    @State private var showingPublishDialog = false
+    @StateObject private var firebaseManager = FirebaseManager.shared
+    @StateObject private var stripeManager = StripePaymentManager.shared
+    @StateObject private var githubManager = GitHubImageManager.shared
+    
+    // 編集中の下書きデータ
+    private let editingDraftId: UUID?
+    
+    init(editingDraft: VisitPlanData? = nil) {
+        if let draft = editingDraft {
+            // print("DEBUG: 下書きデータを読み込み中: \(draft.title)")
+            self.editingDraftId = draft.id
+            self._animeName = State(initialValue: draft.animeName)
+            self._planTitle = State(initialValue: draft.title)
+            self._spots = State(initialValue: draft.spots)
+            self._thumbnailData = State(initialValue: draft.thumbnailData)
+            self._startTime = State(initialValue: draft.startTime)
+            self._numberOfDays = State(initialValue: draft.numberOfDays)
+            if let thumbnailData = draft.thumbnailData {
+                self._thumbnailImage = State(initialValue: UIImage(data: thumbnailData))
+            }
+        } else {
+            self.editingDraftId = nil
+        }
+    }
     
     let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -38,7 +70,14 @@ struct VisitPlanningScreen: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: { 
+                        // 戻るボタンを押した時、未確定のプランを自動的に下書き保存
+                        if !planTitle.isEmpty || !animeName.isEmpty || !spots.isEmpty {
+                            saveDraftSilently()
+                        } else {
+                            dismiss()
+                        }
+                    }) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 20, weight: .medium))
@@ -58,9 +97,18 @@ struct VisitPlanningScreen: View {
                         VStack(spacing: 16) {
                             // タイトル入力
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("プランタイトル")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
+                                HStack {
+                                    Text("プランタイトル")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    Text("必須")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.red)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.red.opacity(0.1))
+                                        .cornerRadius(4)
+                                }
                                 TextField("例: 京都の聖地巡礼", text: $planTitle)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
@@ -68,9 +116,18 @@ struct VisitPlanningScreen: View {
                             
                             // アニメ名入力
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("アニメ名")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.gray)
+                                HStack {
+                                    Text("アニメ名")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    Text("必須")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.red)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.red.opacity(0.1))
+                                        .cornerRadius(4)
+                                }
                                 TextField("例: 響け！ユーフォニアム", text: $animeName)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
@@ -184,7 +241,7 @@ struct VisitPlanningScreen: View {
                                 }
                             }
                             .padding(.horizontal, 16)
-                            .onChange(of: selectedImage) { newItem in
+                            .onChange(of: selectedImage) { _, newItem in
                                 Task {
                                     if let data = try? await newItem?.loadTransferable(type: Data.self) {
                                         thumbnailImage = UIImage(data: data)
@@ -312,23 +369,7 @@ struct VisitPlanningScreen: View {
                 }
                 
                 // 下部のボタン
-                HStack(spacing: 16) {
-                    Button(action: {
-                        savePlan()
-                        dismiss()
-                    }) {
-                        Text("保存")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.blue)
-                            )
-                    }
-                    .disabled(planTitle.isEmpty || animeName.isEmpty)
-                    
+                VStack(spacing: 12) {
                     Button(action: {
                         showingItinerary = true
                     }) {
@@ -339,15 +380,76 @@ struct VisitPlanningScreen: View {
                             .padding(.vertical, 16)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.green)
+                                    .fill(Color.black)
                             )
                     }
                     .disabled(spots.isEmpty)
+                    
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            saveDraft()
+                        }) {
+                            Text("下書きを保存")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.blue, lineWidth: 2)
+                                )
+                        }
+                        
+                        Button(action: {
+                            showingConfirmation = true
+                        }) {
+                            Text("プランを確定")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.red)
+                                )
+                        }
+                        .disabled(planTitle.isEmpty || animeName.isEmpty || spots.isEmpty)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+        }
+        .sheet(isPresented: $showingConfirmation) {
+            PlanConfirmationView(
+                planTitle: planTitle,
+                onConfirm: { 
+                    confirmPlanWithPoints()
+                },
+                onCancel: { 
+                    showingConfirmation = false 
+                },
+                onPurchasePoints: {
+                    showingConfirmation = false
+                    showingPointPurchase = true
+                }
+            )
+        }
+        .sheet(isPresented: $showingPointPurchase) {
+            PointPurchaseView(onPurchaseComplete: {
+                showingPointPurchase = false
+            })
+        }
+        .sheet(isPresented: $showingPublishDialog) {
+            PublishPlanDialog(
+                planTitle: planTitle,
+                planDescription: $planDescription,
+                planPrice: $planPrice,
+                planBudget: $planBudget,
+                onPublish: { publishPlan() },
+                onCancel: { showingPublishDialog = false }
+            )
         }
         .sheet(isPresented: $showingAddSpotSheet) {
             AddSpotView(spots: $spots, startTime: startTime, previousSpots: spots, selectedDay: selectedDayForNewSpot)
@@ -370,7 +472,13 @@ struct VisitPlanningScreen: View {
                 duration: formatTotalDuration(),
                 planTitle: planTitle,
                 spots: updateSpotTimes(),
-                numberOfDays: numberOfDays
+                numberOfDays: numberOfDays,
+                startTime: startTime,
+                onClose: {
+                    showingItinerary = false
+                },
+                isReadOnly: true,  // 読み取り専用モード
+                thumbnailUrl: nil
             )
         }
     }
@@ -427,16 +535,299 @@ struct VisitPlanningScreen: View {
         savedPlans.append(plan)
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaults.standard.set(encoded, forKey: "visitPlans")
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
         }
     }
     
     func getSavedPlans() -> [VisitPlanData] {
-        guard let data = UserDefaults.standard.data(forKey: "visitPlans"),
+        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans"),
               let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
             return []
         }
         return plans
+    }
+    
+    func savePlanPrivately() {
+        // プライベートプランとして保存（支払い不要）
+        uploadPlanToFirebase(payment: nil, isPublic: false)
+    }
+    
+    func publishPlan() {
+        // 予算チェック
+        guard planBudget > 0 else {
+            // エラー表示
+            return
+        }
+        
+        // 支払い処理を開始
+        // let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // TODO: payForPlanPosting メソッドが見つからないため、一時的にコメントアウト
+        // 支払い処理なしで公開
+        self.uploadPlanToFirebase(payment: nil, isPublic: true)
+        
+        /* stripeManager.payForPlanPosting(userId: userId) { result in
+            switch result {
+            case .success(let payment):
+                // 支払い成功後、プランをFirebaseに保存
+                self.uploadPlanToFirebase(payment: payment, isPublic: true)
+            case .failure(let error):
+                print("支払いエラー: \(error)")
+            }
+        } */
+    }
+    
+    func uploadPlanToFirebase(payment: PlanPostingPayment?, isPublic: Bool) {
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // 画像をGitHubにアップロード
+        var thumbnailUrl: String?
+        let group = DispatchGroup()
+        
+        if let thumbnailImage = thumbnailImage {
+            group.enter()
+            githubManager.uploadImage(thumbnailImage, fileName: "plan_\(UUID().uuidString)") { result in
+                switch result {
+                case .success(let url):
+                    thumbnailUrl = url
+                case .failure(let error):
+                    print("画像アップロードエラー: \(error)")
+                }
+                group.leave()
+            }
+        }
+        
+        group.notify(queue: DispatchQueue.main, execute: {
+            // Firebaseにプランを保存
+            let plan = VisitPlanModel(
+                id: UUID().uuidString,
+                userId: userId,
+                animeName: self.animeName,
+                title: self.planTitle,
+                description: self.planDescription,
+                duration: self.formatTotalDuration(),
+                spots: self.updateSpotTimes(),
+                thumbnailUrl: thumbnailUrl,
+                price: self.planPrice,
+                budget: self.planBudget,
+                createdDate: Date(),
+                startTime: self.startTime,
+                numberOfDays: self.numberOfDays,
+                totalCost: self.calculateTotalCost(),
+                isPublic: isPublic,
+                purchasedBy: [],
+                createdAt: Date(),
+                updatedAt: Date()
+            )
+            
+            self.firebaseManager.saveVisitPlan(plan) { result in
+                switch result {
+                case .success:
+                    if let payment = payment {
+                        // 支払い記録を保存（パブリックプランの場合のみ）
+                        self.firebaseManager.recordPlanPostingPayment(payment) { _ in
+                            DispatchQueue.main.async {
+                                self.dismiss()
+                            }
+                        }
+                    } else {
+                        // プライベートプランの場合はそのまま閉じる
+                        DispatchQueue.main.async {
+                            self.dismiss()
+                        }
+                    }
+                case .failure(let error):
+                    print("プラン保存エラー: \(error)")
+                }
+            }
+        })
+    }
+    
+    func confirmPlanWithPoints() {
+        showingConfirmation = false
+        
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // 50ポイントを消費してプランを確定
+        firebaseManager.usePoints(userId: userId, points: 50, reason: "プラン確定") { result in
+            switch result {
+            case .success:
+                // ポイント消費成功、プランを保存
+                self.savePlanAsConfirmed()
+            case .failure(let error):
+                print("ポイント消費エラー: \(error)")
+                // エラー処理（必要に応じてアラートを表示）
+            }
+        }
+    }
+    
+    func savePlanAsConfirmed() {
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // ローカルに保存するためのプランデータを作成
+        let planData = VisitPlanData(
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailData: thumbnailData,
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: false
+        )
+        
+        // ローカルストレージに保存
+        var savedPlans = getSavedPlans()
+        savedPlans.append(planData)
+        
+        if let encoded = try? JSONEncoder().encode(savedPlans) {
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
+        }
+        
+        // Firebaseにも保存
+        let plan = VisitPlanModel(
+            id: planData.id.uuidString,
+            userId: userId,
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            description: "",
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailUrl: nil,
+            price: 0,
+            budget: calculateTotalCost(),
+            createdDate: Date(),
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            totalCost: calculateTotalCost(),
+            isPublic: false, // プライベートプランとして保存
+            purchasedBy: [],
+            createdAt: Date(),
+            updatedAt: Date(),
+            isDraft: false,
+            isConfirmed: true // 確定済みフラグ
+        )
+        
+        // ローカルに保存
+        var localPlans = getSavedPlans()
+        localPlans.append(planData)
+        
+        if let encoded = try? JSONEncoder().encode(localPlans) {
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
+            print("🔍 DEBUG: 確定プランをローカルに保存しました: \(planData.title)")
+        }
+        
+        // Firebaseに保存
+        firebaseManager.saveVisitPlan(plan) { result in
+            switch result {
+            case .success:
+                DispatchQueue.main.async {
+                    // オリジナルタブに遷移
+                    NotificationCenter.default.post(
+                        name: Notification.Name("NavigateToVisitOriginalTab"),
+                        object: nil
+                    )
+                    self.dismiss()
+                }
+            case .failure(let error):
+                print("プラン保存エラー: \(error)")
+            }
+        }
+    }
+    
+    func saveDraft() {
+        // 下書きプランデータを作成
+        let planData = VisitPlanData(
+            id: editingDraftId ?? UUID(), // 編集中の場合は既存のIDを使用
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailData: thumbnailData,
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: true
+        )
+        
+        var savedPlans = getSavedPlans()
+        
+        if let editingId = editingDraftId {
+            // 既存の下書きを更新
+            if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
+                savedPlans[index] = planData
+                print("既存の下書きを更新しました: \(planData.title)")
+            } else {
+                // 既存の下書きが見つからない場合は新規追加
+                savedPlans.append(planData)
+                print("下書きが見つからないため新規追加しました: \(planData.title)")
+            }
+        } else {
+            // 新規の下書きとして追加
+            savedPlans.append(planData)
+            print("新規下書きを保存しました: \(planData.title)")
+        }
+        
+        if let encoded = try? JSONEncoder().encode(savedPlans) {
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
+            
+            DispatchQueue.main.async {
+                // オリジナルタブに遷移
+                NotificationCenter.default.post(
+                    name: Notification.Name("NavigateToVisitOriginalTab"),
+                    object: nil
+                )
+                self.dismiss()
+            }
+        } else {
+            print("下書き保存エラー")
+        }
+    }
+    
+    func saveDraftSilently() {
+        // 下書きプランデータを作成
+        let planData = VisitPlanData(
+            id: editingDraftId ?? UUID(), // 編集中の場合は既存のIDを使用
+            animeName: animeName,
+            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
+            duration: formatTotalDuration(),
+            spots: updateSpotTimes(),
+            thumbnailData: thumbnailData,
+            startTime: startTime,
+            numberOfDays: numberOfDays,
+            isPurchased: false,
+            isDraft: true
+        )
+        
+        var savedPlans = getSavedPlans()
+        
+        if let editingId = editingDraftId {
+            // 既存の下書きを更新
+            if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
+                savedPlans[index] = planData
+                print("戻るボタンで下書きを自動更新しました: \(planData.title)")
+            } else {
+                // 既存の下書きが見つからない場合は新規追加
+                savedPlans.append(planData)
+                print("戻るボタンで下書きを自動追加しました: \(planData.title)")
+            }
+        } else {
+            // 新規の下書きとして追加
+            savedPlans.append(planData)
+            print("戻るボタンで新規下書きを自動保存しました: \(planData.title)")
+        }
+        
+        if let encoded = try? JSONEncoder().encode(savedPlans) {
+            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
+        } else {
+            print("自動下書き保存エラー")
+        }
+        
+        // dismiss()を最後に呼び出す
+        DispatchQueue.main.async {
+            self.dismiss()
+        }
     }
 }
 
@@ -736,13 +1127,16 @@ struct AddSpotView: View {
     @State private var spotNotes: String = ""
     @State private var spotAddress: String = ""
     @State private var spotCost: Int = 0
-    @State private var selectedImage: PhotosPickerItem?
-    @State private var spotImage: UIImage?
-    @State private var spotImageData: Data?
+    @State private var selectedImages: [PhotosPickerItem] = []
+    @State private var spotImages: [UIImage] = []
+    @State private var spotImagesData: [Data] = []
     @State private var transportMethod: String = "電車"
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
     @State private var transportRoute: String = ""
+    @State private var selectedThumbnail: PhotosPickerItem?
+    @State private var thumbnailImage: UIImage?
+    @State private var thumbnailData: Data?
     
     let transportMethods = ["電車", "バス", "徒歩", "タクシー"]
     
@@ -781,80 +1175,162 @@ struct AddSpotView: View {
         guard let lastSpot = daySpots.last else { return nil }
         
         // timeRangeから終了時刻を抽出
-        let components = lastSpot.timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
+        let normalizedTimeRange = lastSpot.timeRange.replacingOccurrences(of: "〜", with: "~")
+        let components = normalizedTimeRange.split(separator: "~")
         if components.count == 2 {
-            return components[1].trimmingCharacters(in: .whitespaces)
+            let endTime = String(components[1])
+            return endTime.trimmingCharacters(in: .whitespaces)
         }
         return nil
     }
     
+    var previousSpotEndTimeSection: some View {
+        Group {
+            if let endTime = previousSpotEndTime {
+                Section {
+                    HStack {
+                        Image(systemName: "clock.fill")
+                            .foregroundColor(.blue)
+                        Text("前のスポットの終了時刻: \(endTime)")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .padding(.vertical, 8)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    var transportSection: some View {
+        if !previousSpots.isEmpty {
+            let lastSpot = previousSpots.filter { $0.dayNumber == selectedDay }.last ?? previousSpots.last
+            Section("移動手段 - \(lastSpot?.name ?? "前のスポット")から") {
+                Picker("移動手段", selection: $transportMethod) {
+                    ForEach(transportMethods, id: \.self) { method in
+                        Text(method).tag(method)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("どのくらい時間がかかりますか？")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                    HStack {
+                        TextField("30", value: $transportDuration, format: .number)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 60)
+                            .multilineTextAlignment(.center)
+                        Text("分")
+                            .font(.system(size: 14))
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("交通費はいくらですか？")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                    HStack {
+                        TextField("0", value: $transportCost, format: .number)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .frame(width: 80)
+                            .multilineTextAlignment(.center)
+                        Text("円")
+                            .font(.system(size: 14))
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("どのルートを使いますか？（任意）")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                    TextField("例：JR山手線 → 東京メトロ銀座線", text: $transportRoute)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    var durationText: some View {
+        let duration = calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
+        if duration > 0 {
+            Text("滞在時間: \(duration)分")
+                .font(.system(size: 12))
+                .foregroundColor(.blue)
+        }
+    }
+    
     var body: some View {
         NavigationView {
-            Form {
-                // 前のスポットの終了時刻を表示
-                if let endTime = previousSpotEndTime {
-                    Section {
-                        HStack {
-                            Image(systemName: "clock.fill")
-                                .foregroundColor(.blue)
-                            Text("前のスポットの終了時刻: \(endTime)")
-                                .font(.system(size: 14, weight: .medium))
+            formContent
+                .navigationTitle("スポット追加")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarItems(
+                    leading: Button("キャンセル") {
+                        dismiss()
+                    },
+                    trailing: Button("追加") {
+                        if !previousSpots.isEmpty && previousSpots.count == spots.count {
+                            spots[spots.count - 1].transportToNext = TransportInfo(
+                                method: transportMethod,
+                                duration: transportDuration,
+                                cost: transportCost,
+                                route: transportRoute
+                            )
                         }
-                        .padding(.vertical, 8)
+                        
+                        let newSpot = VisitSpot(
+                            name: spotName,
+                            address: spotAddress,
+                            notes: spotNotes,
+                            stayDuration: calculatedStayDuration,
+                            transportToNext: TransportInfo(
+                                method: transportMethod,
+                                duration: transportDuration,
+                                cost: transportCost,
+                                route: transportRoute
+                            ),
+                            timeRange: formattedTimeRange,
+                            activity: activity,
+                            imageData: thumbnailData, // サムネイル画像を設定
+                            detailImagesData: spotImagesData.isEmpty ? nil : spotImagesData,
+                            dayNumber: selectedDay,
+                            spotCost: spotCost
+                        )
+                        spots.append(newSpot)
+                        dismiss()
                     }
-                }
-                
-                // 交通手段セクションを上に配置
-                if !previousSpots.isEmpty {
-                    let lastSpot = previousSpots.filter { $0.dayNumber == selectedDay }.last ?? previousSpots.last
-                    Section("移動手段 - \(lastSpot?.name ?? "前のスポット")から") {
-                        Picker("移動手段", selection: $transportMethod) {
-                            ForEach(transportMethods, id: \.self) { method in
-                                Text(method).tag(method)
-                            }
-                        }
-                        .pickerStyle(MenuPickerStyle())
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("どのくらい時間がかかりますか？")
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                            HStack {
-                                TextField("30", value: $transportDuration, format: .number)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .frame(width: 60)
-                                    .multilineTextAlignment(.center)
-                                Text("分")
-                                    .font(.system(size: 14))
-                            }
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("交通費はいくらですか？")
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                            HStack {
-                                TextField("0", value: $transportCost, format: .number)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .frame(width: 80)
-                                    .multilineTextAlignment(.center)
-                                Text("円")
-                                    .font(.system(size: 14))
-                            }
-                        }
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("どのルートを使いますか？（任意）")
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                            TextField("例：JR山手線 → 東京メトロ銀座線", text: $transportRoute)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                        }
-                    }
-                }
+                    .disabled(spotName.isEmpty || thumbnailData == nil)
+                )
+        }
+    }
+    
+    var formContent: some View {
+        Form {
+            // 前のスポットの終了時刻を表示
+            previousSpotEndTimeSection
+            
+            // 交通手段セクションを上に配置
+            transportSection
                 
                 Section("スポット情報 - Day \(selectedDay)") {
-                    TextField("スポット名", text: $spotName)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("スポット名")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.gray)
+                            Text("必須")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.red.opacity(0.1))
+                                .cornerRadius(4)
+                        }
+                        TextField("例: 清水寺", text: $spotName)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
                     
                     // 滞在時間帯選択
                     VStack(alignment: .leading, spacing: 8) {
@@ -877,12 +1353,7 @@ struct AddSpotView: View {
                         }
                         
                         // 計算された滞在時間を表示
-                        let duration = calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
-                        if duration > 0 {
-                            Text("滞在時間: \(duration)分")
-                                .font(.system(size: 12))
-                                .foregroundColor(.blue)
-                        }
+                        durationText
                     }
                     
                     TextField("住所", text: $spotAddress)
@@ -909,78 +1380,129 @@ struct AddSpotView: View {
                         }
                     }
                     
-                    // 画像選択
-                    PhotosPicker(selection: $selectedImage,
-                               matching: .images,
-                               photoLibrary: .shared()) {
-                        if let spotImage = spotImage {
-                            Image(uiImage: spotImage)
-                                .resizable()
-                                .scaledToFill()
+                    // サムネイル画像選択
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("サムネイル画像")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        PhotosPicker(selection: $selectedThumbnail,
+                                    matching: .images,
+                                    photoLibrary: .shared()) {
+                            if let thumbnailImage {
+                                Image(uiImage: thumbnailImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(height: 150)
+                                    .frame(maxWidth: .infinity)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color(.systemGray4), lineWidth: 1)
+                                    )
+                            } else {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                    Text("タップしてサムネイルを選択")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                }
                                 .frame(height: 150)
-                                .clipped()
-                                .cornerRadius(8)
-                        } else {
-                            HStack {
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                                Text("スポット画像を選択")
-                                    .foregroundColor(.gray)
+                                .frame(maxWidth: .infinity)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
                             }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 100)
-                            .background(Color(.systemGray5))
-                            .cornerRadius(8)
                         }
-                    }
-                    .onChange(of: selectedImage) { newItem in
-                        Task {
-                            if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                spotImage = UIImage(data: data)
-                                spotImageData = data
+                        .onChange(of: selectedThumbnail) { _, newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                    thumbnailImage = UIImage(data: data)
+                                    thumbnailData = data
+                                }
                             }
                         }
                     }
-                }
-            }
-            .navigationTitle("スポット追加")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("追加") {
-                        if !previousSpots.isEmpty && previousSpots.count == spots.count {
-                            spots[spots.count - 1].transportToNext = TransportInfo(
-                                method: transportMethod,
-                                duration: transportDuration,
-                                cost: transportCost,
-                                route: transportRoute
-                            )
+                    
+                    // 画像選択（複数対応）
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("スポット画像")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        // 選択済み画像の表示
+                        if !spotImages.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(Array(spotImages.enumerated()), id: \.offset) { index, image in
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: image)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 120)
+                                                .clipped()
+                                                .cornerRadius(8)
+                                            
+                                            // 削除ボタン
+                                            Button(action: {
+                                                spotImages.remove(at: index)
+                                                spotImagesData.remove(at: index)
+                                            }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 20))
+                                                    .foregroundColor(.white)
+                                                    .background(Color.black.opacity(0.7))
+                                                    .clipShape(Circle())
+                                            }
+                                            .padding(4)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 4)
+                            }
                         }
                         
-                        let newSpot = VisitSpot(
-                            name: spotName,
-                            address: spotAddress,
-                            notes: spotNotes,
-                            stayDuration: calculatedStayDuration,
-                            timeRange: formattedTimeRange,
-                            activity: activity,
-                            imageData: spotImageData,
-                            dayNumber: selectedDay,
-                            spotCost: spotCost
-                        )
-                        spots.append(newSpot)
-                        dismiss()
+                        // 画像追加ボタン
+                        PhotosPicker(selection: $selectedImages,
+                                   maxSelectionCount: 10,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
+                            HStack {
+                                Image(systemName: "plus")
+                                    .foregroundColor(.blue)
+                                Text("画像を追加（最大10枚）")
+                                    .foregroundColor(.blue)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue, lineWidth: 1)
+                            )
+                        }
+                        .onChange(of: selectedImages) { _, newItems in
+                            Task {
+                                for item in newItems {
+                                    if let data = try? await item.loadTransferable(type: Data.self),
+                                       let image = UIImage(data: data) {
+                                        spotImages.append(image)
+                                        spotImagesData.append(data)
+                                    }
+                                }
+                                selectedImages.removeAll() // 選択をクリア
+                            }
+                        }
                     }
-                    .disabled(spotName.isEmpty)
                 }
             }
         }
-    }
     
     func calculateDurationFromTimeRange(_ timeRange: String) -> Int {
         // 時間帯の形式: "10:00〜11:30" or "10:00~11:30"
@@ -1009,6 +1531,171 @@ struct AddSpotView: View {
     }
 }
 
+// 詳細画像セクションのサブビュー
+struct DetailImagesSection: View {
+    @Binding var detailImagesData: [Data]
+    @Binding var existingImageUrls: [String]
+    @Binding var selectedDetailImages: [PhotosPickerItem]
+    
+    var totalImageCount: Int {
+        detailImagesData.count + existingImageUrls.count
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // 既存画像の表示
+            if totalImageCount > 0 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("現在のメイン画像 (\(totalImageCount)枚)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            // ローカル画像
+                            ForEach(0..<detailImagesData.count, id: \.self) { index in
+                                if index < detailImagesData.count {
+                                    LocalImageView(imageData: detailImagesData[index]) {
+                                        detailImagesData.remove(at: index)
+                                    }
+                                }
+                            }
+                            
+                            // Web画像
+                            ForEach(0..<existingImageUrls.count, id: \.self) { index in
+                                if index < existingImageUrls.count {
+                                    WebImageView(imageUrl: existingImageUrls[index]) {
+                                        existingImageUrls.remove(at: index)
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 4)
+                    }
+                }
+            } else {
+                // 画像がない場合の表示
+                HStack {
+                    Image(systemName: "photo.stack")
+                        .font(.system(size: 20))
+                        .foregroundColor(.gray)
+                    Text("メイン画像がまだ追加されていません")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+            }
+            
+            // 画像追加ボタン
+            PhotosPicker(
+                selection: $selectedDetailImages,
+                maxSelectionCount: 5,
+                matching: .images,
+                photoLibrary: .shared()
+            ) {
+                HStack(spacing: 8) {
+                    Image(systemName: "photo.stack.fill")
+                        .font(.system(size: 16, weight: .medium))
+                    Text("メイン画像を追加")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color.orange)
+                .cornerRadius(10)
+                .shadow(color: Color.orange.opacity(0.3), radius: 3, x: 0, y: 2)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Text("最大5枚まで追加できます")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+// ローカル画像ビュー
+struct LocalImageView: View {
+    let imageData: Data
+    let onDelete: () -> Void
+    
+    var body: some View {
+        if let uiImage = UIImage(data: imageData) {
+            ZStack(alignment: .topTrailing) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                
+                DeleteButton(action: onDelete)
+            }
+        }
+    }
+}
+
+// Web画像ビュー
+struct WebImageView: View {
+    let imageUrl: String
+    let onDelete: () -> Void
+    
+    var body: some View {
+        if let url = URL(string: imageUrl) {
+            ZStack(alignment: .topTrailing) {
+                AsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 120, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(width: 120, height: 120)
+                        .overlay(
+                            ProgressView()
+                        )
+                }
+                
+                DeleteButton(action: onDelete)
+            }
+        }
+    }
+}
+
+// 削除ボタン
+struct DeleteButton: View {
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 24))
+                .foregroundColor(.white)
+                .background(
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 28, height: 28)
+                )
+                .shadow(radius: 2)
+        }
+        .offset(x: 6, y: -6)
+    }
+}
+
 struct EditSpotView: View {
     @Environment(\.dismiss) var dismiss
     let spot: VisitSpot
@@ -1028,6 +1715,9 @@ struct EditSpotView: View {
     @State private var spotImage: UIImage?
     @State private var spotImageData: Data?
     @State private var spotCost: Int
+    @State private var selectedDetailImages: [PhotosPickerItem] = []
+    @State private var detailImagesData: [Data] = []
+    @State private var existingImageUrls: [String] = []
     
     init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date) {
         self.spot = spot
@@ -1045,6 +1735,10 @@ struct EditSpotView: View {
             self._spotImage = State(initialValue: UIImage(data: imageData))
             self._spotImageData = State(initialValue: imageData)
         }
+        if let detailImages = spot.detailImagesData {
+            self._detailImagesData = State(initialValue: detailImages)
+        }
+        self._existingImageUrls = State(initialValue: spot.images)
         
         // timeRangeから時刻を解析
         let components = spot.timeRange.replacingOccurrences(of: "〜", with: "~").split(separator: "~")
@@ -1131,35 +1825,95 @@ struct EditSpotView: View {
                         }
                     }
                     
-                    // 画像選択
-                    PhotosPicker(selection: $selectedImage,
-                               matching: .images,
-                               photoLibrary: .shared()) {
+                    // サムネイル画像セクション
+                    VStack(spacing: 12) {
+                        Text("サムネイル画像")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
                         if let spotImage = spotImage {
                             Image(uiImage: spotImage)
                                 .resizable()
                                 .scaledToFill()
-                                .frame(height: 150)
+                                .frame(height: 200)
                                 .clipped()
-                                .cornerRadius(8)
+                                .cornerRadius(12)
+                                .shadow(radius: 4)
                         } else {
-                            HStack {
-                                Image(systemName: "photo")
-                                    .foregroundColor(.gray)
-                                Text("スポット画像を選択")
-                                    .foregroundColor(.gray)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 100)
-                            .background(Color(.systemGray5))
-                            .cornerRadius(8)
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.blue.opacity(0.1))
+                                .frame(height: 150)
+                                .overlay(
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "photo.badge.plus")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.blue)
+                                        Text("サムネイル画像を追加")
+                                            .font(.subheadline)
+                                            .foregroundColor(.blue)
+                                            .fontWeight(.medium)
+                                    }
+                                )
                         }
+                        
+                        PhotosPicker(selection: $selectedImage,
+                                   matching: .images,
+                                   photoLibrary: .shared()) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "photo.fill")
+                                    .font(.system(size: 16, weight: .medium))
+                                Text(spotImage != nil ? "サムネイルを変更" : "サムネイルを選択")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(10)
+                            .shadow(color: Color.blue.opacity(0.3), radius: 3, x: 0, y: 2)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .onChange(of: selectedImage) { newItem in
+                    .onChange(of: selectedImage) { _, newItem in
                         Task {
                             if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                spotImage = UIImage(data: data)
-                                spotImageData = data
+                                await MainActor.run {
+                                    spotImage = UIImage(data: data)
+                                    spotImageData = data
+                                    selectedImage = nil // 選択状態をリセット
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 詳細画像セクション
+                Section(header: Text("詳細画像（メイン画像）")) {
+                    DetailImagesSection(
+                        detailImagesData: $detailImagesData,
+                        existingImageUrls: $existingImageUrls,
+                        selectedDetailImages: $selectedDetailImages
+                    )
+                }
+                .onChange(of: selectedDetailImages) { _, newValue in
+                    Task {
+                        var newDetailImages: [Data] = []
+                        for item in newValue {
+                            if let data = try? await item.loadTransferable(type: Data.self) {
+                                newDetailImages.append(data)
+                            }
+                        }
+                        if !newDetailImages.isEmpty {
+                            await MainActor.run {
+                                detailImagesData.append(contentsOf: newDetailImages)
+                                selectedDetailImages = []
                             }
                         }
                     }
@@ -1197,6 +1951,8 @@ struct EditSpotView: View {
                             spots[index].activity = activity
                             spots[index].imageData = spotImageData
                             spots[index].spotCost = spotCost
+                            spots[index].detailImagesData = detailImagesData.isEmpty ? nil : detailImagesData
+                            spots[index].images = existingImageUrls
                         }
                         dismiss()
                     }

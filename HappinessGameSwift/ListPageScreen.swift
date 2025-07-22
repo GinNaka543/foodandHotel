@@ -6,6 +6,8 @@ public struct ListPageScreen: View {
     @State private var searchText = ""
     @State private var selectedCharacter: Character? = nil
     @State private var selectedAnime: Anime? = nil
+    @EnvironmentObject var characterManager: CharacterManager
+    @EnvironmentObject var animeManager: AnimeManager
 
     let characters: [Character]
     let animes: [Anime]
@@ -31,6 +33,9 @@ public struct ListPageScreen: View {
     }
 
     public var body: some View {
+        let _ = print("[DEBUG] ListPageScreen - selectedTab: \(selectedTab), animes count: \(animes.count), characters count: \(characters.count)")
+        let _ = print("[DEBUG] ListPageScreen - animeManager.animes count: \(animeManager.animes.count)")
+        let _ = print("[DEBUG] ListPageScreen - characterManager.characters count: \(characterManager.characters.count)")
         VStack(spacing: 0) {
             // ヘッダー
             HStack {
@@ -77,7 +82,7 @@ public struct ListPageScreen: View {
                         ForEach(filteredCharacters, id: \ .id) { character in
                             Button(action: { selectedCharacter = character }) {
                                 HStack(spacing: 16) {
-                                    if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                    if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                         Image(uiImage: image)
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
@@ -105,12 +110,14 @@ public struct ListPageScreen: View {
                     }
                 }
             } else if selectedTab == .anime {
+                let _ = print("[DEBUG] Showing anime tab - filteredAnimes count: \(filteredAnimes.count)")
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredAnimes, id: \ .id) { anime in
+                            let _ = print("[DEBUG] Rendering anime: \(anime.title)")
                             Button(action: { selectedAnime = anime }) {
                                 HStack(spacing: 16) {
-                                    if let imageIdentifier = anime.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                    if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                         Image(uiImage: image)
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
@@ -142,7 +149,7 @@ public struct ListPageScreen: View {
                     VStack(spacing: 0) {
                         ForEach(filteredBirthdays, id: \ .id) { character in
                             HStack(spacing: 16) {
-                                if let imageIdentifier = character.imageIdentifier, let image = UIImage(contentsOfFile: imageIdentifier) {
+                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                     Image(uiImage: image)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
@@ -174,26 +181,37 @@ public struct ListPageScreen: View {
                 }
             }
         }
+        .onAppear {
+            print("[DEBUG] ===== ListPageScreen onAppear =====")
+            print("[DEBUG] selectedTab: \(selectedTab)")
+            print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
+            print("[DEBUG] characterManager.characters.count: \(characterManager.characters.count)")
+            print("[DEBUG] ====================================")
+        }
         .fullScreenCover(item: $selectedCharacter) { character in
             CharacterDetailView(character: Binding(
                 get: { character },
                 set: { _ in }
-            ), characters: .constant(characters))
-            .environmentObject(CharacterManager())
+            ), characters: .constant(characterManager.characters))
+            .environmentObject(characterManager)
         }
         .fullScreenCover(item: $selectedAnime) { anime in
             AnimeDetailView(anime: Binding(
                 get: { anime },
                 set: { _ in }
-            ), animes: .constant(animes))
-            .environmentObject(AnimeManager())
+            ), animes: .constant(animeManager.animes))
+            .environmentObject(animeManager)
         }
     }
 
     // タブボタンのカスタムView
     @ViewBuilder
     private func tabButton(title: String, tab: ListTab) -> some View {
-        Button(action: { selectedTab = tab }) {
+        Button(action: { 
+            print("[DEBUG] Tab button tapped: \(tab)")
+            print("[DEBUG] Changing selectedTab from \(selectedTab) to \(tab)")
+            selectedTab = tab 
+        }) {
             VStack(spacing: 2) {
                 Text(title)
                     .fontWeight(selectedTab == tab ? .bold : .regular)
@@ -210,12 +228,14 @@ public struct ListPageScreen: View {
 
     // 検索フィルタ用プロパティ
     private var filteredCharacters: [Character] {
-        let charactersWithNames = characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let charactersWithNames = characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         if searchText.isEmpty { return charactersWithNames }
         return charactersWithNames.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
     private var filteredAnimes: [Anime] {
-        let animesWithTitles = animes.filter { !$0.title.isEmpty }
+        print("[DEBUG] filteredAnimes - animeManager.animes count: \(animeManager.animes.count)")
+        let animesWithTitles = animeManager.animes.filter { !$0.title.isEmpty }
+        print("[DEBUG] filteredAnimes - animesWithTitles count: \(animesWithTitles.count)")
         if searchText.isEmpty { return animesWithTitles }
         return animesWithTitles.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }

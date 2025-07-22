@@ -5,23 +5,50 @@ const admin = require('firebase-admin');
 require('dotenv').config();
 const axios = require('axios');
 const cheerio = require('cheerio');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const PORT = process.env.PORT || 5002;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  if (req.method === 'POST') {
+    if (req.url.includes('/custom-rankings') || req.url.includes('/admin/add-points')) {
+      console.log(`=== DEBUG: ${req.url} Request ===`);
+      console.log('URL:', req.url);
+      console.log('Body:', JSON.stringify(req.body, null, 2));
+      console.log('=====================================');
+    }
+  }
+  next();
+});
 
 // Firebase Admin初期化
-// 開発環境用の設定
 let adminApp;
 try {
-  const serviceAccount = require('./serviceAccountKey.json');
+  let serviceAccount;
+  
+  // Vercel環境では環境変数から取得
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    console.log('Firebase: 環境変数からサービスアカウントを取得中...');
+    serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  } else {
+    // ローカル環境ではファイルから取得
+    console.log('Firebase: ローカルファイルからサービスアカウントを取得中...');
+    serviceAccount = require('./serviceAccountKey.json');
+  }
+  
   adminApp = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.cert(serviceAccount),
+    projectId: serviceAccount.project_id || 'ani-reco'
   });
+  
+  console.log('Firebase Admin SDK初期化成功');
 } catch (error) {
   console.log('Firebase Admin SDK初期化エラー:', error.message);
   console.log('開発環境用のダミー設定を使用します');
@@ -51,6 +78,22 @@ app.get('/api/users', async (req, res) => {
       // userCharactersから取得
       const charactersSnapshot = await db.collection('userCharacters').where('userId', '==', user.id).get();
       user.favoriteCharacters = charactersSnapshot.docs.map(c => c.data().name || c.data().characterId);
+      // userVoiceActorsから取得
+      try {
+        const voiceActorsSnapshot = await db.collection('userVoiceActors').where('userId', '==', user.id).get();
+        user.favoriteVoiceActors = voiceActorsSnapshot.docs.map(va => va.data().name || va.data().voiceActorId);
+      } catch (error) {
+        console.log(`ユーザー ${user.id} の声優データ取得エラー:`, error.message);
+        user.favoriteVoiceActors = [];
+      }
+      // ユーザーポイントを取得
+      try {
+        const pointsSnapshot = await db.collection('userPoints').doc(user.id).get();
+        user.points = pointsSnapshot.exists ? pointsSnapshot.data().points : 0;
+      } catch (error) {
+        console.log(`ユーザー ${user.id} のポイントデータ取得エラー:`, error.message);
+        user.points = 0;
+      }
       // ハッシュタグ（userAnimes, userCharacters両方から集約）
       const animeTags = animesSnapshot.docs.map(a => a.data().hashtag).filter(Boolean);
       const characterTags = charactersSnapshot.docs.map(c => c.data().tag).filter(Boolean);
@@ -63,11 +106,11 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-// 特定のアニメ/キャラクター/タグでユーザーを検索
+// 特定のアニメ/キャラクター/声優/タグでユーザーを検索
 app.get('/api/users/search', async (req, res) => {
   try {
-    const { all, anime, character, hashtag } = req.query;
-    console.log('検索条件:', { all, anime, character, hashtag });
+    const { all, anime, character, voiceActor, hashtag } = req.query;
+    console.log('検索条件:', { all, anime, character, voiceActor, hashtag });
     const usersSnapshot = await db.collection('users').get();
     const users = [];
     for (const doc of usersSnapshot.docs) {
@@ -78,6 +121,14 @@ app.get('/api/users/search', async (req, res) => {
       // userCharactersから取得
       const charactersSnapshot = await db.collection('userCharacters').where('userId', '==', user.id).get();
       user.favoriteCharacters = charactersSnapshot.docs.map(c => c.data().name || c.data().characterId);
+      // userVoiceActorsから取得
+      try {
+        const voiceActorsSnapshot = await db.collection('userVoiceActors').where('userId', '==', user.id).get();
+        user.favoriteVoiceActors = voiceActorsSnapshot.docs.map(va => va.data().name || va.data().voiceActorId);
+      } catch (error) {
+        console.log(`ユーザー ${user.id} の声優データ取得エラー:`, error.message);
+        user.favoriteVoiceActors = [];
+      }
       // ハッシュタグ（userAnimes, userCharacters両方から集約）
       const animeTags = animesSnapshot.docs.map(a => a.data().hashtag).filter(Boolean);
       const characterTags = charactersSnapshot.docs.map(c => c.data().tag).filter(Boolean);
@@ -86,17 +137,19 @@ app.get('/api/users/search', async (req, res) => {
       console.log('ユーザー:', user.username || user.id);
       console.log('  favoriteAnimes:', user.favoriteAnimes);
       console.log('  favoriteCharacters:', user.favoriteCharacters);
+      console.log('  favoriteVoiceActors:', user.favoriteVoiceActors);
       console.log('  hashtags:', user.hashtags);
       // 検索条件に合致するか
       let match = true;
       
-      // 全てで検索（ユーザー名、キャラクター、アニメ、ハッシュタグを含む）
+      // 全てで検索（ユーザー名、キャラクター、アニメ、声優、ハッシュタグを含む）
       if (all) {
         const searchTerm = all.toLowerCase();
         const userMatch = 
           (user.username && user.username.toLowerCase().includes(searchTerm)) ||
           (user.favoriteAnimes && user.favoriteAnimes.some(anime => anime && anime.toLowerCase().includes(searchTerm))) ||
           (user.favoriteCharacters && user.favoriteCharacters.some(char => char && char.toLowerCase().includes(searchTerm))) ||
+          (user.favoriteVoiceActors && user.favoriteVoiceActors.some(va => va && va.toLowerCase().includes(searchTerm))) ||
           (user.hashtags && user.hashtags.some(tag => tag && tag.toLowerCase().includes(searchTerm)));
         
         if (!userMatch) match = false;
@@ -109,6 +162,10 @@ app.get('/api/users/search', async (req, res) => {
       if (character) {
         const charStr = (user.favoriteCharacters || []).filter(c => !!c && isNaN(c)).join(' ').toLowerCase();
         if (!charStr.includes(character.toLowerCase())) match = false;
+      }
+      if (voiceActor) {
+        const vaStr = (user.favoriteVoiceActors || []).filter(v => !!v).join(' ').toLowerCase();
+        if (!vaStr.includes(voiceActor.toLowerCase())) match = false;
       }
       if (hashtag) {
         const tagStr = (user.hashtags || []).filter(h => !!h).join(' ').toLowerCase();
@@ -133,6 +190,7 @@ app.post('/api/advertisements', async (req, res) => {
       linkURL,
       targetAnimes,
       targetCharacters,
+      targetVoiceActors,
       targetHashtags,
       expiresAt,
       placements,
@@ -152,6 +210,7 @@ app.post('/api/advertisements', async (req, res) => {
       // ターゲット広告の場合
       if ((targetAnimes && targetAnimes.length > 0) || 
           (targetCharacters && targetCharacters.length > 0) || 
+          (targetVoiceActors && targetVoiceActors.length > 0) ||
           (targetHashtags && targetHashtags.length > 0)) {
         
         for (const ad of existingAds) {
@@ -177,6 +236,16 @@ app.post('/api/advertisements', async (req, res) => {
             }
           }
           
+          // 同じ声優をターゲットにしている広告があるかチェック
+          if (targetVoiceActors && targetVoiceActors.length > 0 && ad.targetVoiceActors && ad.targetVoiceActors.length > 0) {
+            const duplicateVA = targetVoiceActors.find(va => ad.targetVoiceActors.includes(va));
+            if (duplicateVA) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateVA}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
           // 同じハッシュタグをターゲットにしている広告があるかチェック
           if (targetHashtags && targetHashtags.length > 0 && ad.targetHashtags && ad.targetHashtags.length > 0) {
             const duplicateTag = targetHashtags.find(tag => ad.targetHashtags.includes(tag));
@@ -197,6 +266,7 @@ app.post('/api/advertisements', async (req, res) => {
       linkURL,
       targetAnimes: targetAnimes || [],
       targetCharacters: targetCharacters || [],
+      targetVoiceActors: targetVoiceActors || [],
       targetHashtags: targetHashtags || [],
       placements: placements || [],
       displayRate: displayRate || 100,
@@ -237,13 +307,15 @@ app.put('/api/advertisements/:id', async (req, res) => {
     
     // ビジットページのターゲット広告の重複チェック（更新時）
     if (updateData.placements && updateData.placements.includes('visit') && 
-        updateData.targetAnimes !== undefined && updateData.targetCharacters !== undefined && updateData.targetHashtags !== undefined) {
+        updateData.targetAnimes !== undefined && updateData.targetCharacters !== undefined && 
+        updateData.targetVoiceActors !== undefined && updateData.targetHashtags !== undefined) {
       
-      const { targetAnimes, targetCharacters, targetHashtags } = updateData;
+      const { targetAnimes, targetCharacters, targetVoiceActors, targetHashtags } = updateData;
       
       // ターゲット広告の場合のみチェック
       if ((targetAnimes && targetAnimes.length > 0) || 
           (targetCharacters && targetCharacters.length > 0) || 
+          (targetVoiceActors && targetVoiceActors.length > 0) ||
           (targetHashtags && targetHashtags.length > 0)) {
         
         // 既存の広告を取得（自分自身を除く）
@@ -273,6 +345,16 @@ app.put('/api/advertisements/:id', async (req, res) => {
             if (duplicateChar) {
               return res.status(400).json({ 
                 error: `既に「${duplicateChar}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
+              });
+            }
+          }
+          
+          // 同じ声優をターゲットにしている広告があるかチェック
+          if (targetVoiceActors && targetVoiceActors.length > 0 && ad.targetVoiceActors && ad.targetVoiceActors.length > 0) {
+            const duplicateVA = targetVoiceActors.find(va => ad.targetVoiceActors.includes(va));
+            if (duplicateVA) {
+              return res.status(400).json({ 
+                error: `既に「${duplicateVA}」をターゲットにしたビジットページの広告が存在します。1つのターゲットに対して1つの広告のみ作成可能です。` 
               });
             }
           }
@@ -354,34 +436,1652 @@ app.get('/api/extract-image', async (req, res) => {
   }
 });
 
+// GitHubリポジトリ管理のエンドポイント
+// リポジトリ一覧を取得
+app.get('/api/github-repositories', async (req, res) => {
+  try {
+    const settingsDoc = await db.collection('githubSettings').doc('repositories').get();
+    if (!settingsDoc.exists) {
+      return res.json({ repositories: [], activeRepoId: null });
+    }
+    const data = settingsDoc.data();
+    res.json({
+      repositories: data.repositories || [],
+      activeRepoId: data.activeRepoId || null
+    });
+  } catch (error) {
+    console.error('リポジトリ取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 新規リポジトリを追加
+app.post('/api/github-repositories', async (req, res) => {
+  try {
+    const { owner, name, token, branch, basePath } = req.body;
+    
+    if (!owner || !name || !token) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+
+    // GitHubトークンとリポジトリの有効性をテスト
+    try {
+      const githubResponse = await axios.get(`https://api.github.com/repos/${owner}/${name}`, {
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      });
+      
+      console.log('GitHubリポジトリ確認成功:', githubResponse.data.full_name);
+    } catch (githubError) {
+      console.error('GitHub API エラー:', githubError.message);
+      if (githubError.response?.status === 401) {
+        return res.status(400).json({ error: 'GitHubアクセストークンが無効です' });
+      } else if (githubError.response?.status === 404) {
+        return res.status(400).json({ error: 'リポジトリが見つからないか、アクセス権限がありません' });
+      } else {
+        return res.status(400).json({ error: 'GitHubリポジトリの確認に失敗しました' });
+      }
+    }
+
+    const newRepo = {
+      id: Date.now().toString(),
+      owner,
+      name,
+      token,
+      branch: branch || 'main',
+      basePath: basePath || 'visit-plans',
+      createdAt: new Date(),
+      isActive: true,
+      currentSize: 0,
+      maxSize: 10737418240, // 10GB
+      imageCount: 0
+    };
+
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    const settingsDoc = await settingsRef.get();
+    
+    if (settingsDoc.exists) {
+      const data = settingsDoc.data();
+      const repositories = data.repositories || [];
+      repositories.push(newRepo);
+      
+      await settingsRef.update({
+        repositories,
+        activeRepoId: data.activeRepoId || newRepo.id
+      });
+    } else {
+      await settingsRef.set({
+        repositories: [newRepo],
+        activeRepoId: newRepo.id
+      });
+    }
+
+    res.json({ success: true, repository: newRepo });
+  } catch (error) {
+    console.error('リポジトリ追加エラー:', error);
+    console.error('エラーの詳細:', error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// リポジトリを更新
+app.put('/api/github-repositories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { owner, name, token, branch, basePath } = req.body;
+    
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    const settingsDoc = await settingsRef.get();
+    
+    if (!settingsDoc.exists) {
+      return res.status(404).json({ error: 'リポジトリ設定が見つかりません' });
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    const repoIndex = repositories.findIndex(r => r.id === id);
+    
+    if (repoIndex === -1) {
+      return res.status(404).json({ error: 'リポジトリが見つかりません' });
+    }
+    
+    repositories[repoIndex] = {
+      ...repositories[repoIndex],
+      owner,
+      name,
+      token,
+      branch,
+      basePath
+    };
+    
+    await settingsRef.update({ repositories });
+    res.json({ success: true, repository: repositories[repoIndex] });
+  } catch (error) {
+    console.error('リポジトリ更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// リポジトリを削除
+app.delete('/api/github-repositories/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    const settingsDoc = await settingsRef.get();
+    
+    if (!settingsDoc.exists) {
+      return res.status(404).json({ error: 'リポジトリ設定が見つかりません' });
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    const filteredRepos = repositories.filter(r => r.id !== id);
+    
+    if (data.activeRepoId === id && filteredRepos.length > 0) {
+      // 削除されたリポジトリがアクティブだった場合、別のリポジトリをアクティブに
+      data.activeRepoId = filteredRepos[0].id;
+    }
+    
+    await settingsRef.update({
+      repositories: filteredRepos,
+      activeRepoId: data.activeRepoId === id ? (filteredRepos[0]?.id || null) : data.activeRepoId
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('リポジトリ削除エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// アクティブリポジトリを切り替え
+app.post('/api/github-repositories/:id/activate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const settingsRef = db.collection('githubSettings').doc('repositories');
+    await settingsRef.update({ activeRepoId: id });
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('アクティブ化エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// リポジトリ容量を更新
+app.post('/api/github-repositories/refresh-capacity', async (req, res) => {
+  try {
+    const settingsDoc = await db.collection('githubSettings').doc('repositories').get();
+    if (!settingsDoc.exists) {
+      return res.status(404).json({ error: 'リポジトリ設定が見つかりません' });
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    
+    // 各リポジトリの容量をGitHub APIから取得
+    const updatedRepos = await Promise.all(repositories.map(async (repo) => {
+      try {
+        const response = await axios.get(
+          `https://api.github.com/repos/${repo.owner}/${repo.name}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${repo.token}`,
+              'Accept': 'application/vnd.github.v3+json'
+            }
+          }
+        );
+        
+        return {
+          ...repo,
+          currentSize: response.data.size * 1024, // KBをバイトに変換
+          usagePercentage: (response.data.size * 1024 / repo.maxSize) * 100
+        };
+      } catch (error) {
+        console.error(`リポジトリ ${repo.owner}/${repo.name} の容量取得エラー:`, error.message);
+        return repo;
+      }
+    }));
+    
+    await db.collection('githubSettings').doc('repositories').update({
+      repositories: updatedRepos,
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    res.json({ success: true, repositories: updatedRepos });
+  } catch (error) {
+    console.error('容量更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 類似度を計算する関数（Levenshtein距離）
+function levenshteinDistance(str1, str2) {
+  const matrix = [];
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[str2.length][str1.length];
+}
+
+// 類似名をグループ化する関数
+function groupSimilarNames(names, threshold = 0.8) {
+  const groups = {};
+  const processed = new Set();
+  
+  names.forEach(name => {
+    if (processed.has(name)) return;
+    
+    const group = [name];
+    processed.add(name);
+    
+    names.forEach(otherName => {
+      if (processed.has(otherName) || name === otherName) return;
+      
+      const distance = levenshteinDistance(name.toLowerCase(), otherName.toLowerCase());
+      const similarity = 1 - distance / Math.max(name.length, otherName.length);
+      
+      if (similarity >= threshold) {
+        group.push(otherName);
+        processed.add(otherName);
+      }
+    });
+    
+    // 最も短い名前を代表名とする（通常は正しい名前）
+    const representative = group.reduce((shortest, current) => 
+      current.length < shortest.length ? current : shortest
+    );
+    
+    groups[representative] = group;
+  });
+  
+  return groups;
+}
+
+// シンプルなテストエンドポイント
+app.get('/api/debug/test', (req, res) => {
+  console.log('🧪 テストエンドポイントがアクセスされました');
+  res.json({ 
+    message: 'テスト成功', 
+    timestamp: new Date().toISOString(),
+    server: 'running'
+  });
+});
+
+// デバッグ用：指定コレクションの内容を確認
+app.get('/api/debug/collections', async (req, res) => {
+  try {
+    console.log('🔍 デバッグ: コレクション確認開始');
+    
+    const result = {};
+    
+    // 主要なコレクションを手動で確認
+    const collectionNames = ['users', 'userAnimes', 'userCharacters', 'userVoiceActors', 'advertisements', 'customRankings'];
+    
+    for (const collectionName of collectionNames) {
+      try {
+        console.log(`🔍 ${collectionName}コレクション確認中...`);
+        const snapshot = await db.collection(collectionName).get();
+        result[collectionName] = {
+          count: snapshot.docs.length,
+          samples: snapshot.docs.slice(0, 3).map(doc => ({
+            id: doc.id,
+            data: doc.data()
+          }))
+        };
+        console.log(`🔍 ${collectionName}: ${snapshot.docs.length}件`);
+      } catch (collectionError) {
+        console.error(`🔍 ${collectionName}エラー:`, collectionError);
+        result[collectionName] = {
+          error: collectionError.message,
+          count: 0,
+          samples: []
+        };
+      }
+    }
+    
+    console.log('🔍 コレクション詳細:', result);
+    res.json(result);
+  } catch (error) {
+    console.error('🔍 デバッグエラー:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // 統計情報を取得
 app.get('/api/statistics', async (req, res) => {
   try {
-    // 開発環境用のダミーデータ
+    console.log('📊 統計情報取得開始');
     const usersSnapshot = await db.collection('users').get();
     const adsSnapshot = await db.collection('advertisements').get();
-    const animeStats = {
-      'アニメ1': 2,
-      'アニメ2': 2,
-      'アニメ3': 2
-    };
-    const characterStats = {
-      'キャラクター1': 1,
-      'キャラクター2': 1
-    };
-    const hashtagStats = {
-      '#ハッシュタグ1': 1,
-      '#ハッシュタグ2': 1
-    };
+    
+    // 全てのアニメとキャラクターの名前を収集
+    const allAnimeNames = [];
+    const allCharacterNames = [];
+    const allVoiceActors = [];
+    const allHashtags = [];
+    
+    // userAnimesとuserCharactersから全データを取得
+    console.log('📊 userAnimesから取得中...');
+    const animesSnapshot = await db.collection('userAnimes').get();
+    console.log(`📊 userAnimesコレクション: ${animesSnapshot.docs.length}件のドキュメント`);
+    
+    animesSnapshot.docs.forEach((doc, index) => {
+      const data = doc.data();
+      console.log(`📊 userAnimes[${index}]:`, {
+        docId: doc.id,
+        title: data.title,
+        hashtag: data.hashtag,
+        userId: data.userId,
+        allFields: Object.keys(data)
+      });
+      
+      if (data.title && data.title.trim()) {
+        allAnimeNames.push(data.title.trim());
+        console.log(`📊 アニメ名追加: "${data.title.trim()}"`);
+      } else {
+        console.log('📊 アニメ名なし:', data.title);
+      }
+      
+      if (data.hashtag && data.hashtag.trim()) {
+        allHashtags.push(data.hashtag.trim());
+      }
+    });
+    
+    console.log('📊 userCharactersから取得中...');
+    const charactersSnapshot = await db.collection('userCharacters').get();
+    console.log(`📊 userCharactersコレクション: ${charactersSnapshot.docs.length}件のドキュメント`);
+    
+    charactersSnapshot.docs.forEach((doc, index) => {
+      const data = doc.data();
+      console.log(`📊 userCharacters[${index}]:`, {
+        docId: doc.id,
+        name: data.name,
+        tag: data.tag,
+        userId: data.userId,
+        allFields: Object.keys(data)
+      });
+      
+      if (data.name && data.name.trim()) {
+        allCharacterNames.push(data.name.trim());
+        console.log(`📊 キャラ名追加: "${data.name.trim()}"`);
+      } else {
+        console.log('📊 キャラ名なし:', data.name);
+      }
+      
+      if (data.tag && data.tag.trim()) {
+        allHashtags.push(data.tag.trim());
+      }
+    });
+    
+    console.log('📊 userVoiceActorsから取得中...');
+    try {
+      const voiceActorsSnapshot = await db.collection('userVoiceActors').get();
+      console.log(`📊 userVoiceActorsコレクション: ${voiceActorsSnapshot.docs.length}件のドキュメント`);
+      
+      voiceActorsSnapshot.docs.forEach((doc, index) => {
+        const data = doc.data();
+        console.log(`📊 userVoiceActors[${index}]:`, {
+          docId: doc.id,
+          name: data.name,
+          userId: data.userId,
+          allFields: Object.keys(data)
+        });
+        
+        if (data.name && data.name.trim()) {
+          allVoiceActors.push(data.name.trim());
+          console.log(`📊 声優名追加: "${data.name.trim()}"`);
+        } else {
+          console.log('📊 声優名なし:', data.name);
+        }
+      });
+    } catch (error) {
+      console.log('📊 userVoiceActorsコレクション取得エラー:', error.message);
+      console.log('📊 声優データなしで続行');
+    }
+    
+    console.log(`📊 収集完了: アニメ${allAnimeNames.length}件, キャラクター${allCharacterNames.length}件, 声優${allVoiceActors.length}件, ハッシュタグ${allHashtags.length}件`);
+    console.log('📊 全アニメ名リスト:', allAnimeNames);
+    console.log('📊 全キャラ名リスト:', allCharacterNames);
+    console.log('📊 全声優名リスト:', allVoiceActors);
+    console.log('📊 全ハッシュタグリスト:', allHashtags);
+    
+    // 重複除去前後の確認
+    const uniqueAnimeNames = [...new Set(allAnimeNames)];
+    const uniqueCharacterNames = [...new Set(allCharacterNames)];
+    const uniqueVoiceActors = [...new Set(allVoiceActors)];
+    console.log('📊 重複除去後アニメ名:', uniqueAnimeNames);
+    console.log('📊 重複除去後キャラ名:', uniqueCharacterNames);
+    console.log('📊 重複除去後声優名:', uniqueVoiceActors);
+    
+    // 類似名をグループ化
+    const animeGroups = groupSimilarNames(uniqueAnimeNames);
+    const characterGroups = groupSimilarNames(uniqueCharacterNames);
+    const voiceActorGroups = groupSimilarNames(uniqueVoiceActors);
+    
+    console.log('📊 アニメグループ化結果:', animeGroups);
+    console.log('📊 キャラグループ化結果:', characterGroups);
+    console.log('📊 声優グループ化結果:', voiceActorGroups);
+    
+    // 統計を集計
+    const animeStats = {};
+    const characterStats = {};
+    const voiceActorStats = {};
+    const hashtagStats = {};
+    
+    // アニメ統計
+    Object.entries(animeGroups).forEach(([representative, variants]) => {
+      let count = 0;
+      console.log(`📊 アニメ処理中: 代表名="${representative}", バリエーション:`, variants);
+      variants.forEach(variant => {
+        const variantCount = allAnimeNames.filter(name => name === variant).length;
+        count += variantCount;
+        console.log(`📊   - "${variant}": ${variantCount}件`);
+      });
+      if (count > 0) {
+        animeStats[representative] = count;
+        console.log(`📊 アニメ統計追加: "${representative}" = ${count}件`);
+      }
+    });
+    
+    // キャラクター統計
+    Object.entries(characterGroups).forEach(([representative, variants]) => {
+      let count = 0;
+      console.log(`📊 キャラ処理中: 代表名="${representative}", バリエーション:`, variants);
+      variants.forEach(variant => {
+        const variantCount = allCharacterNames.filter(name => name === variant).length;
+        count += variantCount;
+        console.log(`📊   - "${variant}": ${variantCount}件`);
+      });
+      if (count > 0) {
+        characterStats[representative] = count;
+        console.log(`📊 キャラ統計追加: "${representative}" = ${count}件`);
+      }
+    });
+    
+    // 声優統計
+    Object.entries(voiceActorGroups).forEach(([representative, variants]) => {
+      let count = 0;
+      console.log(`📊 声優処理中: 代表名="${representative}", バリエーション:`, variants);
+      variants.forEach(variant => {
+        const variantCount = allVoiceActors.filter(name => name === variant).length;
+        count += variantCount;
+        console.log(`📊   - "${variant}": ${variantCount}件`);
+      });
+      if (count > 0) {
+        voiceActorStats[representative] = count;
+        console.log(`📊 声優統計追加: "${representative}" = ${count}件`);
+      }
+    });
+    
+    // ハッシュタグ統計
+    allHashtags.forEach(tag => {
+      const formattedTag = tag.startsWith('#') ? tag : `#${tag}`;
+      hashtagStats[formattedTag] = (hashtagStats[formattedTag] || 0) + 1;
+    });
+    
+    // データがない場合の対処
+    if (Object.keys(animeStats).length === 0 && Object.keys(characterStats).length === 0) {
+      console.log('📊 データなし - サンプルデータを返す');
+      return res.json({
+        totalUsers: usersSnapshot.size,
+        totalAds: adsSnapshot.size,
+        animeStats: {
+          'データなし': 0
+        },
+        characterStats: {
+          'データなし': 0
+        },
+        voiceActorStats: {
+          'データなし': 0
+        },
+        hashtagStats: {
+          '#データなし': 0
+        }
+      });
+    }
+    
+    console.log('📊 最終統計結果:');
+    console.log('📊 animeStats:', animeStats);
+    console.log('📊 characterStats:', characterStats);
+    console.log('📊 voiceActorStats:', voiceActorStats);
+    console.log('📊 hashtagStats:', hashtagStats);
+    console.log('📊 統計サマリー:', {
+      animeCount: Object.keys(animeStats).length,
+      characterCount: Object.keys(characterStats).length,
+      voiceActorCount: Object.keys(voiceActorStats).length,
+      hashtagCount: Object.keys(hashtagStats).length
+    });
     
     res.json({
       totalUsers: usersSnapshot.size,
       totalAds: adsSnapshot.size,
       animeStats,
       characterStats,
+      voiceActorStats,
       hashtagStats
     });
   } catch (error) {
+    console.error('📊 統計取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// カスタムランキング管理API
+// カスタムランキング一覧取得
+app.get('/api/custom-rankings', async (req, res) => {
+  try {
+    const rankingsSnapshot = await db.collection('customRankings').get();
+    const rankings = [];
+    
+    for (const doc of rankingsSnapshot.docs) {
+      const rankingData = doc.data();
+      
+      // 各ランキングのアイテムを取得
+      const itemsSnapshot = await db.collection('customRankings')
+        .doc(doc.id)
+        .collection('items')
+        .orderBy('rank')
+        .get();
+      
+      const items = itemsSnapshot.docs.map(itemDoc => ({
+        id: itemDoc.id,
+        ...itemDoc.data()
+      }));
+      
+      rankings.push({
+        id: doc.id,
+        ...rankingData,
+        items: items
+      });
+    }
+    
+    res.json(rankings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキング作成
+app.post('/api/custom-rankings', async (req, res) => {
+  try {
+    const { title, displayProbability, isActive, imageURL } = req.body;
+    
+    const newRanking = {
+      title,
+      displayProbability,
+      isActive,
+      imageURL: imageURL || null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    const docRef = await db.collection('customRankings').add(newRanking);
+    res.json({ id: docRef.id, ...newRanking });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキング更新
+app.put('/api/custom-rankings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = {
+      ...req.body,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    await db.collection('customRankings').doc(id).update(updates);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキング削除
+app.delete('/api/custom-rankings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // アイテムも含めて削除
+    const itemsSnapshot = await db.collection('customRankings')
+      .doc(id)
+      .collection('items')
+      .get();
+    
+    const batch = db.batch();
+    
+    // アイテムを削除
+    itemsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // ランキング本体を削除
+    batch.delete(db.collection('customRankings').doc(id));
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキングアイテム追加
+app.post('/api/custom-rankings/:rankingId/items', async (req, res) => {
+  try {
+    const { rankingId } = req.params;
+    const { rank, characterId, characterName, characterImagePath, githubImageUrl, externalLink } = req.body;
+    
+    console.log('Received ranking item data:', { rank, characterId, characterName, characterImagePath, githubImageUrl, externalLink });
+    console.log('githubImageUrl value:', githubImageUrl);
+    console.log('githubImageUrl type:', typeof githubImageUrl);
+    
+    // 既存の同じランクのアイテムを削除
+    const existingItemSnapshot = await db.collection('customRankings')
+      .doc(rankingId)
+      .collection('items')
+      .where('rank', '==', rank)
+      .get();
+    
+    const batch = db.batch();
+    
+    // 既存アイテム削除
+    existingItemSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // 新しいアイテム追加
+    const newItemRef = db.collection('customRankings')
+      .doc(rankingId)
+      .collection('items')
+      .doc();
+    
+    const itemData = {
+      rank,
+      characterId: characterId || null,
+      characterName,
+      characterImageURL: characterImagePath || null,  // レガシーデータ用
+      customImageURL: githubImageUrl || null,         // GitHub URL用
+      externalLink: externalLink || null,             // 外部リンク
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    console.log('Saving item data:', itemData);
+    console.log('itemData.characterImageURL:', itemData.characterImageURL);
+    console.log('itemData.customImageURL:', itemData.customImageURL);
+    batch.set(newItemRef, itemData);
+    
+    await batch.commit();
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// カスタムランキングアイテム削除
+app.delete('/api/custom-rankings/:rankingId/items/:rank', async (req, res) => {
+  try {
+    const { rankingId, rank } = req.params;
+    
+    const itemSnapshot = await db.collection('customRankings')
+      .doc(rankingId)
+      .collection('items')
+      .where('rank', '==', parseInt(rank))
+      .get();
+    
+    const batch = db.batch();
+    itemSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// キャラクター一覧取得
+app.get('/api/characters', async (req, res) => {
+  try {
+    const charactersSnapshot = await db.collection('userCharacters').get();
+    const charactersMap = new Map();
+    
+    charactersSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.name && !charactersMap.has(data.name)) {
+        charactersMap.set(data.name, {
+          id: doc.id,
+          name: data.name,
+          tag: data.tag || '',
+          imageIdentifier: data.imageIdentifier || null
+        });
+      }
+    });
+    
+    const characters = Array.from(charactersMap.values());
+    res.json(characters);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GitHub画像アップロード処理
+async function uploadImageToGitHub(base64Data, fileName, folderPath) {
+  try {
+    // リポジトリ設定を取得
+    const settingsDoc = await db.collection('githubSettings').doc('repositories').get();
+    if (!settingsDoc.exists) {
+      throw new Error('GitHubリポジトリ設定が見つかりません');
+    }
+    
+    const data = settingsDoc.data();
+    const repositories = data.repositories || [];
+    const activeRepo = repositories.find(r => r.id === data.activeRepoId);
+    
+    if (!activeRepo) {
+      throw new Error('アクティブなリポジトリが見つかりません');
+    }
+    
+    const path = `${folderPath}/${fileName}.jpg`;
+    const url = `https://api.github.com/repos/${activeRepo.owner}/${activeRepo.name}/contents/${path}`;
+    
+    const response = await axios.put(url, {
+      message: `Upload character ranking image: ${fileName}`,
+      content: base64Data,
+      branch: activeRepo.branch
+    }, {
+      headers: {
+        'Authorization': `Bearer ${activeRepo.token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.status === 201 || response.status === 200) {
+      return {
+        url: `https://raw.githubusercontent.com/${activeRepo.owner}/${activeRepo.name}/${activeRepo.branch}/${path}`,
+        path: path
+      };
+    } else {
+      throw new Error(`GitHub API エラー: ${response.status}`);
+    }
+  } catch (error) {
+    throw new Error(`画像アップロードエラー: ${error.message}`);
+  }
+}
+
+// 管理者用ポイント追加API
+app.post('/api/admin/add-points', async (req, res) => {
+  try {
+    const { userId, amount, type, description } = req.body;
+    
+    if (!userId || !amount || !description) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+    
+    if (amount <= 0) {
+      return res.status(400).json({ error: 'ポイント数は正の数である必要があります' });
+    }
+    
+    // ユーザーの現在のポイントを取得
+    const userPointsRef = db.collection('userPoints').doc(userId);
+    const userPointsDoc = await userPointsRef.get();
+    
+    let currentPoints = 0;
+    if (userPointsDoc.exists) {
+      currentPoints = userPointsDoc.data().points || 0;
+    }
+    
+    // ポイントを更新
+    const newPoints = currentPoints + amount;
+    const pointsData = {
+      userId: userId,
+      points: newPoints,
+      totalEarned: admin.firestore.FieldValue.increment(amount),
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (!userPointsDoc.exists) {
+      pointsData.createdAt = admin.firestore.FieldValue.serverTimestamp();
+      pointsData.totalEarned = amount;
+      pointsData.totalSpent = 0;
+    }
+    
+    await userPointsRef.set(pointsData, { merge: true });
+    
+    // 取引履歴を記録
+    const transactionRef = db.collection('pointTransactions').doc();
+    await transactionRef.set({
+      id: transactionRef.id,
+      userId: userId,
+      amount: amount,
+      type: type || 'admin_grant',
+      description: description,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    console.log(`管理者がユーザー ${userId} に ${amount} ポイントを付与しました`);
+    
+    res.json({ 
+      success: true, 
+      newPoints: newPoints,
+      message: `${amount}ポイントを追加しました` 
+    });
+    
+  } catch (error) {
+    console.error('ポイント追加エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ユーザーのポイント情報を取得
+app.get('/api/users/:userId/points', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const userPointsDoc = await db.collection('userPoints').doc(userId).get();
+    
+    if (!userPointsDoc.exists) {
+      return res.json({ points: 0, transactions: [] });
+    }
+    
+    const pointsData = userPointsDoc.data();
+    
+    // 取引履歴も取得
+    const transactionsSnapshot = await db.collection('pointTransactions')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .limit(20)
+      .get();
+    
+    const transactions = transactionsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate()
+    }));
+    
+    res.json({
+      points: pointsData.points || 0,
+      transactions: transactions
+    });
+    
+  } catch (error) {
+    console.error('ポイント情報取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stripe Payment APIs
+// Create payment intent for points purchase
+app.post('/api/create-payment-intent', async (req, res) => {
+  try {
+    const { amount, userId, pointAmount, type } = req.body;
+    
+    // サブスクリプション支払いの場合はpointAmountは不要
+    if (type === 'app_subscription') {
+      if (!amount || !userId) {
+        return res.status(400).json({ error: 'サブスクリプション支払いには amount と userId が必要です' });
+      }
+    } else {
+      // ポイント購入の場合
+      if (!amount || !userId || !pointAmount) {
+        return res.status(400).json({ error: '必須パラメータが不足しています' });
+      }
+    }
+    
+    // Create payment intent
+    const metadata = {
+      userId: userId,
+      type: type || 'point_purchase'
+    };
+    
+    // ポイント購入の場合のみpointAmountを追加
+    if (pointAmount) {
+      metadata.pointAmount = pointAmount.toString();
+    }
+    
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount, // 金額（円）
+      currency: 'jpy',
+      statement_descriptor_suffix: 'HAPPINESS',
+      metadata: metadata
+    });
+    
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+    });
+  } catch (error) {
+    console.error('Payment intent creation error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stripe webhook handler
+app.post('/api/stripe-webhook', bodyParser.raw({ type: 'application/json' }), async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+  
+  try {
+    // Webhook署名の検証（本番環境では必須）
+    if (process.env.STRIPE_WEBHOOK_SECRET) {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET
+      );
+    } else {
+      // 開発環境用：署名検証をスキップ
+      event = JSON.parse(req.body.toString());
+    }
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      const { userId, pointAmount, type } = paymentIntent.metadata;
+      
+      if (type === 'point_purchase' && userId && pointAmount) {
+        try {
+          // ユーザーのポイントを更新
+          const userPointsRef = db.collection('userPoints').doc(userId);
+          const userPointsDoc = await userPointsRef.get();
+          const points = parseInt(pointAmount);
+          
+          let currentPoints = 0;
+          if (userPointsDoc.exists) {
+            currentPoints = userPointsDoc.data().points || 0;
+          }
+          
+          const newPoints = currentPoints + points;
+          await userPointsRef.set({
+            userId: userId,
+            points: newPoints,
+            totalEarned: admin.firestore.FieldValue.increment(points),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          
+          // 取引履歴を記録
+          await db.collection('pointTransactions').add({
+            userId: userId,
+            amount: points,
+            type: 'purchase',
+            description: `${points}ポイント購入`,
+            paymentIntentId: paymentIntent.id,
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          
+          console.log(`Payment successful: User ${userId} purchased ${points} points`);
+        } catch (error) {
+          console.error('Failed to update user points:', error);
+        }
+      }
+      break;
+      
+    case 'payment_intent.payment_failed':
+      const failedPayment = event.data.object;
+      console.log('Payment failed:', failedPayment.id);
+      break;
+      
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+  
+  res.json({ received: true });
+});
+
+// Get Stripe publishable key
+app.get('/api/stripe-config', (req, res) => {
+  res.json({
+    publishableKey: process.env.STRIPE_PUBLISHABLE_KEY
+  });
+});
+
+// キャラクターランキングAPI
+app.get('/api/character-rankings', async (req, res) => {
+  try {
+    const rankingsSnapshot = await db.collection('characterRankings').get();
+    const rankings = rankingsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    res.json(rankings);
+  } catch (error) {
+    console.error('ランキング取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/character-rankings', async (req, res) => {
+  try {
+    const { characterId, rank, characterName, characterImagePath, imageFile, externalLink } = req.body;
+    
+    // 既存の同じランクのランキングを削除
+    const existingSnapshot = await db.collection('characterRankings')
+      .where('rank', '==', rank)
+      .get();
+    
+    const batch = db.batch();
+    existingSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    // 新しいランキングを追加
+    const newRankingRef = db.collection('characterRankings').doc();
+    const rankingData = {
+      characterId,
+      rank,
+      characterName,
+      characterImagePath,
+      externalLink: externalLink || '',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    batch.set(newRankingRef, rankingData);
+    await batch.commit();
+    
+    res.json({ success: true, id: newRankingRef.id });
+  } catch (error) {
+    console.error('ランキング設定エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/character-rankings/:rank', async (req, res) => {
+  try {
+    const rank = parseInt(req.params.rank);
+    
+    const snapshot = await db.collection('characterRankings')
+      .where('rank', '==', rank)
+      .get();
+    
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('ランキング削除エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/character-rankings/update-link', async (req, res) => {
+  try {
+    const { rank, externalLink } = req.body;
+    
+    const snapshot = await db.collection('characterRankings')
+      .where('rank', '==', rank)
+      .get();
+    
+    if (snapshot.empty) {
+      return res.status(404).json({ error: 'ランキングが見つかりません' });
+    }
+    
+    const batch = db.batch();
+    snapshot.docs.forEach(doc => {
+      batch.update(doc.ref, {
+        externalLink: externalLink || '',
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('リンク更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 旅行プラン管理API
+app.get('/api/travel-plans', async (req, res) => {
+  try {
+    const snapshot = await db.collection('visitPlans').get();
+    const plans = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    res.json(plans);
+  } catch (error) {
+    console.error('旅行プラン取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/travel-plans', async (req, res) => {
+  try {
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls } = req.body;
+    
+    console.log('🔍 [DEBUG] 受信したデータ:');
+    console.log('  title:', title);
+    console.log('  animeName:', animeName);
+    console.log('  duration:', duration);
+    console.log('  spots:', spots);
+    console.log('  spots length:', spots ? spots.length : 0);
+    console.log('  streamingUrls:', streamingUrls);
+    console.log('  streamingUrls type:', typeof streamingUrls);
+    console.log('  streamingUrls length:', streamingUrls ? streamingUrls.length : 0);
+    
+    if (!title || !animeName || !duration) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+
+    const now = new Date();
+    const planId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // ローカル表示用のデータを構築（Firebaseには保存しない）
+    const planData = {
+      id: planId,
+      title,
+      animeName,
+      duration,
+      description: description || '',
+      spots: (spots || []).map((spot, index) => {
+        console.log(`🔍 [DEBUG] スポット${index + 1}:`, spot);
+        const processedSpot = {
+          id: spot.id || `spot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: spot.name,
+          address: spot.address || '',
+          notes: spot.notes || '',
+          nearestStation: spot.nearestStation || '',
+          stayDuration: parseInt(spot.stayDuration) || 60,
+          timeRange: spot.timeRange || '',
+          activity: spot.activity || '',
+          dayNumber: parseInt(spot.dayNumber) || 1,
+          spotCost: parseInt(spot.spotCost) || 0,
+          imageUrl: spot.imageUrl || '',
+          images: spot.images || [], // 複数画像をサポート
+          arrivalTime: spot.arrivalTime || null,
+          departureTime: spot.departureTime || null,
+          transportToNext: spot.transportToNext || null
+        };
+        console.log(`✅ [DEBUG] 処理後スポット${index + 1}:`, processedSpot);
+        return processedSpot;
+      }),
+      price: parseInt(price) || 0,
+      budget: parseInt(price) || 0,
+      tags: tags || [],
+      thumbnailUrl: thumbnailUrl || '',
+      numberOfDays: parseInt(numberOfDays) || 1,
+      totalCost: parseInt(price) || 0,
+      startTime: now.getTime() / 1000,
+      createdAt: now.getTime() / 1000,
+      updatedAt: now.getTime() / 1000,
+      isPublic: true,
+      userId: 'admin',
+      purchasedBy: [],
+      // 統計情報
+      viewCount: 0,
+      purchaseCount: 0,
+      rating: 0,
+      reviewCount: 0,
+      // ストリーミングサービスURL
+      streamingUrls: streamingUrls || []
+    };
+
+    // Firebaseに保存
+    try {
+      console.log('💾 [DEBUG] Firebaseに保存するプランデータ:');
+      console.log('  planId:', planId);
+      console.log('  streamingUrls:', planData.streamingUrls);
+      console.log('  全データ:', JSON.stringify(planData, null, 2));
+      
+      const docRef = db.collection('visitPlans').doc(planId);
+      await docRef.set(planData);
+      
+      // 保存後の確認
+      const savedDoc = await docRef.get();
+      if (savedDoc.exists) {
+        const savedData = savedDoc.data();
+        console.log('✅ [SUCCESS] Firebaseに旅行プランを保存しました:', planId);
+        console.log('✅ [SUCCESS] 保存されたstreamingUrls:', savedData.streamingUrls);
+      } else {
+        console.error('❌ [ERROR] 保存したドキュメントが見つかりません');
+      }
+    } catch (firebaseError) {
+      console.error('❌ [ERROR] Firebase保存エラー:', firebaseError);
+      console.error('❌ [ERROR] エラー詳細:', firebaseError.stack);
+      throw firebaseError;
+    }
+    
+    res.status(201).json({
+      id: planId,
+      ...planData,
+      createdAt: now.toISOString()
+    });
+  } catch (error) {
+    console.error('旅行プラン作成エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/travel-plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Firebaseから削除
+    try {
+      await db.collection('visitPlans').doc(id).delete();
+      console.log('✅ [SUCCESS] Firebaseから旅行プランを削除しました:', id);
+    } catch (firebaseError) {
+      console.error('❌ [ERROR] Firebase削除エラー:', firebaseError);
+      throw firebaseError;
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('旅行プラン削除エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 旅行プラン更新API（ローカル表示のみ）
+app.put('/api/travel-plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls } = req.body;
+    
+    console.log('🔍 [DEBUG] 更新データ:');
+    console.log('  id:', id);
+    console.log('  title:', title);
+    console.log('  animeName:', animeName);
+    console.log('  duration:', duration);
+    console.log('  spots:', spots);
+    console.log('  streamingUrls:', streamingUrls);
+    console.log('  streamingUrls type:', typeof streamingUrls);
+    console.log('  streamingUrls length:', streamingUrls ? streamingUrls.length : 0);
+    
+    if (!title || !animeName || !duration) {
+      return res.status(400).json({ error: '必須フィールドが不足しています' });
+    }
+
+    const now = new Date();
+    
+    // ローカル表示用のダミーデータ（Firebaseからは取得しない）
+    const existingData = {
+      id: id,
+      createdAt: now.getTime() / 1000,
+      userId: 'admin',
+      purchasedBy: [],
+      viewCount: 0,
+      purchaseCount: 0,
+      rating: 0,
+      reviewCount: 0,
+      isPublic: true
+    };
+    
+    // VisitPlanModelの形式に合わせてデータを構築
+    const planData = {
+      ...existingData, // 既存のデータを保持
+      title,
+      animeName,
+      duration,
+      description: description || '',
+      spots: (spots || []).map((spot, index) => {
+        console.log(`🔍 [DEBUG] スポット${index + 1}:`, spot);
+        const processedSpot = {
+          id: spot.id || `spot_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: spot.name,
+          address: spot.address || '',
+          notes: spot.notes || '',
+          nearestStation: spot.nearestStation || '',
+          stayDuration: parseInt(spot.stayDuration) || 60,
+          timeRange: spot.timeRange || '',
+          activity: spot.activity || '',
+          dayNumber: parseInt(spot.dayNumber) || 1,
+          spotCost: parseInt(spot.spotCost) || 0,
+          imageUrl: spot.imageUrl || '',
+          images: spot.images || [], // 複数画像をサポート
+          arrivalTime: spot.arrivalTime || null,
+          departureTime: spot.departureTime || null,
+          transportToNext: spot.transportToNext || null
+        };
+        console.log(`✅ [DEBUG] 処理後スポット${index + 1}:`, processedSpot);
+        return processedSpot;
+      }),
+      price: parseInt(price) || 0,
+      budget: parseInt(price) || 0,
+      tags: tags || [],
+      thumbnailUrl: thumbnailUrl || '',
+      numberOfDays: numberOfDays !== undefined ? parseInt(numberOfDays) : existingData.numberOfDays,
+      totalCost: parseInt(price) || 0,
+      updatedAt: now.getTime() / 1000,
+      // ストリーミングサービスURL
+      streamingUrls: streamingUrls || []
+    };
+
+    // Firebaseに更新
+    try {
+      console.log('💾 [DEBUG] Firebaseで更新するプランデータ:');
+      console.log('  id:', id);
+      console.log('  streamingUrls:', planData.streamingUrls);
+      console.log('  全データ:', JSON.stringify(planData, null, 2));
+      
+      const docRef = db.collection('visitPlans').doc(id);
+      await docRef.update(planData);
+      
+      // 更新後の確認
+      const updatedDoc = await docRef.get();
+      if (updatedDoc.exists) {
+        const updatedData = updatedDoc.data();
+        console.log('✅ [SUCCESS] Firebaseで旅行プランを更新しました:', id);
+        console.log('✅ [SUCCESS] 更新されたstreamingUrls:', updatedData.streamingUrls);
+      } else {
+        console.error('❌ [ERROR] 更新したドキュメントが見つかりません');
+      }
+    } catch (firebaseError) {
+      console.error('❌ [ERROR] Firebase更新エラー:', firebaseError);
+      console.error('❌ [ERROR] エラー詳細:', firebaseError.stack);
+      throw firebaseError;
+    }
+    
+    res.json({
+      id: id,
+      ...planData,
+      updatedAt: now.toISOString()
+    });
+  } catch (error) {
+    console.error('旅行プラン更新エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// サブスクリプション管理エンドポイント
+app.get('/api/subscriptions', async (req, res) => {
+  console.log('🔥 /api/subscriptions endpoint called');
+  try {
+    // デバイスベースのサブスクリプションデータを取得
+    const deviceSubscriptionsSnapshot = await db.collection('device_subscriptions').get();
+    const subscriptions = [];
+    const processedDevices = new Set();
+    
+    // device_subscriptionsからデータを処理
+    for (const doc of deviceSubscriptionsSnapshot.docs) {
+      const subscription = { ...doc.data() };
+      processedDevices.add(doc.id);
+      
+      // currentUserIdを使用してユーザー名を取得
+      if (subscription.currentUserId) {
+        try {
+          const userDoc = await db.collection('users').doc(subscription.currentUserId).get();
+          if (userDoc.exists) {
+            subscription.username = userDoc.data().username || userDoc.data().displayName || '未設定';
+          }
+        } catch (error) {
+          console.log(`ユーザー ${subscription.currentUserId} の情報取得エラー:`, error.message);
+        }
+      }
+      
+      // deviceIdをプライマリIDとして使用
+      subscription.userId = subscription.deviceId || doc.id;
+      
+      subscriptions.push(subscription);
+    }
+    
+    // 移行期間のため、古いsubscriptionsコレクションからもデータを取得
+    const oldSubscriptionsSnapshot = await db.collection('subscriptions').get();
+    for (const doc of oldSubscriptionsSnapshot.docs) {
+      const oldSub = doc.data();
+      
+      // deviceIdが既に処理されている場合はスキップ
+      if (oldSub.deviceId && processedDevices.has(oldSub.deviceId)) {
+        continue;
+      }
+      
+      // ユーザー名を取得
+      const userId = oldSub.userId || doc.id;
+      try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          oldSub.username = userData.username || userData.displayName || '未設定';
+          oldSub.deviceId = userData.deviceId || 'legacy-' + userId.substring(0, 8);
+        }
+      } catch (error) {
+        console.log(`ユーザー ${userId} の情報取得エラー:`, error.message);
+      }
+      
+      // 古いデータもdeviceIdベースの形式に変換
+      const subscription = {
+        userId: oldSub.deviceId || userId,
+        deviceId: oldSub.deviceId || null, // 実際のdeviceIdがない場合はnull
+        currentUserId: userId,
+        username: oldSub.username || '未設定',
+        firstInstallDate: oldSub.firstInstallDate || oldSub.createdAt,
+        hasPaid: oldSub.hasPaid || false,
+        paymentDate: oldSub.paymentDate,
+        amount: oldSub.amount,
+        createdAt: oldSub.createdAt,
+        lastSeenAt: oldSub.updatedAt || oldSub.createdAt
+      };
+      
+      subscriptions.push(subscription);
+    }
+    
+    // サブスクリプションレコードがないユーザーも表示（移行期間のため）
+    const usersSnapshot = await db.collection('users').get();
+    console.log(`🔥 Found ${usersSnapshot.size} users in Firebase`);
+    const processedUserIds = new Set(subscriptions.map(s => s.currentUserId || s.userId));
+    console.log(`🔥 Already processed ${processedUserIds.size} user IDs`);
+    
+    for (const userDoc of usersSnapshot.docs) {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+      
+      // 既に処理済みのユーザーはスキップ
+      if (processedUserIds.has(userId)) {
+        continue;
+      }
+      
+      // ユーザーデータから仮のサブスクリプションレコードを作成
+      let firstInstallDate = Math.floor(Date.now() / 1000) - 86400; // Default: 1 day ago
+      let createdAt = firstInstallDate;
+      let lastSeenAt = Math.floor(Date.now() / 1000);
+      
+      // Handle Firestore Timestamp objects
+      if (userData.createdAt) {
+        if (userData.createdAt.seconds) {
+          firstInstallDate = userData.createdAt.seconds;
+          createdAt = userData.createdAt.seconds;
+        } else if (typeof userData.createdAt === 'number') {
+          firstInstallDate = userData.createdAt;
+          createdAt = userData.createdAt;
+        }
+      }
+      
+      if (userData.updatedAt?.seconds) {
+        lastSeenAt = userData.updatedAt.seconds;
+      } else if (userData.lastLoginAt?.seconds) {
+        lastSeenAt = userData.lastLoginAt.seconds;
+      }
+      
+      const subscription = {
+        userId: userId, // userIdとしてはuserIdを使用
+        deviceId: userData.deviceId || null, // deviceIdは実際にある場合のみ表示（nullの場合は「未設定」になる）
+        currentUserId: userId,
+        username: userData.username || userData.displayName || '未設定',
+        firstInstallDate,
+        hasPaid: userData.hasPaidSubscription || false,
+        paymentDate: userData.subscriptionDate?.seconds || userData.subscriptionDate || null,
+        amount: userData.hasPaidSubscription ? 500 : null,
+        createdAt,
+        lastSeenAt
+      };
+      
+      subscriptions.push(subscription);
+    }
+    
+    // 初回インストール日でソート（新しい順）
+    subscriptions.sort((a, b) => (b.firstInstallDate || 0) - (a.firstInstallDate || 0));
+    
+    console.log(`🔥 Returning ${subscriptions.length} subscription records`);
+    res.json(subscriptions);
+  } catch (error) {
+    console.error('サブスクリプション取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 特定のユーザーのサブスクリプション情報を取得
+app.get('/api/subscriptions/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const subscriptionDoc = await db.collection('subscriptions').doc(userId).get();
+    
+    if (!subscriptionDoc.exists) {
+      return res.status(404).json({ error: 'サブスクリプション情報が見つかりません' });
+    }
+    
+    const subscription = { ...subscriptionDoc.data() };
+    
+    // ユーザー情報も取得
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      subscription.username = userDoc.data().username || userDoc.data().displayName || '未設定';
+      subscription.email = userDoc.data().email;
+    }
+    
+    res.json(subscription);
+  } catch (error) {
+    console.error('サブスクリプション取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// サブスクリプション統計情報を取得
+app.get('/api/subscriptions/stats', async (req, res) => {
+  try {
+    const subscriptionsSnapshot = await db.collection('device_subscriptions').get();
+    const now = new Date();
+    
+    let totalUsers = 0;
+    let paidUsers = 0;
+    let trialUsers = 0;
+    let expiredUsers = 0;
+    let expiringIn7Days = 0;
+    let totalRevenue = 0;
+    
+    subscriptionsSnapshot.forEach(doc => {
+      const sub = doc.data();
+      totalUsers++;
+      
+      if (sub.hasPaid) {
+        paidUsers++;
+        totalRevenue += (sub.amount || 500);
+      } else {
+        const firstInstallDate = new Date(sub.firstInstallDate * 1000);
+        const daysSinceInstall = Math.floor((now - firstInstallDate) / (1000 * 60 * 60 * 24));
+        const daysUntilPayment = Math.max(0, 60 - daysSinceInstall);
+        
+        if (daysUntilPayment === 0) {
+          expiredUsers++;
+        } else if (daysUntilPayment <= 7) {
+          expiringIn7Days++;
+        } else {
+          trialUsers++;
+        }
+      }
+    });
+    
+    res.json({
+      totalUsers,
+      paidUsers,
+      trialUsers,
+      expiredUsers,
+      expiringIn7Days,
+      totalRevenue,
+      conversionRate: totalUsers > 0 ? (paidUsers / totalUsers * 100).toFixed(2) : 0
+    });
+  } catch (error) {
+    console.error('サブスクリプション統計取得エラー:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// サブスクリプションステータスをトグルするエンドポイント
+app.post('/api/subscriptions/toggle', async (req, res) => {
+  try {
+    const { userId, hasPaid } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'デバイスIDが必要です' });
+    }
+    
+    // デバイスIDでサブスクリプション情報を更新
+    const subscriptionRef = db.collection('device_subscriptions').doc(userId);
+    const subscriptionDoc = await subscriptionRef.get();
+    
+    if (!subscriptionDoc.exists) {
+      return res.status(404).json({ error: 'デバイスが見つかりません' });
+    }
+    
+    const subscriptionData = {
+      hasPaid,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (hasPaid) {
+      // 支払い済みにする場合
+      subscriptionData.paymentDate = Math.floor(Date.now() / 1000);
+      subscriptionData.amount = 500;
+    } else {
+      // 未払いに戻す場合、支払い情報を削除
+      subscriptionData.paymentDate = null;
+      subscriptionData.amount = null;
+    }
+    
+    await subscriptionRef.update(subscriptionData);
+    
+    // 現在のユーザーデータも更新（必要に応じて）
+    const currentUserId = subscriptionDoc.data().currentUserId;
+    if (currentUserId) {
+      const userRef = db.collection('users').doc(currentUserId);
+      const userDoc = await userRef.get();
+      if (userDoc.exists) {
+        await userRef.update({
+          hasPaidSubscription: hasPaid,
+          subscriptionUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: `デバイス ${userId} のサブスクリプションステータスを更新しました`,
+      hasPaid 
+    });
+  } catch (error) {
+    console.error('サブスクリプショントグルエラー:', error);
     res.status(500).json({ error: error.message });
   }
 });

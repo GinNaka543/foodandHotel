@@ -11,8 +11,18 @@ extension DateFormatter {
     }()
 }
 
-enum ListTab: Int {
-    case chara, anime, birthday
+enum ListTab: Int, CaseIterable {
+    case chara = 0
+    case anime = 1
+    case birthday = 2
+    
+    var debugDescription: String {
+        switch self {
+        case .chara: return "chara"
+        case .anime: return "anime"
+        case .birthday: return "birthday"
+        }
+    }
 }
 
 // Temporary copy of UserProfile structures until UserProfileScreen.swift is added to project
@@ -24,6 +34,7 @@ struct UserProfile: Codable, Equatable {
     var animeQuote: String = ""
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
+    var favoriteVoiceActors: [String] = []
 }
 
 class UserProfileManager: ObservableObject {
@@ -31,11 +42,40 @@ class UserProfileManager: ObservableObject {
     private let userDefaultsKey = "currentUserProfile"
     
     init() {
+        // まずローカルから読み込み
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
            let user = try? JSONDecoder().decode(UserProfile.self, from: data) {
             self.currentUser = user
+            print("📱 [UserProfileManager] UserDefaultsから読み込み成功: username=\(user.username), iconPath=\(user.iconImagePath ?? "nil")")
         } else {
             self.currentUser = UserProfile()
+            print("📱 [UserProfileManager] 新規UserProfile作成")
+        }
+        
+        // ログイン済みの場合はFirebaseから最新データを取得
+        if let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty {
+            loadFromFirebase(userId: userId)
+        }
+    }
+    
+    func loadFromFirebase(userId: String) {
+        FirebaseManager.shared.loadUserProfile(userId: userId) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let profile):
+                    // 既存の画像パスを保持
+                    let existingIconPath = self.currentUser.iconImagePath
+                    self.currentUser = profile
+                    // Firebaseから取得したプロファイルに画像パスがない場合は、既存のパスを復元
+                    if profile.iconImagePath == nil && existingIconPath != nil {
+                        self.currentUser.iconImagePath = existingIconPath
+                    }
+                    self.saveProfile()
+                    print("✅ Firebaseからプロフィール読み込み成功: iconPath=\(self.currentUser.iconImagePath ?? "nil")")
+                case .failure(let error):
+                    print("❌ Firebaseからプロフィール読み込みエラー: \(error)")
+                }
+            }
         }
     }
     
@@ -43,18 +83,48 @@ class UserProfileManager: ObservableObject {
         currentUser.updatedAt = Date()
         if let data = try? JSONEncoder().encode(currentUser) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
+            print("💾 [UserProfileManager] UserDefaultsに保存: username=\(currentUser.username), iconPath=\(currentUser.iconImagePath ?? "nil")")
         }
     }
 }
 
 struct HomeScreen: View {
     @EnvironmentObject var mainTab: MainTabSelection
+    @EnvironmentObject var authManager: AuthenticationManager
+    @EnvironmentObject var characterManager: CharacterManager
+    @EnvironmentObject var animeManager: AnimeManager
     @State private var showListPage = false
-    @State private var initialTab: ListTab = .chara
-    @StateObject private var characterManager = CharacterManager()
-    @StateObject private var animeManager = AnimeManager()
+    @State private var selectedListTab: ListTab = .chara
+    @State private var showCharacterList = false
+    @State private var showAnimeList = false
+    @State private var showBirthdayList = false
     @StateObject private var profileManager = UserProfileManager()
     @State private var showingProfile = false
+    @State private var showingPoints = false
+    @State private var hasLoadedData = false
+    
+    // リストページを表示する関数（現在未使用）
+    /*
+    private func showListPageWithTab(_ tab: ListTab) {
+        print("[DEBUG] ===== showListPageWithTab =====")
+        print("[DEBUG] Requested tab: \(tab.debugDescription) (raw value: \(tab.rawValue))")
+        print("[DEBUG] Before: selectedListTab = \(selectedListTab.debugDescription)")
+        
+        selectedListTab = tab
+        
+        print("[DEBUG] After: selectedListTab = \(selectedListTab.debugDescription)")
+        print("[DEBUG] Setting showListPage to true...")
+        
+        // 確実に値が設定されるように、メインスレッドで実行
+        DispatchQueue.main.async { [self] in
+            print("[DEBUG] Main thread: selectedListTab = \(self.selectedListTab.debugDescription)")
+            self.showListPage = true
+            print("[DEBUG] Main thread: showListPage = \(self.showListPage)")
+        }
+        
+        print("[DEBUG] ================================")
+    }
+    */
     
     // キャラクター名を30文字以内で表示する関数
     private func getCharacterNamesText() -> String {
@@ -146,10 +216,10 @@ struct HomeScreen: View {
                     }) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(profileManager.currentUser.username.isEmpty ? "中島 銀星" : profileManager.currentUser.username)
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.system(size: 25, weight: .bold)) // 28 * 0.9 ≒ 25
                                 .foregroundColor(.primary)
                             Text(profileManager.currentUser.animeQuote.isEmpty ? "好きなアニメのセリフを設定" : profileManager.currentUser.animeQuote)
-                                .font(.system(size: 16))
+                                .font(.system(size: 14)) // 16 * 0.9 ≒ 14
                                 .foregroundColor(.gray)
                                 .lineLimit(2)
                         }
@@ -163,7 +233,7 @@ struct HomeScreen: View {
                         showingProfile = true
                     }) {
                         if let imagePath = profileManager.currentUser.iconImagePath,
-                           let uiImage = UIImage(contentsOfFile: imagePath) {
+                           let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
@@ -187,7 +257,7 @@ struct HomeScreen: View {
                     .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 24)
+                .padding(.top, 9)
                 // ステータスボタン
                 HStack {
                     Button(action: {
@@ -205,6 +275,23 @@ struct HomeScreen: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(16)
                     }
+                    
+                    Button(action: {
+                        showingPoints = true
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "star.circle")
+                                .foregroundColor(.purple)
+                            Text("Points")
+                                .font(.system(size: 14))
+                                .foregroundColor(.purple)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(16)
+                    }
+                    
                     Spacer()
                 }
                 .padding(.horizontal, 20)
@@ -223,8 +310,8 @@ struct HomeScreen: View {
                 .padding(.top, 12)
                 // リスト
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Friend lists")
-                        .font(.system(size: 18, weight: .bold))
+                    Text("Favorite lists")
+                        .font(.system(size: 19, weight: .bold))
                         .padding(.top, 16)
                         .padding(.bottom, 4)
                     
@@ -232,8 +319,11 @@ struct HomeScreen: View {
                     if !getBirthdayReminderCharacters().isEmpty {
                         HStack {
                             FriendListIconView(
-                                images: getBirthdayReminderCharacters().prefix(4).map { char in
-                                    if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                                images: getBirthdayReminderCharacters().prefix(4).compactMap { char in
+                                    if let path = char.imageIdentifier {
+                                        return loadImageFromPath(path)
+                                    }
+                                    return nil
                                 },
                                 fallbackSystemName: "person",
                                 color: Color.gray.opacity(0.3)
@@ -253,16 +343,21 @@ struct HomeScreen: View {
                         .padding(.vertical, 6)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            initialTab = .birthday
-                            showListPage = true
+                            print("[DEBUG] ===== BIRTHDAY TAP DETECTED =====")
+                            showBirthdayList = true
+                            print("[DEBUG] showBirthdayList set to: \(showBirthdayList)")
+                            print("[DEBUG] =================================")
                         }
                     }
                     
                     // Characters
                     HStack {
                         FriendListIconView(
-                            images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).map { char in
-                                if let path = char.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                            images: characterManager.characters.filter { !$0.name.isEmpty }.prefix(4).compactMap { char in
+                                if let path = char.imageIdentifier {
+                                    return loadImageFromPath(path)
+                                }
+                                return nil
                             },
                             fallbackSystemName: "person",
                             color: Color.gray.opacity(0.3)
@@ -282,15 +377,21 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        initialTab = .chara
-                        showListPage = true
+                        print("[DEBUG] ===== CHARACTER TAP DETECTED =====")
+                        print("[DEBUG] characterManager.characters.count: \(characterManager.characters.count)")
+                        showCharacterList = true
+                        print("[DEBUG] showCharacterList set to: \(showCharacterList)")
+                        print("[DEBUG] ==================================")
                     }
                     
                     // Animes
                     HStack {
                         FriendListIconView(
-                            images: animeManager.animes.prefix(4).map { anime in
-                                if let path = anime.imageIdentifier, let img = UIImage(contentsOfFile: path) { return img } else { return nil }
+                            images: animeManager.animes.prefix(4).compactMap { anime in
+                                if let path = anime.imageIdentifier {
+                                    return loadImageFromPath(path)
+                                }
+                                return nil
                             },
                             fallbackSystemName: "film",
                             color: Color.gray.opacity(0.3)
@@ -310,51 +411,106 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        initialTab = .anime
-                        showListPage = true
+                        print("[DEBUG] ===== ANIME TAP DETECTED =====")
+                        print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
+                        showAnimeList = true
+                        print("[DEBUG] showAnimeList set to: \(showAnimeList)")
+                        print("[DEBUG] =============================")
                     }
                 }
                 .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+                
+                // 人気キャラランキングセクション
+                // タイトルはCharacterRankingScrollView内で表示
+                CharacterRankingScrollView()
+                    .frame(height: 140) // 1.4倍サイズ用に高さ調整
+                .padding(.top, 1)
+                .padding(.bottom, 6)
                 
                 // インフォメーションタイトル
                 HStack {
                     Text("Information")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 19, weight: .bold))
                     Spacer()
                 }
-                .padding(.top, 16)
                 .padding(.horizontal, 20)
 
                 // 広告バナー（1つの広告を表示、高さを1.3倍に）
                 HStack {
                     Spacer()
-                    FirebaseAdView(placement: "home", adIndex: 0)
-                        .frame(width: 360, height: 245.7) // 189 * 1.3 = 245.7
-                        .cornerRadius(10)
-                        .clipped()
+                    ZStack(alignment: .topTrailing) {
+                        FirebaseAdView(placement: "home", adIndex: 0)
+                            .frame(width: 360, height: 245.7) // 189 * 1.3 = 245.7
+                            .cornerRadius(10)
+                            .clipped()
+                        
+                        Text("PR")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.purple)
+                            .cornerRadius(4)
+                            .padding(8)
+                    }
                     Spacer()
                 }
                 .padding(.top, 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, 12)
             }
         }
         .background(Color.white)
-        .fullScreenCover(isPresented: $showListPage) {
+        .fullScreenCover(isPresented: $showCharacterList) {
+            let _ = print("[DEBUG] ===== PRESENTING CHARACTER LIST =====")
             ListPageScreen(
-                selectedTab: initialTab,
+                selectedTab: .chara,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
                 animes: animeManager.animes,
                 birthdays: getBirthdayReminderCharacters()
             )
+            .environmentObject(characterManager)
+            .environmentObject(animeManager)
+        }
+        .fullScreenCover(isPresented: $showAnimeList) {
+            let _ = print("[DEBUG] ===== PRESENTING ANIME LIST =====")
+            let _ = print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
+            ListPageScreen(
+                selectedTab: .anime,
+                characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
+                animes: animeManager.animes,
+                birthdays: getBirthdayReminderCharacters()
+            )
+            .environmentObject(characterManager)
+            .environmentObject(animeManager)
+        }
+        .fullScreenCover(isPresented: $showBirthdayList) {
+            let _ = print("[DEBUG] ===== PRESENTING BIRTHDAY LIST =====")
+            ListPageScreen(
+                selectedTab: .birthday,
+                characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
+                animes: animeManager.animes,
+                birthdays: getBirthdayReminderCharacters()
+            )
+            .environmentObject(characterManager)
+            .environmentObject(animeManager)
         }
         .sheet(isPresented: $showingProfile) {
             // Temporary inline UserProfileScreen until file is added to project
             UserProfileScreenTemp()
                 .environmentObject(profileManager)
         }
+        .sheet(isPresented: $showingPoints) {
+            PointsView()
+        }
         .onAppear {
-            characterManager.loadCharacters()
-            animeManager.loadAnimes()
+            if !hasLoadedData {
+                print("[DEBUG] HomeScreen onAppear - Loading data")
+                characterManager.loadCharacters()
+                animeManager.loadAnimes()
+                hasLoadedData = true
+                print("[DEBUG] After loading - animes count: \(animeManager.animes.count)")
+            }
         }
     }
 }
@@ -365,6 +521,7 @@ struct FriendListIconView: View {
     let fallbackSystemName: String
     let color: Color
     var body: some View {
+        let _ = print("[FriendListIconView] 画像数: \(images.count), nilでない画像数: \(images.compactMap { $0 }.count)")
         ZStack {
             if images.count == 1 {
                 iconImage(images[0], fallback: fallbackSystemName, color: color)
@@ -509,12 +666,14 @@ struct HomeScreen_Previews: PreviewProvider {
 // Temporary UserProfileScreen implementation until UserProfileScreen.swift is added to project
 struct UserProfileScreenTemp: View {
     @EnvironmentObject var profileManager: UserProfileManager
+    @EnvironmentObject var authManager: AuthenticationManager
     @State private var username: String = ""
     @State private var selectedIconItem: PhotosPickerItem?
     @State private var iconImage: UIImage?
     @State private var birthday = Date()
     @State private var showBirthdayPicker = false
     @State private var animeQuote: String = ""
+    @State private var showingLogoutConfirmation = false
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -562,7 +721,7 @@ struct UserProfileScreenTemp: View {
                                                 .frame(width: 100, height: 100)
                                                 .clipShape(Circle())
                                         } else if let imagePath = profileManager.currentUser.iconImagePath,
-                                                  let uiImage = UIImage(contentsOfFile: imagePath) {
+                                                  let uiImage = loadImageFromPath(imagePath) {
                                             Image(uiImage: uiImage)
                                                 .resizable()
                                                 .scaledToFill()
@@ -590,9 +749,9 @@ struct UserProfileScreenTemp: View {
                                             )
                                     }
                                 }
-                                .onChange(of: selectedIconItem) { _ in
+                                .onChange(of: selectedIconItem) { oldValue, newValue in
                                     Task {
-                                        if let data = try? await selectedIconItem?.loadTransferable(type: Data.self),
+                                        if let data = try? await newValue?.loadTransferable(type: Data.self),
                                            let uiImage = UIImage(data: data) {
                                             iconImage = uiImage
                                             saveProfile()
@@ -620,7 +779,7 @@ struct UserProfileScreenTemp: View {
                                         .padding(.horizontal, 16)
                                         .background(Color(.systemGray6))
                                         .cornerRadius(8)
-                                        .onChange(of: username) { _ in
+                                        .onChange(of: username) { oldValue, newValue in
                                             saveProfile()
                                         }
                                 }
@@ -663,12 +822,56 @@ struct UserProfileScreenTemp: View {
                                         .padding(.horizontal, 16)
                                         .background(Color(.systemGray6))
                                         .cornerRadius(8)
-                                        .onChange(of: animeQuote) { _ in
+                                        .onChange(of: animeQuote) { oldValue, newValue in
                                             saveProfile()
                                         }
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.bottom, 32)
+                            }
+                            
+                            // ログアウトボタン
+                            VStack(spacing: 16) {
+                                Divider()
+                                    .padding(.horizontal, 16)
+                                
+                                Button(action: {
+                                    showingLogoutConfirmation = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                                            .foregroundColor(.red)
+                                        Text("ログアウト")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.red)
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                }
+                                
+                                // ユーザーID表示
+                                if let userId = UserDefaults.standard.string(forKey: "userId") {
+                                    HStack {
+                                        Text("ユーザーID:")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                        Text(userId)
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.gray)
+                                        Spacer()
+                                        Button(action: {
+                                            UIPasteboard.general.string = userId
+                                            // コピー成功のフィードバック
+                                        }) {
+                                            Image(systemName: "doc.on.doc")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.bottom, 16)
+                                }
                             }
                         }
                     }
@@ -697,8 +900,19 @@ struct UserProfileScreenTemp: View {
         .onAppear {
             loadCurrentProfile()
         }
-        .onChange(of: profileManager.currentUser) { _ in
+        .onChange(of: profileManager.currentUser) { oldValue, newValue in
             loadCurrentProfile()
+        }
+        .fullScreenCover(isPresented: $showingLogoutConfirmation) {
+            LogoutConfirmationView(
+                isPresented: $showingLogoutConfirmation,
+                onLogout: {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        authManager.logout()
+                    }
+                }
+            )
         }
     }
     
@@ -710,11 +924,14 @@ struct UserProfileScreenTemp: View {
         }
         
         if let imagePath = profileManager.currentUser.iconImagePath,
-           let uiImage = UIImage(contentsOfFile: imagePath) {
+           let uiImage = loadImageFromPath(imagePath) {
             iconImage = uiImage
+            print("✅ [Profile] 画像読み込み成功: \(imagePath)")
+        } else {
+            print("❌ [Profile] 画像読み込み失敗: \(profileManager.currentUser.iconImagePath ?? "nil")")
         }
         
-        print("📱 [Profile] 現在のプロフィール読み込み: username=\(username), animeQuote=\(animeQuote)")
+        print("📱 [Profile] 現在のプロフィール読み込み: username=\(username), animeQuote=\(animeQuote), iconPath=\(profileManager.currentUser.iconImagePath ?? "nil")")
     }
     
     private func saveProfile() {
@@ -724,13 +941,26 @@ struct UserProfileScreenTemp: View {
         
         // 画像を保存
         if let iconImage = iconImage {
+            // 古い画像ファイルを削除
+            if let oldImagePath = profileManager.currentUser.iconImagePath {
+                let oldFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent(oldImagePath)
+                try? FileManager.default.removeItem(at: oldFilePath)
+                print("🗑️ [Profile] 古い画像削除: \(oldImagePath)")
+            }
+            
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
             let fileName = "profile_\(UUID().uuidString).jpg"
             let filePath = documentsPath.appendingPathComponent(fileName)
             
             if let imageData = iconImage.jpegData(compressionQuality: 0.8) {
-                try? imageData.write(to: filePath)
-                profileManager.currentUser.iconImagePath = filePath.path
+                do {
+                    try imageData.write(to: filePath)
+                    // 相対パスで保存（ファイル名のみ）
+                    profileManager.currentUser.iconImagePath = fileName
+                    print("✅ [Profile] 画像保存成功: \(fileName)")
+                } catch {
+                    print("❌ [Profile] 画像保存エラー: \(error)")
+                }
             }
         }
         
@@ -747,6 +977,189 @@ struct UserProfileScreenTemp: View {
                     print("❌ Firebase保存エラー: \(error)")
                 }
             }
+        }
+    }
+}
+
+struct LogoutConfirmationView: View {
+    @Binding var isPresented: Bool
+    let onLogout: () -> Void
+    @EnvironmentObject var profileManager: UserProfileManager
+    @State private var copiedUserId = false
+    @State private var copiedUsername = false
+    
+    private var userId: String {
+        UserDefaults.standard.string(forKey: "userId") ?? "IDが見つかりません"
+    }
+    
+    private var username: String {
+        if let savedUsername = UserDefaults.standard.string(forKey: "username"), !savedUsername.isEmpty {
+            return savedUsername
+        }
+        return profileManager.currentUser.username.isEmpty ? "未設定" : profileManager.currentUser.username
+    }
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                // ヘッダー
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.orange)
+                    
+                    Text("重要：ログアウト前に確認")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.primary)
+                }
+                .padding(.top, 40)
+                .padding(.bottom, 20)
+                
+                // 警告メッセージ
+                VStack(spacing: 16) {
+                    Text("以下の情報を必ず保存してください")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.red)
+                    
+                    Text("これらの情報がないと、アカウントの復元ができません")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+                
+                // ユーザー情報
+                VStack(spacing: 16) {
+                    // ユーザーID
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ユーザーID")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            Text(userId)
+                                .font(.system(size: 16).monospaced())
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                UIPasteboard.general.string = userId
+                                copiedUserId = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedUserId = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedUserId ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 14))
+                                    Text(copiedUserId ? "コピー済み" : "コピー")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(copiedUserId ? .green : .blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    
+                    // ユーザー名
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ユーザー名")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        
+                        HStack {
+                            Text(username)
+                                .font(.system(size: 16))
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                UIPasteboard.general.string = username
+                                copiedUsername = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedUsername = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedUsername ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 14))
+                                    Text(copiedUsername ? "コピー済み" : "コピー")
+                                        .font(.system(size: 14))
+                                }
+                                .foregroundColor(copiedUsername ? .green : .blue)
+                            }
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // 注意事項
+                VStack(spacing: 12) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(.orange)
+                        Text("スクリーンショットを撮るか、メモに保存してください")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                    }
+                    
+                    Text("ログアウト後はこれらの情報がないとアカウントにアクセスできません")
+                        .font(.system(size: 12))
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 30)
+                
+                // ボタン
+                HStack(spacing: 16) {
+                    Button(action: {
+                        isPresented = false
+                    }) {
+                        Text("キャンセル")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(25)
+                    }
+                    
+                    Button(action: {
+                        isPresented = false
+                        onLogout()
+                    }) {
+                        Text("ログアウト")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.red)
+                            .cornerRadius(25)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
+            }
+            .frame(maxWidth: 400)
+            .background(Color.white)
+            .cornerRadius(24)
+            .shadow(radius: 30)
+            .padding(.horizontal, 20)
         }
     }
 }

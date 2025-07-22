@@ -14,6 +14,7 @@ struct VideoPlayerScreen: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var searchText = ""
     @State private var filteredVideos: [MemoryVideo] = []
+    @State private var showSearchBar = false
     
     init(video: MemoryVideo, character: Character?, anime: Anime?, allVideos: [MemoryVideo], onSave: ((String, [String]) -> Void)? = nil, onDelete: (() -> Void)? = nil, onThumbnailUpdate: ((Data?) -> Void)? = nil) {
         self._video = State(initialValue: video)
@@ -159,9 +160,45 @@ struct VideoPlayerScreen: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
                     // ヘッダー
-                    PlayerHeaderView(searchText: $searchText, onSearch: {
-                        filterVideos()
-                    })
+                    HStack(spacing: 12) {
+                        // ログインロゴ（左端に配置）
+                        if let logoImage = UIImage(named: "ログインロゴ") {
+                            Image(uiImage: logoImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 50)
+                        }
+                        
+                        Spacer()
+                        
+                        // 検索バー（表示時）
+                        if showSearchBar {
+                            TextField("検索", text: $searchText, onCommit: {
+                                filterVideos()
+                            })
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                            .frame(maxWidth: 200)
+                        }
+                        
+                        // 虫眼鏡アイコン
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showSearchBar.toggle()
+                                if !showSearchBar {
+                                    searchText = ""
+                                    filterVideos()
+                                }
+                            }
+                        }) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.white)
+                                .font(.system(size: 20))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.black)
                     
                     ScrollView {
                         VStack(spacing: 0) {
@@ -914,7 +951,7 @@ private struct VideoInfoView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .onAppear {
-            likeCount = video.likeCount ?? Int.random(in: 50...500)
+            likeCount = Int.random(in: 50...500)
         }
     }
     

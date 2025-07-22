@@ -1381,7 +1381,8 @@ struct CharacterDetailView: View {
                 }
             }
             .fullScreenCover(isPresented: $showArtwork) {
-                ArtworkScreen(character: character)
+                // 最新のキャラクター情報を渡す
+                ArtworkScreen(character: characterManager.characters.first(where: { $0.id == character.id }) ?? character)
                     .environmentObject(characterManager)
             }
             .fullScreenCover(isPresented: $showVideo) {
@@ -1389,7 +1390,13 @@ struct CharacterDetailView: View {
                     .environmentObject(characterManager)
             }
             .fullScreenCover(isPresented: $showAbout) {
-                AboutView(characters: $characters, characterId: character.id, onClose: { showAbout = false })
+                AboutView(characters: $characters, characterId: character.id, onClose: { 
+                    showAbout = false
+                    // 最新のキャラクター情報を取得して更新
+                    if let updatedCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                        character = updatedCharacter
+                    }
+                })
                     .environmentObject(characterManager)
             }
         }
@@ -1895,8 +1902,15 @@ struct AboutView: View {
             updatedCharacter.customFields?.append(CustomField(name: "概要", value: profileDescription))
         }
         
-        characters[idx] = updatedCharacter
+        // 先にcharacterManagerを更新してから、バインディング配列を更新
         characterManager.updateCharacter(updatedCharacter)
+        
+        // メインスレッドで確実に更新
+        DispatchQueue.main.async {
+            self.characters[idx] = updatedCharacter
+            // UIを強制的にリフレッシュ
+            self.characterManager.refreshUI()
+        }
     }
     
     // アイコン保存機能

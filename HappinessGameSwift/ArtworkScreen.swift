@@ -600,7 +600,8 @@ struct ArtworkScreen: View {
                         }
                         .fullScreenCover(item: $selectedArtwork) { artwork in
                             ArtworkPlayerScreenTemp(
-                                artwork: artwork, 
+                                artwork: artwork,
+                                character: character,
                                 allArtworks: artworks,
                                 onDelete: {
                                     if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {

@@ -99,6 +99,11 @@ struct ArtworkScreen: View {
     @State private var showR18Alert = false
     @State private var r18ArtworkTitles: [String] = []
     @State private var isShowingFullDescription = false
+    @State private var showFullscreenArtwork = false
+    @State private var fullscreenArtwork: Artwork? = nil
+    @State private var showEditMenuInFullscreen = false
+    @State private var isLoadingImage = false
+    @State private var preloadedImage: UIImage? = nil
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -511,15 +516,25 @@ struct ArtworkScreen: View {
                                                 print("[DEBUG] artwork ID: \(artwork.id)")
                                                 print("[DEBUG] customThumbnailData: \(artwork.customThumbnailData != nil ? "exists" : "nil")")
                                                 
-                                                if let pixivURL = artwork.pixivURL {
-                                                    print("[DEBUG] Pixiv画像をタップ - URL設定: \(pixivURL)")
-                                                    pixivRedirectURL = pixivURL
-                                                    pixivRedirectArtwork = artwork
-                                                    print("[DEBUG] pixivRedirectArtwork設定: \(pixivRedirectArtwork?.title ?? "nil")")
-                                                    showPixivRedirect = true
-                                                } else {
-                                                    print("[DEBUG] 通常の画像をタップ")
-                                                    selectedArtwork = artwork
+                                                // Preload image before showing fullscreen
+                                                print("[DEBUG] Setting fullscreenArtwork to: \(artwork.title)")
+                                                isLoadingImage = true
+                                                
+                                                // Load image in background
+                                                DispatchQueue.global(qos: .userInitiated).async {
+                                                    var loadedImage: UIImage? = nil
+                                                    
+                                                    if let imagePath = artwork.imagePath {
+                                                        loadedImage = loadImageFromPath(imagePath)
+                                                    }
+                                                    
+                                                    DispatchQueue.main.async {
+                                                        preloadedImage = loadedImage
+                                                        fullscreenArtwork = artwork
+                                                        isLoadingImage = false
+                                                        showFullscreenArtwork = true
+                                                        print("[DEBUG] showFullscreenArtwork set to true after loading")
+                                                    }
                                                 }
                                             }) {
                                                 VStack(alignment: .leading, spacing: 0) {
@@ -598,34 +613,6 @@ struct ArtworkScreen: View {
                                     .padding(.top, 8)
                                 }
                             }
-                        }
-                        .fullScreenCover(item: $selectedArtwork) { artwork in
-                            ArtworkPlayerScreenTemp(
-                                artwork: artwork,
-                                character: character,
-                                allArtworks: artworks,
-                                onDelete: {
-                                    if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                        artworks.remove(at: idx)
-                                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
-                                        saveArtworksToUserDefaults()
-                                        saveAlbumsToUserDefaults()
-                                    }
-                                }, 
-                                onEdit: { newTitle, newTags in
-                                    if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
-                                        // 現在のcustomThumbnailDataを保持しながら更新
-                                        let currentThumbnailData = artworks[idx].customThumbnailData
-                                        artworks[idx].title = newTitle
-                                        artworks[idx].tags = newTags
-                                        artworks[idx].customThumbnailData = currentThumbnailData
-                                        saveArtworksToUserDefaults()
-                                    }
-                                },
-                                onArtworkChange: { newArtwork in
-                                    selectedArtwork = newArtwork
-                                }
-                            )
                         }
                     }
                     }
@@ -735,52 +722,6 @@ struct ArtworkScreen: View {
         .fullScreenCover(isPresented: $showAbout) {
             AboutView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
                 .environmentObject(characterManager)
-        }
-        .onChange(of: showPixivRedirect) { newValue in
-            if !newValue {
-                // PixivRedirectViewが閉じられたときにリセット
-                pixivRedirectArtwork = nil
-                pixivRedirectURL = ""
-            }
-        }
-        .sheet(isPresented: $showPixivRedirect) {
-            let _ = print("[DEBUG] fullScreenCoverが開かれました")
-            let _ = print("[DEBUG] pixivRedirectURL: \(pixivRedirectURL)")
-            let _ = print("[DEBUG] pixivRedirectArtwork: \(pixivRedirectArtwork?.title ?? "nil")")
-            let _ = print("[DEBUG] artworks数: \(artworks.count)")
-            
-            PixivRedirectView(
-                pixivURL: pixivRedirectURL,
-                artwork: pixivRedirectArtwork,
-                onEdit: { newTitle, newTags in
-                    if let artworkId = pixivRedirectArtwork?.id,
-                       let idx = artworks.firstIndex(where: { $0.id == artworkId }) {
-                        artworks[idx].title = newTitle
-                        artworks[idx].tags = newTags
-                        saveArtworksToUserDefaults()
-                    }
-                },
-                onDelete: {
-                    if let artworkId = pixivRedirectArtwork?.id,
-                       let idx = artworks.firstIndex(where: { $0.id == artworkId }) {
-                        let artwork = artworks[idx]
-                        artworks.remove(at: idx)
-                        updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
-                        saveArtworksToUserDefaults()
-                        saveAlbumsToUserDefaults()
-                    }
-                    showPixivRedirect = false
-                    pixivRedirectArtwork = nil
-                },
-                onThumbnailUpdate: { newThumbnailData in
-                    if let artworkId = pixivRedirectArtwork?.id,
-                       let idx = artworks.firstIndex(where: { $0.id == artworkId }) {
-                        artworks[idx].customThumbnailData = newThumbnailData
-                        pixivRedirectArtwork?.customThumbnailData = newThumbnailData
-                        saveArtworksToUserDefaults()
-                    }
-                }
-            )
         }
         .sheet(item: $activeSheet) { sheetType in
             switch sheetType {
@@ -1206,6 +1147,64 @@ struct ArtworkScreen: View {
             }
             .padding(32)
         }
+        // Loading overlay
+        .overlay(
+            Group {
+                if isLoadingImage {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 20) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                .scaleEffect(2.0)
+                            
+                            Text("ローディング中...")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                        .frame(width: 200, height: 150)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                    }
+                }
+            }
+        )
+        .fullScreenCover(isPresented: $showFullscreenArtwork) {
+            ZStack {
+                // Always show black background first
+                Color.black
+                    .ignoresSafeArea()
+                
+                if let artwork = fullscreenArtwork {
+                    FullscreenArtworkView(
+                        artwork: artwork,
+                        preloadedImage: preloadedImage,
+                        onEdit: {
+                            showEditMenuInFullscreen = true
+                        },
+                        onDelete: {
+                            if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                artworks.remove(at: idx)
+                                updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
+                                saveArtworksToUserDefaults()
+                                saveAlbumsToUserDefaults()
+                            }
+                            showFullscreenArtwork = false
+                            fullscreenArtwork = nil
+                            preloadedImage = nil
+                        },
+                        onClose: {
+                            showFullscreenArtwork = false
+                            fullscreenArtwork = nil
+                            preloadedImage = nil
+                        }
+                    )
+                }
+            }
+        }
     }
     
     // MARK: - Helper Functions
@@ -1382,5 +1381,105 @@ struct ArtworkNavigationButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundColor(configuration.isPressed ? .black : .gray)
+    }
+}
+
+// Fullscreen artwork view with edit functionality
+struct FullscreenArtworkView: View {
+    let artwork: Artwork
+    let preloadedImage: UIImage?
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    let onClose: () -> Void
+    
+    @State private var showDeleteAlert = false
+    
+    var body: some View {
+        let _ = print("[DEBUG] FullscreenArtworkView - artwork: \(artwork.title)")
+        let _ = print("[DEBUG] FullscreenArtworkView - imagePath: \(artwork.imagePath ?? "nil")")
+        let _ = print("[DEBUG] FullscreenArtworkView - pixivURL: \(artwork.pixivURL ?? "nil")")
+        let _ = print("[DEBUG] FullscreenArtworkView - preloadedImage: \(preloadedImage != nil ? "exists" : "nil")")
+        
+        return ZStack {
+            // Black background - always visible
+            Color.black
+                .ignoresSafeArea()
+            
+            // Image display
+            if let uiImage = preloadedImage {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let pixivURL = artwork.pixivURL {
+                    if let customThumbnailData = artwork.customThumbnailData,
+                       let uiImage = UIImage(data: customThumbnailData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        PixivFullscreenView(pixivURL: pixivURL)
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.2))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .overlay(
+                            VStack {
+                                Image(systemName: "photo")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.gray)
+                                Text("画像なし")
+                                    .foregroundColor(.gray)
+                            }
+                        )
+                }
+            
+            // Top bar with close and edit buttons
+            VStack {
+                HStack {
+                    // Close button
+                    Button(action: onClose) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.white)
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                    
+                    Spacer()
+                    
+                    // Edit button
+                    Button(action: {
+                        showDeleteAlert = true
+                    }) {
+                        Text("編集")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.black.opacity(0.5))
+                            .cornerRadius(20)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 50)
+                
+                Spacer()
+            }
+        }
+        .alert(isPresented: $showDeleteAlert) {
+            Alert(
+                title: Text("削除確認"),
+                message: Text("この画像を削除しますか？"),
+                primaryButton: .destructive(Text("削除")) {
+                    onDelete()
+                },
+                secondaryButton: .cancel(Text("キャンセル"))
+            )
+        }
     }
 }

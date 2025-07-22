@@ -256,15 +256,11 @@ struct ArtworkScreen: View {
                 
                 // Add button moved here
                 Button(action: { 
-                    if showAlbum {
-                        showTagInput = true
-                    } else {
-                        photoTitle = ""
-                        photoTags = ""
-                        activeSheet = .addPhoto
-                    }
+                    photoTitle = ""
+                    photoTags = ""
+                    activeSheet = .addPhoto
                 }) {
-                    Text(showAlbum ? "アルバムを追加する" : "写真を追加する")
+                    Text("写真を追加する")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -621,20 +617,7 @@ struct ArtworkScreen: View {
                                         artworks[idx].title = newTitle
                                         artworks[idx].tags = newTags
                                         artworks[idx].customThumbnailData = currentThumbnailData
-                                        
-                                        // アルバムも更新
-                                        updateAlbumsAfterArtworkEdit(editedArtwork: artworks[idx])
-                                        
-                                        // 保存
                                         saveArtworksToUserDefaults()
-                                        saveAlbumsToUserDefaults()
-                                        
-                                        // キャラクターマネージャーにも変更を通知
-                                        if let characterIndex = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
-                                            characterManager.updateCharacter(character)
-                                        }
-                                        
-                                        print("[DEBUG] ArtworkScreen: タイトル・タグ更新 - タイトル: \(newTitle), タグ: \(newTags)")
                                     }
                                 },
                                 onArtworkChange: { newArtwork in
@@ -647,6 +630,20 @@ struct ArtworkScreen: View {
                 }
             }
             
+            // Albumタブ時のみ右下に＋ボタン
+            if showAlbum && !albums.isEmpty {
+                Button(action: { showTagInput = true }) {
+                    Text("#")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 56, height: 56)
+                        .background(Color.black)
+                        .clipShape(Circle())
+                        .shadow(radius: 6)
+                        .padding(.bottom, 32)
+                        .padding(.trailing, 24)
+                }
+            }
             
             // Navigation bar at bottom
             VStack {

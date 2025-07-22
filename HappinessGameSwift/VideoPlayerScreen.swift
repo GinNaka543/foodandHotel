@@ -4,7 +4,7 @@ import AVFoundation
 import UIKit
 
 struct VideoPlayerScreen: View {
-    let video: MemoryVideo
+    @State private var video: MemoryVideo
     let character: Character?
     let anime: Anime?
     let allVideos: [MemoryVideo]
@@ -12,6 +12,18 @@ struct VideoPlayerScreen: View {
     var onDelete: (() -> Void)? = nil
     var onThumbnailUpdate: ((Data?) -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
+    @State private var searchText = ""
+    @State private var filteredVideos: [MemoryVideo] = []
+    
+    init(video: MemoryVideo, character: Character?, anime: Anime?, allVideos: [MemoryVideo], onSave: ((String, [String]) -> Void)? = nil, onDelete: (() -> Void)? = nil, onThumbnailUpdate: ((Data?) -> Void)? = nil) {
+        self._video = State(initialValue: video)
+        self.character = character
+        self.anime = anime
+        self.allVideos = allVideos
+        self.onSave = onSave
+        self.onDelete = onDelete
+        self.onThumbnailUpdate = onThumbnailUpdate
+    }
     @State private var player: AVPlayer?
     @State private var isPlaying = false
     @State private var currentTime: Double = 0
@@ -60,151 +72,12 @@ struct VideoPlayerScreen: View {
                     dismiss: { presentationMode.wrappedValue.dismiss() }
                 )
             } else {
-            // 通常の動画プレイヤー
-            GeometryReader { geometry in
-                ZStack(alignment: .bottomTrailing) {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // 動画プレイヤー部分
-                            if let player = player {
-                                VideoPlayer(player: player)
-                                    .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
-                                    .background(Color.black)
-                                    .onAppear {
-                                        print("VideoPlayer表示されました")
-                                        print("Player: \(player)")
-                                        print("CurrentItem: \(String(describing: player.currentItem))")
-                                        print("Rate: \(player.rate)")
-                                        print("Status: \(player.status.rawValue)")
-                                    }
-                            } else {
-                                Rectangle()
-                                    .fill(Color.black)
-                                    .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
-                                    .overlay(
-                                        Text("プレイヤーを初期化中...")
-                                            .foregroundColor(.white)
-                                    )
-                            }
-                            
-                            // --- 動画情報・関連動画 ---
-                            VStack(alignment: .leading, spacing: 12) {
-                                VideoInfoView(
-                                    video: video,
-                                    showMenuSheet: { showMenuSheet = true },
-                                    showFullscreen: { showFullscreen = true }
-                                )
-                                
-                                // 関連動画
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("関連動画")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 16)
-                                    LazyVStack(spacing: 0) {
-                                        Spacer().frame(height: 5)
-                                        ForEach(Array(allVideos.filter { $0.id != video.id }.enumerated()), id: \.element.id) { idx, relatedVideo in
-                                            if idx > 0 {
-                                                Spacer().frame(height: 15.9)
-                                            }
-                                            Button(action: {
-                                                selectedVideo = relatedVideo
-                                            }) {
-                                                HStack(alignment: .top, spacing: 8) {
-                                                    // サムネイル
-                                                    if let thumbnailData = relatedVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                                        Image(uiImage: uiImage)
-                                                            .resizable()
-                                                            .scaledToFill()
-                                                            .frame(width: 165, height: 90)
-                                                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                                            .clipped()
-                                                    } else if let youtubeThumbnailURL = relatedVideo.youtubeThumbnailURL {
-                                                        AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
-                                                            image
-                                                                .resizable()
-                                                                .scaledToFill()
-                                                                .frame(width: 165, height: 90)
-                                                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                                                .clipped()
-                                                        } placeholder: {
-                                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                                .fill(Color.gray.opacity(0.3))
-                                                                .frame(width: 165, height: 90)
-                                                                .overlay(ProgressView())
-                                                        }
-                                                    } else {
-                                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: 165, height: 90)
-                                                    }
-                                                    
-                                                    // タイトルとタグ
-                                                    VStack(alignment: .leading, spacing: 2) {
-                                                        Text(relatedVideo.title)
-                                                            .font(.system(size: 16.5, weight: .semibold))
-                                                            .foregroundColor(.black)
-                                                            .padding(.vertical, 4)
-                                                        
-                                                        // ハッシュタグ
-                                                        if let firstTag = relatedVideo.tags.first {
-                                                            Text("#\(firstTag)")
-                                                                .font(.system(size: 12, weight: .regular))
-                                                                .foregroundColor(.gray)
-                                                        }
-                                                        
-                                                        Text("\(formatViewCount(relatedVideo.viewCount ?? 0))回・\(timeAgo(from: relatedVideo.date))")
-                                                            .font(.system(size: 13.8, weight: .regular))
-                                                            .foregroundColor(.gray)
-                                                            .padding(.vertical, 1)
-                                                    }
-                                                    .frame(alignment: .leading)
-                                                    .padding(.top, 3)
-                                                    .padding(.leading, 8)
-                                                    
-                                                    Spacer()
-                                                }
-                                                .padding(.leading, 8)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                    }
-                                    .padding(.bottom, 100) // 戻るボタンのためのスペースを確保
-                                }
-                            }
-                        }
-                    }
-                    
-                    // 画面全体の右下に戻るボタン（固定位置）
-                    VStack {
-                        Spacer()
-                        HStack {
-                            Spacer()
-                            Button(action: {
-                                presentationMode.wrappedValue.dismiss()
-                            }) {
-                                Text("戻る")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 12)
-                                    .background(Color.black.opacity(0.8))
-                                    .cornerRadius(20)
-                            }
-                            .padding(.trailing, 24)
-                            .padding(.bottom, 24)
-                        }
-                    }
-                }
-                // フルスクリーンView
-                .fullScreenCover(isPresented: $showFullscreen) {
-                    FullScreenVideoPlayer(player: player, onDismiss: { showFullscreen = false })
-                }
+                normalVideoPlayer
             }
-        }
         }
         .navigationBarHidden(true)
         .onAppear {
+            filteredVideos = allVideos
             print("VideoPlayerScreen onAppear - video path: \(video.videoPath)")
             print("VideoPlayerScreen onAppear - youtube URL: \(video.youtubeURL ?? "nil")")
             setupPlayer()
@@ -229,74 +102,21 @@ struct VideoPlayerScreen: View {
             player?.pause()
             player = nil
         }
-        .onChange(of: selectedVideo) { newVideo in
-            if let newVideo = newVideo {
+        .onChange(of: selectedVideo) { oldValue, newValue in
+            if let newVideo = newValue {
                 handleVideoSelection(newVideo)
             }
         }
         // --- 編集・削除用シート ---
         .sheet(isPresented: $showMenuSheet) {
-            VStack(spacing: 24) {
-                Text("動画の編集")
-                    .font(.headline)
-                TextField("タイトル", text: $editTitle)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                TextField("タグ（カンマ区切り）", text: $editTags)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                Button("タイトル・タグを保存") {
-                    let tagsArray = editTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-                    onSave?(editTitle, tagsArray)
-                    showMenuSheet = false
-                }
-                .font(.headline)
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                Button("サムネイルを変更") {
-                    showMenuSheet = false
-                    // 少し遅延させてからサムネイルピッカーを表示
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showThumbnailPicker = true
-                    }
-                }
-                .font(.headline)
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                Button("動画を削除") {
-                    print("[DEBUG] 動画を削除ボタンが押されました")
-                    showDeleteAlert = true
-                }
-                .foregroundColor(.red)
-                Button("キャンセル") {
-                    showMenuSheet = false
-                }
-            }
-            .padding(32)
-            .alert(isPresented: $showDeleteAlert) {
-                Alert(
-                    title: Text("本当に削除しますか？"),
-                    message: Text("この動画は完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
-                        print("[DEBUG] VideoPlayerScreen: Alertの削除ボタンが押されました")
-                        print("[DEBUG] VideoPlayerScreen: onDeleteクロージャを呼び出します")
-                        onDelete?()
-                        print("[DEBUG] VideoPlayerScreen: onDeleteクロージャ呼び出し完了")
-                        showMenuSheet = false
-                        print("[DEBUG] VideoPlayerScreen: showMenuSheet = \(showMenuSheet)")
-                        presentationMode.wrappedValue.dismiss()
-                        print("[DEBUG] VideoPlayerScreen: presentationModeで画面を閉じました")
-                    },
-                    secondaryButton: .cancel(Text("キャンセル"))
-                )
-            }
+            menuSheet
         }
         .sheet(isPresented: $showThumbnailPicker) {
             ThumbnailPickerView(
                 video: video,
                 onSave: { newThumbnailData in
+                    // ローカルのvideoも更新
+                    video.thumbnailData = newThumbnailData
                     onThumbnailUpdate?(newThumbnailData)
                     showThumbnailPicker = false
                 },
@@ -310,14 +130,16 @@ struct VideoPlayerScreen: View {
                 switch sheet {
                 case .youtubeConfirmation(let video):
                     youtubeConfirmationSheet(video: video)
-                case .editTitle(let video):
-                    editTitleSheet(video: video)
-                case .editTags(let video):
-                    editTagsSheet(video: video)
+                case .editTitle(_):
+                    editTitleSheet()
+                case .editTags(_):
+                    editTagsSheet()
                 case .thumbnailPicker(let video):
                     ThumbnailPickerView(
                         video: video,
                         onSave: { newThumbnailData in
+                            // ローカルのvideoも更新
+                            self.video.thumbnailData = newThumbnailData
                             onThumbnailUpdate?(newThumbnailData)
                             activeSheet = nil
                         },
@@ -327,6 +149,239 @@ struct VideoPlayerScreen: View {
                     )
                 }
             }
+        }
+    }
+    
+    @ViewBuilder
+    private var normalVideoPlayer: some View {
+        // 通常の動画プレイヤー
+        GeometryReader { geometry in
+            ZStack(alignment: .bottomTrailing) {
+                VStack(spacing: 0) {
+                    // ヘッダー
+                    PlayerHeaderView(searchText: $searchText, onSearch: {
+                        filterVideos()
+                    })
+                    
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            // 動画プレイヤー部分
+                        if let player = player {
+                            VideoPlayer(player: player)
+                                .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                                .background(Color.black)
+                                .onAppear {
+                                    print("VideoPlayer表示されました")
+                                    print("Player: \(player)")
+                                    print("CurrentItem: \(String(describing: player.currentItem))")
+                                    print("Rate: \(player.rate)")
+                                    print("Status: \(player.status.rawValue)")
+                                }
+                        } else {
+                            Rectangle()
+                                .fill(Color.black)
+                                .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                                .overlay(
+                                    Text("プレイヤーを初期化中...")
+                                        .foregroundColor(.white)
+                                )
+                        }
+                        
+                        // --- 動画情報・関連動画 ---
+                        VStack(alignment: .leading, spacing: 0) {
+                            VideoInfoView(
+                                video: video,
+                                character: character,
+                                anime: anime,
+                                showMenuSheet: { showMenuSheet = true },
+                                showFullscreen: { showFullscreen = true },
+                                allVideos: allVideos
+                            )
+                            .padding(.bottom, 16)
+                            
+                            // 関連動画
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("関連動画")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 16)
+                                LazyVStack(spacing: 0) {
+                                    Spacer().frame(height: 5)
+                                    ForEach(Array(getRelatedVideos().enumerated()), id: \.element.id) { idx, relatedVideo in
+                                        if idx > 0 {
+                                            Spacer().frame(height: 15.9)
+                                        }
+                                        Button(action: {
+                                            selectedVideo = relatedVideo
+                                        }) {
+                                            VStack(alignment: .leading, spacing: 8) {
+                                                // サムネイル
+                                                if let thumbnailData = relatedVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                        .clipped()
+                                                } else if let youtubeThumbnailURL = relatedVideo.youtubeThumbnailURL {
+                                                    AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
+                                                        image
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .clipped()
+                                                    } placeholder: {
+                                                        Rectangle()
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .overlay(ProgressView())
+                                                    }
+                                                } else {
+                                                    Rectangle()
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                }
+                                                
+                                                // アイコンとタイトル・タグ
+                                                HStack(alignment: .top, spacing: 12) {
+                                                    // Character or Anime icon
+                                                    if let character = character, let imageIdentifier = character.imageIdentifier,
+                                                       let uiImage = loadImageFromPath(imageIdentifier) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: 43, height: 43)
+                                                            .clipShape(Circle())
+                                                    } else if let anime = anime, let imageIdentifier = anime.imageIdentifier,
+                                                              let uiImage = loadImageFromPath(imageIdentifier) {
+                                                        Image(uiImage: uiImage)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: 43, height: 43)
+                                                            .clipShape(Circle())
+                                                    } else {
+                                                        Circle()
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 43, height: 43)
+                                                    }
+                                                    
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(relatedVideo.title)
+                                                            .font(.system(size: 16.5, weight: .semibold))
+                                                            .foregroundColor(.black)
+                                                            .lineLimit(2)
+                                                        
+                                                        Text(character?.name ?? anime?.title ?? "アニメコレクター")
+                                                            .font(.system(size: 12))
+                                                            .foregroundColor(.gray)
+                                                        
+                                                        Text("\(formatViewCount(relatedVideo.viewCount ?? 0))回・\(timeAgo(from: relatedVideo.date))")
+                                                            .font(.system(size: 12))
+                                                            .foregroundColor(.gray)
+                                                    }
+                                                    
+                                                    Spacer()
+                                                }
+                                                .padding(.horizontal, 16)
+                                            }
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                }
+                                .padding(.bottom, 100) // 戻るボタンのためのスペースを確保
+                            }
+                        }
+                    }
+                }
+                }
+                
+                // 画面全体の右下に戻るボタン（固定位置）
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Text("戻る")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(Color.black.opacity(0.8))
+                                .cornerRadius(20)
+                        }
+                        .padding(.trailing, 24)
+                        .padding(.bottom, 24)
+                    }
+                }
+            }
+            // フルスクリーンView
+            .fullScreenCover(isPresented: $showFullscreen) {
+                FullScreenVideoPlayer(player: player, onDismiss: { showFullscreen = false })
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var menuSheet: some View {
+        VStack(spacing: 24) {
+            Text("動画の編集")
+                .font(.headline)
+            TextField("タイトル", text: $editTitle)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            TextField("タグ（カンマ区切り）", text: $editTags)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            Button("タイトル・タグを保存") {
+                let tagsArray = editTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                // ローカルのvideoも更新
+                video.title = editTitle
+                video.tags = tagsArray
+                onSave?(editTitle, tagsArray)
+                showMenuSheet = false
+            }
+            .font(.headline)
+            .padding()
+            .background(Color.blue)
+            .foregroundColor(.white)
+            .cornerRadius(10)
+            Button("サムネイルを変更") {
+                showMenuSheet = false
+                // 少し遅延させてからサムネイルピッカーを表示
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showThumbnailPicker = true
+                }
+            }
+            .font(.headline)
+            .padding()
+            .background(Color.green)
+            .foregroundColor(.white)
+            .cornerRadius(10)
+            Button("動画を削除") {
+                print("[DEBUG] 動画を削除ボタンが押されました")
+                showDeleteAlert = true
+            }
+            .foregroundColor(.red)
+            Button("キャンセル") {
+                showMenuSheet = false
+            }
+        }
+        .padding(32)
+        .alert(isPresented: $showDeleteAlert) {
+            Alert(
+                title: Text("本当に削除しますか？"),
+                message: Text("この動画は完全に削除されます。"),
+                primaryButton: .destructive(Text("削除")) {
+                    print("[DEBUG] VideoPlayerScreen: Alertの削除ボタンが押されました")
+                    print("[DEBUG] VideoPlayerScreen: onDeleteクロージャを呼び出します")
+                    onDelete?()
+                    print("[DEBUG] VideoPlayerScreen: onDeleteクロージャ呼び出し完了")
+                    showMenuSheet = false
+                    print("[DEBUG] VideoPlayerScreen: showMenuSheet = \(showMenuSheet)")
+                    presentationMode.wrappedValue.dismiss()
+                    print("[DEBUG] VideoPlayerScreen: presentationModeで画面を閉じました")
+                },
+                secondaryButton: .cancel(Text("キャンセル"))
+            )
         }
     }
 }
@@ -618,7 +673,7 @@ extension VideoPlayerScreen {
     
     // タイトル編集シート
     @ViewBuilder
-    func editTitleSheet(video: MemoryVideo) -> some View {
+    func editTitleSheet() -> some View {
         VStack(spacing: 24) {
             Text("タイトルを編集")
                 .font(.headline)
@@ -643,6 +698,8 @@ extension VideoPlayerScreen {
                 
                 Button(action: {
                     let tags = video.tags
+                    // ローカルのvideoも更新
+                    video.title = editText
                     onSave?(editText, tags)
                     activeSheet = nil
                 }) {
@@ -668,7 +725,7 @@ extension VideoPlayerScreen {
     
     // タグ編集シート
     @ViewBuilder
-    func editTagsSheet(video: MemoryVideo) -> some View {
+    func editTagsSheet() -> some View {
         VStack(spacing: 24) {
             Text("タグを編集")
                 .font(.headline)
@@ -694,6 +751,8 @@ extension VideoPlayerScreen {
                 Button(action: {
                     let title = video.title
                     let tags = editText.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                    // ローカルのvideoも更新
+                    video.tags = tags
                     onSave?(title, tags)
                     activeSheet = nil
                 }) {
@@ -731,48 +790,168 @@ extension VideoPlayerScreen {
             return fullURL
         }
     }
+    
+    private func filterVideos() {
+        if searchText.isEmpty {
+            filteredVideos = allVideos
+        } else {
+            filteredVideos = allVideos.filter { video in
+                video.title.localizedCaseInsensitiveContains(searchText) ||
+                video.tags.contains { tag in
+                    tag.localizedCaseInsensitiveContains(searchText)
+                }
+            }
+        }
+    }
+    
+    private func getRelatedVideos() -> [MemoryVideo] {
+        let videos = searchText.isEmpty ? allVideos : filteredVideos
+        return videos.filter { $0.id != video.id }
+    }
 }
 
 // MARK: - VideoInfoView
 private struct VideoInfoView: View {
     let video: MemoryVideo
+    let character: Character?
+    let anime: Anime?
     let showMenuSheet: () -> Void
     let showFullscreen: () -> Void
+    let allVideos: [MemoryVideo]
+    @State private var isLiked = false
+    @State private var likeCount = 0
+    
+    // 総動画再生数を計算
+    private var totalViewCount: Int {
+        allVideos.reduce(0) { sum, video in
+            sum + (video.viewCount ?? 0)
+        }
+    }
     
     var body: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 16) {
+            // Title and view info
+            VStack(alignment: .leading, spacing: 8) {
                 Text(video.title)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
                     .lineLimit(2)
-                Text("#" + (video.tags.isEmpty ? "nakajimaginsei" : video.tags.joined(separator: " #")))
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
+                
+                HStack(spacing: 4) {
+                    Text("\(formatViewCount(video.viewCount ?? 0))回視聴")
+                    Text("・")
+                    Text("\(timeAgo(from: video.date))")
+                    Text("...もっと見る")
+                        .foregroundColor(.gray)
+                    Spacer()
+                }
+                .font(.system(size: 14))
+                .foregroundColor(.gray)
             }
-            Spacer(minLength: 8)
-            Button(action: showMenuSheet) {
-                Text("編集")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.white)
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 16)
-                    .background(Color.black)
-                    .cornerRadius(8)
+            
+            // Channel/Character info
+            HStack(spacing: 12) {
+                // Character or Anime icon
+                if let character = character, let imageIdentifier = character.imageIdentifier,
+                   let uiImage = loadImageFromPath(imageIdentifier) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                } else if let anime = anime, let imageIdentifier = anime.imageIdentifier,
+                          let uiImage = loadImageFromPath(imageIdentifier) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .foregroundColor(.gray)
+                        )
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(character?.name ?? anime?.title ?? "Unknown")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.black)
+                    
+                    Text("総動画再生数 \(formatViewCount(totalViewCount))回")
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
+                
+                Spacer()
+                
+                Button(action: showMenuSheet) {
+                    Text("編集")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(20)
+                }
+                
+                // Fullscreen button
+                Button(action: showFullscreen) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 18))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(20)
+                }
             }
-            .padding(.trailing, 4)
-            Button(action: showFullscreen) {
-                Image(systemName: "arrow.up.left.and.arrow.down.right.square")
-                    .font(.system(size: 21, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(10)
-                    .background(Color.black.opacity(0.7))
-                    .clipShape(Circle())
-            }
-            .padding(.trailing, 8)
+            
         }
         .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .padding(.vertical, 16)
+        .onAppear {
+            likeCount = video.likeCount ?? Int.random(in: 50...500)
+        }
+    }
+    
+    // Helper functions
+    func formatViewCount(_ count: Int) -> String {
+        if count >= 10000 {
+            let formatted = Double(count) / 10000.0
+            return String(format: "%.1f万", formatted)
+        } else {
+            return "\(count)"
+        }
+    }
+    
+    func timeAgo(from date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
+        
+        if let years = components.year, years > 0 {
+            return "\(years)年前"
+        } else if let months = components.month, months > 0 {
+            return "\(months)ヶ月前"
+        } else if let days = components.day, days > 0 {
+            return "\(days)日前"
+        } else if let hours = components.hour, hours > 0 {
+            return "\(hours)時間前"
+        } else if let minutes = components.minute, minutes > 0 {
+            return "\(minutes)分前"
+        } else {
+            return "たった今"
+        }
+    }
+    
+    func loadImageFromPath(_ imagePath: String) -> UIImage? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let imageURL = documentsPath.appendingPathComponent(imagePath)
+        return UIImage(contentsOfFile: imageURL.path)
     }
 }
 

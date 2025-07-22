@@ -698,7 +698,10 @@ private struct ArtworkInfoView: View {
                 
                 Spacer()
                 
-                Button(action: showMenuSheet) {
+                Button(action: {
+                    print("[DEBUG] 編集ボタンがタップされました")
+                    showMenuSheet()
+                }) {
                     Text("編集")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.black)
@@ -707,9 +710,13 @@ private struct ArtworkInfoView: View {
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(20)
                 }
+                .buttonStyle(PlainButtonStyle())
                 
                 // Fullscreen button
-                Button(action: showFullscreen) {
+                Button(action: {
+                    print("[DEBUG] 拡大ボタンがタップされました")
+                    showFullscreen()
+                }) {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 18))
                         .foregroundColor(.black)
@@ -718,6 +725,7 @@ private struct ArtworkInfoView: View {
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(20)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             
         }

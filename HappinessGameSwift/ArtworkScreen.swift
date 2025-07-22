@@ -505,77 +505,7 @@ struct ArtworkScreen: View {
                                 ScrollView {
                                     VStack(spacing: 32) {
                                         ForEach(artworks, id: \.id) { artwork in
-                                            VStack(alignment: .leading, spacing: 0) {
-                                                ZStack {
-                                                    Color.white
-                                                    if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                        Image(uiImage: uiImage)
-                                                            .resizable()
-                                                            .aspectRatio(contentMode: .fill)
-                                                            .frame(width: UIScreen.main.bounds.width, height: 233)
-                                                    } else if let pixivURL = artwork.pixivURL {
-                                                        if let customThumbnailData = artwork.customThumbnailData,
-                                                           let uiImage = UIImage(data: customThumbnailData) {
-                                                            Image(uiImage: uiImage)
-                                                                .resizable()
-                                                                .aspectRatio(contentMode: .fill)
-                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
-                                                        } else {
-                                                            PixivThumbnailView(pixivURL: pixivURL)
-                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
-                                                                .aspectRatio(contentMode: .fill)
-                                                        }
-                                                    } else {
-                                                        Rectangle()
-                                                            .fill(Color.gray.opacity(0.2))
-                                                            .frame(width: UIScreen.main.bounds.width, height: 233)
-                                                            .overlay(
-                                                                VStack {
-                                                                    Image(systemName: "photo")
-                                                                        .font(.largeTitle)
-                                                                        .foregroundColor(.gray)
-                                                                    Text("画像なし")
-                                                                        .foregroundColor(.gray)
-                                                                }
-                                                            )
-                                                    }
-                                                }
-                                                .frame(width: UIScreen.main.bounds.width, height: 233)
-                                                .clipped()
-                                                .padding(.bottom, 0)
-                                                HStack(alignment: .center, spacing: 12) {
-                                                    if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                                        Image(uiImage: image)
-                                                            .resizable()
-                                                            .aspectRatio(contentMode: .fill)
-                                                            .frame(width: 40, height: 40)
-                                                            .clipShape(Circle())
-                                                    } else {
-                                                        Circle()
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: 40, height: 40)
-                                                            .overlay(
-                                                                Image(systemName: "person")
-                                                                    .font(.system(size: 20))
-                                                                    .foregroundColor(.gray)
-                                                            )
-                                                    }
-                                                    VStack(alignment: .leading, spacing: 2) {
-                                                        Text(artwork.title)
-                                                            .font(.headline)
-                                                            .foregroundColor(.black)
-                                                        Text(artwork.tags.isEmpty ? "#nakajimaginsei" : "#" + artwork.tags.joined(separator: " #"))
-                                                            .font(.caption)
-                                                            .foregroundColor(.gray)
-                                                    }
-                                                    Spacer()
-                                                }
-                                                .padding(.top, 8)
-                                                .padding(.leading, 8)
-                                            }
-                                            .padding(.vertical, 8)
-                                            .contentShape(Rectangle())
-                                            .onTapGesture {
+                                            Button(action: {
                                                 print("[DEBUG] アートワークタップ: \(artwork.title)")
                                                 print("[DEBUG] pixivURL: \(artwork.pixivURL ?? "nil")")
                                                 print("[DEBUG] artwork ID: \(artwork.id)")
@@ -591,7 +521,78 @@ struct ArtworkScreen: View {
                                                     print("[DEBUG] 通常の画像をタップ")
                                                     selectedArtwork = artwork
                                                 }
+                                            }) {
+                                                VStack(alignment: .leading, spacing: 0) {
+                                                    ZStack {
+                                                        Color.white
+                                                        if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
+                                                            Image(uiImage: uiImage)
+                                                                .resizable()
+                                                                .aspectRatio(contentMode: .fill)
+                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        } else if let pixivURL = artwork.pixivURL {
+                                                            if let customThumbnailData = artwork.customThumbnailData,
+                                                               let uiImage = UIImage(data: customThumbnailData) {
+                                                                Image(uiImage: uiImage)
+                                                                    .resizable()
+                                                                    .aspectRatio(contentMode: .fill)
+                                                                    .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                            } else {
+                                                                PixivThumbnailView(pixivURL: pixivURL)
+                                                                    .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                                    .aspectRatio(contentMode: .fill)
+                                                            }
+                                                        } else {
+                                                            Rectangle()
+                                                                .fill(Color.gray.opacity(0.2))
+                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                                .overlay(
+                                                                    VStack {
+                                                                        Image(systemName: "photo")
+                                                                            .font(.largeTitle)
+                                                                            .foregroundColor(.gray)
+                                                                        Text("画像なし")
+                                                                            .foregroundColor(.gray)
+                                                                    }
+                                                                )
+                                                        }
+                                                    }
+                                                    .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                    .clipped()
+                                                    .padding(.bottom, 0)
+                                                    HStack(alignment: .center, spacing: 12) {
+                                                        if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                                            Image(uiImage: image)
+                                                                .resizable()
+                                                                .aspectRatio(contentMode: .fill)
+                                                                .frame(width: 40, height: 40)
+                                                                .clipShape(Circle())
+                                                        } else {
+                                                            Circle()
+                                                                .fill(Color.gray.opacity(0.3))
+                                                                .frame(width: 40, height: 40)
+                                                                .overlay(
+                                                                    Image(systemName: "person")
+                                                                        .font(.system(size: 20))
+                                                                        .foregroundColor(.gray)
+                                                                )
+                                                        }
+                                                        VStack(alignment: .leading, spacing: 2) {
+                                                            Text(artwork.title)
+                                                                .font(.headline)
+                                                                .foregroundColor(.black)
+                                                            Text(artwork.tags.isEmpty ? "#nakajimaginsei" : "#" + artwork.tags.joined(separator: " #"))
+                                                                .font(.caption)
+                                                                .foregroundColor(.gray)
+                                                        }
+                                                        Spacer()
+                                                    }
+                                                    .padding(.top, 8)
+                                                    .padding(.leading, 8)
+                                                }
+                                                .padding(.vertical, 8)
                                             }
+                                            .buttonStyle(PlainButtonStyle())
                                         }
                                     }
                                     .padding(.top, 8)

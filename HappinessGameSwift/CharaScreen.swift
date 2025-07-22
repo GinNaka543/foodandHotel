@@ -1579,18 +1579,25 @@ struct AboutView: View {
                         VStack(spacing: 0) {
                             if isEditingProfile {
                                 editableProfileRow(label: "名前", text: $editedName)
+                                    .onChange(of: editedName) { _ in saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "タグ", text: $editedTag)
+                                    .onChange(of: editedTag) { _ in saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 dateProfileRow(label: "誕生日", date: $editedBirthday)
+                                    .onChange(of: editedBirthday) { _ in saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "年齢", text: $editedAge)
+                                    .onChange(of: editedAge) { _ in saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "好きな食べ物", text: $editedFavoriteFood)
+                                    .onChange(of: editedFavoriteFood) { _ in saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "声優", text: $editedVoiceActor)
+                                    .onChange(of: editedVoiceActor) { _ in saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "カップ数", text: $editedCupSize)
+                                    .onChange(of: editedCupSize) { _ in saveCharacter() }
                             } else {
                                 profileRow(label: "名前", value: character?.name ?? "")
                                 Divider().padding(.leading, 20)
@@ -1640,6 +1647,7 @@ struct AboutView: View {
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
                                     .frame(minHeight: 200)
+                                    .onChange(of: profileDescription) { _ in saveCharacter() }
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
                             }
@@ -1682,8 +1690,7 @@ struct AboutView: View {
                 },
                 trailing: Button(action: {
                     if isEditingProfile || isEditingDescription {
-                        // 保存処理
-                        saveCharacter()
+                        // 編集モードを終了（自動保存されているので保存処理は不要）
                         isEditingProfile = false
                         isEditingDescription = false
                     } else {
@@ -1691,7 +1698,7 @@ struct AboutView: View {
                         showEditSelection = true
                     }
                 }) {
-                    Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
+                    Text(isEditingProfile || isEditingDescription ? "完了" : "編集")
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)

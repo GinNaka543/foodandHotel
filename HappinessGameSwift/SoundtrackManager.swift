@@ -142,80 +142,73 @@ struct SoundtrackPlayerView: View {
     var body: some View {
         // currentSoundtrackが存在する限りバーを表示（一時停止中でも）
         if let soundtrack = manager.currentSoundtrack {
-            VStack {
-                ZStack {
-                    // タップ可能な背景
-                    Color.white
-                        .onTapGesture {
-                            // バー全体をタップした時も曲を変更
-                            print("SoundtrackPlayerView: バーがタップされました")
-                            manager.startRandomPlayback()
-                        }
-                    
-                    HStack(spacing: 12) {
-                        // サムネイル
-                        if let thumbnailData = soundtrack.thumbnailData,
-                           let image = UIImage(data: thumbnailData) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 40, height: 40)
-                                .cornerRadius(8)
-                        } else {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.purple.opacity(0.1))
-                                    .frame(width: 40, height: 40)
-                                Image(systemName: "music.note")
-                                    .foregroundColor(.purple)
-                                    .font(.system(size: 16))
-                            }
-                        }
-                        
-                        // タイトル
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(soundtrack.title)
-                                .font(.system(size: 14, weight: .medium))
-                                .lineLimit(1)
-                            
-                            if let artist = soundtrack.artist {
-                                Text(artist)
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.gray)
-                                    .lineLimit(1)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        // コントロールボタン
-                        Button(action: {
-                            if manager.isPlaying {
-                                manager.pausePlayback()
-                            } else {
-                                manager.resumePlayback()
-                            }
-                        }) {
-                            Image(systemName: manager.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .font(.system(size: 30))
-                                .foregroundColor(.purple)
-                        }
-                        .buttonStyle(PlainButtonStyle()) // ボタンのタップ優先
-                        
-                        Button(action: {
-                            manager.startRandomPlayback()
-                        }) {
-                            Image(systemName: "forward.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.purple)
-                        }
-                        .buttonStyle(PlainButtonStyle()) // ボタンのタップ優先
+            HStack(spacing: 12) {
+                // サムネイル
+                if let thumbnailData = soundtrack.thumbnailData,
+                   let image = UIImage(data: thumbnailData) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 40, height: 40)
+                        .cornerRadius(8)
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.purple.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        Image(systemName: "music.note")
+                            .foregroundColor(.purple)
+                            .font(.system(size: 16))
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
                 }
-                .cornerRadius(12)
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                
+                // タイトル
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(soundtrack.title)
+                        .font(.system(size: 14, weight: .medium))
+                        .lineLimit(1)
+                    
+                    if let artist = soundtrack.artist {
+                        Text(artist)
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                }
+                
+                Spacer()
+                
+                // コントロールボタン
+                Button(action: {
+                    if manager.isPlaying {
+                        manager.pausePlayback()
+                    } else {
+                        manager.resumePlayback()
+                    }
+                }) {
+                    Image(systemName: manager.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundColor(.purple)
+                }
+                
+                Button(action: {
+                    manager.startRandomPlayback()
+                }) {
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.purple)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.white)
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+            .contentShape(Rectangle()) // タップ領域を明確に
+            .onTapGesture {
+                // バー全体をタップした時も曲を変更
+                print("SoundtrackPlayerView: バーがタップされました")
+                manager.startRandomPlayback()
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 8)

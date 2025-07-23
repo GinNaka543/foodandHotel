@@ -88,7 +88,7 @@ struct ProductScreen: View {
     @State private var activeSearchText = ""
     @State private var selectedProduct: Product?
     @State private var showingAdminPanel = false
-    @State private var selectedTab = "おすすめ"
+    @State private var selectedTab = "欲しい商品"
     @State private var showAddWishlistItem = false
     @State private var navigateToCategoryList = false
     @State private var selectedCategory: CharacterCategory?
@@ -136,7 +136,7 @@ struct ProductScreen: View {
                         .padding(.vertical, 8)
                         .background(
                             LinearGradient(
-                                gradient: Gradient(colors: [Color.cyan, Color.cyan.opacity(0.6)]),
+                                gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.6)]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -182,83 +182,27 @@ struct ProductScreen: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(width: 45, height: 36)
-                        .background(Color.cyan)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.8)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                 }
             }
             .cornerRadius(8)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.cyan, lineWidth: 1)
+                    .stroke(Color.purple, lineWidth: 1)
             )
             .padding(.horizontal, 16)
             .padding(.top, 8)
             .padding(.bottom, 12)
             
-            // タブUI - カプセル型デザイン（左寄せ）
-            HStack(spacing: 8) {
-                Button(action: {
-                    selectedTab = "おすすめ"
-                }) {
-                    Text("おすすめ")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(selectedTab == "おすすめ" ? .white : .black)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule()
-                                .fill(selectedTab == "おすすめ" ? Color(.darkGray) : Color(.systemGray5))
-                        )
-                }
-                
-                Button(action: {
-                    selectedTab = "欲しい商品"
-                }) {
-                    Text("欲しい商品")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(selectedTab == "欲しい商品" ? .white : .black)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule()
-                                .fill(selectedTab == "欲しい商品" ? Color(.darkGray) : Color(.systemGray5))
-                        )
-                }
-                
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
+            // タブUIを削除（欲しい商品のみ表示）
             
-            if selectedTab == "おすすめ" {
-                // Firebase広告と商品を表示
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // 複数の広告を一度に表示
-                        MultipleFirebaseAdView(placement: "product")
-                            .padding(.top, 8)
-                        
-                        // おすすめ商品リスト
-                        VStack(spacing: 0) {
-                            ForEach(filteredProducts) { product in
-                                Button(action: {
-                                    selectedProduct = product
-                                }) {
-                                    ProductRow(product: product)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                
-                                Divider()
-                                    .padding(.leading, 16)
-                            }
-                        }
-                        .padding(.top, 16)
-                    }
-                    .padding(.bottom, 100)
-                }
-            } else {
-                // キャラクター・アニメ別バナー表示
+            // キャラクター・アニメ別バナー表示
                 ScrollView {
                     VStack(spacing: 12) {
                         // 商品があるカテゴリーを探す
@@ -353,7 +297,6 @@ struct ProductScreen: View {
                     .padding(.top, 8)
                     .padding(.bottom, 100)
                 }
-            }
             }
             .sheet(item: $selectedProduct) { product in
                 ProductDetailView(product: product)
@@ -1292,13 +1235,19 @@ struct CategoryListView: View {
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(width: 45, height: 36)
-                            .background(Color.cyan)
+                            .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.8)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
                     }
                 }
                 .cornerRadius(8)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.cyan, lineWidth: 1)
+                        .stroke(Color.purple, lineWidth: 1)
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 12)

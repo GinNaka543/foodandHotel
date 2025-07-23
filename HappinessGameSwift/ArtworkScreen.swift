@@ -432,7 +432,10 @@ struct ArtworkScreen: View {
                                                                     .font(.system(size: 18))
                                                                     .foregroundColor(.white)
                                                                     .rotationEffect(.degrees(90))
+                                                                    .frame(width: 44, height: 44)
+                                                                    .contentShape(Rectangle())
                                                             }
+                                                            .contentShape(Rectangle())
                                                         }
                                                         .padding(.horizontal, 16)
                                                         .padding(.bottom, 12)

@@ -428,36 +428,19 @@ struct HomeScreen: View {
                 .padding(.top, 1)
                 .padding(.bottom, 6)
                 
-                // インフォメーションタイトル
+                // スケジュールタイトル
                 HStack {
-                    Text("Information")
+                    Text("Schedule")
                         .font(.system(size: 19, weight: .bold))
                     Spacer()
                 }
                 .padding(.horizontal, 20)
 
-                // 広告バナー（1つの広告を表示、高さを1.3倍に）
-                HStack {
-                    Spacer()
-                    ZStack(alignment: .topTrailing) {
-                        FirebaseAdView(placement: "home", adIndex: 0)
-                            .frame(width: 360, height: 245.7) // 189 * 1.3 = 245.7
-                            .cornerRadius(10)
-                            .clipped()
-                        
-                        Text("PR")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.purple)
-                            .cornerRadius(4)
-                            .padding(8)
-                    }
-                    Spacer()
-                }
-                .padding(.top, 20)
-                .padding(.bottom, 12)
+                // スケジュールビュー
+                ScheduleView()
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
             }
         }
         .background(Color.white)
@@ -657,6 +640,404 @@ struct QuarterCircleShape: Shape {
 }
 
 // プレビュー用
+// スケジュール管理用の構造体
+struct ScheduleItem: Identifiable, Codable {
+    let id: String = UUID().uuidString
+    var date: Date
+    var animeId: String
+    var animeTitle: String
+    var episode: Int?
+    var note: String?
+}
+
+// スケジュールアイテムの行ビュー
+struct ScheduleItemRow: View {
+    let item: ScheduleItem
+    let deleteAction: () -> Void
+    @EnvironmentObject var animeManager: AnimeManager
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // アニメサムネイル
+            if let anime = animeManager.animes.first(where: { $0.id.uuidString == item.animeId }),
+               let imagePath = anime.imageIdentifier,
+               let uiImage = loadImageFromPath(imagePath) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.purple.opacity(0.1))
+                    .frame(width: 60, height: 60)
+                    .overlay(
+                        Image(systemName: "tv")
+                            .font(.system(size: 24))
+                            .foregroundColor(.purple.opacity(0.5))
+                    )
+            }
+            
+            // 日付
+            VStack(spacing: 2) {
+                Text(getMonthDay(from: item.date))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.gray)
+                Text(getDay(from: item.date))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.purple)
+                Text(getWeekday(from: item.date))
+                    .font(.system(size: 11))
+                    .foregroundColor(.gray)
+            }
+            .frame(width: 50)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.animeTitle)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                if let episode = item.episode {
+                    Text("第\(episode)話")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+                
+                if let note = item.note, !note.isEmpty {
+                    Text(note)
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+            
+            Button(action: deleteAction) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.gray.opacity(0.5))
+            }
+        }
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(10)
+        .shadow(color: Color.black.opacity(0.05), radius: 3, x: 0, y: 2)
+    }
+    
+    private func getMonthDay(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: date)
+    }
+    
+    private func getDay(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+    
+    private func getWeekday(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: date)
+    }
+}
+
+// 空のスケジュールビュー
+struct EmptyScheduleView: View {
+    let showingAddSchedule: Binding<Bool>
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 40))
+                .foregroundColor(.purple.opacity(0.6))
+            
+            Text("スケジュールが登録されていません")
+                .font(.system(size: 16))
+                .foregroundColor(.gray)
+            
+            Button(action: {
+                showingAddSchedule.wrappedValue = true
+            }) {
+                Label("スケジュールを追加", systemImage: "plus.circle.fill")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.purple)
+                    .cornerRadius(20)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .background(Color.gray.opacity(0.05))
+        .cornerRadius(12)
+    }
+}
+
+// スケジュールビュー
+struct ScheduleView: View {
+    @EnvironmentObject var animeManager: AnimeManager
+    @State private var scheduleItems: [ScheduleItem] = []
+    @State private var showingAddSchedule = false
+    @State private var selectedDate = Date()
+    @State private var selectedAnimeId: String = ""
+    @State private var episode: String = ""
+    @State private var note: String = ""
+    
+    private let userDefaultsKey = "scheduleItems"
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            if scheduleItems.isEmpty {
+                EmptyScheduleView(showingAddSchedule: $showingAddSchedule)
+            } else {
+                ScheduleListView(
+                    scheduleItems: scheduleItems,
+                    showingAddSchedule: $showingAddSchedule,
+                    deleteAction: deleteScheduleItem,
+                    animeManager: animeManager
+                )
+            }
+        }
+        .onAppear {
+            loadScheduleItems()
+        }
+        .sheet(isPresented: $showingAddSchedule) {
+            AddScheduleSheet(
+                animeManager: animeManager,
+                selectedDate: $selectedDate,
+                selectedAnimeId: $selectedAnimeId,
+                episode: $episode,
+                note: $note,
+                showingAddSchedule: $showingAddSchedule,
+                addAction: addScheduleItem,
+                resetAction: resetForm,
+                getSelectedAnimeTitle: getSelectedAnimeTitle
+            )
+        }
+    }
+    
+    private func getSelectedAnimeTitle() -> String {
+        if selectedAnimeId.isEmpty {
+            return "アニメを選択"
+        }
+        return animeManager.animes.first(where: { $0.id.uuidString == selectedAnimeId })?.title ?? "アニメを選択"
+    }
+    
+    private func addScheduleItem() {
+        guard !selectedAnimeId.isEmpty,
+              let anime = animeManager.animes.first(where: { $0.id.uuidString == selectedAnimeId }) else { return }
+        
+        let newItem = ScheduleItem(
+            date: selectedDate,
+            animeId: selectedAnimeId,
+            animeTitle: anime.title,
+            episode: Int(episode),
+            note: note.isEmpty ? nil : note
+        )
+        
+        scheduleItems.append(newItem)
+        saveScheduleItems()
+        resetForm()
+    }
+    
+    private func deleteScheduleItem(_ item: ScheduleItem) {
+        scheduleItems.removeAll(where: { $0.id == item.id })
+        saveScheduleItems()
+    }
+    
+    private func resetForm() {
+        selectedDate = Date()
+        selectedAnimeId = ""
+        episode = ""
+        note = ""
+    }
+    
+    private func loadScheduleItems() {
+        if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
+           let items = try? JSONDecoder().decode([ScheduleItem].self, from: data) {
+            scheduleItems = items
+        }
+    }
+    
+    private func saveScheduleItems() {
+        if let data = try? JSONEncoder().encode(scheduleItems) {
+            UserDefaults.standard.set(data, forKey: userDefaultsKey)
+        }
+    }
+}
+
+// スケジュールリストビュー
+struct ScheduleListView: View {
+    let scheduleItems: [ScheduleItem]
+    let showingAddSchedule: Binding<Bool>
+    let deleteAction: (ScheduleItem) -> Void
+    let animeManager: AnimeManager
+    
+    var sortedItems: ArraySlice<ScheduleItem> {
+        scheduleItems.sorted(by: { $0.date < $1.date }).prefix(5)
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("今後の視聴予定")
+                    .font(.system(size: 16, weight: .semibold))
+                Spacer()
+                Button(action: {
+                    showingAddSchedule.wrappedValue = true
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.purple)
+                }
+            }
+            
+            ScrollView {
+                VStack(spacing: 12) {
+                    ForEach(sortedItems) { item in
+                        ScheduleItemRow(item: item) {
+                            deleteAction(item)
+                        }
+                        .environmentObject(animeManager)
+                    }
+                }
+            }
+            .frame(maxHeight: 280)
+            
+            if scheduleItems.count > 5 {
+                Text("他\(scheduleItems.count - 5)件のスケジュール")
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding(16)
+        .background(Color.gray.opacity(0.05))
+        .cornerRadius(12)
+    }
+}
+
+// スケジュール追加シート
+struct AddScheduleSheet: View {
+    let animeManager: AnimeManager
+    @Binding var selectedDate: Date
+    @Binding var selectedAnimeId: String
+    @Binding var episode: String
+    @Binding var note: String
+    @Binding var showingAddSchedule: Bool
+    let addAction: () -> Void
+    let resetAction: () -> Void
+    let getSelectedAnimeTitle: () -> String
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // 日付選択
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("視聴予定日")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                        .datePickerStyle(GraphicalDatePickerStyle())
+                        .frame(height: 320)
+                }
+                .padding(.horizontal)
+                
+                // アニメ選択
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("アニメ")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    
+                    let validAnimes = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    if validAnimes.isEmpty {
+                        Text("アニメが登録されていません")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        Menu {
+                            ForEach(validAnimes) { anime in
+                                Button(action: {
+                                    selectedAnimeId = anime.id.uuidString
+                                }) {
+                                    Text(anime.title)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(getSelectedAnimeTitle())
+                                    .foregroundColor(selectedAnimeId.isEmpty ? .gray : .primary)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                
+                // エピソード番号（オプション）
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("エピソード番号（オプション）")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField("例: 12", text: $episode)
+                        .keyboardType(.numberPad)
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal)
+                
+                // メモ（オプション）
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("メモ（オプション）")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField("例: 友達と一緒に見る", text: $note)
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .navigationTitle("スケジュール追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        showingAddSchedule = false
+                        resetAction()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("追加") {
+                        addAction()
+                        showingAddSchedule = false
+                    }
+                    .disabled(selectedAnimeId.isEmpty)
+                }
+            }
+        }
+    }
+}
+
 struct HomeScreen_Previews: PreviewProvider {
     static var previews: some View {
         HomeScreen()

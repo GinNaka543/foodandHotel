@@ -472,7 +472,7 @@ public struct VisitScreen: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(Color.red)
+                        .background(Color.black)
                         .cornerRadius(25)
                     }
                     .padding(.top, 20)
@@ -603,7 +603,7 @@ public struct VisitScreen: View {
                     .padding(.vertical, 12)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.red)
+                            .fill(Color.black)
                     )
             }
             .padding(.bottom, 24)

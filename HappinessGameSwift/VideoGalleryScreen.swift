@@ -566,9 +566,12 @@ struct VideoGalleryScreen: View {
                         .font(.system(size: 18))
                         .foregroundColor(.gray)
                         .rotationEffect(.degrees(90))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                .frame(height: 50)
-                .padding(.trailing, 16)
+                .frame(width: 60, height: 60)
+                .contentShape(Rectangle())
+                .padding(.trailing, 8)
             }
             .padding(.leading, 8)
         }
@@ -1458,6 +1461,9 @@ struct VideoGalleryScreen: View {
             saveVideosToUserDefaults()
             saveAlbumsToUserDefaults()
             print("[DEBUG] Delete process completed")
+            
+            // 動画が削除されたことを通知
+            NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
         } else {
             print("[DEBUG] Video with ID \(id) not found in videos array")
         }

@@ -929,11 +929,13 @@ private struct VideoInfoView: View {
                     Text("編集")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.black)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
                         .background(Color.gray.opacity(0.2))
-                        .cornerRadius(20)
+                        .cornerRadius(22)
                 }
+                .contentShape(Rectangle())
+                .buttonStyle(PlainButtonStyle())
                 
                 // Fullscreen button
                 Button(action: showFullscreen) {

@@ -505,20 +505,34 @@ struct AnimeScreen: View {
             } else {
                 // 動画が登録されていない場合は紫のグラデーション
                 ZStack {
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 0.6, green: 0.4, blue: 0.9),
-                            Color(red: 0.8, green: 0.5, blue: 0.9)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                    .cornerRadius(12)
+                    AnimatedGradientView()
+                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        .cornerRadius(12)
                     
-                    Text("YouTubeから動画を登録しよう")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.white)
+                    VStack {
+                        Spacer()
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 4)
+                                    .padding(.bottom, 4)
+                                
+                                Text("YouTubeから")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 2)
+                                Text("動画を登録しよう")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.95))
+                                    .shadow(radius: 2)
+                            }
+                            .padding(.leading, 24)
+                            .padding(.bottom, 20)
+                            Spacer()
+                        }
+                    }
                 }
             }
         }
@@ -642,6 +656,15 @@ struct AnimeScreen: View {
             
             // 動画のローテーションを開始
             startBannerRotation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // アプリがフォアグラウンドに戻った時に動画リストを更新
+            loadYouTubeVideos()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDeleted"))) { _ in
+            // 動画が削除された時に動画リストを更新
+            loadYouTubeVideos()
+            selectRandomYouTubeVideo()
         }
         .onDisappear {
             bannerTimer?.invalidate()
@@ -1165,7 +1188,10 @@ struct AnimeArtworkScreen: View {
                                                             .font(.system(size: 18))
                                                             .foregroundColor(.white)
                                                             .rotationEffect(.degrees(90))
+                                                            .frame(width: 44, height: 44)
+                                                            .contentShape(Rectangle())
                                                     }
+                                                    .contentShape(Rectangle())
                                                 }
                                                 .padding(.horizontal, 16)
                                                 .padding(.bottom, 12)
@@ -1527,6 +1553,8 @@ struct AnimeArtworkScreen: View {
                         }
                         .foregroundColor(!showAlbum ? .black : .gray)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                     
                     // Album button
@@ -1542,6 +1570,8 @@ struct AnimeArtworkScreen: View {
                         }
                         .foregroundColor(showAlbum ? .black : .gray)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                     
                     // About button
@@ -1564,6 +1594,8 @@ struct AnimeArtworkScreen: View {
                         }
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                 }
                 .padding(.vertical, 8)
@@ -2557,6 +2589,8 @@ struct AnimeVideoScreen: View {
                         }
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                 }
                 .padding(.vertical, 8)
@@ -2787,6 +2821,9 @@ struct AnimeVideoScreen: View {
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
                         print("[DEBUG] AnimeScreen: UserDefaultsに保存しました")
+                        
+                        // 動画が削除されたことを通知
+                        NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
                     }
                 }
             )
@@ -2813,6 +2850,9 @@ struct AnimeVideoScreen: View {
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
                         print("[DEBUG] AnimeScreen: 動画削除完了 - ID: \(video.id)")
+                        
+                        // 動画が削除されたことを通知
+                        NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
                     }
                     selectedVideo = nil
                 },
@@ -2906,6 +2946,9 @@ struct AnimeVideoScreen: View {
             updateAlbumsAfterVideoDeletion(deletedVideoId: id)
             saveVideosToUserDefaults()
             saveVideoAlbumsToUserDefaults()
+            
+            // 動画が削除されたことを通知
+            NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
         }
     }
     
@@ -3300,9 +3343,12 @@ struct AnimeVideoScreen: View {
                         .font(.system(size: 18))
                         .foregroundColor(.gray)
                         .rotationEffect(.degrees(90))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                .frame(height: 50)
-                .padding(.trailing, 16)
+                .frame(width: 60, height: 60)
+                .contentShape(Rectangle())
+                .padding(.trailing, 8)
             }
             .padding(.leading, 8)
         }

@@ -415,6 +415,15 @@ struct CharaScreen: View {
             // 動画をローテーション表示
             startBannerRotation()
         }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // アプリがフォアグラウンドに戻った時に動画リストを更新
+            loadYouTubeVideos()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDeleted"))) { _ in
+            // 動画が削除された時に動画リストを更新
+            loadYouTubeVideos()
+            selectRandomYouTubeVideo()
+        }
         .onDisappear {
             bannerTimer?.invalidate()
         }
@@ -568,25 +577,33 @@ struct CharaScreen: View {
             } else {
                 // YouTube動画が登録されていない場合の表示
                 ZStack {
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 0.6, green: 0.4, blue: 0.9),
-                            Color(red: 0.8, green: 0.5, blue: 0.9)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                    .cornerRadius(12)
+                    AnimatedGradientView()
+                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        .cornerRadius(12)
                     
-                    VStack(spacing: 12) {
-                        Image(systemName: "play.rectangle.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.white)
-                        
-                        Text("YouTubeから動画を登録しよう")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
+                    VStack {
+                        Spacer()
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 4)
+                                    .padding(.bottom, 4)
+                                
+                                Text("YouTubeから")
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 2)
+                                Text("動画を登録しよう")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.95))
+                                    .shadow(radius: 2)
+                            }
+                            .padding(.leading, 24)
+                            .padding(.bottom, 20)
+                            Spacer()
+                        }
                     }
                 }
             }
@@ -1102,7 +1119,8 @@ struct CharacterDetailView: View {
                                     .font(.system(size: 24))
                                 Text("ArtWork").font(.caption2).foregroundColor(.white)
                             }
-                            .frame(width: 80, height: 60)
+                            .frame(width: 90, height: 70)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -1113,7 +1131,8 @@ struct CharacterDetailView: View {
                                     .font(.system(size: 24))
                                 Text("Video").font(.caption2).foregroundColor(.white)
                             }
-                            .frame(width: 80, height: 60)
+                            .frame(width: 90, height: 70)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -1124,7 +1143,8 @@ struct CharacterDetailView: View {
                                     .font(.system(size: 24))
                                 Text("About").font(.caption2).foregroundColor(.white)
                             }
-                            .frame(width: 80, height: 60)
+                            .frame(width: 90, height: 70)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -2459,6 +2479,31 @@ struct EditBackgroundView: View {
             // モーダルが閉じたときに状態をリセット
             backgroundImage = nil
             backgroundPickerItem = nil
+        }
+    }
+}
+
+// アニメーション付きグラデーションビュー
+struct AnimatedGradientView: View {
+    @State private var animateGradient = false
+    
+    var body: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(red: 0.6, green: 0.4, blue: 0.9),
+                Color(red: 0.8, green: 0.5, blue: 0.9),
+                Color(red: 0.6, green: 0.4, blue: 0.9)
+            ]),
+            startPoint: animateGradient ? .topLeading : .bottomTrailing,
+            endPoint: animateGradient ? .bottomTrailing : .topLeading
+        )
+        .onAppear {
+            withAnimation(
+                Animation.easeInOut(duration: 3.0)
+                    .repeatForever(autoreverses: true)
+            ) {
+                animateGradient.toggle()
+            }
         }
     }
 }

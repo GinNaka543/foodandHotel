@@ -110,43 +110,14 @@ struct SoundtrackEditView: View {
         .sheet(isPresented: $showingDocumentPicker) {
             DocumentPicker(fileURL: $selectedAudioURL)
         }
-        .sheet(isPresented: $showingImagePicker) {
-            PhotosPicker(selection: $imagePickerItem, matching: .images) {
-                VStack(spacing: 20) {
-                    Text("画像を選択")
-                        .font(.headline)
-                    
-                    if let selectedImage = selectedImage {
-                        Image(uiImage: selectedImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 150, height: 150)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                    
-                    Button("画像を選択") {
-                        // PhotosPickerが自動で処理
-                    }
-                    .padding()
-                    .background(Color.purple)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    
-                    Button("キャンセル") {
+        .photosPicker(isPresented: $showingImagePicker, selection: $imagePickerItem, matching: .images)
+        .onChange(of: imagePickerItem) { newValue in
+            if let newValue = newValue {
+                Task {
+                    if let data = try? await newValue.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
+                        selectedImage = image
                         showingImagePicker = false
-                        imagePickerItem = nil
-                    }
-                    .foregroundColor(.red)
-                }
-                .padding()
-            }
-            .onChange(of: imagePickerItem) { newValue in
-                if let newValue = newValue {
-                    Task {
-                        if let data = try? await newValue.loadTransferable(type: Data.self),
-                           let image = UIImage(data: data) {
-                            selectedImage = image
-                        }
                     }
                 }
             }

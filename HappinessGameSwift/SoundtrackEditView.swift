@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import UniformTypeIdentifiers
+import PhotosUI
 
 struct SoundtrackEditView: View {
     @Environment(\.dismiss) var dismiss
@@ -12,6 +13,7 @@ struct SoundtrackEditView: View {
     @State private var showingImagePicker = false
     @State private var audioPlayer: AVAudioPlayer?
     @State private var isPlaying = false
+    @State private var imagePickerItem: PhotosPickerItem? = nil
     
     var onSave: (Soundtrack) -> Void
     
@@ -101,10 +103,59 @@ struct SoundtrackEditView: View {
             DocumentPicker(fileURL: $selectedAudioURL)
         }
         .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(image: $selectedImage)
+            PhotosPicker(selection: $imagePickerItem, matching: .images) {
+                VStack(spacing: 20) {
+                    Text("画像を選択")
+                        .font(.headline)
+                    
+                    if let selectedImage = selectedImage {
+                        Image(uiImage: selectedImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 150, height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    
+                    Button("画像を選択") {
+                        // PhotosPickerが自動で処理
+                    }
+                    .padding()
+                    .background(Color.purple)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+                    
+                    Button("キャンセル") {
+                        showingImagePicker = false
+                        imagePickerItem = nil
+                    }
+                    .foregroundColor(.red)
+                }
+                .padding()
+            }
+            .onChange(of: imagePickerItem) { newValue in
+                if let newValue = newValue {
+                    Task {
+                        if let data = try? await newValue.loadTransferable(type: Data.self),
+                           let image = UIImage(data: data) {
+                            selectedImage = image
+                        }
+                    }
+                }
+            }
         }
         .onDisappear {
             audioPlayer?.stop()
+        }
+        .onChange(of: selectedAudioURL) { newValue in
+            if let url = newValue {
+                do {
+                    let data = try Data(contentsOf: url)
+                    audioPlayer = try AVAudioPlayer(data: data)
+                    audioPlayer?.prepareToPlay()
+                } catch {
+                    print("オーディオプレイヤーの作成に失敗: \(error)")
+                }
+            }
         }
     }
     
@@ -179,14 +230,6 @@ struct DocumentPicker: UIViewControllerRepresentable {
                 do {
                     try FileManager.default.copyItem(at: url, to: tempURL)
                     parent.fileURL = tempURL
-                    
-                    // オーディオプレイヤーを作成
-                    if let viewController = controller.presentingViewController as? UIHostingController<SoundtrackEditView> {
-                        // SwiftUIビューにアクセスして音楽プレイヤーを設定
-                        DispatchQueue.main.async {
-                            // ここでプレイヤーを設定する処理を追加
-                        }
-                    }
                 } catch {
                     print("ファイルのコピーに失敗: \(error)")
                 }

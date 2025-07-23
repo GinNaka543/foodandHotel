@@ -421,13 +421,6 @@ struct HomeScreen: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
                 
-                // 人気キャラランキングセクション
-                // タイトルはCharacterRankingScrollView内で表示
-                CharacterRankingScrollView()
-                    .frame(height: 140) // 1.4倍サイズ用に高さ調整
-                .padding(.top, 1)
-                .padding(.bottom, 6)
-                
                 // スケジュールタイトル
                 HStack {
                     Text("Schedule")

@@ -10,7 +10,7 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
     private var audioPlayer: AVAudioPlayer?
     private var fadeTimer: Timer?
-    private var allSoundtracks: [Soundtrack] = []
+    @Published var allSoundtracks: [Soundtrack] = [] // privateを削除してPublishedに変更
     private let fadeInDuration: TimeInterval = 3.0 // フェードイン時間（秒）
     private let maxVolume: Float = 0.7 // 最大音量
     

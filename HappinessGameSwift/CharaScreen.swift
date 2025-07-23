@@ -1353,9 +1353,6 @@ struct AboutView: View {
     @State private var editedTag: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
-    @State private var showEditSelection: Bool = false
-    @State private var showIconPicker: Bool = false
-    @State private var showSoundtrackEdit: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
     
@@ -1363,11 +1360,13 @@ struct AboutView: View {
     enum ActiveSheet: Identifiable {
         case soundtrackEdit
         case iconPicker
+        case editSelection
         
         var id: Int {
             switch self {
             case .soundtrackEdit: return 0
             case .iconPicker: return 1
+            case .editSelection: return 2
             }
         }
     }
@@ -1645,10 +1644,8 @@ struct AboutView: View {
                         // 編集選択モーダルを表示
                         print("DEBUG: 編集ボタンがタップされました")
                         print("DEBUG: 現在のシート状態:")
-                        print("  - showEditSelection: \(showEditSelection)")
-                        print("  - showIconPicker: \(showIconPicker)")
-                        print("  - showSoundtrackEdit: \(showSoundtrackEdit)")
-                        showEditSelection = true
+                        print("  - activeSheet: \(String(describing: activeSheet))")
+                        activeSheet = .editSelection
                     }
                 }) {
                     Text(isEditingProfile || isEditingDescription ? "完了" : "編集")
@@ -1676,26 +1673,6 @@ struct AboutView: View {
         .onDisappear {
             saveCharacter()
         }
-        .actionSheet(isPresented: $showEditSelection) {
-            print("DEBUG: ActionSheetが表示されました")
-            return ActionSheet(
-                title: Text("編集する項目を選択してください"),
-                buttons: [
-                    .default(Text("プロフィールを編集")) {
-                        isEditingProfile = true
-                    },
-                    .default(Text("概要を編集")) {
-                        isEditingDescription = true
-                    },
-                    .default(Text("サントラを編集")) {
-                        print("DEBUG: サントラを編集ボタンがタップされました")
-                        activeSheet = .soundtrackEdit
-                        print("DEBUG: activeSheet = soundtrackEdit")
-                    },
-                    .cancel(Text("キャンセル"))
-                ]
-            )
-        }
         /* .sheet(isPresented: $showIconPicker) {
             PhotosPicker(selection: $iconPickerItem, matching: .images) {
                 VStack(spacing: 20) {
@@ -1721,7 +1698,7 @@ struct AboutView: View {
                     if newIconImage != nil {
                         Button("保存") {
                             saveNewIcon()
-                            showIconPicker = false
+                            activeSheet = nil
                         }
                         .padding()
                         .background(Color.green)
@@ -1766,7 +1743,7 @@ struct AboutView: View {
                         print("DEBUG: SoundtrackEditViewシートが表示されました (from sheet)")
                     }
                 case .iconPicker:
-                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                    NavigationView {
                         VStack(spacing: 20) {
                             Text("アイコンを選択")
                                 .font(.headline)
@@ -1779,13 +1756,13 @@ struct AboutView: View {
                                     .clipShape(Circle())
                             }
                             
-                            Button("画像を選択") {
-                                // PhotosPickerが自動で処理
+                            PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                                Text("画像を選択")
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
                             }
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
                             
                             if newIconImage != nil {
                                 Button("保存") {
@@ -1807,8 +1784,8 @@ struct AboutView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: iconPickerItem) { _, newValue in
-                        if let newValue = newValue {
+                    .onChange(of: iconPickerItem) { _ in
+                        if let newValue = iconPickerItem {
                             Task {
                                 if let data = try? await newValue.loadTransferable(type: Data.self),
                                    let image = UIImage(data: data) {
@@ -1817,6 +1794,12 @@ struct AboutView: View {
                             }
                         }
                     }
+                case .editSelection:
+                    CharaEditSelectionSheet(
+                        isEditingProfile: $isEditingProfile,
+                        isEditingDescription: $isEditingDescription,
+                        activeSheet: $activeSheet
+                    )
                 }
             }
         }
@@ -2663,4 +2646,88 @@ struct AnimatedGradientView: View {
 
 #Preview {
     CharaScreen()
+}
+
+// キャラクター編集選択シート（アニメページと同じスタイル）
+struct CharaEditSelectionSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var isEditingProfile: Bool
+    @Binding var isEditingDescription: Bool
+    @Binding var activeSheet: AboutView.ActiveSheet?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("編集する項目を選択してください")
+                    .font(.headline)
+                    .padding()
+                
+                VStack(spacing: 15) {
+                    Button(action: {
+                        isEditingProfile = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "person.crop.circle")
+                                .foregroundColor(.blue)
+                            Text("プロフィールを編集")
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        isEditingDescription = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "text.alignleft")
+                                .foregroundColor(.blue)
+                            Text("概要を編集")
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        print("DEBUG: キャラのサントラを編集ボタンがタップされました")
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            activeSheet = .soundtrackEdit
+                            print("DEBUG: activeSheet = \(String(describing: activeSheet))")
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "music.note")
+                                .foregroundColor(.blue)
+                            Text("サントラを編集")
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                }
+                .padding()
+                
+                Spacer()
+            }
+            .navigationTitle("編集項目選択")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
 }

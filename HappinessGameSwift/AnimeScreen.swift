@@ -3412,8 +3412,6 @@ struct AnimeAboutView: View {
     @State private var editedWatchLink: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
-    @State private var showEditSelection: Bool = false
-    @State private var showIconPicker: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
     @State private var currentDisplayedIcon: UIImage? = nil
@@ -3423,11 +3421,13 @@ struct AnimeAboutView: View {
     enum ActiveSheet: Identifiable {
         case soundtrackEdit
         case iconPicker
+        case editSelection
         
         var id: Int {
             switch self {
             case .soundtrackEdit: return 0
             case .iconPicker: return 1
+            case .editSelection: return 2
             }
         }
     }
@@ -3448,7 +3448,7 @@ struct AnimeAboutView: View {
                     // アニメバナー画像
                     VStack(spacing: 0) {
                         Button(action: {
-                            showIconPicker = true
+                            activeSheet = .iconPicker
                         }) {
                             if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                 Image(uiImage: image)
@@ -3670,14 +3670,20 @@ struct AnimeAboutView: View {
                         .font(.system(size: 20, weight: .bold))
                 },
                 trailing: Button(action: {
+                    print("DEBUG: 編集ボタンがタップされました")
+                    print("DEBUG: isEditingProfile = \(isEditingProfile)")
+                    print("DEBUG: isEditingDescription = \(isEditingDescription)")
                     if isEditingProfile || isEditingDescription {
                         // 保存処理
+                        print("DEBUG: 保存処理を実行")
                         saveAnime()
                         isEditingProfile = false
                         isEditingDescription = false
                     } else {
                         // 編集選択モーダルを表示
-                        showEditSelection = true
+                        print("DEBUG: 編集選択モーダルを表示")
+                        activeSheet = .editSelection
+                        print("DEBUG: activeSheet設定後 = \(String(describing: activeSheet))")
                     }
                 }) {
                     Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
@@ -3688,6 +3694,7 @@ struct AnimeAboutView: View {
                         .background(Color.black)
                         .cornerRadius(8)
                 }
+                .contentShape(Rectangle())
             )
         }
         .onAppear {
@@ -3706,76 +3713,7 @@ struct AnimeAboutView: View {
         .onDisappear {
             saveAnime()
         }
-        .actionSheet(isPresented: $showEditSelection) {
-            ActionSheet(
-                title: Text("編集する項目を選択してください"),
-                buttons: [
-                    .default(Text("プロフィールを編集")) {
-                        isEditingProfile = true
-                    },
-                    .default(Text("概要を編集")) {
-                        isEditingDescription = true
-                    },
-                    .default(Text("サントラを編集")) {
-                        activeSheet = .soundtrackEdit
-                    },
-                    .cancel(Text("キャンセル"))
-                ]
-            )
-        }
-        .sheet(isPresented: $showIconPicker) {
-            PhotosPicker(selection: $iconPickerItem, matching: .images) {
-                VStack(spacing: 20) {
-                    Text("アイコンを選択")
-                        .font(.headline)
-                    
-                    if let newIconImage = newIconImage {
-                        Image(uiImage: newIconImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 150, height: 150)
-                            .clipShape(Circle())
-                    }
-                    
-                    Button("画像を選択") {
-                        // PhotosPickerが自動で処理
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    
-                    if newIconImage != nil {
-                        Button("保存") {
-                            saveNewIcon()
-                            showIconPicker = false
-                        }
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
-                    }
-                    
-                    Button("キャンセル") {
-                        showIconPicker = false
-                        newIconImage = nil
-                        iconPickerItem = nil
-                    }
-                    .foregroundColor(.red)
-                }
-                .padding()
-            }
-            .onChange(of: iconPickerItem) {
-                if let newValue = iconPickerItem {
-                    Task {
-                        if let data = try? await newValue.loadTransferable(type: Data.self),
-                           let image = UIImage(data: data) {
-                            newIconImage = image
-                        }
-                    }
-                }
-            }
-            .sheet(item: $activeSheet) { item in
+        .sheet(item: $activeSheet) { item in
                 switch item {
                 case .soundtrackEdit:
                     SoundtrackEditView { soundtrack in
@@ -3790,11 +3728,66 @@ struct AnimeAboutView: View {
                         anime = updatedAnime
                     }
                 case .iconPicker:
-                    EmptyView() // 後で実装
+                    NavigationView {
+                        VStack(spacing: 20) {
+                            Text("アイコンを選択")
+                                .font(.headline)
+                            
+                            if let newIconImage = newIconImage {
+                                Image(uiImage: newIconImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 150, height: 150)
+                                    .clipShape(Circle())
+                            }
+                            
+                            PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                                Text("画像を選択")
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
+                            
+                            if newIconImage != nil {
+                                Button("保存") {
+                                    saveNewIcon()
+                                    activeSheet = nil
+                                }
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                            }
+                            
+                            Button("キャンセル") {
+                                activeSheet = nil
+                                newIconImage = nil
+                                iconPickerItem = nil
+                            }
+                            .foregroundColor(.red)
+                        }
+                        .padding()
+                    }
+                    .onChange(of: iconPickerItem) { _ in
+                        if let newValue = iconPickerItem {
+                            Task {
+                                if let data = try? await newValue.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    newIconImage = image
+                                }
+                            }
+                        }
+                    }
+                case .editSelection:
+                    EditSelectionSheet(
+                        isEditingProfile: $isEditingProfile,
+                        isEditingDescription: $isEditingDescription,
+                        activeSheet: $activeSheet
+                    )
                 }
             }
         }
-    }
     
     // MARK: - Helper Views
     private func profileRow(label: String, value: String) -> some View {
@@ -4909,5 +4902,89 @@ struct AnimeNavigationButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundColor(configuration.isPressed ? .black : .gray)
+    }
+}
+
+// 編集選択シート
+struct EditSelectionSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var isEditingProfile: Bool
+    @Binding var isEditingDescription: Bool
+    @Binding var activeSheet: AnimeAboutView.ActiveSheet?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("編集する項目を選択してください")
+                    .font(.headline)
+                    .padding()
+                
+                VStack(spacing: 15) {
+                    Button(action: {
+                        isEditingProfile = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "person.crop.circle")
+                                .foregroundColor(.blue)
+                            Text("プロフィールを編集")
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        isEditingDescription = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "text.alignleft")
+                                .foregroundColor(.blue)
+                            Text("概要を編集")
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        print("DEBUG: アニメのサントラを編集ボタンがタップされました")
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            activeSheet = .soundtrackEdit
+                            print("DEBUG: activeSheet = \(String(describing: activeSheet))")
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "music.note")
+                                .foregroundColor(.blue)
+                            Text("サントラを編集")
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                }
+                .padding()
+                
+                Spacer()
+            }
+            .navigationTitle("編集項目選択")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }

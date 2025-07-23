@@ -28,6 +28,7 @@
 		CC1BB38C2E2AB69B006EE695 /* UserDefaultsHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */; };
 		CC1BB3922E3106A8006EE695 /* SoundtrackEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */; };
 		CC1BB3942E310AC8006EE695 /* SoundtrackTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */; };
+		CC1BB3962E310B00006EE695 /* SoundtrackManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3952E310B00006EE695 /* SoundtrackManager.swift */; };
 		CC20AAA82E26E682005F4C2A /* ArtworkScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA72E26E682005F4C2A /* ArtworkScreen.swift */; };
 		CC20AAA92E26E682005F4C2A /* ArtworkPlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA62E26E682005F4C2A /* ArtworkPlayerScreen.swift */; };
 		CC20AAAA2E26E682005F4C2A /* AdvertisementAdminScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA12E26E682005F4C2A /* AdvertisementAdminScreen.swift */; };
@@ -125,6 +126,7 @@
 		CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsHelper.swift; sourceTree = "<group>"; };
 		CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackEditView.swift; sourceTree = "<group>"; };
 		CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackTypes.swift; sourceTree = "<group>"; };
+		CC1BB3952E310B00006EE695 /* SoundtrackManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackManager.swift; sourceTree = "<group>"; };
 		CC20AAA12E26E682005F4C2A /* AdvertisementAdminScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementAdminScreen.swift; sourceTree = "<group>"; };
 		CC20AAA22E26E682005F4C2A /* AlbumArtworkListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumArtworkListScreen.swift; sourceTree = "<group>"; };
 		CC20AAA32E26E682005F4C2A /* AnimeListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeListScreen.swift; sourceTree = "<group>"; };
@@ -243,6 +245,7 @@
 			children = (
 				CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */,
 				CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */,
+				CC1BB3952E310B00006EE695 /* SoundtrackManager.swift */,
 				CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */,
 				CC1BB3892E2A47BA006EE695 /* MultipleFirebaseAdView.swift */,
 				CC1BB3872E28571B006EE695 /* AnimeOrderModal.swift */,
@@ -483,6 +486,7 @@
 				CC20AB122E26E6C1005F4C2A /* UserPointsModel.swift in Sources */,
 				CC20AAE12E26E6B0005F4C2A /* PointPurchaseView.swift in Sources */,
 				CC1BB3922E3106A8006EE695 /* SoundtrackEditView.swift in Sources */,
+				CC1BB3962E310B00006EE695 /* SoundtrackManager.swift in Sources */,
 				CC20AAE22E26E6B0005F4C2A /* PlanPublicationChoiceView.swift in Sources */,
 				CC20AAE32E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift in Sources */,
 				CC20AAE42E26E6B0005F4C2A /* PixivThumbnailView.swift in Sources */,

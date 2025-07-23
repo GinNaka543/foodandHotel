@@ -1892,6 +1892,45 @@ struct AboutView: View {
     }
 }
 
+// キャラクター用のサントラ拡張
+extension Character {
+    var soundtracks: [Soundtrack] {
+        get {
+            if let data = UserDefaults.standard.data(forKey: "character_soundtracks_\(id.uuidString)"),
+               let soundtracks = try? JSONDecoder().decode([Soundtrack].self, from: data) {
+                return soundtracks
+            }
+            return []
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: "character_soundtracks_\(id.uuidString)")
+            }
+        }
+    }
+}
+
+// サントラ構造体の定義（SoundtrackModels.swiftが見つからない場合の一時的な定義）
+struct Soundtrack: Identifiable, Codable, Equatable {
+    let id: UUID
+    var title: String
+    var audioData: Data?
+    var thumbnailData: Data?
+    var duration: TimeInterval?
+    var artist: String?
+    var createdAt: Date
+    
+    init(id: UUID = UUID(), title: String, audioData: Data? = nil, thumbnailData: Data? = nil, duration: TimeInterval? = nil, artist: String? = nil, createdAt: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.audioData = audioData
+        self.thumbnailData = thumbnailData
+        self.duration = duration
+        self.artist = artist
+        self.createdAt = createdAt
+    }
+}
+
 // サントラ行のビュー
 struct SoundtrackRow: View {
     let soundtrack: Soundtrack

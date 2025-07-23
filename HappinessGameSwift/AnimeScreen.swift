@@ -3630,7 +3630,7 @@ struct AnimeAboutView: View {
                         } else {
                             VStack(spacing: 12) {
                                 ForEach(currentAnime.soundtracks, id: \.id) { soundtrack in
-                                    SoundtrackRow(soundtrack: soundtrack) {
+                                    CharaScreen.SoundtrackRow(soundtrack: soundtrack) {
                                         // 削除処理
                                         deleteSoundtrack(soundtrack)
                                     }
@@ -4003,7 +4003,7 @@ struct AnimeAboutView: View {
         }
     }
     
-    private func deleteSoundtrack(_ soundtrack: Soundtrack) {
+    private func deleteSoundtrack(_ soundtrack: CharaScreen.Soundtrack) {
         guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
         var updatedAnime = animes[idx]
         var soundtracks = updatedAnime.soundtracks
@@ -4012,6 +4012,24 @@ struct AnimeAboutView: View {
         animes[idx] = updatedAnime
         animeManager.updateAnime(updatedAnime)
         anime = updatedAnime
+    }
+}
+
+// アニメ用のサントラ拡張
+extension Anime {
+    var soundtracks: [CharaScreen.Soundtrack] {
+        get {
+            if let data = UserDefaults.standard.data(forKey: "anime_soundtracks_\(id.uuidString)"),
+               let soundtracks = try? JSONDecoder().decode([CharaScreen.Soundtrack].self, from: data) {
+                return soundtracks
+            }
+            return []
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: "anime_soundtracks_\(id.uuidString)")
+            }
+        }
     }
 }
 struct AddAnimeSheet: View {

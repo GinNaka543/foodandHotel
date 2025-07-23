@@ -282,11 +282,7 @@ struct CharaScreen: View {
     @State private var showRankingAdmin = false
     @State private var showNavigationMenu = false
     @State private var showCharacterOrderModal = false
-    @State private var showFirebaseAd = false
-    @State private var firebaseAdData: [String: Any]? = nil
-    @State private var currentAdDocument: DocumentSnapshot? = nil
     @State private var bannerTimer: Timer? = nil
-    @State private var availableAds: [DocumentSnapshot] = []
     @State private var bannerVideo: MemoryVideo? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
@@ -416,8 +412,7 @@ struct CharaScreen: View {
             loadYouTubeVideos()
             // 最初の動画を選択
             selectRandomYouTubeVideo()
-            // Firebase広告と動画を交互に表示
-            loadFirebaseAdvertisement()
+            // 動画をローテーション表示
             startBannerRotation()
         }
         .onDisappear {
@@ -466,10 +461,7 @@ struct CharaScreen: View {
     // バナービュー
     private var bannerView: some View {
         Group {
-            if showFirebaseAd, let adData = firebaseAdData {
-                // Firebase広告を表示
-                firebaseAdBanner(adData: adData)
-            } else if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+            if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                 ZStack(alignment: .bottomLeading) {
                     // カスタムサムネイルまたはYouTubeサムネイルを表示
                     if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
@@ -574,7 +566,29 @@ struct CharaScreen: View {
                     }
                 }
             } else {
-                EmptyView()
+                // YouTube動画が登録されていない場合の表示
+                ZStack {
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.6, green: 0.4, blue: 0.9),
+                            Color(red: 0.8, green: 0.5, blue: 0.9)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                    .cornerRadius(12)
+                    
+                    VStack(spacing: 12) {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.white)
+                        
+                        Text("YouTubeから動画を登録しよう")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                }
             }
         }
         .frame(height: 200)
@@ -582,164 +596,16 @@ struct CharaScreen: View {
         .padding(.vertical, 8)
     }
     
-    // Firebase広告バナー
-    private func firebaseAdBanner(adData: [String: Any]) -> some View {
-        ZStack(alignment: .topTrailing) {
-            ZStack(alignment: .bottomLeading) {
-                // 広告画像
-                if let imageURL = adData["imageURL"] as? String {
-                    AsyncImage(url: URL(string: imageURL)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                .clipped()
-                        case .failure(_), .empty:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
-                }
-                
-                // 暗いオーバーレイを追加
-                Color.black.opacity(0.2)
-                    .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                
-                // 広告情報
-                VStack(alignment: .leading, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let title = adData["title"] as? String {
-                            Text(title)
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                        }
-                        
-                        if let description = adData["description"] as? String {
-                            Text(description)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                                .lineLimit(2)
-                        }
-                    }
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 16))
-                        Text("WATCH")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.black)
-                    .cornerRadius(4)
-                }
-                .padding()
-            }
-            
-            // PR表示
-            Text("PR")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.black.opacity(0.7))
-                .cornerRadius(4)
-                .padding(.top, 8)
-                .padding(.trailing, 8)
-        }
-        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-        .cornerRadius(12)
-        .onTapGesture {
-            if let link = adData["link"] as? String, let url = URL(string: link) {
-                UIApplication.shared.open(url)
-                
-                // clicks カウントを更新
-                if let document = currentAdDocument {
-                    let clicks = (document.data()?["clicks"] as? Int ?? 0) + 1
-                    document.reference.updateData(["clicks": clicks])
-                }
-            }
-        }
-    }
-    
-    // Firebase広告を読み込む
-    private func loadFirebaseAdvertisement() {
-        // 初回読み込み時は全広告を取得
-        if availableAds.isEmpty {
-            let db = Firestore.firestore()
-            
-            db.collection("advertisements")
-                .whereField("placements", arrayContains: "character")
-                .whereField("isActive", isEqualTo: true)
-                .getDocuments { snapshot, error in
-                    if let error = error {
-                        print("広告データの取得エラー: \(error)")
-                        return
-                    }
-                    
-                    guard let documents = snapshot?.documents, !documents.isEmpty else {
-                        return
-                    }
-                    
-                    DispatchQueue.main.async {
-                        self.availableAds = documents
-                        self.selectNextAd()
-                    }
-                }
-        } else {
-            // 既に広告がある場合は次の広告を選択
-            selectNextAd()
-        }
-    }
-    
-    // 次の広告を選択
-    private func selectNextAd() {
-        guard !availableAds.isEmpty else { return }
-        
-        // ランダムに広告を選択
-        let randomIndex = Int.random(in: 0..<availableAds.count)
-        let selectedAd = availableAds[randomIndex]
-        
-        currentAdDocument = selectedAd
-        firebaseAdData = selectedAd.data()
-        showFirebaseAd = true
-    }
     
     // バナーローテーションタイマー開始
     private func startBannerRotation() {
         bannerTimer?.invalidate()
         
-        // YouTube動画がない場合は広告のみを表示
-        if allYouTubeVideos.isEmpty {
-            showFirebaseAd = true
+        // YouTube動画がある場合のみローテーション
+        if !allYouTubeVideos.isEmpty {
             bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
-                // 次の広告を読み込む
-                self.loadFirebaseAdvertisement()
-            }
-        } else {
-            // 初期状態を動画表示に設定
-            showFirebaseAd = false
-            
-            bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
-                self.showFirebaseAd.toggle()
-                
-                if self.showFirebaseAd {
-                    // 広告に切り替わった時に新しい広告を読み込む
-                    self.loadFirebaseAdvertisement()
-                } else {
-                    // 動画に切り替わった時に新しい動画を選択
-                    self.selectRandomYouTubeVideo()
-                }
+                // 新しい動画を選択
+                self.selectRandomYouTubeVideo()
             }
         }
     }

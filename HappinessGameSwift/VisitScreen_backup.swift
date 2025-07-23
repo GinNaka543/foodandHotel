@@ -43,6 +43,16 @@ public struct VisitScreen: View {
     @State private var showingPlanningScreen = false
     
     public var body: some View {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            VisitScreen_iPad()
+                .environmentObject(mainTab)
+        } else {
+            iPhoneContent
+        }
+    }
+    
+    @ViewBuilder
+    private var iPhoneContent: some View {
         mainContent
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("NavigateToVisitOriginalTab"))) { _ in
                 selectedTab = .original
@@ -319,7 +329,7 @@ public struct VisitScreen: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : .infinity)
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -402,7 +412,7 @@ public struct VisitScreen: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 400 : .infinity)
         }
         .buttonStyle(PlainButtonStyle())
         .onAppear {
@@ -587,10 +597,23 @@ public struct VisitScreen: View {
                 }
                 // ビジットプラン欄
                 ScrollView {
-                    VStack(spacing: 16) {
-                        planListView
+                    if UIDevice.current.userInterfaceIdiom == .pad {
+                        // iPadの場合はグリッドレイアウト
+                        LazyVGrid(columns: [
+                            GridItem(.flexible(), spacing: 16),
+                            GridItem(.flexible(), spacing: 16)
+                        ], spacing: 16) {
+                            planListView
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                    } else {
+                        // iPhoneの場合は縦リスト
+                        VStack(spacing: 16) {
+                            planListView
+                        }
+                        .padding(.top, 8)
                     }
-                    .padding(.top, 8)
                 }
                 Spacer()
             }
@@ -651,6 +674,7 @@ public struct VisitScreen: View {
                 }
             }
         )
+    }
     }
     
     func loadSavedPlans() {
@@ -1301,5 +1325,14 @@ public struct VisitScreen: View {
             }
         }
     }
+    
+    // GitHub URL変換関数
+    private func convertGitHubUrl(_ url: String) -> String {
+        if url.contains("github.com") && url.contains("/blob/") {
+            return url
+                .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
+                .replacingOccurrences(of: "/blob/", with: "/")
+        }
+        return url
+    }
 }
-

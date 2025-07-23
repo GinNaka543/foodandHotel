@@ -83,6 +83,8 @@
 		CC20AB102E26E6C1005F4C2A /* VisitPlanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB012E26E6C1005F4C2A /* VisitPlanModel.swift */; };
 		CC20AB112E26E6C1005F4C2A /* RegisterScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */; };
 		CC20AB122E26E6C1005F4C2A /* UserPointsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */; };
+		CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */; };
+		CC9BAFD02E315AA30088E501 /* VisitScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -182,6 +184,8 @@
 		CC20AB012E26E6C1005F4C2A /* VisitPlanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanModel.swift; sourceTree = "<group>"; };
 		CC20AB022E26E6C1005F4C2A /* VisitPlanningScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanningScreen.swift; sourceTree = "<group>"; };
 		CC20AB032E26E6C1005F4C2A /* VisitTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitTypes.swift; sourceTree = "<group>"; };
+		CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen_iPad.swift; sourceTree = "<group>"; };
+		CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitScreen_iPad.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
 		F3BC3FCE306518206AAA0831 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		FAFB6F7C41707CA22E40FB09 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVKit.framework; sourceTree = "<group>"; };
@@ -243,6 +247,8 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */,
+				CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */,
 				CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */,
 				CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */,
 				CC1BB3952E310B00006EE695 /* SoundtrackManager.swift */,
@@ -509,6 +515,7 @@
 				CC20AAF32E26E6B0005F4C2A /* PlanPaymentConfirmationView.swift in Sources */,
 				44E38804BC15161C44726B1C /* ProfileScreen.swift in Sources */,
 				116B9C0B56F15D176892A506 /* TitleScreen.swift in Sources */,
+				CC9BAFD02E315AA30088E501 /* VisitScreen_iPad.swift in Sources */,
 				93A03E18D939A7552014894F /* VideoGalleryScreen.swift in Sources */,
 				VISITSCREEN_BUILD_REF /* VisitScreen.swift in Sources */,
 				LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */,
@@ -519,6 +526,7 @@
 				CC20AAAC2E26E682005F4C2A /* AnimeRankingScreen.swift in Sources */,
 				CC20AACA2E26E6A0005F4C2A /* ImageMigrationHelper.swift in Sources */,
 				CC20AACB2E26E6A0005F4C2A /* ImageExtractor.swift in Sources */,
+				CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */,
 				CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */,
 				CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */,
 				CC1BB3882E28571B006EE695 /* AnimeOrderModal.swift in Sources */,

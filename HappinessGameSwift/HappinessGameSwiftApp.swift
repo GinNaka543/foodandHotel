@@ -475,7 +475,11 @@ struct MainContainerView: View {
                                 .environmentObject(mainTab)
                                 .environmentObject(animeManager)
                         } else if mainTab.selectedTab == .visit {
-                            VisitScreen()
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                VisitScreen_iPad()
+                            } else {
+                                VisitScreen()
+                            }
                         } else if mainTab.selectedTab == .card {
                             ProductScreen()
                         }

@@ -286,6 +286,7 @@ struct CharaScreen: View {
     @State private var bannerVideo: MemoryVideo? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
+    @StateObject private var soundtrackManager = SoundtrackManager.shared
     
     var filteredCharacters: [Character] {
         // Filter out characters without names first
@@ -390,6 +391,13 @@ struct CharaScreen: View {
                     }
                 }
             }
+            
+            // サントラプレイヤービュー
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70) // タブバーの上に表示
+            }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: {
             characterManager.loadCharacters()
@@ -413,6 +421,14 @@ struct CharaScreen: View {
             // 最初の動画を選択
             selectRandomYouTubeVideo()
             // 動画をローテーション表示
+            
+            // サントラマネージャーにすべてのサントラを収集
+            soundtrackManager.collectAllSoundtracks(
+                characters: characterManager.characters,
+                animes: [] // アニメマネージャーがある場合はここに追加
+            )
+            // ランダム再生を開始
+            soundtrackManager.startRandomPlayback()
             startBannerRotation()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in

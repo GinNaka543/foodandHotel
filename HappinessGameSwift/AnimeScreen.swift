@@ -3418,6 +3418,21 @@ struct AnimeAboutView: View {
     @State private var newIconImage: UIImage?
     @State private var currentDisplayedIcon: UIImage? = nil
     @State private var showSoundtrackEdit: Bool = false
+    
+    // シート管理用のenum
+    enum ActiveSheet: Identifiable {
+        case soundtrackEdit
+        case iconPicker
+        
+        var id: Int {
+            switch self {
+            case .soundtrackEdit: return 0
+            case .iconPicker: return 1
+            }
+        }
+    }
+    @State private var activeSheet: ActiveSheet?
+    
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
     
@@ -3702,7 +3717,7 @@ struct AnimeAboutView: View {
                         isEditingDescription = true
                     },
                     .default(Text("サントラを編集")) {
-                        showSoundtrackEdit = true
+                        activeSheet = .soundtrackEdit
                     },
                     .cancel(Text("キャンセル"))
                 ]
@@ -3760,17 +3775,22 @@ struct AnimeAboutView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showSoundtrackEdit) {
-                SoundtrackEditView { soundtrack in
-                    // サントラを保存
-                    guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                    var updatedAnime = animes[idx]
-                    var soundtracks = updatedAnime.soundtracks
-                    soundtracks.append(soundtrack)
-                    updatedAnime.soundtracks = soundtracks
-                    animes[idx] = updatedAnime
-                    animeManager.updateAnime(updatedAnime)
-                    anime = updatedAnime
+            .sheet(item: $activeSheet) { item in
+                switch item {
+                case .soundtrackEdit:
+                    SoundtrackEditView { soundtrack in
+                        // サントラを保存
+                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                        var updatedAnime = animes[idx]
+                        var soundtracks = updatedAnime.soundtracks
+                        soundtracks.append(soundtrack)
+                        updatedAnime.soundtracks = soundtracks
+                        animes[idx] = updatedAnime
+                        animeManager.updateAnime(updatedAnime)
+                        anime = updatedAnime
+                    }
+                case .iconPicker:
+                    EmptyView() // 後で実装
                 }
             }
         }

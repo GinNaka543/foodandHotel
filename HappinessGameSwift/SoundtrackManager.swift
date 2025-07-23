@@ -204,6 +204,10 @@ struct SoundtrackPlayerView: View {
                 .background(Color.white)
                 .cornerRadius(12)
                 .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .onTapGesture {
+                    // バー全体をタップした時も曲を変更
+                    manager.startRandomPlayback()
+                }
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 8)

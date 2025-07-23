@@ -718,6 +718,14 @@ struct ArtworkScreen: View {
                 )
             }
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .onAppear {
             loadArtworks()
             loadAlbumsFromUserDefaults()

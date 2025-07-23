@@ -792,6 +792,14 @@ struct VideoGalleryScreen: View {
             navigationBar
         }
         .overlay(loadingOverlay)
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .onAppear {
             loadVideos()
             loadAlbumsFromUserDefaults()

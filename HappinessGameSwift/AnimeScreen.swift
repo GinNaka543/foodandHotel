@@ -1608,6 +1608,14 @@ struct AnimeArtworkScreen: View {
                 )
             }
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .onAppear {
             loadArtworks()
             loadAlbumsFromUserDefaults()
@@ -2638,6 +2646,14 @@ struct AnimeVideoScreen: View {
             }
             .padding(32)
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .onAppear {
             loadVideos()
             loadVideoAlbumsFromUserDefaults()
@@ -2866,6 +2882,14 @@ struct AnimeVideoScreen: View {
                 }
             )
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .background(Color.white)
         .navigationBarHidden(true)
         .onAppear {
@@ -3709,7 +3733,16 @@ struct AnimeAboutView: View {
             editedVoiceActors = latestAnime.voiceActors.joined(separator: ", ")
             editedCharacters = latestAnime.characters.joined(separator: ", ")
             editedWatchLink = latestAnime.watchLink
+            
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 20)
+            }
+        )
         .onDisappear {
             saveAnime()
         }
@@ -4471,7 +4504,29 @@ struct AnimeDetailView: View {
             if currentDisplayedIcon == nil, let imageIdentifier = anime.imageIdentifier {
                 currentDisplayedIcon = loadImageFromPath(imageIdentifier)
             }
+            
+            // アニメのサントラがある場合、ランダムに再生
+            let currentAnime = animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+            if !currentAnime.soundtracks.isEmpty {
+                SoundtrackManager.shared.collectAllSoundtracks(
+                    characters: [],
+                    animes: [currentAnime]
+                )
+                SoundtrackManager.shared.startRandomPlayback()
+            }
         }
+        .onDisappear {
+            // ビューが消える時に音楽を停止
+            SoundtrackManager.shared.stopPlayback()
+        }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .navigationBarHidden(true)
         // タイトル編集モーダル
         .sheet(isPresented: $showEditTitleModal) {

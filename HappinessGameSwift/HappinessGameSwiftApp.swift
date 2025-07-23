@@ -5,6 +5,15 @@ import FirebaseFirestore
 import StripePaymentSheet
 import UIKit
 
+// AppDelegate for orientation control
+class AppDelegate: NSObject, UIApplicationDelegate {
+    static var orientationLock = UIInterfaceOrientationMask.portrait
+    
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return AppDelegate.orientationLock
+    }
+}
+
 class MainTabSelection: ObservableObject {
     @Published var selectedTab: MainContainerView.Tab = .chara {
         didSet {
@@ -272,6 +281,7 @@ class AuthenticationManager: ObservableObject {
 
 @main
 struct HappinessGameSwiftApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var mainTab = MainTabSelection()
     @StateObject private var characterManager = CharacterManager()
     @StateObject private var animeManager = AnimeManager()
@@ -288,6 +298,62 @@ struct HappinessGameSwiftApp: App {
         cleanupLargeUserDefaultsEntries()
         // 画像パスの移行処理を実行
         ImageMigrationHelper.shared.migrateAllImagePaths()
+        
+        // Stripe決済の事前初期化
+        preloadStripePayment()
+    }
+    
+    private func preloadStripePayment() {
+        // アプリ起動時にStripeの支払いインテントを事前に作成
+        // 少し遅延させてユーザーIDが利用可能になるのを待つ
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 2.0) {
+            // ユーザーIDがない場合は、後でリトライするか、汎用的なプリロードを行う
+            let userId = UserDefaults.standard.string(forKey: "userId") ?? "preload_user"
+            
+            let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            let body: [String: Any] = [
+                "amount": 500,
+                "userId": userId,
+                "pointAmount": 500,
+                "type": "app_subscription"
+            ]
+            
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            } catch {
+                print("[Stripe Preload] Failed to create request body: \(error)")
+                return
+            }
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let error = error {
+                    print("[Stripe Preload] Error: \(error)")
+                    return
+                }
+                
+                guard let data = data else { return }
+                
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let clientSecret = json["clientSecret"] as? String {
+                        // PaymentSheetの設定を事前に準備
+                        var configuration = PaymentSheet.Configuration()
+                        configuration.merchantDisplayName = "AniCollect"
+                        configuration.allowsDelayedPaymentMethods = false
+                        
+                        // 事前にPaymentSheetを作成（表示はしない）
+                        _ = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+                        print("[Stripe Preload] Payment intent preloaded successfully")
+                    }
+                } catch {
+                    print("[Stripe Preload] Failed to parse response: \(error)")
+                }
+            }.resume()
+        }
     }
     
     var body: some Scene {

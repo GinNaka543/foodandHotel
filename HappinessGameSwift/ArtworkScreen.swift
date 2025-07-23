@@ -1215,6 +1215,8 @@ struct ArtworkScreen: View {
                     )
                 }
             }
+            .preferredColorScheme(.dark)
+            .ignoresSafeArea()
         }
     }
     
@@ -1404,6 +1406,7 @@ struct FullscreenArtworkView: View {
     let onClose: () -> Void
     
     @State private var showDeleteAlert = false
+    @State private var orientation = UIDevice.current.orientation
     
     var body: some View {
         let _ = print("[DEBUG] FullscreenArtworkView - artwork: \(artwork.title)")
@@ -1411,7 +1414,8 @@ struct FullscreenArtworkView: View {
         let _ = print("[DEBUG] FullscreenArtworkView - pixivURL: \(artwork.pixivURL ?? "nil")")
         let _ = print("[DEBUG] FullscreenArtworkView - preloadedImage: \(preloadedImage != nil ? "exists" : "nil")")
         
-        return ZStack {
+        return GeometryReader { geometry in
+            ZStack {
             // Black background - always visible
             Color.black
                 .ignoresSafeArea()
@@ -1482,6 +1486,9 @@ struct FullscreenArtworkView: View {
                 Spacer()
             }
         }
+        }
+        .edgesIgnoringSafeArea(.all)
+        .statusBar(hidden: true)
         .alert(isPresented: $showDeleteAlert) {
             Alert(
                 title: Text("削除確認"),
@@ -1491,6 +1498,33 @@ struct FullscreenArtworkView: View {
                 },
                 secondaryButton: .cancel(Text("キャンセル"))
             )
+        }
+        .onAppear {
+            // Enable all orientations for fullscreen view
+            AppDelegate.orientationLock = .all
+            
+            // Force device to reconsider orientation
+            UIViewController.attemptRotationToDeviceOrientation()
+            
+            // Listen to orientation changes
+            NotificationCenter.default.addObserver(
+                forName: UIDevice.orientationDidChangeNotification,
+                object: nil,
+                queue: .main
+            ) { _ in
+                orientation = UIDevice.current.orientation
+            }
+        }
+        .onDisappear {
+            // Restore portrait only orientation
+            AppDelegate.orientationLock = .portrait
+            
+            // Force back to portrait
+            UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+            UIViewController.attemptRotationToDeviceOrientation()
+            
+            // Remove observer
+            NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
         }
     }
 }

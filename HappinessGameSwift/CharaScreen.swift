@@ -1375,7 +1375,7 @@ struct AboutView: View {
                     if let character = character {
                         VStack(spacing: 0) {
                             Button(action: {
-                                showIconPicker = true
+                                activeSheet = .iconPicker
                             }) {
                                 if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                     Image(uiImage: image)
@@ -1680,7 +1680,7 @@ struct AboutView: View {
                 ]
             )
         }
-        .sheet(isPresented: $showIconPicker) {
+        /* .sheet(isPresented: $showIconPicker) {
             PhotosPicker(selection: $iconPickerItem, matching: .images) {
                 VStack(spacing: 20) {
                     Text("アイコンを選択")
@@ -1731,7 +1731,7 @@ struct AboutView: View {
                         }
                     }
                 }
-            }
+            } */
             .sheet(item: $activeSheet) { item in
                 switch item {
                 case .soundtrackEdit:
@@ -1750,7 +1750,57 @@ struct AboutView: View {
                         print("DEBUG: SoundtrackEditViewシートが表示されました (from sheet)")
                     }
                 case .iconPicker:
-                    EmptyView() // 後で実装
+                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                        VStack(spacing: 20) {
+                            Text("アイコンを選択")
+                                .font(.headline)
+                            
+                            if let newIconImage = newIconImage {
+                                Image(uiImage: newIconImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 150, height: 150)
+                                    .clipShape(Circle())
+                            }
+                            
+                            Button("画像を選択") {
+                                // PhotosPickerが自動で処理
+                            }
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                            
+                            if newIconImage != nil {
+                                Button("保存") {
+                                    saveNewIcon()
+                                    activeSheet = nil
+                                }
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                            }
+                            
+                            Button("キャンセル") {
+                                activeSheet = nil
+                                newIconImage = nil
+                                iconPickerItem = nil
+                            }
+                            .foregroundColor(.red)
+                        }
+                        .padding()
+                    }
+                    .onChange(of: iconPickerItem) { newValue in
+                        if let newValue = newValue {
+                            Task {
+                                if let data = try? await newValue.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    newIconImage = image
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -913,7 +913,7 @@ struct AnimeRow: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.blue)
+                        .background(Color.purple)
                         .cornerRadius(6)
                     }
                 } else {
@@ -4077,17 +4077,23 @@ struct AddAnimeSheet: View {
                         }
                         
                         // ハッシュタグ入力
-                        TextField("ハッシュタグ", text: $hashtag)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .padding(.vertical, 8)
-                            .overlay(
-                                VStack {
-                                    Spacer()
-                                    Divider()
-                                        .background(Color.gray.opacity(0.5))
-                                }
-                            )
-                            .padding(.horizontal)
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("ハッシュタグ", text: $hashtag)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .padding(.vertical, 8)
+                                .overlay(
+                                    VStack {
+                                        Spacer()
+                                        Divider()
+                                            .background(Color.gray.opacity(0.5))
+                                    }
+                                )
+                            
+                            Text("同じタグを持つアニメでアルバムを作成できます")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal)
                         
                         // 視聴ステータス
                         VStack(spacing: 8) {

@@ -1,0 +1,750 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		070768B9C0DB7725020C9D42 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAFB6F7C41707CA22E40FB09 /* AVKit.framework */; };
+		116B9C0B56F15D176892A506 /* TitleScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A2163C710253B5523520C38 /* TitleScreen.swift */; };
+		1D9C1123B229F61A882853B9 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E359E895A1128E20519BC48B /* PhotosUI.framework */; };
+		200B60E5CCDCD13CB186A89D /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7F5660315220E1949A4A65D1 /* AVFoundation.framework */; };
+		2480D714018A706C8BA4A325 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9BBC865F71B5748DCB560583 /* Assets.xcassets */; };
+		33E5EDB3B81EC36DBB4E8A33 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3FF11275CC8B8F57F4F5EF3F /* GoogleService-Info.plist */; };
+		44E38804BC15161C44726B1C /* ProfileScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53859EBFC425A28FA0E91F1D /* ProfileScreen.swift */; };
+		49BA0B74FCF6958489390E5C /* Pods_HappinessGameSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 003E46D9DD6DA416956D5424 /* Pods_HappinessGameSwift.framework */; };
+		58B0BEEC55B602A43A48470D /* AddVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C89171126C03EEF19913ED /* AddVideoView.swift */; };
+		86306C4517312F565813E5D7 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BC3FCE306518206AAA0831 /* HomeScreen.swift */; };
+		93A03E18D939A7552014894F /* VideoGalleryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */; };
+		C3C8E480920840E6B38DD715 /* MemoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6BD18F23F8A6F79B12B00E /* MemoryScreen.swift */; };
+		CC1BB37F2E279DBD006EE695 /* TermsOfServiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB37E2E279DBD006EE695 /* TermsOfServiceView.swift */; };
+		CC1BB3802E279DBD006EE695 /* SpotEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB37D2E279DBD006EE695 /* SpotEditView.swift */; };
+		CC1BB3842E28144D006EE695 /* PlanConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3832E28144D006EE695 /* PlanConfirmationView.swift */; };
+		CC1BB3862E285711006EE695 /* CharacterOrderModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3852E285711006EE695 /* CharacterOrderModal.swift */; };
+		CC1BB3882E28571B006EE695 /* AnimeOrderModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3872E28571B006EE695 /* AnimeOrderModal.swift */; };
+		CC1BB38A2E2A47BA006EE695 /* MultipleFirebaseAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3892E2A47BA006EE695 /* MultipleFirebaseAdView.swift */; };
+		CC1BB38C2E2AB69B006EE695 /* UserDefaultsHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */; };
+		CC1BB3922E3106A8006EE695 /* SoundtrackEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */; };
+		CC20AAA82E26E682005F4C2A /* ArtworkScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA72E26E682005F4C2A /* ArtworkScreen.swift */; };
+		CC20AAA92E26E682005F4C2A /* ArtworkPlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA62E26E682005F4C2A /* ArtworkPlayerScreen.swift */; };
+		CC20AAAA2E26E682005F4C2A /* AdvertisementAdminScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA12E26E682005F4C2A /* AdvertisementAdminScreen.swift */; };
+		CC20AAAB2E26E682005F4C2A /* AlbumArtworkListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA22E26E682005F4C2A /* AlbumArtworkListScreen.swift */; };
+		CC20AAAC2E26E682005F4C2A /* AnimeRankingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA42E26E682005F4C2A /* AnimeRankingScreen.swift */; };
+		CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA52E26E682005F4C2A /* AnimeScreen.swift */; };
+		CC20AAAE2E26E682005F4C2A /* AnimeListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA32E26E682005F4C2A /* AnimeListScreen.swift */; };
+		CC20AAB52E26E68D005F4C2A /* CharacterListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAB12E26E68D005F4C2A /* CharacterListScreen.swift */; };
+		CC20AAB62E26E68D005F4C2A /* CharacterRankingScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAB22E26E68D005F4C2A /* CharacterRankingScrollView.swift */; };
+		CC20AAB72E26E68D005F4C2A /* CustomRankingModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAB42E26E68D005F4C2A /* CustomRankingModels.swift */; };
+		CC20AAB82E26E68D005F4C2A /* CharaScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAB32E26E68D005F4C2A /* CharaScreen.swift */; };
+		CC20AAB92E26E68D005F4C2A /* BirthdayReminderListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAB02E26E68D005F4C2A /* BirthdayReminderListScreen.swift */; };
+		CC20AABA2E26E68D005F4C2A /* AuthSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAAF2E26E68D005F4C2A /* AuthSelectionView.swift */; };
+		CC20AAC12E26E697005F4C2A /* GitHubImageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AABF2E26E697005F4C2A /* GitHubImageManager.swift */; };
+		CC20AAC22E26E697005F4C2A /* FirebaseAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AABB2E26E697005F4C2A /* FirebaseAdView.swift */; };
+		CC20AAC32E26E697005F4C2A /* FixExistingAds.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AABE2E26E697005F4C2A /* FixExistingAds.swift */; };
+		CC20AAC42E26E697005F4C2A /* FirebaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AABD2E26E697005F4C2A /* FirebaseManager.swift */; };
+		CC20AAC52E26E697005F4C2A /* GitHubRepoModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAC02E26E697005F4C2A /* GitHubRepoModel.swift */; };
+		CC20AACA2E26E6A0005F4C2A /* ImageMigrationHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAC82E26E6A0005F4C2A /* ImageMigrationHelper.swift */; };
+		CC20AACB2E26E6A0005F4C2A /* ImageExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAC72E26E6A0005F4C2A /* ImageExtractor.swift */; };
+		CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAC92E26E6A0005F4C2A /* ImageUtils.swift */; };
+		CC20AAE12E26E6B0005F4C2A /* PointPurchaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AADC2E26E6B0005F4C2A /* PointPurchaseView.swift */; };
+		CC20AAE22E26E6B0005F4C2A /* PlanPublicationChoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD72E26E6B0005F4C2A /* PlanPublicationChoiceView.swift */; };
+		CC20AAE32E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AADA2E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift */; };
+		CC20AAE42E26E6B0005F4C2A /* PixivThumbnailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD42E26E6B0005F4C2A /* PixivThumbnailView.swift */; };
+		CC20AAE52E26E6B0005F4C2A /* PlanPaymentFinalConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD62E26E6B0005F4C2A /* PlanPaymentFinalConfirmationView.swift */; };
+		CC20AAE62E26E6B0005F4C2A /* PlanPurchaseCompletionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD92E26E6B0005F4C2A /* PlanPurchaseCompletionView.swift */; };
+		CC20AAE72E26E6B0005F4C2A /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD02E26E6B0005F4C2A /* LoginView.swift */; };
+		CC20AAE82E26E6B0005F4C2A /* PointsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AADD2E26E6B0005F4C2A /* PointsView.swift */; };
+		CC20AAE92E26E6B0005F4C2A /* ProductAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AADF2E26E6B0005F4C2A /* ProductAdView.swift */; };
+		CC20AAEA2E26E6B0005F4C2A /* NavigationMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD12E26E6B0005F4C2A /* NavigationMenuView.swift */; };
+		CC20AAEB2E26E6B0005F4C2A /* ProductScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAE02E26E6B0005F4C2A /* ProductScreen.swift */; };
+		CC20AAEC2E26E6B0005F4C2A /* PixivRedirectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD32E26E6B0005F4C2A /* PixivRedirectView.swift */; };
+		CC20AAED2E26E6B0005F4C2A /* Product.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AADE2E26E6B0005F4C2A /* Product.swift */; };
+		CC20AAEE2E26E6B0005F4C2A /* ListTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AACE2E26E6B0005F4C2A /* ListTab.swift */; };
+		CC20AAEF2E26E6B0005F4C2A /* PixivConfirmationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD22E26E6B0005F4C2A /* PixivConfirmationScreen.swift */; };
+		CC20AAF02E26E6B0005F4C2A /* LoginScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AACF2E26E6B0005F4C2A /* LoginScreenView.swift */; };
+		CC20AAF12E26E6B0005F4C2A /* PlanPurchaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AADB2E26E6B0005F4C2A /* PlanPurchaseView.swift */; };
+		CC20AAF22E26E6B0005F4C2A /* PlanPublicationConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD82E26E6B0005F4C2A /* PlanPublicationConfirmationView.swift */; };
+		CC20AAF32E26E6B0005F4C2A /* PlanPaymentConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAD52E26E6B0005F4C2A /* PlanPaymentConfirmationView.swift */; };
+		CC20AB042E26E6C1005F4C2A /* VisitPlanningScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB022E26E6C1005F4C2A /* VisitPlanningScreen.swift */; };
+		CC20AB062E26E6C1005F4C2A /* TargetedAdBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFB2E26E6C1005F4C2A /* TargetedAdBannerView.swift */; };
+		CC20AB072E26E6C1005F4C2A /* ThumbnailPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFC2E26E6C1005F4C2A /* ThumbnailPickerView.swift */; };
+		CC20AB082E26E6C1005F4C2A /* SimpleAdBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF82E26E6C1005F4C2A /* SimpleAdBannerView.swift */; };
+		CC20AB092E26E6C1005F4C2A /* PublishPlanDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF52E26E6C1005F4C2A /* PublishPlanDialog.swift */; };
+		CC20AB0A2E26E6C1005F4C2A /* StripePaymentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF92E26E6C1005F4C2A /* StripePaymentManager.swift */; };
+		CC20AB0B2E26E6C1005F4C2A /* UserProfileScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFE2E26E6C1005F4C2A /* UserProfileScreen.swift */; };
+		CC20AB0C2E26E6C1005F4C2A /* VideoPlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFF2E26E6C1005F4C2A /* VideoPlayerScreen.swift */; };
+		CC20AB0D2E26E6C1005F4C2A /* VisitTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB032E26E6C1005F4C2A /* VisitTypes.swift */; };
+		CC20AB0E2E26E6C1005F4C2A /* StripePaymentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFA2E26E6C1005F4C2A /* StripePaymentSheet.swift */; };
+		CC20AB0F2E26E6C1005F4C2A /* VisitGameScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB002E26E6C1005F4C2A /* VisitGameScreen.swift */; };
+		CC20AB102E26E6C1005F4C2A /* VisitPlanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB012E26E6C1005F4C2A /* VisitPlanModel.swift */; };
+		CC20AB112E26E6C1005F4C2A /* RegisterScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */; };
+		CC20AB122E26E6C1005F4C2A /* UserPointsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */; };
+		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
+		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
+		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
+		VISITSCREEN_BUILD_REF /* VisitScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = VISITSCREEN_FILE_REF /* VisitScreen.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9983A420FF27AB699AEE9166 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		003E46D9DD6DA416956D5424 /* Pods_HappinessGameSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HappinessGameSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		155E2959F7CC5CB4E35C32F8 /* Pods-HappinessGameSwift.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappinessGameSwift.debug.xcconfig"; path = "Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift.debug.xcconfig"; sourceTree = "<group>"; };
+		3FF11275CC8B8F57F4F5EF3F /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HappinessGameSwiftApp.swift; sourceTree = "<group>"; };
+		53859EBFC425A28FA0E91F1D /* ProfileScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileScreen.swift; sourceTree = "<group>"; };
+		5A2163C710253B5523520C38 /* TitleScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleScreen.swift; sourceTree = "<group>"; };
+		75C89171126C03EEF19913ED /* AddVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddVideoView.swift; sourceTree = "<group>"; };
+		7F5660315220E1949A4A65D1 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVFoundation.framework; sourceTree = "<group>"; };
+		9BBC865F71B5748DCB560583 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9C27E3F30AF355A359930A81 /* アニレコ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "アニレコ.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPhotoView.swift; sourceTree = "<group>"; };
+		B0DAC2E1371DEC57CB8ED484 /* Pods-HappinessGameSwift.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappinessGameSwift.release.xcconfig"; path = "Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift.release.xcconfig"; sourceTree = "<group>"; };
+		B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGalleryScreen.swift; sourceTree = "<group>"; };
+		BF6BD18F23F8A6F79B12B00E /* MemoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryScreen.swift; sourceTree = "<group>"; };
+		CC1BB37D2E279DBD006EE695 /* SpotEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEditView.swift; sourceTree = "<group>"; };
+		CC1BB37E2E279DBD006EE695 /* TermsOfServiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TermsOfServiceView.swift; sourceTree = "<group>"; };
+		CC1BB3832E28144D006EE695 /* PlanConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanConfirmationView.swift; sourceTree = "<group>"; };
+		CC1BB3852E285711006EE695 /* CharacterOrderModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterOrderModal.swift; sourceTree = "<group>"; };
+		CC1BB3872E28571B006EE695 /* AnimeOrderModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeOrderModal.swift; sourceTree = "<group>"; };
+		CC1BB3892E2A47BA006EE695 /* MultipleFirebaseAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipleFirebaseAdView.swift; sourceTree = "<group>"; };
+		CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsHelper.swift; sourceTree = "<group>"; };
+		CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackEditView.swift; sourceTree = "<group>"; };
+		CC20AAA12E26E682005F4C2A /* AdvertisementAdminScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementAdminScreen.swift; sourceTree = "<group>"; };
+		CC20AAA22E26E682005F4C2A /* AlbumArtworkListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumArtworkListScreen.swift; sourceTree = "<group>"; };
+		CC20AAA32E26E682005F4C2A /* AnimeListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeListScreen.swift; sourceTree = "<group>"; };
+		CC20AAA42E26E682005F4C2A /* AnimeRankingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeRankingScreen.swift; sourceTree = "<group>"; };
+		CC20AAA52E26E682005F4C2A /* AnimeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeScreen.swift; sourceTree = "<group>"; };
+		CC20AAA62E26E682005F4C2A /* ArtworkPlayerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkPlayerScreen.swift; sourceTree = "<group>"; };
+		CC20AAA72E26E682005F4C2A /* ArtworkScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkScreen.swift; sourceTree = "<group>"; };
+		CC20AAAF2E26E68D005F4C2A /* AuthSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthSelectionView.swift; sourceTree = "<group>"; };
+		CC20AAB02E26E68D005F4C2A /* BirthdayReminderListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BirthdayReminderListScreen.swift; sourceTree = "<group>"; };
+		CC20AAB12E26E68D005F4C2A /* CharacterListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterListScreen.swift; sourceTree = "<group>"; };
+		CC20AAB22E26E68D005F4C2A /* CharacterRankingScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacterRankingScrollView.swift; sourceTree = "<group>"; };
+		CC20AAB32E26E68D005F4C2A /* CharaScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharaScreen.swift; sourceTree = "<group>"; };
+		CC20AAB42E26E68D005F4C2A /* CustomRankingModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomRankingModels.swift; sourceTree = "<group>"; };
+		CC20AABB2E26E697005F4C2A /* FirebaseAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseAdView.swift; sourceTree = "<group>"; };
+		CC20AABD2E26E697005F4C2A /* FirebaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseManager.swift; sourceTree = "<group>"; };
+		CC20AABE2E26E697005F4C2A /* FixExistingAds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixExistingAds.swift; sourceTree = "<group>"; };
+		CC20AABF2E26E697005F4C2A /* GitHubImageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubImageManager.swift; sourceTree = "<group>"; };
+		CC20AAC02E26E697005F4C2A /* GitHubRepoModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GitHubRepoModel.swift; sourceTree = "<group>"; };
+		CC20AAC72E26E6A0005F4C2A /* ImageExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageExtractor.swift; sourceTree = "<group>"; };
+		CC20AAC82E26E6A0005F4C2A /* ImageMigrationHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageMigrationHelper.swift; sourceTree = "<group>"; };
+		CC20AAC92E26E6A0005F4C2A /* ImageUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageUtils.swift; sourceTree = "<group>"; };
+		CC20AACD2E26E6B0005F4C2A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CC20AACE2E26E6B0005F4C2A /* ListTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTab.swift; sourceTree = "<group>"; };
+		CC20AACF2E26E6B0005F4C2A /* LoginScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginScreenView.swift; sourceTree = "<group>"; };
+		CC20AAD02E26E6B0005F4C2A /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		CC20AAD12E26E6B0005F4C2A /* NavigationMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationMenuView.swift; sourceTree = "<group>"; };
+		CC20AAD22E26E6B0005F4C2A /* PixivConfirmationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixivConfirmationScreen.swift; sourceTree = "<group>"; };
+		CC20AAD32E26E6B0005F4C2A /* PixivRedirectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixivRedirectView.swift; sourceTree = "<group>"; };
+		CC20AAD42E26E6B0005F4C2A /* PixivThumbnailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PixivThumbnailView.swift; sourceTree = "<group>"; };
+		CC20AAD52E26E6B0005F4C2A /* PlanPaymentConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanPaymentConfirmationView.swift; sourceTree = "<group>"; };
+		CC20AAD62E26E6B0005F4C2A /* PlanPaymentFinalConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanPaymentFinalConfirmationView.swift; sourceTree = "<group>"; };
+		CC20AAD72E26E6B0005F4C2A /* PlanPublicationChoiceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanPublicationChoiceView.swift; sourceTree = "<group>"; };
+		CC20AAD82E26E6B0005F4C2A /* PlanPublicationConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanPublicationConfirmationView.swift; sourceTree = "<group>"; };
+		CC20AAD92E26E6B0005F4C2A /* PlanPurchaseCompletionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanPurchaseCompletionView.swift; sourceTree = "<group>"; };
+		CC20AADA2E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanPurchaseConfirmationView.swift; sourceTree = "<group>"; };
+		CC20AADB2E26E6B0005F4C2A /* PlanPurchaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanPurchaseView.swift; sourceTree = "<group>"; };
+		CC20AADC2E26E6B0005F4C2A /* PointPurchaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointPurchaseView.swift; sourceTree = "<group>"; };
+		CC20AADD2E26E6B0005F4C2A /* PointsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointsView.swift; sourceTree = "<group>"; };
+		CC20AADE2E26E6B0005F4C2A /* Product.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Product.swift; sourceTree = "<group>"; };
+		CC20AADF2E26E6B0005F4C2A /* ProductAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductAdView.swift; sourceTree = "<group>"; };
+		CC20AAE02E26E6B0005F4C2A /* ProductScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductScreen.swift; sourceTree = "<group>"; };
+		CC20AAF52E26E6C1005F4C2A /* PublishPlanDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublishPlanDialog.swift; sourceTree = "<group>"; };
+		CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterScreenView.swift; sourceTree = "<group>"; };
+		CC20AAF82E26E6C1005F4C2A /* SimpleAdBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleAdBannerView.swift; sourceTree = "<group>"; };
+		CC20AAF92E26E6C1005F4C2A /* StripePaymentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePaymentManager.swift; sourceTree = "<group>"; };
+		CC20AAFA2E26E6C1005F4C2A /* StripePaymentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePaymentSheet.swift; sourceTree = "<group>"; };
+		CC20AAFB2E26E6C1005F4C2A /* TargetedAdBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetedAdBannerView.swift; sourceTree = "<group>"; };
+		CC20AAFC2E26E6C1005F4C2A /* ThumbnailPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailPickerView.swift; sourceTree = "<group>"; };
+		CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPointsModel.swift; sourceTree = "<group>"; };
+		CC20AAFE2E26E6C1005F4C2A /* UserProfileScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileScreen.swift; sourceTree = "<group>"; };
+		CC20AAFF2E26E6C1005F4C2A /* VideoPlayerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerScreen.swift; sourceTree = "<group>"; };
+		CC20AB002E26E6C1005F4C2A /* VisitGameScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitGameScreen.swift; sourceTree = "<group>"; };
+		CC20AB012E26E6C1005F4C2A /* VisitPlanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanModel.swift; sourceTree = "<group>"; };
+		CC20AB022E26E6C1005F4C2A /* VisitPlanningScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanningScreen.swift; sourceTree = "<group>"; };
+		CC20AB032E26E6C1005F4C2A /* VisitTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitTypes.swift; sourceTree = "<group>"; };
+		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
+		F3BC3FCE306518206AAA0831 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
+		FAFB6F7C41707CA22E40FB09 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVKit.framework; sourceTree = "<group>"; };
+		LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListPageScreen.swift; sourceTree = "<group>"; };
+		VISITSCREEN_FILE_REF /* VisitScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitScreen.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		542E3AC71EF14B396BF9026F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				200B60E5CCDCD13CB186A89D /* AVFoundation.framework in Frameworks */,
+				1D9C1123B229F61A882853B9 /* PhotosUI.framework in Frameworks */,
+				070768B9C0DB7725020C9D42 /* AVKit.framework in Frameworks */,
+				49BA0B74FCF6958489390E5C /* Pods_HappinessGameSwift.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3181521879F3EBF6C743F9D8 /* HappinessGameSwift */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = HappinessGameSwift;
+			sourceTree = "<group>";
+		};
+		5D7F3282768988288E89E3E7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9C27E3F30AF355A359930A81 /* アニレコ.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		677A4D33AD64AB9623DB6DBD /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				155E2959F7CC5CB4E35C32F8 /* Pods-HappinessGameSwift.debug.xcconfig */,
+				B0DAC2E1371DEC57CB8ED484 /* Pods-HappinessGameSwift.release.xcconfig */,
+			);
+			name = Pods;
+			path = ../Pods;
+			sourceTree = "<group>";
+		};
+		8F7DBBC39F2D4E379E0D6B9A = {
+			isa = PBXGroup;
+			children = (
+				3181521879F3EBF6C743F9D8 /* HappinessGameSwift */,
+				B09124C7F033D3979C85F1E2 /* HappinessGameSwift */,
+				B134C81479DD80F70B4045DE /* Frameworks */,
+				5D7F3282768988288E89E3E7 /* Products */,
+				677A4D33AD64AB9623DB6DBD /* Pods */,
+			);
+			sourceTree = "<group>";
+		};
+		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
+			isa = PBXGroup;
+			children = (
+				CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */,
+				CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */,
+				CC1BB3892E2A47BA006EE695 /* MultipleFirebaseAdView.swift */,
+				CC1BB3872E28571B006EE695 /* AnimeOrderModal.swift */,
+				CC1BB3852E285711006EE695 /* CharacterOrderModal.swift */,
+				CC1BB3832E28144D006EE695 /* PlanConfirmationView.swift */,
+				CC1BB37D2E279DBD006EE695 /* SpotEditView.swift */,
+				CC1BB37E2E279DBD006EE695 /* TermsOfServiceView.swift */,
+				CC20AAF52E26E6C1005F4C2A /* PublishPlanDialog.swift */,
+				CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */,
+				CC20AAF82E26E6C1005F4C2A /* SimpleAdBannerView.swift */,
+				CC20AAF92E26E6C1005F4C2A /* StripePaymentManager.swift */,
+				CC20AAFA2E26E6C1005F4C2A /* StripePaymentSheet.swift */,
+				CC20AAFB2E26E6C1005F4C2A /* TargetedAdBannerView.swift */,
+				CC20AAFC2E26E6C1005F4C2A /* ThumbnailPickerView.swift */,
+				CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */,
+				CC20AAFE2E26E6C1005F4C2A /* UserProfileScreen.swift */,
+				CC20AAFF2E26E6C1005F4C2A /* VideoPlayerScreen.swift */,
+				CC20AB002E26E6C1005F4C2A /* VisitGameScreen.swift */,
+				CC20AB012E26E6C1005F4C2A /* VisitPlanModel.swift */,
+				CC20AB022E26E6C1005F4C2A /* VisitPlanningScreen.swift */,
+				CC20AB032E26E6C1005F4C2A /* VisitTypes.swift */,
+				CC20AACD2E26E6B0005F4C2A /* Info.plist */,
+				CC20AACE2E26E6B0005F4C2A /* ListTab.swift */,
+				CC20AACF2E26E6B0005F4C2A /* LoginScreenView.swift */,
+				CC20AAD02E26E6B0005F4C2A /* LoginView.swift */,
+				CC20AAD12E26E6B0005F4C2A /* NavigationMenuView.swift */,
+				CC20AAD22E26E6B0005F4C2A /* PixivConfirmationScreen.swift */,
+				CC20AAD32E26E6B0005F4C2A /* PixivRedirectView.swift */,
+				CC20AAD42E26E6B0005F4C2A /* PixivThumbnailView.swift */,
+				CC20AAD52E26E6B0005F4C2A /* PlanPaymentConfirmationView.swift */,
+				CC20AAD62E26E6B0005F4C2A /* PlanPaymentFinalConfirmationView.swift */,
+				CC20AAD72E26E6B0005F4C2A /* PlanPublicationChoiceView.swift */,
+				CC20AAD82E26E6B0005F4C2A /* PlanPublicationConfirmationView.swift */,
+				CC20AAD92E26E6B0005F4C2A /* PlanPurchaseCompletionView.swift */,
+				CC20AADA2E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift */,
+				CC20AADB2E26E6B0005F4C2A /* PlanPurchaseView.swift */,
+				CC20AADC2E26E6B0005F4C2A /* PointPurchaseView.swift */,
+				CC20AADD2E26E6B0005F4C2A /* PointsView.swift */,
+				CC20AADE2E26E6B0005F4C2A /* Product.swift */,
+				CC20AADF2E26E6B0005F4C2A /* ProductAdView.swift */,
+				CC20AAE02E26E6B0005F4C2A /* ProductScreen.swift */,
+				CC20AAC72E26E6A0005F4C2A /* ImageExtractor.swift */,
+				CC20AAC82E26E6A0005F4C2A /* ImageMigrationHelper.swift */,
+				CC20AAC92E26E6A0005F4C2A /* ImageUtils.swift */,
+				CC20AABB2E26E697005F4C2A /* FirebaseAdView.swift */,
+				CC20AABD2E26E697005F4C2A /* FirebaseManager.swift */,
+				CC20AABE2E26E697005F4C2A /* FixExistingAds.swift */,
+				CC20AABF2E26E697005F4C2A /* GitHubImageManager.swift */,
+				CC20AAC02E26E697005F4C2A /* GitHubRepoModel.swift */,
+				CC20AAAF2E26E68D005F4C2A /* AuthSelectionView.swift */,
+				CC20AAB02E26E68D005F4C2A /* BirthdayReminderListScreen.swift */,
+				CC20AAB12E26E68D005F4C2A /* CharacterListScreen.swift */,
+				CC20AAB22E26E68D005F4C2A /* CharacterRankingScrollView.swift */,
+				CC20AAB32E26E68D005F4C2A /* CharaScreen.swift */,
+				CC20AAB42E26E68D005F4C2A /* CustomRankingModels.swift */,
+				CC20AAA12E26E682005F4C2A /* AdvertisementAdminScreen.swift */,
+				CC20AAA22E26E682005F4C2A /* AlbumArtworkListScreen.swift */,
+				CC20AAA32E26E682005F4C2A /* AnimeListScreen.swift */,
+				CC20AAA42E26E682005F4C2A /* AnimeRankingScreen.swift */,
+				CC20AAA52E26E682005F4C2A /* AnimeScreen.swift */,
+				CC20AAA62E26E682005F4C2A /* ArtworkPlayerScreen.swift */,
+				CC20AAA72E26E682005F4C2A /* ArtworkScreen.swift */,
+				A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */,
+				75C89171126C03EEF19913ED /* AddVideoView.swift */,
+				9BBC865F71B5748DCB560583 /* Assets.xcassets */,
+				3FF11275CC8B8F57F4F5EF3F /* GoogleService-Info.plist */,
+				46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */,
+				F3BC3FCE306518206AAA0831 /* HomeScreen.swift */,
+				BF6BD18F23F8A6F79B12B00E /* MemoryScreen.swift */,
+				53859EBFC425A28FA0E91F1D /* ProfileScreen.swift */,
+				5A2163C710253B5523520C38 /* TitleScreen.swift */,
+				B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */,
+				VISITSCREEN_FILE_REF /* VisitScreen.swift */,
+				LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */,
+			);
+			name = HappinessGameSwift;
+			path = .;
+			sourceTree = "<group>";
+		};
+		B134C81479DD80F70B4045DE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7F5660315220E1949A4A65D1 /* AVFoundation.framework */,
+				FAFB6F7C41707CA22E40FB09 /* AVKit.framework */,
+				E359E895A1128E20519BC48B /* PhotosUI.framework */,
+				003E46D9DD6DA416956D5424 /* Pods_HappinessGameSwift.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D2E01CF40DBA9B5BAA5AF916 /* HappinessGameSwift */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8AB3856C7BC9D0B91CEC8913 /* Build configuration list for PBXNativeTarget "HappinessGameSwift" */;
+			buildPhases = (
+				7A2DE9D1AFD4DBFB14773319 /* [CP] Check Pods Manifest.lock */,
+				786A334FCD051551CC90194F /* Sources */,
+				A5E6D900B72B4EAD0524966D /* Resources */,
+				542E3AC71EF14B396BF9026F /* Frameworks */,
+				9983A420FF27AB699AEE9166 /* Embed Frameworks */,
+				C1C7B6AEBDE7CDB634D93DEE /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HappinessGameSwift;
+			productName = HappinessGameSwift;
+			productReference = 9C27E3F30AF355A359930A81 /* アニレコ.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7BF456D33370760235540CA0 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					D2E01CF40DBA9B5BAA5AF916 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 434D06DCF5B57F7372FF0178 /* Build configuration list for PBXProject "HappinessGameSwift" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 8F7DBBC39F2D4E379E0D6B9A;
+			minimizedProjectReferenceProxies = 1;
+			productRefGroup = 5D7F3282768988288E89E3E7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D2E01CF40DBA9B5BAA5AF916 /* HappinessGameSwift */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A5E6D900B72B4EAD0524966D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2480D714018A706C8BA4A325 /* Assets.xcassets in Resources */,
+				33E5EDB3B81EC36DBB4E8A33 /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		7A2DE9D1AFD4DBFB14773319 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-HappinessGameSwift-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C1C7B6AEBDE7CDB634D93DEE /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		786A334FCD051551CC90194F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */,
+				58B0BEEC55B602A43A48470D /* AddVideoView.swift in Sources */,
+				FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */,
+				86306C4517312F565813E5D7 /* HomeScreen.swift in Sources */,
+				CC20AAB52E26E68D005F4C2A /* CharacterListScreen.swift in Sources */,
+				CC20AAB62E26E68D005F4C2A /* CharacterRankingScrollView.swift in Sources */,
+				CC20AAB72E26E68D005F4C2A /* CustomRankingModels.swift in Sources */,
+				CC1BB37F2E279DBD006EE695 /* TermsOfServiceView.swift in Sources */,
+				CC1BB3802E279DBD006EE695 /* SpotEditView.swift in Sources */,
+				CC20AAB82E26E68D005F4C2A /* CharaScreen.swift in Sources */,
+				CC20AAB92E26E68D005F4C2A /* BirthdayReminderListScreen.swift in Sources */,
+				CC20AABA2E26E68D005F4C2A /* AuthSelectionView.swift in Sources */,
+				C3C8E480920840E6B38DD715 /* MemoryScreen.swift in Sources */,
+				CC20AB042E26E6C1005F4C2A /* VisitPlanningScreen.swift in Sources */,
+				CC20AB062E26E6C1005F4C2A /* TargetedAdBannerView.swift in Sources */,
+				CC20AB072E26E6C1005F4C2A /* ThumbnailPickerView.swift in Sources */,
+				CC20AB082E26E6C1005F4C2A /* SimpleAdBannerView.swift in Sources */,
+				CC20AB092E26E6C1005F4C2A /* PublishPlanDialog.swift in Sources */,
+				CC20AB0A2E26E6C1005F4C2A /* StripePaymentManager.swift in Sources */,
+				CC1BB3842E28144D006EE695 /* PlanConfirmationView.swift in Sources */,
+				CC20AB0B2E26E6C1005F4C2A /* UserProfileScreen.swift in Sources */,
+				CC20AB0C2E26E6C1005F4C2A /* VideoPlayerScreen.swift in Sources */,
+				CC20AB0D2E26E6C1005F4C2A /* VisitTypes.swift in Sources */,
+				CC20AB0E2E26E6C1005F4C2A /* StripePaymentSheet.swift in Sources */,
+				CC20AB0F2E26E6C1005F4C2A /* VisitGameScreen.swift in Sources */,
+				CC20AB102E26E6C1005F4C2A /* VisitPlanModel.swift in Sources */,
+				CC20AB112E26E6C1005F4C2A /* RegisterScreenView.swift in Sources */,
+				CC20AB122E26E6C1005F4C2A /* UserPointsModel.swift in Sources */,
+				CC20AAE12E26E6B0005F4C2A /* PointPurchaseView.swift in Sources */,
+				CC1BB3922E3106A8006EE695 /* SoundtrackEditView.swift in Sources */,
+				CC20AAE22E26E6B0005F4C2A /* PlanPublicationChoiceView.swift in Sources */,
+				CC20AAE32E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift in Sources */,
+				CC20AAE42E26E6B0005F4C2A /* PixivThumbnailView.swift in Sources */,
+				CC20AAE52E26E6B0005F4C2A /* PlanPaymentFinalConfirmationView.swift in Sources */,
+				CC20AAE62E26E6B0005F4C2A /* PlanPurchaseCompletionView.swift in Sources */,
+				CC20AAE72E26E6B0005F4C2A /* LoginView.swift in Sources */,
+				CC20AAE82E26E6B0005F4C2A /* PointsView.swift in Sources */,
+				CC20AAE92E26E6B0005F4C2A /* ProductAdView.swift in Sources */,
+				CC20AAEA2E26E6B0005F4C2A /* NavigationMenuView.swift in Sources */,
+				CC1BB3862E285711006EE695 /* CharacterOrderModal.swift in Sources */,
+				CC20AAEB2E26E6B0005F4C2A /* ProductScreen.swift in Sources */,
+				CC20AAEC2E26E6B0005F4C2A /* PixivRedirectView.swift in Sources */,
+				CC20AAED2E26E6B0005F4C2A /* Product.swift in Sources */,
+				CC20AAEE2E26E6B0005F4C2A /* ListTab.swift in Sources */,
+				CC1BB38C2E2AB69B006EE695 /* UserDefaultsHelper.swift in Sources */,
+				CC20AAEF2E26E6B0005F4C2A /* PixivConfirmationScreen.swift in Sources */,
+				CC20AAF02E26E6B0005F4C2A /* LoginScreenView.swift in Sources */,
+				CC20AAF12E26E6B0005F4C2A /* PlanPurchaseView.swift in Sources */,
+				CC20AAF22E26E6B0005F4C2A /* PlanPublicationConfirmationView.swift in Sources */,
+				CC20AAF32E26E6B0005F4C2A /* PlanPaymentConfirmationView.swift in Sources */,
+				44E38804BC15161C44726B1C /* ProfileScreen.swift in Sources */,
+				116B9C0B56F15D176892A506 /* TitleScreen.swift in Sources */,
+				93A03E18D939A7552014894F /* VideoGalleryScreen.swift in Sources */,
+				VISITSCREEN_BUILD_REF /* VisitScreen.swift in Sources */,
+				LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */,
+				CC20AAA82E26E682005F4C2A /* ArtworkScreen.swift in Sources */,
+				CC20AAA92E26E682005F4C2A /* ArtworkPlayerScreen.swift in Sources */,
+				CC20AAAA2E26E682005F4C2A /* AdvertisementAdminScreen.swift in Sources */,
+				CC20AAAB2E26E682005F4C2A /* AlbumArtworkListScreen.swift in Sources */,
+				CC20AAAC2E26E682005F4C2A /* AnimeRankingScreen.swift in Sources */,
+				CC20AACA2E26E6A0005F4C2A /* ImageMigrationHelper.swift in Sources */,
+				CC20AACB2E26E6A0005F4C2A /* ImageExtractor.swift in Sources */,
+				CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */,
+				CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */,
+				CC1BB3882E28571B006EE695 /* AnimeOrderModal.swift in Sources */,
+				CC20AAAE2E26E682005F4C2A /* AnimeListScreen.swift in Sources */,
+				CC20AAC12E26E697005F4C2A /* GitHubImageManager.swift in Sources */,
+				CC20AAC22E26E697005F4C2A /* FirebaseAdView.swift in Sources */,
+				CC20AAC32E26E697005F4C2A /* FixExistingAds.swift in Sources */,
+				CC20AAC42E26E697005F4C2A /* FirebaseManager.swift in Sources */,
+				CC1BB38A2E2A47BA006EE695 /* MultipleFirebaseAdView.swift in Sources */,
+				CC20AAC52E26E697005F4C2A /* GitHubRepoModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		09747F0C741F2BFDA4EA350A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "写真と動画を撮影するために使用します";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画撮影時に音声を録音するために使用します";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "写真と動画をアップロードするために使用します";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5BB9E069F8CC05987D637200 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 155E2959F7CC5CB4E35C32F8 /* Pods-HappinessGameSwift.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.HappinessGameSwift;
+				PRODUCT_NAME = "アニレコ";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		82CAC2516D1C1C502087378E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "写真と動画を撮影するために使用します";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画撮影時に音声を録音するために使用します";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "写真と動画をアップロードするために使用します";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		DEBBA74BBD7F1DAADF79165C /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B0DAC2E1371DEC57CB8ED484 /* Pods-HappinessGameSwift.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.HappinessGameSwift;
+				PRODUCT_NAME = "アニレコ";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		434D06DCF5B57F7372FF0178 /* Build configuration list for PBXProject "HappinessGameSwift" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				09747F0C741F2BFDA4EA350A /* Debug */,
+				82CAC2516D1C1C502087378E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8AB3856C7BC9D0B91CEC8913 /* Build configuration list for PBXNativeTarget "HappinessGameSwift" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5BB9E069F8CC05987D637200 /* Debug */,
+				DEBBA74BBD7F1DAADF79165C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7BF456D33370760235540CA0 /* Project object */;
+}

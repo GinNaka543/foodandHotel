@@ -38,8 +38,8 @@ class AuthenticationManager: ObservableObject {
     }
     
     private func startPaymentCheckTimer() {
-        // Check every 5 seconds for testing
-        paymentCheckTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+        // Check every hour in production
+        paymentCheckTimer = Timer.scheduledTimer(withTimeInterval: 3600.0, repeats: true) { _ in
             self.checkPaymentRequirement()
             self.syncSubscriptionStatus()
         }
@@ -48,10 +48,10 @@ class AuthenticationManager: ObservableObject {
     func checkPaymentRequirement() {
         // Get first install date from keychain (persists across app reinstalls)
         if let firstInstallDate = getFirstInstallDateFromKeychain() {
-            // For testing: Check seconds instead of months
-            let secondsSinceInstall = Calendar.current.dateComponents([.second], from: firstInstallDate, to: Date()).second ?? 0
+            // Check months for production (2 months)
+            let monthsSinceInstall = Calendar.current.dateComponents([.month], from: firstInstallDate, to: Date()).month ?? 0
             
-            if secondsSinceInstall >= 30 && !hasPaid {
+            if monthsSinceInstall >= 2 && !hasPaid {
                 requiresPayment = true
             }
         } else {
@@ -99,7 +99,7 @@ class AuthenticationManager: ObservableObject {
                 "deviceId": self.deviceId,
                 "currentUserId": userId,
                 "firstInstallDate": firstInstallDate.timeIntervalSince1970,
-                "daysUntilPayment": 60, // Will be 60 days in production
+                "daysUntilPayment": 60, // 2 months (60 days) in production
                 "hasPaid": self.hasPaid,
                 "createdAt": Date().timeIntervalSince1970,
                 "lastSeenAt": Date().timeIntervalSince1970

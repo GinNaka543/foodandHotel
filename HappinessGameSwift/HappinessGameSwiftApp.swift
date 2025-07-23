@@ -900,18 +900,25 @@ struct PaymentPopupView: View {
                     // Payment options
                     VStack(spacing: 16) {
                         // Points balance display
-                        if userPoints > 0 {
-                            HStack {
-                                Image(systemName: "star.circle.fill")
-                                    .foregroundColor(.yellow)
-                                Text("保有ポイント: \(userPoints)pt")
-                                    .fontWeight(.medium)
+                        HStack {
+                            Image(systemName: "star.circle.fill")
+                                .foregroundColor(.yellow)
+                            Text("保有ポイント: \(userPoints)pt")
+                                .fontWeight(.medium)
+                            
+                            // Refresh button
+                            Button(action: {
+                                loadUserPoints()
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(Color.white.opacity(0.2))
-                            .cornerRadius(20)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(20)
                         
                         // Payment method selection
                         VStack(spacing: 12) {
@@ -1029,19 +1036,33 @@ struct PaymentPopupView: View {
     }
     
     private func loadUserPoints() {
-        // Load user points from Firebase or UserDefaults
+        // Load user points from Firebase
         if let userId = UserDefaults.standard.string(forKey: "userId") {
-            // Load actual points from Firebase
-            let db = Firestore.firestore()
-            db.collection("users").document(userId).getDocument { document, error in
-                if let document = document, document.exists {
-                    DispatchQueue.main.async {
-                        self.userPoints = document.data()?["points"] as? Int ?? 0
-                    }
-                } else {
-                    // Fallback to UserDefaults
-                    DispatchQueue.main.async {
-                        self.userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+            // Use FirebaseManager to get user points
+            FirebaseManager.shared.getUserPoints(userId: userId) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let pointsModel):
+                        self.userPoints = pointsModel.points
+                        print("✅ User points loaded: \(self.userPoints)")
+                    case .failure(let error):
+                        print("❌ Failed to load user points: \(error)")
+                        // Try fallback to userPoints collection directly
+                        let db = Firestore.firestore()
+                        db.collection("userPoints").document(userId).getDocument { document, error in
+                            if let document = document, document.exists {
+                                DispatchQueue.main.async {
+                                    self.userPoints = document.data()?["points"] as? Int ?? 0
+                                    print("✅ User points loaded from fallback: \(self.userPoints)")
+                                }
+                            } else {
+                                // Final fallback to UserDefaults
+                                DispatchQueue.main.async {
+                                    self.userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+                                    print("⚠️ User points loaded from UserDefaults: \(self.userPoints)")
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1119,28 +1140,27 @@ struct PaymentPopupView: View {
     }
     
     private func processPointPayment(userId: String) {
-        // Deduct points and update subscription
-        let newPoints = userPoints - 500
-        UserDefaults.standard.set(newPoints, forKey: "userPoints_\(userId)")
-        
-        // Update Firebase
-        let db = Firestore.firestore()
-        db.collection("users").document(userId).updateData([
-            "points": newPoints,
-            "lastPointsUsed": 500,
-            "lastPointsUsedAt": Date().timeIntervalSince1970
-        ]) { error in
+        // Use FirebaseManager to deduct points
+        FirebaseManager.shared.usePoints(userId: userId, points: 500, reason: "アプリ利用料支払い") { result in
             DispatchQueue.main.async {
-                if let error = error {
-                    isProcessing = false
-                    errorMessage = "ポイント支払いに失敗しました: \(error.localizedDescription)"
-                    showError = true
-                } else {
+                switch result {
+                case .success:
+                    // Update local points display
+                    self.userPoints = max(0, self.userPoints - 500)
+                    UserDefaults.standard.set(self.userPoints, forKey: "userPoints_\(userId)")
+                    
                     // Payment successful
-                    authManager.completePayment()
-                    saveSubscriptionToFirebase(userId: userId, paymentMethod: "points")
-                    isProcessing = false
-                    dismiss()
+                    self.authManager.completePayment()
+                    self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "points")
+                    self.isProcessing = false
+                    self.dismiss()
+                    
+                case .failure(let error):
+                    self.isProcessing = false
+                    self.errorMessage = "ポイント支払いに失敗しました: \(error.localizedDescription)"
+                    self.showError = true
+                    // Reload points in case of error
+                    self.loadUserPoints()
                 }
             }
         }

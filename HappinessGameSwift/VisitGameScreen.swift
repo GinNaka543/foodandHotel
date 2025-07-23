@@ -231,6 +231,9 @@ struct VisitGameScreen: View {
     @State private var showSpotEditSheet = false
     @State private var selectedSpotForEdit: VisitSpot?
     @State private var showStreamingSheet = false
+    @State private var showAddSpotSheet = false
+    @State private var showAddTransportSheet = false
+    @State private var selectedSpotForTransport: VisitSpot?
     let numberOfDays: Int
     let startTime: Date
     let onClose: (() -> Void)?
@@ -395,7 +398,11 @@ struct VisitGameScreen: View {
                                             isReadOnly: isReadOnly,
                                             isFirstSpot: index == 0,
                                             isLastSpot: index == dayFilteredSpots.count - 1,
-                                            previousDepartureTime: index > 0 ? dayFilteredSpots[index - 1].departureTime : nil
+                                            previousDepartureTime: index > 0 ? dayFilteredSpots[index - 1].departureTime : nil,
+                                            onEditTransport: {
+                                                selectedSpotForTransport = viewModel.spots[realIndex]
+                                                showAddTransportSheet = true
+                                            }
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -453,6 +460,45 @@ struct VisitGameScreen: View {
                 thumbnailUrl: thumbnailUrl
             )
         }
+        .sheet(isPresented: $showAddSpotSheet) {
+            GameAddSpotView(
+                animeName: animeName,
+                selectedDay: selectedDay,
+                onSave: { newSpot in
+                    var spot = newSpot
+                    spot.dayNumber = selectedDay
+                    
+                    // 時刻を設定
+                    let daySpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
+                    if let lastSpot = daySpots.last {
+                        // 最後のスポットの出発時刻から30分後を到着時刻に設定
+                        if let lastDeparture = lastSpot.departureTime {
+                            spot.arrivalTime = Calendar.current.date(byAdding: .minute, value: 30, to: lastDeparture)
+                            spot.departureTime = Calendar.current.date(byAdding: .minute, value: spot.stayDuration, to: spot.arrivalTime!)
+                        }
+                    } else {
+                        // その日の最初のスポットの場合
+                        spot.arrivalTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: startTime)
+                        spot.departureTime = Calendar.current.date(byAdding: .minute, value: spot.stayDuration, to: spot.arrivalTime!)
+                    }
+                    
+                    viewModel.spots.append(spot)
+                    savePlanProgress()
+                }
+            )
+        }
+        .sheet(isPresented: $showAddTransportSheet) {
+            if let spot = selectedSpotForTransport,
+               let spotIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
+                GameAddTransportView(
+                    transport: viewModel.spots[spotIndex].transportToNext,
+                    onSave: { newTransport in
+                        viewModel.spots[spotIndex].transportToNext = newTransport
+                        savePlanProgress()
+                    }
+                )
+            }
+        }
         }
         .onAppear {
             print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
@@ -479,8 +525,8 @@ struct VisitGameScreen: View {
                 print("⚠️ WARNING: spotsが空です！")
             }
             
-            // ローカルに保存された変更を読み込み
-            loadLocalSpotChanges()
+            // 保存されたプランデータを読み込み
+            loadSavedPlanData()
             
             // 訪問進捗を復元
             loadVisitProgress()
@@ -535,27 +581,41 @@ struct VisitGameScreen: View {
                 
                 Spacer()
                 
-                // Watchボタン
-                Button(action: {
-                    showStreamingSheet = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 14))
-                        Text("Watch")
-                            .font(.system(size: 14, weight: .medium))
+                // 右側のボタン群
+                HStack(spacing: 8) {
+                    // スポット追加ボタン（読み取り専用でない場合のみ表示）
+                    if !isReadOnly {
+                        Button(action: {
+                            showAddSpotSheet = true
+                        }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.purple)
+                        }
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule()
-                            .fill(LinearGradient(
-                                gradient: Gradient(colors: [Color.purple, Color.yellow]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ))
-                    )
+                    
+                    // Watchボタン
+                    Button(action: {
+                        showStreamingSheet = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 14))
+                            Text("Watch")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple, Color.yellow]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ))
+                        )
+                    }
                 }
             }
         }
@@ -889,8 +949,61 @@ struct VisitGameScreen: View {
     }
     
     func savePlanProgress() {
-        // プランの変更を保存（必要に応じて実装）
-        print("📝 プランの変更を保存しました")
+        // プラン全体を保存
+        let planKey = "visit_plan_\(planId?.uuidString ?? planTitle)"
+        
+        // スポット情報を保存用の辞書に変換
+        let spotsData = viewModel.spots.map { spot -> [String: Any] in
+            var spotDict: [String: Any] = [
+                "id": spot.id.uuidString,
+                "name": spot.name,
+                "address": spot.address,
+                "notes": spot.notes,
+                "nearestStation": spot.nearestStation,
+                "stayDuration": spot.stayDuration,
+                "isCompleted": spot.isCompleted,
+                "timeRange": spot.timeRange,
+                "activity": spot.activity,
+                "dayNumber": spot.dayNumber,
+                "spotCost": spot.spotCost,
+                "imageUrl": spot.imageUrl,
+                "images": spot.images
+            ]
+            
+            // 日付の保存
+            if let arrivalTime = spot.arrivalTime {
+                spotDict["arrivalTime"] = arrivalTime.timeIntervalSince1970
+            }
+            if let departureTime = spot.departureTime {
+                spotDict["departureTime"] = departureTime.timeIntervalSince1970
+            }
+            
+            // 交通手段の保存
+            if let transport = spot.transportToNext {
+                spotDict["transportToNext"] = [
+                    "method": transport.method,
+                    "duration": transport.duration,
+                    "cost": transport.cost,
+                    "route": transport.route
+                ]
+            }
+            
+            // 画像データの保存（Base64エンコード）
+            if let imageData = spot.imageData {
+                spotDict["imageDataBase64"] = imageData.base64EncodedString()
+            }
+            
+            return spotDict
+        }
+        
+        // プラン全体の情報を保存
+        let planData: [String: Any] = [
+            "spots": spotsData,
+            "lastModified": Date().timeIntervalSince1970
+        ]
+        
+        UserDefaults.standard.set(planData, forKey: planKey)
+        print("📝 プランの変更を保存しました - \(viewModel.spots.count)スポット")
     }
     
     func getThumbnailImage() -> UIImage? {
@@ -922,6 +1035,80 @@ struct VisitGameScreen: View {
             onClose()
         } else {
             dismiss()
+        }
+    }
+    
+    // 保存されたプランデータを読み込む関数
+    func loadSavedPlanData() {
+        let planKey = "visit_plan_\(planId?.uuidString ?? planTitle)"
+        
+        guard let planData = UserDefaults.standard.dictionary(forKey: planKey),
+              let spotsData = planData["spots"] as? [[String: Any]] else {
+            print("📱 保存されたプランデータが見つかりません")
+            return
+        }
+        
+        print("📱 保存されたプランデータを読み込み中...")
+        
+        // 保存されたスポットデータから復元
+        var restoredSpots: [VisitSpot] = []
+        
+        for spotData in spotsData {
+            guard let idString = spotData["id"] as? String,
+                  let id = UUID(uuidString: idString),
+                  let name = spotData["name"] as? String else { continue }
+            
+            var spot = VisitSpot(
+                id: id,
+                name: name,
+                address: spotData["address"] as? String ?? "",
+                notes: spotData["notes"] as? String ?? "",
+                nearestStation: spotData["nearestStation"] as? String ?? "",
+                stayDuration: spotData["stayDuration"] as? Int ?? 60,
+                isCompleted: spotData["isCompleted"] as? Bool ?? false,
+                timeRange: spotData["timeRange"] as? String ?? "",
+                activity: spotData["activity"] as? String ?? "",
+                dayNumber: spotData["dayNumber"] as? Int ?? 1,
+                spotCost: spotData["spotCost"] as? Int ?? 0,
+                imageUrl: spotData["imageUrl"] as? String ?? "",
+                images: spotData["images"] as? [String] ?? []
+            )
+            
+            // 日付の復元
+            if let arrivalInterval = spotData["arrivalTime"] as? Double {
+                spot.arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
+            }
+            if let departureInterval = spotData["departureTime"] as? Double {
+                spot.departureTime = Date(timeIntervalSince1970: departureInterval)
+            }
+            
+            // 交通手段の復元
+            if let transportData = spotData["transportToNext"] as? [String: Any],
+               let method = transportData["method"] as? String,
+               let duration = transportData["duration"] as? Int,
+               let cost = transportData["cost"] as? Int,
+               let route = transportData["route"] as? String {
+                spot.transportToNext = TransportInfo(
+                    method: method,
+                    duration: duration,
+                    cost: cost,
+                    route: route
+                )
+            }
+            
+            // 画像データの復元（Base64デコード）
+            if let imageDataBase64 = spotData["imageDataBase64"] as? String,
+               let imageData = Data(base64Encoded: imageDataBase64) {
+                spot.imageData = imageData
+            }
+            
+            restoredSpots.append(spot)
+        }
+        
+        // 復元したスポットで置き換え
+        if !restoredSpots.isEmpty {
+            viewModel.spots = restoredSpots
+            print("📱 プランデータを復元しました - \(restoredSpots.count)スポット")
         }
     }
     
@@ -991,6 +1178,7 @@ struct AnimeStyleSpotCard: View {
     let isFirstSpot: Bool
     let isLastSpot: Bool
     let previousDepartureTime: Date?
+    let onEditTransport: (() -> Void)?
     
     let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -1137,34 +1325,68 @@ struct AnimeStyleSpotCard: View {
                 .padding(12)
                 
                 // 交通機関情報（次のスポットがある場合）
-                if !isLastSpot, let transport = spot.transportToNext {
-                    HStack(spacing: 8) {
-                        // 交通手段アイコン
-                        Image(systemName: transport.method == "電車" ? "tram.fill" : 
-                                        transport.method == "バス" ? "bus.fill" : 
-                                        transport.method == "徒歩" ? "figure.walk" : "car.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.orange)
-                        
-                        Text(transport.method)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.orange)
-                        
-                        Text("• \(transport.duration)分")
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                        
-                        if !transport.route.isEmpty {
-                            Text("• \(transport.route)")
-                                .font(.system(size: 12))
+                if !isLastSpot {
+                    if let transport = spot.transportToNext {
+                        HStack(spacing: 8) {
+                            // 交通手段アイコン
+                            Image(systemName: transport.method == "電車" ? "tram.fill" : 
+                                            transport.method == "バス" ? "bus.fill" : 
+                                            transport.method == "徒歩" ? "figure.walk" : "car.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                            
+                            Text(transport.method)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.orange)
+                            
+                            Text("• \(transport.duration)分")
+                                .font(.system(size: 13))
                                 .foregroundColor(.gray)
-                                .lineLimit(1)
+                            
+                            if !transport.route.isEmpty {
+                                Text("• \(transport.route)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
+                            }
+                            
+                            Spacer()
+                            
+                            // 編集ボタン（読み取り専用でない場合のみ表示）
+                            if !isReadOnly {
+                                Button(action: {
+                                    onEditTransport?()
+                                }) {
+                                    Image(systemName: "pencil.circle")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.orange)
+                                }
+                            }
                         }
-                        
-                        Spacer()
+                        .padding(.leading, 30)
+                        .padding(.vertical, 8)
+                    } else if !isReadOnly {
+                        // 交通手段が未設定の場合の追加ボタン
+                        Button(action: {
+                            onEditTransport?()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus.circle")
+                                    .font(.system(size: 12))
+                                Text("交通手段を追加")
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.orange, lineWidth: 1)
+                            )
+                        }
+                        .padding(.leading, 30)
+                        .padding(.vertical, 8)
                     }
-                    .padding(.leading, 30)
-                    .padding(.vertical, 8)
                 }
             }
             .padding(.trailing, 16)
@@ -2022,6 +2244,211 @@ struct FullScreenImageView: View {
 }
 
 // 全日程完了時のポップアップビュー
+// スポット追加ビュー
+struct GameAddSpotView: View {
+    let animeName: String
+    let selectedDay: Int
+    let onSave: (VisitSpot) -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var name = ""
+    @State private var address = ""
+    @State private var activity = ""
+    @State private var stayDuration = 60
+    @State private var spotCost = 0
+    @State private var notes = ""
+    @State private var selectedImage: UIImage?
+    @State private var showImagePicker = false
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("基本情報")) {
+                    TextField("スポット名", text: $name)
+                    TextField("住所", text: $address)
+                    TextField("アクティビティ", text: $activity)
+                }
+                
+                Section(header: Text("詳細")) {
+                    Stepper("滞在時間: \(stayDuration)分", value: $stayDuration, in: 15...480, step: 15)
+                    
+                    HStack {
+                        Text("費用")
+                        Spacer()
+                        TextField("0", value: $spotCost, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 100)
+                        Text("円")
+                    }
+                    
+                    TextField("メモ", text: $notes, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+                
+                Section(header: Text("画像")) {
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .onTapGesture {
+                                showImagePicker = true
+                            }
+                    } else {
+                        Button(action: {
+                            showImagePicker = true
+                        }) {
+                            HStack {
+                                Image(systemName: "photo")
+                                Text("画像を選択")
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("スポットを追加")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        let newSpot = VisitSpot(
+                            name: name,
+                            address: address,
+                            notes: notes,
+                            stayDuration: stayDuration,
+                            activity: activity,
+                            imageData: selectedImage?.jpegData(compressionQuality: 0.8),
+                            dayNumber: selectedDay,
+                            spotCost: spotCost
+                        )
+                        onSave(newSpot)
+                        dismiss()
+                    }
+                    .disabled(name.isEmpty)
+                }
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(image: $selectedImage)
+        }
+    }
+}
+
+// 交通手段追加/編集ビュー
+struct GameAddTransportView: View {
+    let transport: TransportInfo?
+    let onSave: (TransportInfo) -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var method: String = "電車"
+    @State private var duration: Int = 30
+    @State private var cost: Int = 0
+    @State private var route: String = ""
+    
+    let transportMethods = ["電車", "バス", "徒歩", "タクシー", "車", "自転車"]
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("交通手段")) {
+                    Picker("移動方法", selection: $method) {
+                        ForEach(transportMethods, id: \.self) { method in
+                            Text(method).tag(method)
+                        }
+                    }
+                    
+                    Stepper("移動時間: \(duration)分", value: $duration, in: 5...180, step: 5)
+                    
+                    HStack {
+                        Text("交通費")
+                        Spacer()
+                        TextField("0", value: $cost, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 100)
+                        Text("円")
+                    }
+                    
+                    TextField("経路情報（例：JR山手線→東西線）", text: $route)
+                }
+            }
+            .navigationTitle("交通手段")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        let newTransport = TransportInfo(
+                            method: method,
+                            duration: duration,
+                            cost: cost,
+                            route: route
+                        )
+                        onSave(newTransport)
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            if let transport = transport {
+                method = transport.method
+                duration = transport.duration
+                cost = transport.cost
+                route = transport.route
+            }
+        }
+    }
+}
+
+// 画像ピッカー
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) var dismiss
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let uiImage = info[.originalImage] as? UIImage {
+                parent.image = uiImage
+            }
+            parent.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
 struct ImprovedCompletionView: View {
     @Binding var isPresented: Bool
     let planTitle: String

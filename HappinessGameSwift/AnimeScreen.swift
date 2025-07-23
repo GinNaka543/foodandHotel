@@ -3417,6 +3417,7 @@ struct AnimeAboutView: View {
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
     @State private var currentDisplayedIcon: UIImage? = nil
+    @State private var showSoundtrackEdit: Bool = false
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
     
@@ -3608,6 +3609,37 @@ struct AnimeAboutView: View {
                         }
                     }
                     
+                    // サントラセクション
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("サントラ")
+                                .font(.system(size: 20, weight: .bold))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 32)
+                        .padding(.bottom, 16)
+                        
+                        // サントラリスト
+                        if currentAnime.soundtracks.isEmpty {
+                            Text("サントラが未設定です")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                        } else {
+                            VStack(spacing: 12) {
+                                ForEach(currentAnime.soundtracks, id: \.id) { soundtrack in
+                                    SoundtrackRow(soundtrack: soundtrack) {
+                                        // 削除処理
+                                        deleteSoundtrack(soundtrack)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    }
+                    
                     Spacer(minLength: 50)
                 }
             }
@@ -3669,6 +3701,9 @@ struct AnimeAboutView: View {
                     .default(Text("概要を編集")) {
                         isEditingDescription = true
                     },
+                    .default(Text("サントラを編集")) {
+                        showSoundtrackEdit = true
+                    },
                     .cancel(Text("キャンセル"))
                 ]
             )
@@ -3723,6 +3758,19 @@ struct AnimeAboutView: View {
                             newIconImage = image
                         }
                     }
+                }
+            }
+            .sheet(isPresented: $showSoundtrackEdit) {
+                SoundtrackEditView { soundtrack in
+                    // サントラを保存
+                    guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                    var updatedAnime = animes[idx]
+                    var soundtracks = updatedAnime.soundtracks
+                    soundtracks.append(soundtrack)
+                    updatedAnime.soundtracks = soundtracks
+                    animes[idx] = updatedAnime
+                    animeManager.updateAnime(updatedAnime)
+                    anime = updatedAnime
                 }
             }
         }
@@ -3953,6 +4001,17 @@ struct AnimeAboutView: View {
             print("画像保存エラー: \(error)")
             return nil
         }
+    }
+    
+    private func deleteSoundtrack(_ soundtrack: Soundtrack) {
+        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+        var updatedAnime = animes[idx]
+        var soundtracks = updatedAnime.soundtracks
+        soundtracks.removeAll { $0.id == soundtrack.id }
+        updatedAnime.soundtracks = soundtracks
+        animes[idx] = updatedAnime
+        animeManager.updateAnime(updatedAnime)
+        anime = updatedAnime
     }
 }
 struct AddAnimeSheet: View {

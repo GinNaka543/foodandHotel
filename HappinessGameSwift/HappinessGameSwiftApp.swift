@@ -460,6 +460,7 @@ struct MainContainerView: View {
         .sheet(isPresented: $showingPaymentPopup) {
             PaymentPopupView()
                 .environmentObject(authManager)
+                .interactiveDismissDisabled(true) // 支払い完了まで閉じれないようにする
         }
         .onAppear {
             // Check if payment is required
@@ -847,6 +848,8 @@ struct PaymentPopupView: View {
     @State private var errorMessage: String?
     @State private var showError = false
     @State private var userPoints: Int = 0
+    @State private var preloadedPaymentIntent: String? = nil
+    @State private var isPreloadingPayment = false
     
     enum PaymentMethod {
         case card
@@ -995,7 +998,7 @@ struct PaymentPopupView: View {
                                     .background(Color.white)
                                     .cornerRadius(12)
                             } else {
-                                Text(selectedPaymentMethod == .points ? "ポイントで支払う" : "購入する")
+                                Text(selectedPaymentMethod == .points ? "500ポイントで支払う" : "購入する")
                                     .font(.headline)
                                     .foregroundColor(.purple)
                                     .frame(maxWidth: .infinity)
@@ -1005,14 +1008,6 @@ struct PaymentPopupView: View {
                             }
                         }
                         .disabled(isProcessing || (selectedPaymentMethod == .points && userPoints < 500))
-                        
-                        Button(action: {
-                            dismiss()
-                        }) {
-                            Text("後で")
-                                .foregroundColor(.white.opacity(0.8))
-                                .padding(.vertical, 8)
-                        }
                     }
                     .padding(.horizontal, 40)
                     .padding(.bottom, 30)
@@ -1029,16 +1024,80 @@ struct PaymentPopupView: View {
         }
         .onAppear {
             loadUserPoints()
+            preloadPaymentIntent()
         }
     }
     
     private func loadUserPoints() {
         // Load user points from Firebase or UserDefaults
         if let userId = UserDefaults.standard.string(forKey: "userId") {
-            // TODO: Load actual points from Firebase
-            // For now, using a placeholder value
-            userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+            // Load actual points from Firebase
+            let db = Firestore.firestore()
+            db.collection("users").document(userId).getDocument { document, error in
+                if let document = document, document.exists {
+                    DispatchQueue.main.async {
+                        self.userPoints = document.data()?["points"] as? Int ?? 0
+                    }
+                } else {
+                    // Fallback to UserDefaults
+                    DispatchQueue.main.async {
+                        self.userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+                    }
+                }
+            }
         }
+    }
+    
+    private func preloadPaymentIntent() {
+        guard preloadedPaymentIntent == nil,
+              !isPreloadingPayment,
+              let userId = UserDefaults.standard.string(forKey: "userId") else { return }
+        
+        isPreloadingPayment = true
+        
+        // Create payment intent in advance
+        let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "amount": subscriptionPackage.price,
+            "userId": userId,
+            "pointAmount": subscriptionPackage.points,
+            "type": "app_subscription"
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            print("Failed to create payment intent request body: \(error)")
+            isPreloadingPayment = false
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                self.isPreloadingPayment = false
+                
+                if let error = error {
+                    print("Payment intent preload error: \(error)")
+                    return
+                }
+                
+                guard let data = data else { return }
+                
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let clientSecret = json["clientSecret"] as? String {
+                        self.preloadedPaymentIntent = clientSecret
+                        print("Payment intent preloaded successfully")
+                    }
+                } catch {
+                    print("Failed to parse payment intent response: \(error)")
+                }
+            }
+        }.resume()
     }
     
     private func processPayment() {
@@ -1088,24 +1147,69 @@ struct PaymentPopupView: View {
     }
     
     private func processCardPayment(userId: String) {
-        // Use the existing Stripe payment manager
-        StripePaymentManager.shared.purchasePoints(userId: userId, package: subscriptionPackage) { result in
+        // If we have a preloaded payment intent, use it
+        if let preloadedIntent = preloadedPaymentIntent {
+            // Configure payment sheet
+            var configuration = PaymentSheet.Configuration()
+            configuration.merchantDisplayName = "AniCollect"
+            configuration.allowsDelayedPaymentMethods = false
+            
+            // Create payment sheet with preloaded intent
+            let paymentSheet = PaymentSheet(paymentIntentClientSecret: preloadedIntent, configuration: configuration)
+            
+            // Present payment sheet
             DispatchQueue.main.async {
-                isProcessing = false
-                
-                switch result {
-                case .success:
-                    // Payment successful - update local state
-                    authManager.completePayment()
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first,
+                   let viewController = window.rootViewController {
                     
-                    // Save subscription info to Firebase
-                    saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
+                    var topViewController = viewController
+                    while let presented = topViewController.presentedViewController {
+                        topViewController = presented
+                    }
                     
-                    dismiss()
+                    paymentSheet.present(from: topViewController) { paymentResult in
+                        switch paymentResult {
+                        case .completed:
+                            // Payment successful
+                            self.authManager.completePayment()
+                            self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
+                            self.isProcessing = false
+                            self.dismiss()
+                            
+                        case .canceled:
+                            self.isProcessing = false
+                            self.errorMessage = "決済がキャンセルされました"
+                            self.showError = true
+                            
+                        case .failed(let error):
+                            self.isProcessing = false
+                            self.errorMessage = error.localizedDescription
+                            self.showError = true
+                        }
+                    }
+                }
+            }
+        } else {
+            // Fallback to regular payment flow
+            StripePaymentManager.shared.purchasePoints(userId: userId, package: subscriptionPackage) { result in
+                DispatchQueue.main.async {
+                    self.isProcessing = false
                     
-                case .failure(let error):
-                    errorMessage = error.localizedDescription
-                    showError = true
+                    switch result {
+                    case .success:
+                        // Payment successful - update local state
+                        self.authManager.completePayment()
+                        
+                        // Save subscription info to Firebase
+                        self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
+                        
+                        self.dismiss()
+                        
+                    case .failure(let error):
+                        self.errorMessage = error.localizedDescription
+                        self.showError = true
+                    }
                 }
             }
         }

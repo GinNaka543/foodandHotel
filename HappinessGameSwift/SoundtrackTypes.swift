@@ -1,0 +1,165 @@
+import Foundation
+import SwiftUI
+import AVFoundation
+
+// サントラ構造体の定義
+public struct Soundtrack: Identifiable, Codable, Equatable {
+    public let id: UUID
+    public var title: String
+    public var audioData: Data?
+    public var thumbnailData: Data?
+    public var duration: TimeInterval?
+    public var artist: String?
+    public var createdAt: Date
+    
+    public init(id: UUID = UUID(), title: String, audioData: Data? = nil, thumbnailData: Data? = nil, duration: TimeInterval? = nil, artist: String? = nil, createdAt: Date = Date()) {
+        self.id = id
+        self.title = title
+        self.audioData = audioData
+        self.thumbnailData = thumbnailData
+        self.duration = duration
+        self.artist = artist
+        self.createdAt = createdAt
+    }
+}
+
+// キャラクター用のサントラ拡張
+extension Character {
+    var soundtracks: [Soundtrack] {
+        get {
+            if let data = UserDefaults.standard.data(forKey: "character_soundtracks_\(id.uuidString)"),
+               let soundtracks = try? JSONDecoder().decode([Soundtrack].self, from: data) {
+                return soundtracks
+            }
+            return []
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: "character_soundtracks_\(id.uuidString)")
+            }
+        }
+    }
+}
+
+// アニメ用のサントラ拡張
+extension Anime {
+    var soundtracks: [Soundtrack] {
+        get {
+            if let data = UserDefaults.standard.data(forKey: "anime_soundtracks_\(id.uuidString)"),
+               let soundtracks = try? JSONDecoder().decode([Soundtrack].self, from: data) {
+                return soundtracks
+            }
+            return []
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue) {
+                UserDefaults.standard.set(data, forKey: "anime_soundtracks_\(id.uuidString)")
+            }
+        }
+    }
+}
+
+// サントラ行のビュー
+public struct SoundtrackRow: View {
+    let soundtrack: Soundtrack
+    let onDelete: () -> Void
+    @State private var isPlaying = false
+    @State private var audioPlayer: AVAudioPlayer?
+    
+    public init(soundtrack: Soundtrack, onDelete: @escaping () -> Void) {
+        self.soundtrack = soundtrack
+        self.onDelete = onDelete
+    }
+    
+    public var body: some View {
+        HStack(spacing: 12) {
+            // サムネイル
+            if let thumbnailData = soundtrack.thumbnailData,
+               let image = UIImage(data: thumbnailData) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 50, height: 50)
+                    .cornerRadius(8)
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.purple.opacity(0.1))
+                        .frame(width: 50, height: 50)
+                    Image(systemName: "music.note")
+                        .foregroundColor(.purple)
+                        .font(.system(size: 20))
+                }
+            }
+            
+            // タイトルとアーティスト
+            VStack(alignment: .leading, spacing: 4) {
+                Text(soundtrack.title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                if let artist = soundtrack.artist, !artist.isEmpty {
+                    Text(artist)
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                
+                if let duration = soundtrack.duration {
+                    Text(formatDuration(duration))
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                }
+            }
+            
+            Spacer()
+            
+            // 再生ボタン
+            Button(action: togglePlayback) {
+                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(.purple)
+            }
+            
+            // 削除ボタン
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 16))
+                    .foregroundColor(.red)
+            }
+        }
+        .padding(.vertical, 8)
+        .contentShape(Rectangle())
+        .onAppear {
+            setupAudioPlayer()
+        }
+        .onDisappear {
+            audioPlayer?.stop()
+        }
+    }
+    
+    private func togglePlayback() {
+        if isPlaying {
+            audioPlayer?.pause()
+            isPlaying = false
+        } else {
+            audioPlayer?.play()
+            isPlaying = true
+        }
+    }
+    
+    private func setupAudioPlayer() {
+        guard let audioData = soundtrack.audioData else { return }
+        do {
+            audioPlayer = try AVAudioPlayer(data: audioData)
+            audioPlayer?.prepareToPlay()
+        } catch {
+            print("Failed to setup audio player: \(error)")
+        }
+    }
+    
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+}

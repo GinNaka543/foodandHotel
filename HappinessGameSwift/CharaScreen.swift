@@ -1759,6 +1759,12 @@ struct AboutView: View {
                         updatedCharacter.soundtracks = soundtracks
                         characters[idx] = updatedCharacter
                         characterManager.updateCharacter(updatedCharacter)
+                        
+                        // SoundtrackManagerのリストを更新
+                        SoundtrackManager.shared.collectAllSoundtracks(
+                            characters: characterManager.characters,
+                            animes: AnimeManager().animes
+                        )
                     }
                     .onAppear {
                         print("DEBUG: SoundtrackEditViewシートが表示されました (from sheet)")
@@ -2727,7 +2733,7 @@ struct CharaEditSelectionSheet: View {
                         HStack {
                             Image(systemName: "music.note")
                                 .foregroundColor(.blue)
-                            Text("サントラを編集")
+                            Text("サントラ追加")
                                 .foregroundColor(.primary)
                             Spacer()
                         }

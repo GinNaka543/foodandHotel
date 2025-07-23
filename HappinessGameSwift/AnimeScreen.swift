@@ -3759,6 +3759,12 @@ struct AnimeAboutView: View {
                         animes[idx] = updatedAnime
                         animeManager.updateAnime(updatedAnime)
                         anime = updatedAnime
+                        
+                        // SoundtrackManagerのリストを更新
+                        SoundtrackManager.shared.collectAllSoundtracks(
+                            characters: CharacterManager().characters,
+                            animes: animeManager.animes
+                        )
                     }
                 case .iconPicker:
                     NavigationView {
@@ -5018,7 +5024,7 @@ struct EditSelectionSheet: View {
                         HStack {
                             Image(systemName: "music.note")
                                 .foregroundColor(.blue)
-                            Text("サントラを編集")
+                            Text("サントラ追加")
                                 .foregroundColor(.primary)
                             Spacer()
                         }

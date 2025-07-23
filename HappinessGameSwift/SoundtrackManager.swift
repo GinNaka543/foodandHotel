@@ -55,8 +55,8 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     func playSoundtrack(_ soundtrack: Soundtrack) {
         guard let audioData = soundtrack.audioData else { return }
         
-        // 現在再生中の場合は停止
-        stopPlayback()
+        // 現在再生中の場合は即座に停止（フェードアウトなし）
+        stopPlayback(withFadeOut: false)
         
         do {
             audioPlayer = try AVAudioPlayer(data: audioData)
@@ -103,16 +103,58 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
-    // 再生を停止
-    func stopPlayback() {
+    // 再生を停止（フェードアウト付き）
+    func stopPlayback(withFadeOut: Bool = true) {
+        if withFadeOut && audioPlayer != nil && isPlaying {
+            // フェードアウトを開始
+            fadeOutAndStop()
+        } else {
+            // 即座に停止
+            fadeTimer?.invalidate()
+            fadeTimer = nil
+            
+            audioPlayer?.stop()
+            audioPlayer = nil
+            
+            isPlaying = false
+            currentSoundtrack = nil
+        }
+    }
+    
+    // フェードアウト効果
+    private func fadeOutAndStop() {
         fadeTimer?.invalidate()
-        fadeTimer = nil
         
-        audioPlayer?.stop()
-        audioPlayer = nil
+        let fadeOutDuration: TimeInterval = 1.0 // フェードアウト時間（秒）
+        let fadeSteps = 20 // フェードのステップ数
+        let fadeInterval = fadeOutDuration / Double(fadeSteps)
+        let currentVolume = audioPlayer?.volume ?? maxVolume
+        let volumeDecrement = currentVolume / Float(fadeSteps)
         
-        isPlaying = false
-        currentSoundtrack = nil
+        var currentStep = 0
+        
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: fadeInterval, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                timer.invalidate()
+                return
+            }
+            
+            currentStep += 1
+            
+            if currentStep >= fadeSteps {
+                // フェードアウト完了
+                timer.invalidate()
+                self.fadeTimer = nil
+                
+                self.audioPlayer?.stop()
+                self.audioPlayer = nil
+                
+                self.isPlaying = false
+                self.currentSoundtrack = nil
+            } else {
+                self.audioPlayer?.volume = currentVolume - (volumeDecrement * Float(currentStep))
+            }
+        }
     }
     
     // 一時停止

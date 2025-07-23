@@ -87,8 +87,27 @@ struct SoundtrackEditView: View {
                         }
                     }
                 }
+                
+                Section {
+                    Button(action: {
+                        if let url = URL(string: "https://y2down.cc/ja4O") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .foregroundColor(.blue)
+                            Text("YouTubeから音楽をダウンロードする")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.square")
+                                .foregroundColor(.gray)
+                                .font(.system(size: 14))
+                        }
+                    }
+                }
             }
-            .navigationTitle("サントラを編集")
+            .navigationTitle("サントラ追加")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 print("DEBUG: SoundtrackEditViewが表示されました")

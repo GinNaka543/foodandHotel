@@ -283,7 +283,7 @@ struct ArtworkPlayerScreen: View {
                                                         Image(uiImage: uiImage)
                                                             .resizable()
                                                             .scaledToFill()
-                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                             .clipped()
                                                     } else if let pixivURL = relatedArtwork.pixivURL {
                                                         if let customThumbnailData = relatedArtwork.customThumbnailData,
@@ -291,17 +291,17 @@ struct ArtworkPlayerScreen: View {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .scaledToFill()
-                                                                .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                                .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                                 .clipped()
                                                         } else {
                                                             PixivThumbnailView(pixivURL: pixivURL)
-                                                                .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                                .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                                 .clipped()
                                                         }
                                                     } else {
                                                         Rectangle()
                                                             .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                     }
                                                     
                                                     // アイコンとタイトル・タグ

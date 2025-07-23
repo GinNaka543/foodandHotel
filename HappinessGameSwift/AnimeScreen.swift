@@ -1295,18 +1295,18 @@ struct AnimeArtworkScreen: View {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
-                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                 } else if let pixivURL = artwork.pixivURL {
                                                     PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                         .clipped()
                                                 } else {
                                                     RoundedRectangle(cornerRadius: 0, style: .continuous)
                                                         .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                 }
                                             }
-                                            .frame(width: UIScreen.main.bounds.width, height: 233)
+                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                             .clipped()
                                             .padding(.bottom, 0)
                                             HStack(alignment: .center, spacing: 12) {
@@ -1519,7 +1519,7 @@ struct AnimeArtworkScreen: View {
                 mainContent
                 }
             }
-            floatingButton
+            // floatingButton removed - no longer showing # button
             
             // Navigation bar at bottom
             VStack {

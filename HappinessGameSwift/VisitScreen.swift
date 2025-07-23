@@ -8,9 +8,7 @@ import FirebaseFirestore
 public struct VisitScreen: View {
     @State private var savedPlans: [VisitPlanData] = []
     @State private var selectedPlan: VisitPlanData?
-    @State private var visitAds: [Advertisement] = []
-    @State private var currentAdIndex = 0
-    @State private var adTimer: Timer?
+    // 広告関連の状態変数を削除
     @StateObject private var firebaseManager = FirebaseManager.shared
     @State private var publicPlans: [VisitPlanModel] = []
     @State private var userOriginalPlans: [VisitPlanModel] = []
@@ -140,12 +138,9 @@ public struct VisitScreen: View {
                 // データを読み込む
                 loadHiddenPlanIds()
                 loadSavedPlans()
-                loadVisitAds()
+                // 広告読み込みを削除
                 loadFirebasePlans()
                 loadPurchasedPlansFromFirebase()
-            }
-            .onDisappear {
-                stopAdTimer()
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 // アプリがフォアグラウンドに戻ったときにデータを再読み込み
@@ -324,91 +319,7 @@ public struct VisitScreen: View {
         .buttonStyle(PlainButtonStyle())
     }
     
-    @ViewBuilder
-    private func adCard(for ad: Advertisement) -> some View {
-        Button(action: {
-            if let url = URL(string: ad.linkURL) {
-                firebaseManager.recordAdClick(advertisementId: ad.id ?? "")
-                UIApplication.shared.open(url)
-            }
-        }) {
-            VStack(alignment: .leading, spacing: 0) {
-                // 広告画像
-                ZStack {
-                    Rectangle()
-                        .fill(Color(.systemGray5))
-                        .frame(height: 233)
-                    
-                    if !ad.imageURL.isEmpty {
-                        AsyncImage(url: URL(string: ad.imageURL)) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle())
-                                    .scaleEffect(1.5)
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                            case .failure(_):
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.orange)
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
-                    } else {
-                        Image(systemName: "megaphone.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.gray)
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: 233)
-                .clipped()
-                .overlay(
-                    // 広告の場合は「PR」バッジを右上に表示
-                    Text("PR")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.black)
-                        .cornerRadius(4)
-                        .padding(8),
-                    alignment: .topTrailing
-                )
-                
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "megaphone.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.orange)
-                            Text(ad.title)
-                                .font(.headline)
-                                .foregroundColor(.black)
-                        }
-                        Text(ad.description)
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .lineLimit(2)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .onAppear {
-            firebaseManager.recordAdImpression(advertisementId: ad.id ?? "")
-        }
-    }
+    // 広告カード機能を削除
     
     @ViewBuilder
     private var planListView: some View {
@@ -421,7 +332,7 @@ public struct VisitScreen: View {
         let _ = print("🔍 [DEBUG] planListView - purchasedPlans.count: \(purchasedPlans.count)")
         let _ = print("🔍 [DEBUG] planListView - displayPlans.count: \(displayPlans.count)")
         
-        if displayPlans.isEmpty && (selectedTab != .all || visitAds.isEmpty) {
+        if displayPlans.isEmpty {
             GeometryReader { geometry in
                 VStack(spacing: 16) {
                 Image(systemName: "map")
@@ -486,9 +397,8 @@ public struct VisitScreen: View {
             ForEach(Array(combinedItems.enumerated()), id: \.offset) { index, item in
                 if let plan = item as? VisitPlanModel {
                     planCard(for: plan)
-                } else if let ad = item as? Advertisement {
-                    adCard(for: ad)
                 }
+                // 広告表示を削除
             }
         }
     }
@@ -752,69 +662,7 @@ public struct VisitScreen: View {
         print("  - purchasedPlans: \(purchasedPlans.count)個")
     }
     
-    func loadVisitAds() {
-        firebaseManager.fetchAds(for: "visit") { result in
-            switch result {
-            case .success(let ads):
-                print("✅ ビジット広告取得成功: \(ads.count)件")
-                for ad in ads {
-                    print("  - 広告: \(ad.title), ID: \(ad.id ?? "nil"), placement: \(ad.placements)")
-                }
-                
-                // ユーザーのアニメ・キャラクター・ハッシュタグを取得
-                let userAnimes = self.getUserAnimes()
-                let userCharacters = self.getUserCharacters() 
-                let userHashtags = self.getUserHashtags()
-                
-                print("ユーザーデータ - アニメ: \(userAnimes), キャラ: \(userCharacters), タグ: \(userHashtags)")
-                
-                // フィルタリング: ターゲット広告は対象のユーザーのみ、一般広告は全ユーザー
-                self.visitAds = ads.filter { ad in
-                    // 一般広告の場合は全員に表示
-                    if ad.targetAnimes.isEmpty && ad.targetCharacters.isEmpty && ad.targetHashtags.isEmpty {
-                        return true
-                    }
-                    
-                    // ターゲット広告の場合はマッチング確認
-                    let animeMatch = ad.targetAnimes.isEmpty || ad.targetAnimes.contains { userAnimes.contains($0) }
-                    let characterMatch = ad.targetCharacters.isEmpty || ad.targetCharacters.contains { userCharacters.contains($0) }
-                    let hashtagMatch = ad.targetHashtags.isEmpty || ad.targetHashtags.contains { userHashtags.contains($0) }
-                    
-                    return animeMatch && characterMatch && hashtagMatch
-                }
-                
-                print("✅ フィルタリング後のビジット広告: \(self.visitAds.count)件")
-                for (index, ad) in self.visitAds.enumerated() {
-                    print("  広告[\(index)]: \(ad.title)")
-                    print("    - 画像URL: \(ad.imageURL.isEmpty ? "空" : ad.imageURL)")
-                    print("    - リンクURL: \(ad.linkURL)")
-                    print("    - 説明: \(ad.description)")
-                }
-                
-                // 広告が読み込まれた後にタイマーを開始
-                DispatchQueue.main.async {
-                    self.startAdTimer()
-                }
-                
-            case .failure(let error):
-                print("❌ ビジット広告取得エラー: \(error)")
-            }
-        }
-    }
-    
-    func startAdTimer() {
-        guard visitAds.count > 1 else { return }
-        adTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-            withAnimation(.easeInOut(duration: 0.5)) {
-                currentAdIndex = (currentAdIndex + 1) % visitAds.count
-            }
-        }
-    }
-    
-    func stopAdTimer() {
-        adTimer?.invalidate()
-        adTimer = nil
-    }
+    // 広告関連の機能を削除
     
     func getDisplayPlans() -> [VisitPlanModel] {
         let basePlans: [VisitPlanModel]
@@ -841,13 +689,7 @@ public struct VisitScreen: View {
     func createCombinedItems(_ plans: [VisitPlanModel]) -> [Any] {
         var items: [Any] = []
         
-        // オールタブの場合のみ広告を表示
-        if selectedTab == .all && !visitAds.isEmpty {
-            let adIndex = visitAds.count > 1 ? currentAdIndex % visitAds.count : 0
-            items.append(visitAds[adIndex])
-        }
-        
-        // プランを追加
+        // 広告表示を削除 - プランのみを表示
         items.append(contentsOf: plans)
         
         return items

@@ -547,23 +547,23 @@ struct ArtworkScreen: View {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .aspectRatio(contentMode: .fill)
-                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                                .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                         } else if let pixivURL = artwork.pixivURL {
                                                             if let customThumbnailData = artwork.customThumbnailData,
                                                                let uiImage = UIImage(data: customThumbnailData) {
                                                                 Image(uiImage: uiImage)
                                                                     .resizable()
                                                                     .aspectRatio(contentMode: .fill)
-                                                                    .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                                    .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                             } else {
                                                                 PixivThumbnailView(pixivURL: pixivURL)
-                                                                    .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                                    .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                                     .aspectRatio(contentMode: .fill)
                                                             }
                                                         } else {
                                                             Rectangle()
                                                                 .fill(Color.gray.opacity(0.2))
-                                                                .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                                .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                                 .overlay(
                                                                     VStack {
                                                                         Image(systemName: "photo")
@@ -575,7 +575,7 @@ struct ArtworkScreen: View {
                                                                 )
                                                         }
                                                     }
-                                                    .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                    .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                     .clipped()
                                                     .padding(.bottom, 0)
                                                     HStack(alignment: .center, spacing: 12) {

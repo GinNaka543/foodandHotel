@@ -158,8 +158,13 @@ struct AddVideoView: View {
     private var youtubeUploadContent: some View {
         VStack(spacing: 20) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("YouTube URL")
-                                .font(.headline)
+                            HStack {
+                                Text("YouTube URL")
+                                    .font(.headline)
+                                Text("(YouTubeにSafariでログインしてないとサムネイル取得できません)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
                             TextField("URLを入力してください", text: $youtubeURL)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .autocapitalization(.none)

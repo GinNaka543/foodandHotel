@@ -17,6 +17,11 @@ struct SoundtrackEditView: View {
     
     var onSave: (Soundtrack) -> Void
     
+    init(onSave: @escaping (Soundtrack) -> Void) {
+        self.onSave = onSave
+        print("DEBUG: SoundtrackEditViewが初期化されました")
+    }
+    
     var body: some View {
         NavigationView {
             Form {
@@ -85,6 +90,9 @@ struct SoundtrackEditView: View {
             }
             .navigationTitle("サントラを編集")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                print("DEBUG: SoundtrackEditViewが表示されました")
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("キャンセル") {
@@ -142,6 +150,9 @@ struct SoundtrackEditView: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            print("DEBUG: SoundtrackEditViewが表示されました")
         }
         .onDisappear {
             audioPlayer?.stop()

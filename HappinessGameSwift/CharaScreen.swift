@@ -1342,6 +1342,20 @@ struct AboutView: View {
     @State private var showSoundtrackEdit: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
+    
+    // シート管理用のenum
+    enum ActiveSheet: Identifiable {
+        case soundtrackEdit
+        case iconPicker
+        
+        var id: Int {
+            switch self {
+            case .soundtrackEdit: return 0
+            case .iconPicker: return 1
+            }
+        }
+    }
+    @State private var activeSheet: ActiveSheet?
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var characterManager: CharacterManager
 
@@ -1613,6 +1627,11 @@ struct AboutView: View {
                         isEditingDescription = false
                     } else {
                         // 編集選択モーダルを表示
+                        print("DEBUG: 編集ボタンがタップされました")
+                        print("DEBUG: 現在のシート状態:")
+                        print("  - showEditSelection: \(showEditSelection)")
+                        print("  - showIconPicker: \(showIconPicker)")
+                        print("  - showSoundtrackEdit: \(showSoundtrackEdit)")
                         showEditSelection = true
                     }
                 }) {
@@ -1642,7 +1661,8 @@ struct AboutView: View {
             saveCharacter()
         }
         .actionSheet(isPresented: $showEditSelection) {
-            ActionSheet(
+            print("DEBUG: ActionSheetが表示されました")
+            return ActionSheet(
                 title: Text("編集する項目を選択してください"),
                 buttons: [
                     .default(Text("プロフィールを編集")) {
@@ -1652,7 +1672,9 @@ struct AboutView: View {
                         isEditingDescription = true
                     },
                     .default(Text("サントラを編集")) {
-                        showSoundtrackEdit = true
+                        print("DEBUG: サントラを編集ボタンがタップされました")
+                        activeSheet = .soundtrackEdit
+                        print("DEBUG: activeSheet = soundtrackEdit")
                     },
                     .cancel(Text("キャンセル"))
                 ]
@@ -1710,16 +1732,25 @@ struct AboutView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showSoundtrackEdit) {
-                SoundtrackEditView { soundtrack in
-                    // サントラを保存
-                    guard let idx = characterIndex else { return }
-                    var updatedCharacter = characters[idx]
-                    var soundtracks = updatedCharacter.soundtracks
-                    soundtracks.append(soundtrack)
-                    updatedCharacter.soundtracks = soundtracks
-                    characters[idx] = updatedCharacter
-                    characterManager.updateCharacter(updatedCharacter)
+            .sheet(item: $activeSheet) { item in
+                switch item {
+                case .soundtrackEdit:
+                    SoundtrackEditView { soundtrack in
+                        print("DEBUG: SoundtrackEditView - onSaveが呼ばれました")
+                        // サントラを保存
+                        guard let idx = characterIndex else { return }
+                        var updatedCharacter = characters[idx]
+                        var soundtracks = updatedCharacter.soundtracks
+                        soundtracks.append(soundtrack)
+                        updatedCharacter.soundtracks = soundtracks
+                        characters[idx] = updatedCharacter
+                        characterManager.updateCharacter(updatedCharacter)
+                    }
+                    .onAppear {
+                        print("DEBUG: SoundtrackEditViewシートが表示されました (from sheet)")
+                    }
+                case .iconPicker:
+                    EmptyView() // 後で実装
                 }
             }
         }

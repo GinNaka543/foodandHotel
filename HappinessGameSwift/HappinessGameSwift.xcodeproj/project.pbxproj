@@ -27,6 +27,7 @@
 		CC1BB38A2E2A47BA006EE695 /* MultipleFirebaseAdView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3892E2A47BA006EE695 /* MultipleFirebaseAdView.swift */; };
 		CC1BB38C2E2AB69B006EE695 /* UserDefaultsHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */; };
 		CC1BB3922E3106A8006EE695 /* SoundtrackEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */; };
+		CC1BB3942E310AC8006EE695 /* SoundtrackTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */; };
 		CC20AAA82E26E682005F4C2A /* ArtworkScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA72E26E682005F4C2A /* ArtworkScreen.swift */; };
 		CC20AAA92E26E682005F4C2A /* ArtworkPlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA62E26E682005F4C2A /* ArtworkPlayerScreen.swift */; };
 		CC20AAAA2E26E682005F4C2A /* AdvertisementAdminScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAA12E26E682005F4C2A /* AdvertisementAdminScreen.swift */; };
@@ -123,6 +124,7 @@
 		CC1BB3892E2A47BA006EE695 /* MultipleFirebaseAdView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipleFirebaseAdView.swift; sourceTree = "<group>"; };
 		CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsHelper.swift; sourceTree = "<group>"; };
 		CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackEditView.swift; sourceTree = "<group>"; };
+		CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackTypes.swift; sourceTree = "<group>"; };
 		CC20AAA12E26E682005F4C2A /* AdvertisementAdminScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementAdminScreen.swift; sourceTree = "<group>"; };
 		CC20AAA22E26E682005F4C2A /* AlbumArtworkListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumArtworkListScreen.swift; sourceTree = "<group>"; };
 		CC20AAA32E26E682005F4C2A /* AnimeListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeListScreen.swift; sourceTree = "<group>"; };
@@ -239,6 +241,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */,
 				CC1BB38F2E3106A8006EE695 /* SoundtrackEditView.swift */,
 				CC1BB38B2E2AB69B006EE695 /* UserDefaultsHelper.swift */,
 				CC1BB3892E2A47BA006EE695 /* MultipleFirebaseAdView.swift */,
@@ -515,6 +518,7 @@
 				CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */,
 				CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */,
 				CC1BB3882E28571B006EE695 /* AnimeOrderModal.swift in Sources */,
+				CC1BB3942E310AC8006EE695 /* SoundtrackTypes.swift in Sources */,
 				CC20AAAE2E26E682005F4C2A /* AnimeListScreen.swift in Sources */,
 				CC20AAC12E26E697005F4C2A /* GitHubImageManager.swift in Sources */,
 				CC20AAC22E26E697005F4C2A /* FirebaseAdView.swift in Sources */,

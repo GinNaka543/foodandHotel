@@ -3,16 +3,16 @@ import SwiftUI
 import AVFoundation
 
 // サントラ構造体の定義
-public struct Soundtrack: Identifiable, Codable, Equatable {
-    public let id: UUID
-    public var title: String
-    public var audioData: Data?
-    public var thumbnailData: Data?
-    public var duration: TimeInterval?
-    public var artist: String?
-    public var createdAt: Date
+struct Soundtrack: Identifiable, Codable, Equatable {
+    let id: UUID
+    var title: String
+    var audioData: Data?
+    var thumbnailData: Data?
+    var duration: TimeInterval?
+    var artist: String?
+    var createdAt: Date
     
-    public init(id: UUID = UUID(), title: String, audioData: Data? = nil, thumbnailData: Data? = nil, duration: TimeInterval? = nil, artist: String? = nil, createdAt: Date = Date()) {
+    init(id: UUID = UUID(), title: String, audioData: Data? = nil, thumbnailData: Data? = nil, duration: TimeInterval? = nil, artist: String? = nil, createdAt: Date = Date()) {
         self.id = id
         self.title = title
         self.audioData = audioData
@@ -60,18 +60,13 @@ extension Anime {
 }
 
 // サントラ行のビュー
-public struct SoundtrackRow: View {
+struct SoundtrackRow: View {
     let soundtrack: Soundtrack
     let onDelete: () -> Void
     @State private var isPlaying = false
     @State private var audioPlayer: AVAudioPlayer?
     
-    public init(soundtrack: Soundtrack, onDelete: @escaping () -> Void) {
-        self.soundtrack = soundtrack
-        self.onDelete = onDelete
-    }
-    
-    public var body: some View {
+    var body: some View {
         HStack(spacing: 12) {
             // サムネイル
             if let thumbnailData = soundtrack.thumbnailData,

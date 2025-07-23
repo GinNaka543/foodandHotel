@@ -51,9 +51,12 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
-    // 特定のサントラを再生
-    private func playSoundtrack(_ soundtrack: Soundtrack) {
+    // 特定のサントラを再生（プライベートからパブリックに変更）
+    func playSoundtrack(_ soundtrack: Soundtrack) {
         guard let audioData = soundtrack.audioData else { return }
+        
+        // 現在再生中の場合は停止
+        stopPlayback()
         
         do {
             audioPlayer = try AVAudioPlayer(data: audioData)
@@ -138,6 +141,7 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
 // サントラ再生コントロールビュー
 struct SoundtrackPlayerView: View {
     @ObservedObject var manager = SoundtrackManager.shared
+    @State private var showingSoundtrackList = false
     
     var body: some View {
         // currentSoundtrackが存在する限りバーを表示（一時停止中でも）
@@ -206,14 +210,133 @@ struct SoundtrackPlayerView: View {
             .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
             .contentShape(Rectangle()) // タップ領域を明確に
             .onTapGesture {
-                // バー全体をタップした時も曲を変更
+                // バー全体をタップした時に曲リストを表示
                 print("SoundtrackPlayerView: バーがタップされました")
-                manager.startRandomPlayback()
+                showingSoundtrackList = true
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .animation(.spring(response: 0.5, dampingFraction: 0.8), value: manager.currentSoundtrack != nil)
+            .sheet(isPresented: $showingSoundtrackList) {
+                SoundtrackListView()
+            }
         }
+    }
+}
+
+// サントラリストビュー
+struct SoundtrackListView: View {
+    @ObservedObject var manager = SoundtrackManager.shared
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // ヘッダー
+                HStack {
+                    Text("サントラを選択")
+                        .font(.system(size: 20, weight: .bold))
+                    Spacer()
+                    Button("閉じる") {
+                        dismiss()
+                    }
+                    .foregroundColor(.blue)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                
+                if manager.allSoundtracks.isEmpty {
+                    Spacer()
+                    Text("サントラが登録されていません")
+                        .font(.system(size: 16))
+                        .foregroundColor(.gray)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(manager.allSoundtracks) { soundtrack in
+                                SoundtrackListRow(
+                                    soundtrack: soundtrack,
+                                    isPlaying: manager.currentSoundtrack?.id == soundtrack.id && manager.isPlaying,
+                                    onTap: {
+                                        // 選択されたサントラを再生
+                                        manager.playSoundtrack(soundtrack)
+                                        dismiss()
+                                    }
+                                )
+                                
+                                if soundtrack.id != manager.allSoundtracks.last?.id {
+                                    Divider()
+                                        .padding(.leading, 72)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                }
+            }
+            .background(Color(.systemBackground))
+        }
+    }
+}
+
+// サントラリスト行ビュー
+struct SoundtrackListRow: View {
+    let soundtrack: Soundtrack
+    let isPlaying: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // サムネイル
+                if let thumbnailData = soundtrack.thumbnailData,
+                   let image = UIImage(data: thumbnailData) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 50, height: 50)
+                        .cornerRadius(8)
+                } else {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.purple.opacity(0.1))
+                            .frame(width: 50, height: 50)
+                        Image(systemName: "music.note")
+                            .foregroundColor(.purple)
+                            .font(.system(size: 20))
+                    }
+                }
+                
+                // タイトルとアーティスト
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(soundtrack.title)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    if let artist = soundtrack.artist {
+                        Text(artist)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                
+                Spacer()
+                
+                // 再生中インジケーター
+                if isPlaying {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.purple)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(isPlaying ? Color.purple.opacity(0.05) : Color.clear)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }

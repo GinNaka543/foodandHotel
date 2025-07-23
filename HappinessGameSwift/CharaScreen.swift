@@ -1791,7 +1791,7 @@ struct AboutView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: iconPickerItem) { newValue in
+                    .onChange(of: iconPickerItem) { _, newValue in
                         if let newValue = newValue {
                             Task {
                                 if let data = try? await newValue.loadTransferable(type: Data.self),
@@ -1804,7 +1804,6 @@ struct AboutView: View {
                 }
             }
         }
-    }
     
     // MARK: - Helper Views
     private func profileRow(label: String, value: String) -> some View {
@@ -1971,7 +1970,7 @@ struct AboutView: View {
         characters[idx] = updatedCharacter
         characterManager.updateCharacter(updatedCharacter)
     }
-
+}
 
 // --- 追加: 高さ自動調整＆空行削除付きTextEditor ---
 struct AutoSizingTextEditor: UIViewRepresentable {

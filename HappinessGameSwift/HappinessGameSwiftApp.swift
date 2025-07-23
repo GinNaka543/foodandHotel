@@ -294,10 +294,7 @@ struct HappinessGameSwiftApp: App {
         WindowGroup {
             ZStack {
                 // Main content
-                if authManager.isLoggedIn && authManager.requiresPayment {
-                    PaymentRequiredView()
-                        .environmentObject(authManager)
-                } else if authManager.isLoggedIn {
+                if authManager.isLoggedIn {
                     MainContainerView()
                         .environmentObject(mainTab)
                         .environmentObject(characterManager)
@@ -360,6 +357,7 @@ struct MainContainerView: View {
     @EnvironmentObject var animeManager: AnimeManager
     @EnvironmentObject var authManager: AuthenticationManager
     @State private var showingTermsOfService = false
+    @State private var showingPaymentPopup = false
     
     enum Tab: Int, CaseIterable {
         case home = 0
@@ -458,6 +456,21 @@ struct MainContainerView: View {
         }
         .fullScreenCover(isPresented: $showingTermsOfService) {
             TermsOfServiceView()
+        }
+        .sheet(isPresented: $showingPaymentPopup) {
+            PaymentPopupView()
+                .environmentObject(authManager)
+        }
+        .onAppear {
+            // Check if payment is required
+            if authManager.requiresPayment {
+                showingPaymentPopup = true
+            }
+        }
+        .onChange(of: authManager.requiresPayment) { newValue in
+            if newValue {
+                showingPaymentPopup = true
+            }
         }
     }
 }
@@ -825,77 +838,20 @@ struct SplashScreenView: View {
     }
 }
 
-// MARK: - PaymentRequiredView
-struct PaymentRequiredView: View {
+// MARK: - PaymentPopupView
+struct PaymentPopupView: View {
     @EnvironmentObject var authManager: AuthenticationManager
-    @State private var showingPaymentSheet = false
-    
-    var body: some View {
-        ZStack {
-            Color(.systemBackground)
-                .ignoresSafeArea()
-            
-            VStack(spacing: 30) {
-                Spacer()
-                
-                Image(systemName: "lock.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.orange)
-                
-                VStack(spacing: 16) {
-                    Text("お試し期間が終了しました")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    
-                    Text("引き続きご利用いただくには、500ポイントの課金が必要です")
-                        .font(.body)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 40)
-                }
-                
-                VStack(spacing: 20) {
-                    Button(action: {
-                        showingPaymentSheet = true
-                    }) {
-                        HStack {
-                            Image(systemName: "creditcard")
-                            Text("500ポイントを購入")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.orange)
-                        .cornerRadius(10)
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    Button(action: {
-                        authManager.logout()
-                    }) {
-                        Text("ログアウト")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-            }
-        }
-        .sheet(isPresented: $showingPaymentSheet) {
-            PaymentSheetView(authManager: authManager)
-        }
-    }
-}
-
-// MARK: - PaymentSheetView
-struct PaymentSheetView: View {
-    let authManager: AuthenticationManager
     @Environment(\.dismiss) var dismiss
+    @State private var selectedPaymentMethod: PaymentMethod = .card
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var showError = false
+    @State private var userPoints: Int = 0
+    
+    enum PaymentMethod {
+        case card
+        case points
+    }
     
     private let subscriptionPackage = PointPackage(
         points: 500,
@@ -905,67 +861,164 @@ struct PaymentSheetView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                VStack(spacing: 16) {
-                    Image(systemName: "creditcard.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.orange)
-                    
-                    Text("アプリ利用料")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Text("¥500")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                }
-                .padding(.top, 40)
+            ZStack {
+                // Purple gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.6, green: 0.4, blue: 0.9),
+                        Color(red: 0.8, green: 0.6, blue: 0.95)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("無制限のアクセス", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Label("全ての機能が利用可能", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Label("永続的な利用権", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                }
-                .padding(.horizontal, 40)
-                
-                Spacer()
-                
-                Button(action: {
-                    processPayment()
-                }) {
-                    if isProcessing {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .cornerRadius(10)
-                    } else {
-                        Text("購入する")
-                            .font(.headline)
+                VStack(spacing: 25) {
+                    // Header
+                    VStack(spacing: 16) {
+                        Image(systemName: "sparkles.square.filled.on.square")
+                            .font(.system(size: 70))
                             .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .cornerRadius(10)
+                            .shadow(radius: 5)
+                        
+                        Text("お試し期間が終了しました")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text("引き続きご利用いただくには、500ポイントが必要です")
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.horizontal, 20)
                     }
+                    .padding(.top, 30)
+                    
+                    // Payment options
+                    VStack(spacing: 16) {
+                        // Points balance display
+                        if userPoints > 0 {
+                            HStack {
+                                Image(systemName: "star.circle.fill")
+                                    .foregroundColor(.yellow)
+                                Text("保有ポイント: \(userPoints)pt")
+                                    .fontWeight(.medium)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(20)
+                        }
+                        
+                        // Payment method selection
+                        VStack(spacing: 12) {
+                            // Point payment option
+                            Button(action: {
+                                selectedPaymentMethod = .points
+                            }) {
+                                HStack {
+                                    Image(systemName: "star.circle.fill")
+                                        .font(.title2)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("ポイントで支払う")
+                                            .fontWeight(.semibold)
+                                        Text("500pt")
+                                            .font(.caption)
+                                            .foregroundColor(userPoints >= 500 ? .white.opacity(0.8) : .white.opacity(0.5))
+                                    }
+                                    Spacer()
+                                    if selectedPaymentMethod == .points {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                    }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(userPoints >= 500 ? Color.white.opacity(0.3) : Color.white.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(selectedPaymentMethod == .points ? Color.white : Color.clear, lineWidth: 2)
+                                        )
+                                )
+                            }
+                            .disabled(userPoints < 500)
+                            .foregroundColor(.white)
+                            
+                            // Card payment option
+                            Button(action: {
+                                selectedPaymentMethod = .card
+                            }) {
+                                HStack {
+                                    Image(systemName: "creditcard.circle.fill")
+                                        .font(.title2)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("カードで支払う")
+                                            .fontWeight(.semibold)
+                                        Text("¥500")
+                                            .font(.caption)
+                                            .foregroundColor(.white.opacity(0.8))
+                                    }
+                                    Spacer()
+                                    if selectedPaymentMethod == .card {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                    }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.3))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(selectedPaymentMethod == .card ? Color.white : Color.clear, lineWidth: 2)
+                                        )
+                                )
+                            }
+                            .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    
+                    Spacer()
+                    
+                    // Action buttons
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            processPayment()
+                        }) {
+                            if isProcessing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .purple))
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                            } else {
+                                Text(selectedPaymentMethod == .points ? "ポイントで支払う" : "購入する")
+                                    .font(.headline)
+                                    .foregroundColor(.purple)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                            }
+                        }
+                        .disabled(isProcessing || (selectedPaymentMethod == .points && userPoints < 500))
+                        
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            Text("後で")
+                                .foregroundColor(.white.opacity(0.8))
+                                .padding(.vertical, 8)
+                        }
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 30)
                 }
-                .padding(.horizontal, 40)
-                .disabled(isProcessing)
-                
-                Button(action: {
-                    dismiss()
-                }) {
-                    Text("キャンセル")
-                        .foregroundColor(.secondary)
-                }
-                .padding(.bottom, 30)
             }
-            .navigationTitle("アップグレード")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
             .alert("エラー", isPresented: $showError) {
                 Button("OK") {
                     showError = false
@@ -973,6 +1026,18 @@ struct PaymentSheetView: View {
             } message: {
                 Text(errorMessage ?? "支払い処理中にエラーが発生しました")
             }
+        }
+        .onAppear {
+            loadUserPoints()
+        }
+    }
+    
+    private func loadUserPoints() {
+        // Load user points from Firebase or UserDefaults
+        if let userId = UserDefaults.standard.string(forKey: "userId") {
+            // TODO: Load actual points from Firebase
+            // For now, using a placeholder value
+            userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
         }
     }
     
@@ -985,6 +1050,44 @@ struct PaymentSheetView: View {
         
         isProcessing = true
         
+        if selectedPaymentMethod == .points {
+            // Process point payment
+            processPointPayment(userId: userId)
+        } else {
+            // Process card payment
+            processCardPayment(userId: userId)
+        }
+    }
+    
+    private func processPointPayment(userId: String) {
+        // Deduct points and update subscription
+        let newPoints = userPoints - 500
+        UserDefaults.standard.set(newPoints, forKey: "userPoints_\(userId)")
+        
+        // Update Firebase
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).updateData([
+            "points": newPoints,
+            "lastPointsUsed": 500,
+            "lastPointsUsedAt": Date().timeIntervalSince1970
+        ]) { error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    isProcessing = false
+                    errorMessage = "ポイント支払いに失敗しました: \(error.localizedDescription)"
+                    showError = true
+                } else {
+                    // Payment successful
+                    authManager.completePayment()
+                    saveSubscriptionToFirebase(userId: userId, paymentMethod: "points")
+                    isProcessing = false
+                    dismiss()
+                }
+            }
+        }
+    }
+    
+    private func processCardPayment(userId: String) {
         // Use the existing Stripe payment manager
         StripePaymentManager.shared.purchasePoints(userId: userId, package: subscriptionPackage) { result in
             DispatchQueue.main.async {
@@ -996,7 +1099,7 @@ struct PaymentSheetView: View {
                     authManager.completePayment()
                     
                     // Save subscription info to Firebase
-                    saveSubscriptionToFirebase(userId: userId)
+                    saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
                     
                     dismiss()
                     
@@ -1008,7 +1111,7 @@ struct PaymentSheetView: View {
         }
     }
     
-    private func saveSubscriptionToFirebase(userId: String) {
+    private func saveSubscriptionToFirebase(userId: String, paymentMethod: String) {
         // Save subscription status to Firebase by device ID
         let db = Firestore.firestore()
         let subscriptionData: [String: Any] = [
@@ -1017,6 +1120,7 @@ struct PaymentSheetView: View {
             "subscribedAt": Date().timeIntervalSince1970,
             "amount": subscriptionPackage.price,
             "type": "app_subscription",
+            "paymentMethod": paymentMethod,
             "firstInstallDate": authManager.getFirstInstallDateFromKeychain()?.timeIntervalSince1970 ?? Date().timeIntervalSince1970,
             "hasPaid": true,
             "paymentDate": Date().timeIntervalSince1970,
@@ -1035,7 +1139,8 @@ struct PaymentSheetView: View {
         // Also update user document with subscription status
         db.collection("users").document(userId).updateData([
             "hasSubscription": true,
-            "subscriptionDate": Date().timeIntervalSince1970
+            "subscriptionDate": Date().timeIntervalSince1970,
+            "subscriptionPaymentMethod": paymentMethod
         ]) { error in
             if let error = error {
                 print("Error updating user subscription status: \(error)")
@@ -1043,5 +1148,6 @@ struct PaymentSheetView: View {
         }
     }
 }
+
 
  

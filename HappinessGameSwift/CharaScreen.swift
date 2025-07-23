@@ -1971,7 +1971,6 @@ struct AboutView: View {
         characters[idx] = updatedCharacter
         characterManager.updateCharacter(updatedCharacter)
     }
-}
 
 
 // --- 追加: 高さ自動調整＆空行削除付きTextEditor ---

@@ -234,9 +234,6 @@ struct ArtworkPlayerScreen: View {
                             }
                             .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                             .onTapGesture {
-                                print("[DEBUG] ArtworkPlayerScreen: Pixiv画像タップ")
-                                print("[DEBUG] artwork: \(artwork.title)")
-                                print("[DEBUG] pixivURL: \(artwork.pixivURL ?? "nil")")
                                 showPixivRedirect = true
                             }
                         } else {
@@ -429,13 +426,8 @@ struct ArtworkPlayerScreen: View {
             }
         }
         .onAppear {
-            print("[DEBUG] ArtworkPlayerScreen onAppear")
-            print("[DEBUG] artwork.title = \(artwork.title)")
-            print("[DEBUG] artwork.tags = \(artwork.tags)")
             editTitle = artwork.title
             editTags = artwork.tags.joined(separator: ",")
-            print("[DEBUG] editTitle設定後 = \(editTitle)")
-            print("[DEBUG] editTags設定後 = \(editTags)")
         }
         .onChange(of: selectedArtwork) { newArtwork in
             if let newArtwork = newArtwork {
@@ -453,13 +445,8 @@ struct ArtworkPlayerScreen: View {
                     .font(.headline)
                     .onAppear {
                         // シートが表示されるときに最新の値を設定
-                        print("[DEBUG] ArtworkPlayerScreen sheet onAppear")
-                        print("[DEBUG] 現在の artwork.title = \(artwork.title)")
-                        print("[DEBUG] 現在の artwork.tags = \(artwork.tags)")
                         editTitle = artwork.title
                         editTags = artwork.tags.joined(separator: ",")
-                        print("[DEBUG] 設定後の editTitle = \(editTitle)")
-                        print("[DEBUG] 設定後の editTags = \(editTags)")
                     }
                 // タイトル（編集不可）
                 HStack {
@@ -487,19 +474,12 @@ struct ArtworkPlayerScreen: View {
                 
                 // 保存ボタンを削除（コメントアウト）
                 /*Button("タイトル・タグを保存") {
-                    print("[DEBUG] ArtworkPlayerScreen: 保存ボタンが押されました")
-                    print("[DEBUG] ArtworkPlayerScreen: editTitle = \(editTitle)")
-                    print("[DEBUG] ArtworkPlayerScreen: editTags = \(editTags)")
                     
                     let tagsArray = editTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                     
-                    print("[DEBUG] ArtworkPlayerScreen: 更新前 artwork.title = \(artwork.title)")
-                    print("[DEBUG] ArtworkPlayerScreen: 更新前 artwork.tags = \(artwork.tags)")
                     
                     // withAnimationを使って確実に更新
                     withAnimation {
-                        print("[DEBUG] withAnimation内: editTitle = \(editTitle)")
-                        print("[DEBUG] withAnimation内: tagsArray = \(tagsArray)")
                         
                         // 新しいArtworkインスタンスを作成
                         let updatedArtwork = Artwork(
@@ -515,13 +495,9 @@ struct ArtworkPlayerScreen: View {
                             viewCount: artwork.viewCount
                         )
                         
-                        print("[DEBUG] 新しいArtwork作成後: updatedArtwork.title = \(updatedArtwork.title)")
-                        print("[DEBUG] 新しいArtwork作成後: updatedArtwork.tags = \(updatedArtwork.tags)")
                         
                         artwork = updatedArtwork
                         
-                        print("[DEBUG] ArtworkPlayerScreen: 更新後 artwork.title = \(artwork.title)")
-                        print("[DEBUG] ArtworkPlayerScreen: 更新後 artwork.tags = \(artwork.tags)")
                         
                         // ビューを強制的に再描画
                         refreshID = UUID()
@@ -690,16 +666,12 @@ private struct ArtworkInfoView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
                         .onAppear {
-                            print("[DEBUG] ArtworkInfoView - character: \(character?.name ?? "nil")")
-                            print("[DEBUG] ArtworkInfoView - anime: \(anime?.title ?? "nil")")
-                            print("[DEBUG] ArtworkInfoView - character.imageIdentifier: \(character?.imageIdentifier ?? "nil")")
                         }
                 }
                 
                 Spacer()
                 
                 Button(action: {
-                    print("[DEBUG] 編集ボタンがタップされました")
                     showMenuSheet()
                 }) {
                     Text("編集")
@@ -714,7 +686,6 @@ private struct ArtworkInfoView: View {
                 
                 // Fullscreen button
                 Button(action: {
-                    print("[DEBUG] 拡大ボタンがタップされました")
                     showFullscreen()
                 }) {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")

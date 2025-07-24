@@ -414,7 +414,6 @@ struct AddVideoView: View {
                             
                             await generateThumbnails(from: tempURL)
                         } catch {
-                            print("動画の保存に失敗しました")
                         }
                     }
                 }
@@ -441,7 +440,6 @@ struct AddVideoView: View {
                 let uiImage = UIImage(cgImage: cgImage.image)
                 thumbnailImages.append(uiImage)
             } catch {
-                print("サムネイル生成に失敗: \(error)")
             }
         }
         

@@ -79,8 +79,6 @@ struct VideoPlayerScreen: View {
         .navigationBarHidden(true)
         .onAppear {
             filteredVideos = allVideos
-            print("VideoPlayerScreen onAppear - video path: \(video.videoPath)")
-            print("VideoPlayerScreen onAppear - youtube URL: \(video.youtubeURL ?? "nil")")
             setupPlayer()
             editTitle = video.title
             editTags = video.tags.joined(separator: ",")
@@ -88,13 +86,9 @@ struct VideoPlayerScreen: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let player = self.player {
                     player.play()
-                    print("動画を再生開始しました - rate: \(player.rate)")
-                    print("プレイヤーステータス: \(player.status.rawValue)")
                     if let currentItem = player.currentItem {
-                        print("現在のアイテムステータス: \(currentItem.status.rawValue)")
                     }
                 } else {
-                    print("プレイヤーがnilのため再生できません")
                 }
             }
             isPlaying = true
@@ -208,11 +202,6 @@ struct VideoPlayerScreen: View {
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                                 .background(Color.black)
                                 .onAppear {
-                                    print("VideoPlayer表示されました")
-                                    print("Player: \(player)")
-                                    print("CurrentItem: \(String(describing: player.currentItem))")
-                                    print("Rate: \(player.rate)")
-                                    print("Status: \(player.status.rawValue)")
                                 }
                         } else {
                             Rectangle()
@@ -394,7 +383,6 @@ struct VideoPlayerScreen: View {
             .foregroundColor(.white)
             .cornerRadius(10)
             Button("動画を削除") {
-                print("[DEBUG] 動画を削除ボタンが押されました")
                 showDeleteAlert = true
             }
             .foregroundColor(.red)
@@ -408,14 +396,9 @@ struct VideoPlayerScreen: View {
                 title: Text("本当に削除しますか？"),
                 message: Text("この動画は完全に削除されます。"),
                 primaryButton: .destructive(Text("削除")) {
-                    print("[DEBUG] VideoPlayerScreen: Alertの削除ボタンが押されました")
-                    print("[DEBUG] VideoPlayerScreen: onDeleteクロージャを呼び出します")
                     onDelete?()
-                    print("[DEBUG] VideoPlayerScreen: onDeleteクロージャ呼び出し完了")
                     showMenuSheet = false
-                    print("[DEBUG] VideoPlayerScreen: showMenuSheet = \(showMenuSheet)")
                     presentationMode.wrappedValue.dismiss()
-                    print("[DEBUG] VideoPlayerScreen: presentationModeで画面を閉じました")
                 },
                 secondaryButton: .cancel(Text("キャンセル"))
             )
@@ -458,32 +441,24 @@ extension VideoPlayerScreen {
     
     func setupPlayer() {
         // YouTube動画の場合はプレイヤーを設定しない
-        if video.youtubeURL != nil && !video.youtubeURL!.isEmpty {
+        if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
             return
         }
         
         guard let videoURL = loadVideoURLFromPath(video.videoPath) else {
-            print("動画ファイルが見つかりません: \(video.videoPath)")
             return
         }
         
-        print("動画URLを生成しました: \(videoURL)")
-        print("動画パス: \(videoURL.path)")
-        print("動画URLの存在確認: \(FileManager.default.fileExists(atPath: videoURL.path))")
         
         // ファイルが存在しない場合、追加のチェック
         if !FileManager.default.fileExists(atPath: videoURL.path) {
-            print("警告: ファイルが存在しません。パスを確認してください。")
             // ドキュメントディレクトリの内容を確認
             if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
                 do {
                     let contents = try FileManager.default.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
-                    print("ドキュメントディレクトリの内容:")
                     for url in contents {
-                        print("  - \(url.lastPathComponent)")
                     }
                 } catch {
-                    print("ディレクトリ内容の取得エラー: \(error)")
                 }
             }
         }
@@ -492,9 +467,7 @@ extension VideoPlayerScreen {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
             try AVAudioSession.sharedInstance().setActive(true)
-            print("AVAudioSessionを設定しました")
         } catch {
-            print("AVAudioSessionの設定に失敗: \(error)")
         }
         
         // AVPlayerItemを作成
@@ -502,17 +475,13 @@ extension VideoPlayerScreen {
         
         // 新しいプレイヤーを作成
         let newPlayer = AVPlayer(playerItem: playerItem)
-        print("AVPlayerを作成しました")
         
         // メインスレッドでプレイヤーを設定
         DispatchQueue.main.async {
             self.player = newPlayer
-            print("プレイヤーを設定しました")
             
             // プレイヤーの準備状態を確認
-            print("現在のアイテムステータス: \(playerItem.status.rawValue)")
             if let error = playerItem.error {
-                print("プレイヤーアイテムエラー: \(error)")
             }
             
             // アセットのプロパティをロード
@@ -520,9 +489,7 @@ extension VideoPlayerScreen {
             Task {
                 do {
                     let isPlayable = try await asset.load(.isPlayable)
-                    print("動画は再生可能か: \(isPlayable)")
                 } catch {
-                    print("再生可能性の確認エラー: \(error)")
                 }
             }
         }
@@ -539,7 +506,6 @@ extension VideoPlayerScreen {
                     }
                 }
             } catch {
-                print("Failed to load video duration: \(error)")
             }
         }
         
@@ -550,14 +516,10 @@ extension VideoPlayerScreen {
     }
     
     func openYouTubeVideo(url: String) {
-        print("YouTube動画を開こうとしています: \(url)")
         if let youtubeURL = URL(string: url) {
-            print("URL変換成功: \(youtubeURL)")
             UIApplication.shared.open(youtubeURL) { success in
-                print("YouTube動画を開く結果: \(success)")
             }
         } else {
-            print("URL変換失敗: \(url)")
         }
     }
 
@@ -573,15 +535,12 @@ extension VideoPlayerScreen {
     }
     
     func handleVideoSelection(_ newVideo: MemoryVideo) {
-        print("動画が選択されました: \(newVideo.title)")
         
         // YouTubeの動画の場合は確認ページに移動
         if let youtubeURL = newVideo.youtubeURL, !youtubeURL.isEmpty {
-            print("YouTube動画です: \(youtubeURL)")
             // YouTube動画の確認ページを表示
             showYouTubeConfirmation(for: youtubeURL, title: newVideo.title)
         } else {
-            print("自分でアップロードした動画です: \(newVideo.videoPath)")
             // 自分でアップロードした動画の場合は動画プレイヤーを切り替え
             switchToVideo(newVideo)
         }
@@ -591,7 +550,6 @@ extension VideoPlayerScreen {
     }
     
     func showYouTubeConfirmation(for url: String, title: String) {
-        print("YouTube確認ダイアログを表示します: \(title)")
         if let youtubeVideo = allVideos.first(where: { $0.youtubeURL == url }) {
             activeSheet = .youtubeConfirmation(youtubeVideo)
         }
@@ -617,7 +575,6 @@ extension VideoPlayerScreen {
                         self.currentTime = 0
                     }
                 } catch {
-                    print("動画の長さの取得に失敗しました: \(error)")
                 }
             }
             
@@ -629,9 +586,7 @@ extension VideoPlayerScreen {
             editTitle = newVideo.title
             editTags = newVideo.tags.joined(separator: ",")
             
-            print("動画を切り替えました: \(newVideo.title)")
         } else {
-            print("動画ファイルの読み込みに失敗しました: \(newVideo.videoPath)")
         }
     }
     
@@ -821,9 +776,10 @@ extension VideoPlayerScreen {
             return URL(fileURLWithPath: path)
         } else {
             // 相対パスの場合、ドキュメントディレクトリからの相対パスと仮定
-            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                return nil
+            }
             let fullURL = documentsDirectory.appendingPathComponent(path)
-            print("相対パスを絶対パスに変換: \(path) → \(fullURL.path)")
             return fullURL
         }
     }

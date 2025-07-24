@@ -15,13 +15,6 @@ struct PixivRedirectView: View {
     @State private var showDeleteAlert = false
     
     var body: some View {
-        let _ = print("[DEBUG] PixivRedirectView body実行")
-        let _ = print("[DEBUG] pixivURL: \(pixivURL)")
-        let _ = print("[DEBUG] artwork: \(artwork?.title ?? "nil")")
-        let _ = print("[DEBUG] artwork ID: \(artwork?.id.uuidString ?? "nil")")
-        let _ = print("[DEBUG] onEdit: \(onEdit != nil)")
-        let _ = print("[DEBUG] onDelete: \(onDelete != nil)")
-        let _ = print("[DEBUG] onThumbnailUpdate: \(onThumbnailUpdate != nil)")
         
         ZStack {
             Color(.systemBackground).edgesIgnoringSafeArea(.all)
@@ -41,9 +34,7 @@ struct PixivRedirectView: View {
                         Spacer()
                         
                         if artwork != nil {
-                            let _ = print("[DEBUG] 編集ボタンを表示")
                             Button(action: {
-                                print("[DEBUG] 編集ボタンがクリックされました")
                                 showEditMenu = true
                             }) {
                                 Text("編集")

@@ -12,11 +12,6 @@ struct PlanPurchaseConfirmationView: View {
     @State private var showStreamingSheet = false
     
     var body: some View {
-        let _ = print("💰 [DEBUG] PlanPurchaseConfirmationView.body 呼び出し")
-        let _ = print("💰 [DEBUG] plan.title: \(plan.title)")
-        let _ = print("💰 [DEBUG] plan.price: \(plan.price)")
-        let _ = print("💰 [DEBUG] isLoadingPoints: \(isLoadingPoints)")
-        let _ = print("💰 [DEBUG] userPoints: \(userPoints)")
         
         NavigationView {
             VStack(spacing: 0) {
@@ -309,7 +304,6 @@ struct PlanPurchaseConfirmationView: View {
                 case .success(let pointsModel):
                     userPoints = pointsModel.points
                 case .failure(let error):
-                    print("ポイント取得エラー: \(error)")
                     userPoints = 0
                 }
             }

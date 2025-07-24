@@ -17,7 +17,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 class MainTabSelection: ObservableObject {
     @Published var selectedTab: MainContainerView.Tab = .chara {
         didSet {
-            print("🔄 [MainTabSelection] タブ変更: \(oldValue.title) → \(selectedTab.title)")
         }
     }
 }
@@ -114,12 +113,8 @@ class AuthenticationManager: ObservableObject {
                 "lastSeenAt": Date().timeIntervalSince1970
             ]
             
-            db.collection("device_subscriptions").document(self.deviceId).setData(trackingData) { error in
-                if let error = error {
-                    print("Error creating device subscription tracking: \(error)")
-                } else {
-                    print("Device subscription tracking created successfully")
-                }
+            db.collection("device_subscriptions").document(self.deviceId).setData(trackingData) { _ in
+                // Successfully saved tracking data
             }
         }
     }
@@ -150,12 +145,8 @@ class AuthenticationManager: ObservableObject {
             "paymentDate": Date().timeIntervalSince1970,
             "amount": 500,
             "lastSeenAt": Date().timeIntervalSince1970
-        ]) { error in
-            if let error = error {
-                print("❌ Error updating device subscription: \(error)")
-            } else {
-                print("✅ Device subscription updated successfully")
-            }
+        ]) { _ in
+            // Successfully updated device subscription
         }
         
         // Also update user document if logged in
@@ -164,12 +155,8 @@ class AuthenticationManager: ObservableObject {
                 "hasPaidSubscription": true,
                 "subscriptionDate": Timestamp(date: Date()),
                 "subscriptionUpdatedAt": Timestamp(date: Date())
-            ]) { error in
-                if let error = error {
-                    print("❌ Error updating user subscription: \(error)")
-                } else {
-                    print("✅ User subscription updated successfully")
-                }
+            ]) { _ in
+                // Successfully updated user subscription
             }
         }
     }
@@ -185,7 +172,6 @@ class AuthenticationManager: ObservableObject {
                     // Sync local status with server status
                     if serverHasPaid && self?.hasPaid == false {
                         // Server says paid but locally is unpaid, update local status
-                        print("📱 Syncing: Server says paid, updating local status")
                         self?.hasPaid = true
                         self?.requiresPayment = false
                         UserDefaults.standard.set(true, forKey: "hasPaidSubscription")
@@ -196,7 +182,6 @@ class AuthenticationManager: ObservableObject {
                         }
                     } else if !serverHasPaid && self?.hasPaid == true {
                         // Server says unpaid but locally is paid, reset local status
-                        print("📱 Syncing: Server says unpaid, resetting local status")
                         self?.hasPaid = false
                         self?.requiresPayment = true
                         UserDefaults.standard.set(false, forKey: "hasPaidSubscription")
@@ -211,7 +196,6 @@ class AuthenticationManager: ObservableObject {
                     self?.checkPaymentRequirement()
                 }
             } else {
-                print("📱 No device subscription document found for deviceId: \(self?.deviceId ?? "unknown")")
             }
         }
     }
@@ -288,12 +272,21 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var productManager = ProductManager()
     @StateObject private var authManager = AuthenticationManager()
     @State private var showSplash = true
+    @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
+    @State private var hasRequestedTracking = UserDefaults.standard.bool(forKey: "hasRequestedTracking")
     
     init() {
         FirebaseApp.configure()
         
         // Stripe SDKを初期化
-        StripeAPI.defaultPublishableKey = "pk_live_51RjjWjD7PsaPGu6xz0RGH0Gnw36ORTqI9pjec4ycPMlxAQ8biO4igeEMwoKZxdwhB8EJGeW947jmgaCWNKZi3ZTR005t6UHTLA"
+        // Read Stripe publishable key from Info.plist
+        if let infoDict = Bundle.main.infoDictionary,
+           let stripeKey = infoDict["STRIPE_PUBLISHABLE_KEY"] as? String,
+           !stripeKey.isEmpty {
+            StripeAPI.defaultPublishableKey = stripeKey
+        } else {
+            fatalError("STRIPE_PUBLISHABLE_KEY not found in Info.plist")
+        }
         
         cleanupLargeUserDefaultsEntries()
         // 画像パスの移行処理を実行
@@ -310,7 +303,9 @@ struct HappinessGameSwiftApp: App {
             // ユーザーIDがない場合は、後でリトライするか、汎用的なプリロードを行う
             let userId = UserDefaults.standard.string(forKey: "userId") ?? "preload_user"
             
-            let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent")!
+            guard let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent") else {
+                return
+            }
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -325,15 +320,10 @@ struct HappinessGameSwiftApp: App {
             do {
                 request.httpBody = try JSONSerialization.data(withJSONObject: body)
             } catch {
-                print("[Stripe Preload] Failed to create request body: \(error)")
                 return
             }
             
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                if let error = error {
-                    print("[Stripe Preload] Error: \(error)")
-                    return
-                }
+            URLSession.shared.dataTask(with: request) { data, response, _ in
                 
                 guard let data = data else { return }
                 
@@ -347,10 +337,8 @@ struct HappinessGameSwiftApp: App {
                         
                         // 事前にPaymentSheetを作成（表示はしない）
                         _ = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
-                        print("[Stripe Preload] Payment intent preloaded successfully")
                     }
                 } catch {
-                    print("[Stripe Preload] Failed to parse response: \(error)")
                 }
             }.resume()
         }
@@ -360,7 +348,13 @@ struct HappinessGameSwiftApp: App {
         WindowGroup {
             ZStack {
                 // Main content
-                if authManager.isLoggedIn {
+                if !hasSeenFirstLaunch {
+                    // 初回起動時の説明画面
+                    FirstLaunchView(hasSeenFirstLaunch: $hasSeenFirstLaunch)
+                } else if !hasRequestedTracking {
+                    // トラッキング許可画面
+                    TrackingPermissionView(hasRequestedTracking: $hasRequestedTracking)
+                } else if authManager.isLoggedIn {
                     MainContainerView()
                         .environmentObject(mainTab)
                         .environmentObject(characterManager)
@@ -372,7 +366,6 @@ struct HappinessGameSwiftApp: App {
                         createSampleImagesIfNeeded()
                         // ユーザーIDを確認
                         if let userId = UserDefaults.standard.string(forKey: "userId") {
-                            print("✅ ログイン済み: userId=\(userId)")
                             // 既存データの移行を実行
                             UserDefaultsHelper.shared.migrateDataIfNeeded()
                             // データを再読み込み
@@ -385,7 +378,7 @@ struct HappinessGameSwiftApp: App {
                 }
                 
                 // Splash screen overlay
-                if showSplash {
+                if showSplash && hasSeenFirstLaunch {
                     SplashScreenView()
                         .transition(.opacity)
                         .zIndex(1)
@@ -409,7 +402,6 @@ struct HappinessGameSwiftApp: App {
             if key.hasPrefix("artworks_") || key.hasPrefix("videos_") {
                 if let data = userDefaults.data(forKey: key), data.count >= 4_000_000 {
                     userDefaults.removeObject(forKey: key)
-                    print("[CLEANUP] Removed large UserDefaults entry: \(key), size: \(data.count)")
                 }
             }
         }
@@ -502,7 +494,6 @@ struct MainContainerView: View {
                             title: tab.title,
                             isSelected: mainTab.selectedTab == tab,
                             onTap: {
-                                print("🔄 [Tab] \(mainTab.selectedTab.title) → \(tab.title)")
                                 // 即座にタブを切り替える（アニメーション削除）
                                 mainTab.selectedTab = tab
                             }
@@ -538,7 +529,7 @@ struct MainContainerView: View {
                 showingPaymentPopup = true
             }
         }
-        .onChange(of: authManager.requiresPayment) { newValue in
+        .onChange(of: authManager.requiresPayment) { _, newValue in
             if newValue {
                 showingPaymentPopup = true
             }
@@ -954,12 +945,12 @@ struct PaymentPopupView: View {
                             .foregroundColor(.white)
                             .shadow(radius: 5)
                         
-                        Text("お試し期間が終了しました")
+                        Text("2ヶ月の無料期間が終了しました")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                         
-                        Text("引き続きご利用いただくには、500ポイントが必要です")
+                        Text("引き続きアプリをご利用いただくには\n500円（500ポイント）が必要です")
                             .font(.body)
                             .multilineTextAlignment(.center)
                             .foregroundColor(.white.opacity(0.9))
@@ -1114,22 +1105,18 @@ struct PaymentPopupView: View {
                     switch result {
                     case .success(let pointsModel):
                         self.userPoints = pointsModel.points
-                        print("✅ User points loaded: \(self.userPoints)")
-                    case .failure(let error):
-                        print("❌ Failed to load user points: \(error)")
+                    case .failure(_):
                         // Try fallback to userPoints collection directly
                         let db = Firestore.firestore()
-                        db.collection("userPoints").document(userId).getDocument { document, error in
+                        db.collection("userPoints").document(userId).getDocument { document, _ in
                             if let document = document, document.exists {
                                 DispatchQueue.main.async {
                                     self.userPoints = document.data()?["points"] as? Int ?? 0
-                                    print("✅ User points loaded from fallback: \(self.userPoints)")
                                 }
                             } else {
                                 // Final fallback to UserDefaults
                                 DispatchQueue.main.async {
                                     self.userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
-                                    print("⚠️ User points loaded from UserDefaults: \(self.userPoints)")
                                 }
                             }
                         }
@@ -1147,7 +1134,10 @@ struct PaymentPopupView: View {
         isPreloadingPayment = true
         
         // Create payment intent in advance
-        let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent")!
+        guard let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent") else {
+            isPreloadingPayment = false
+            return
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -1162,7 +1152,6 @@ struct PaymentPopupView: View {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
         } catch {
-            print("Failed to create payment intent request body: \(error)")
             isPreloadingPayment = false
             return
         }
@@ -1171,8 +1160,7 @@ struct PaymentPopupView: View {
             DispatchQueue.main.async {
                 self.isPreloadingPayment = false
                 
-                if let error = error {
-                    print("Payment intent preload error: \(error)")
+                if error != nil {
                     return
                 }
                 
@@ -1182,10 +1170,8 @@ struct PaymentPopupView: View {
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                        let clientSecret = json["clientSecret"] as? String {
                         self.preloadedPaymentIntent = clientSecret
-                        print("Payment intent preloaded successfully")
                     }
                 } catch {
-                    print("Failed to parse payment intent response: \(error)")
                 }
             }
         }.resume()
@@ -1322,12 +1308,8 @@ struct PaymentPopupView: View {
         ]
         
         // Save to device_subscriptions collection
-        db.collection("device_subscriptions").document(authManager.deviceId).setData(subscriptionData, merge: true) { error in
-            if let error = error {
-                print("Error saving device subscription to Firebase: \(error)")
-            } else {
-                print("Device subscription saved to Firebase successfully")
-            }
+        db.collection("device_subscriptions").document(authManager.deviceId).setData(subscriptionData, merge: true) { _ in
+            // Successfully saved device subscription
         }
         
         // Also update user document with subscription status
@@ -1335,10 +1317,8 @@ struct PaymentPopupView: View {
             "hasSubscription": true,
             "subscriptionDate": Date().timeIntervalSince1970,
             "subscriptionPaymentMethod": paymentMethod
-        ]) { error in
-            if let error = error {
-                print("Error updating user subscription status: \(error)")
-            }
+        ]) { _ in
+            // Successfully updated user subscription status
         }
     }
 }

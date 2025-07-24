@@ -112,8 +112,8 @@ class AdManager: ObservableObject {
                 switch result {
                 case .success(let ads):
                     self?.currentAds = ads
-                case .failure(let error):
-                    print("広告の読み込みに失敗: \(error)")
+                case .failure(_):
+                    break
                 }
             }
         }

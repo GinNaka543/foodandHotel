@@ -69,7 +69,6 @@ struct MultipleFirebaseAdView: View {
                 self.advertisements = sortedAds
                 self.isLoading = false
             case .failure(let error):
-                print("広告の取得に失敗しました: \(error)")
                 self.advertisements = []
                 self.isLoading = false
             }

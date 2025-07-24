@@ -10,17 +10,14 @@ class ImageExtractor {
         // GitHubのblobページURLパターン: https://github.com/user/repo/blob/branch/path
         // これをraw URLに変換: https://raw.githubusercontent.com/user/repo/branch/path
         
-        print("🔍 [ImageExtractor] GitHub URL変換チェック: \(urlString)")
         
         if urlString.contains("github.com") && urlString.contains("/blob/") {
             let rawURL = urlString
                 .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
                 .replacingOccurrences(of: "/blob/", with: "/")
-            print("✅ [ImageExtractor] GitHub raw URL変換成功: \(rawURL)")
             return rawURL
         }
         
-        print("ℹ️ [ImageExtractor] GitHub URLではありません")
         return nil
     }
     
@@ -108,7 +105,8 @@ class ImageExtractor {
         
         // プロトコル相対URL（//で始まる）の場合
         if urlString.hasPrefix("//") {
-            return baseURL.scheme! + ":" + urlString
+            let scheme = baseURL.scheme ?? "https"
+            return scheme + ":" + urlString
         }
         
         // 相対URLの場合

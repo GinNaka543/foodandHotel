@@ -173,7 +173,6 @@ struct RegisterScreenView: View {
                                     """
                                     showingAlert = true
                                 case .failure(let error):
-                                    print("ポイント付与エラー: \(error)")
                                     // ポイント付与に失敗してもユーザー登録は成功しているので続行
                                     alertTitle = "登録完了"
                                     alertMessage = """

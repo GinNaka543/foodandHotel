@@ -571,8 +571,8 @@ struct VisitPlanningScreen: View {
             case .success(let payment):
                 // 支払い成功後、プランをFirebaseに保存
                 self.uploadPlanToFirebase(payment: payment, isPublic: true)
-            case .failure(let error):
-                print("支払いエラー: \(error)")
+            case .failure(_):
+                break
             }
         } */
     }
@@ -590,8 +590,8 @@ struct VisitPlanningScreen: View {
                 switch result {
                 case .success(let url):
                     thumbnailUrl = url
-                case .failure(let error):
-                    print("画像アップロードエラー: \(error)")
+                case .failure(_):
+                    break
                 }
                 group.leave()
             }
@@ -636,8 +636,8 @@ struct VisitPlanningScreen: View {
                             self.dismiss()
                         }
                     }
-                case .failure(let error):
-                    print("プラン保存エラー: \(error)")
+                case .failure(_):
+                    break
                 }
             }
         })
@@ -654,9 +654,9 @@ struct VisitPlanningScreen: View {
             case .success:
                 // ポイント消費成功、プランを保存
                 self.savePlanAsConfirmed()
-            case .failure(let error):
-                print("ポイント消費エラー: \(error)")
+            case .failure(_):
                 // エラー処理（必要に応じてアラートを表示）
+                break
             }
         }
     }
@@ -715,7 +715,6 @@ struct VisitPlanningScreen: View {
         
         if let encoded = try? JSONEncoder().encode(localPlans) {
             UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-            print("🔍 DEBUG: 確定プランをローカルに保存しました: \(planData.title)")
         }
         
         // Firebaseに保存
@@ -730,8 +729,8 @@ struct VisitPlanningScreen: View {
                     )
                     self.dismiss()
                 }
-            case .failure(let error):
-                print("プラン保存エラー: \(error)")
+            case .failure(_):
+                break
             }
         }
     }
@@ -757,16 +756,13 @@ struct VisitPlanningScreen: View {
             // 既存の下書きを更新
             if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
                 savedPlans[index] = planData
-                print("既存の下書きを更新しました: \(planData.title)")
             } else {
                 // 既存の下書きが見つからない場合は新規追加
                 savedPlans.append(planData)
-                print("下書きが見つからないため新規追加しました: \(planData.title)")
             }
         } else {
             // 新規の下書きとして追加
             savedPlans.append(planData)
-            print("新規下書きを保存しました: \(planData.title)")
         }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
@@ -781,7 +777,6 @@ struct VisitPlanningScreen: View {
                 self.dismiss()
             }
         } else {
-            print("下書き保存エラー")
         }
     }
     
@@ -806,22 +801,18 @@ struct VisitPlanningScreen: View {
             // 既存の下書きを更新
             if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
                 savedPlans[index] = planData
-                print("戻るボタンで下書きを自動更新しました: \(planData.title)")
             } else {
                 // 既存の下書きが見つからない場合は新規追加
                 savedPlans.append(planData)
-                print("戻るボタンで下書きを自動追加しました: \(planData.title)")
             }
         } else {
             // 新規の下書きとして追加
             savedPlans.append(planData)
-            print("戻るボタンで新規下書きを自動保存しました: \(planData.title)")
         }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
             UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
         } else {
-            print("自動下書き保存エラー")
         }
         
         // dismiss()を最後に呼び出す

@@ -154,7 +154,6 @@ struct PointsView: View {
             // UserDefaultsからユーザーIDを取得
             if let storedUserId = UserDefaults.standard.string(forKey: "userId"), !storedUserId.isEmpty {
                 userId = storedUserId
-                print("✅ ポイントビュー: userId=\(userId)")
                 loadUserPoints()
             } else {
                 errorMessage = "ログインが必要です"
@@ -194,8 +193,8 @@ struct PointsView: View {
             switch result {
             case .success(let transactions):
                 pointTransactions = transactions.sorted { $0.createdAt > $1.createdAt }
-            case .failure(let error):
-                print("取引履歴の取得に失敗: \(error)")
+            case .failure(_):
+                break
             }
             isLoading = false
         }

@@ -19,7 +19,6 @@ struct SoundtrackEditView: View {
     
     init(onSave: @escaping (Soundtrack) -> Void) {
         self.onSave = onSave
-        print("DEBUG: SoundtrackEditViewが初期化されました")
     }
     
     var body: some View {
@@ -110,7 +109,6 @@ struct SoundtrackEditView: View {
             .navigationTitle("サントラ追加")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                print("DEBUG: SoundtrackEditViewが表示されました")
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -142,7 +140,6 @@ struct SoundtrackEditView: View {
             }
         }
         .onAppear {
-            print("DEBUG: SoundtrackEditViewが表示されました")
         }
         .onDisappear {
             audioPlayer?.stop()
@@ -154,7 +151,6 @@ struct SoundtrackEditView: View {
                     audioPlayer = try AVAudioPlayer(data: data)
                     audioPlayer?.prepareToPlay()
                 } catch {
-                    print("オーディオプレイヤーの作成に失敗: \(error)")
                 }
             }
         }
@@ -232,7 +228,6 @@ struct DocumentPicker: UIViewControllerRepresentable {
                     try FileManager.default.copyItem(at: url, to: tempURL)
                     parent.fileURL = tempURL
                 } catch {
-                    print("ファイルのコピーに失敗: \(error)")
                 }
             }
         }

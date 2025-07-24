@@ -46,10 +46,8 @@ class UserProfileManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
            let user = try? JSONDecoder().decode(UserProfile.self, from: data) {
             self.currentUser = user
-            print("📱 [UserProfileManager] UserDefaultsから読み込み成功: username=\(user.username), iconPath=\(user.iconImagePath ?? "nil")")
         } else {
             self.currentUser = UserProfile()
-            print("📱 [UserProfileManager] 新規UserProfile作成")
         }
         
         // ログイン済みの場合はFirebaseから最新データを取得
@@ -71,9 +69,8 @@ class UserProfileManager: ObservableObject {
                         self.currentUser.iconImagePath = existingIconPath
                     }
                     self.saveProfile()
-                    print("✅ Firebaseからプロフィール読み込み成功: iconPath=\(self.currentUser.iconImagePath ?? "nil")")
-                case .failure(let error):
-                    print("❌ Firebaseからプロフィール読み込みエラー: \(error)")
+                case .failure(_):
+                    break
                 }
             }
         }
@@ -83,7 +80,6 @@ class UserProfileManager: ObservableObject {
         currentUser.updatedAt = Date()
         if let data = try? JSONEncoder().encode(currentUser) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
-            print("💾 [UserProfileManager] UserDefaultsに保存: username=\(currentUser.username), iconPath=\(currentUser.iconImagePath ?? "nil")")
         }
     }
 }
@@ -106,23 +102,15 @@ struct HomeScreen: View {
     // リストページを表示する関数（現在未使用）
     /*
     private func showListPageWithTab(_ tab: ListTab) {
-        print("[DEBUG] ===== showListPageWithTab =====")
-        print("[DEBUG] Requested tab: \(tab.debugDescription) (raw value: \(tab.rawValue))")
-        print("[DEBUG] Before: selectedListTab = \(selectedListTab.debugDescription)")
         
         selectedListTab = tab
         
-        print("[DEBUG] After: selectedListTab = \(selectedListTab.debugDescription)")
-        print("[DEBUG] Setting showListPage to true...")
         
         // 確実に値が設定されるように、メインスレッドで実行
         DispatchQueue.main.async { [self] in
-            print("[DEBUG] Main thread: selectedListTab = \(self.selectedListTab.debugDescription)")
             self.showListPage = true
-            print("[DEBUG] Main thread: showListPage = \(self.showListPage)")
         }
         
-        print("[DEBUG] ================================")
     }
     */
     
@@ -343,10 +331,7 @@ struct HomeScreen: View {
                         .padding(.vertical, 6)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            print("[DEBUG] ===== BIRTHDAY TAP DETECTED =====")
                             showBirthdayList = true
-                            print("[DEBUG] showBirthdayList set to: \(showBirthdayList)")
-                            print("[DEBUG] =================================")
                         }
                     }
                     
@@ -377,11 +362,7 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        print("[DEBUG] ===== CHARACTER TAP DETECTED =====")
-                        print("[DEBUG] characterManager.characters.count: \(characterManager.characters.count)")
                         showCharacterList = true
-                        print("[DEBUG] showCharacterList set to: \(showCharacterList)")
-                        print("[DEBUG] ==================================")
                     }
                     
                     // Animes
@@ -411,11 +392,7 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        print("[DEBUG] ===== ANIME TAP DETECTED =====")
-                        print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
                         showAnimeList = true
-                        print("[DEBUG] showAnimeList set to: \(showAnimeList)")
-                        print("[DEBUG] =============================")
                     }
                 }
                 .padding(.horizontal, 20)
@@ -454,7 +431,6 @@ struct HomeScreen: View {
         }
         .background(Color.white)
         .fullScreenCover(isPresented: $showCharacterList) {
-            let _ = print("[DEBUG] ===== PRESENTING CHARACTER LIST =====")
             ListPageScreen(
                 selectedTab: .chara,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
@@ -465,8 +441,6 @@ struct HomeScreen: View {
             .environmentObject(animeManager)
         }
         .fullScreenCover(isPresented: $showAnimeList) {
-            let _ = print("[DEBUG] ===== PRESENTING ANIME LIST =====")
-            let _ = print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
             ListPageScreen(
                 selectedTab: .anime,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
@@ -477,7 +451,6 @@ struct HomeScreen: View {
             .environmentObject(animeManager)
         }
         .fullScreenCover(isPresented: $showBirthdayList) {
-            let _ = print("[DEBUG] ===== PRESENTING BIRTHDAY LIST =====")
             ListPageScreen(
                 selectedTab: .birthday,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
@@ -497,11 +470,9 @@ struct HomeScreen: View {
         }
         .onAppear {
             if !hasLoadedData {
-                print("[DEBUG] HomeScreen onAppear - Loading data")
                 characterManager.loadCharacters()
                 animeManager.loadAnimes()
                 hasLoadedData = true
-                print("[DEBUG] After loading - animes count: \(animeManager.animes.count)")
             }
         }
     }
@@ -1775,12 +1746,9 @@ struct UserProfileScreenTemp: View {
         if let imagePath = profileManager.currentUser.iconImagePath,
            let uiImage = loadImageFromPath(imagePath) {
             iconImage = uiImage
-            print("✅ [Profile] 画像読み込み成功: \(imagePath)")
         } else {
-            print("❌ [Profile] 画像読み込み失敗: \(profileManager.currentUser.iconImagePath ?? "nil")")
         }
         
-        print("📱 [Profile] 現在のプロフィール読み込み: username=\(username), animeQuote=\(animeQuote), iconPath=\(profileManager.currentUser.iconImagePath ?? "nil")")
     }
     
     private func saveProfile() {
@@ -1791,13 +1759,15 @@ struct UserProfileScreenTemp: View {
         // 画像を保存
         if let iconImage = iconImage {
             // 古い画像ファイルを削除
-            if let oldImagePath = profileManager.currentUser.iconImagePath {
-                let oldFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent(oldImagePath)
+            if let oldImagePath = profileManager.currentUser.iconImagePath,
+               let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                let oldFilePath = documentsURL.appendingPathComponent(oldImagePath)
                 try? FileManager.default.removeItem(at: oldFilePath)
-                print("🗑️ [Profile] 古い画像削除: \(oldImagePath)")
             }
             
-            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                return
+            }
             let fileName = "profile_\(UUID().uuidString).jpg"
             let filePath = documentsPath.appendingPathComponent(fileName)
             
@@ -1806,9 +1776,7 @@ struct UserProfileScreenTemp: View {
                     try imageData.write(to: filePath)
                     // 相対パスで保存（ファイル名のみ）
                     profileManager.currentUser.iconImagePath = fileName
-                    print("✅ [Profile] 画像保存成功: \(fileName)")
                 } catch {
-                    print("❌ [Profile] 画像保存エラー: \(error)")
                 }
             }
         }
@@ -1816,14 +1784,13 @@ struct UserProfileScreenTemp: View {
         profileManager.saveProfile()
         
         // Firebaseにも保存
-        print("Firebaseに保存開始: \(profileManager.currentUser.username)")
         FirebaseManager.shared.saveUserProfile(profileManager.currentUser) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success():
-                    print("✅ Firebaseに保存成功: \(profileManager.currentUser.username)")
-                case .failure(let error):
-                    print("❌ Firebase保存エラー: \(error)")
+                    break
+                case .failure(_):
+                    break
                 }
             }
         }

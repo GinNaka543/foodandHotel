@@ -514,13 +514,8 @@ struct ArtworkScreen: View {
                                     VStack(spacing: 32) {
                                         ForEach(artworks, id: \.id) { artwork in
                                             Button(action: {
-                                                print("[DEBUG] アートワークタップ: \(artwork.title)")
-                                                print("[DEBUG] pixivURL: \(artwork.pixivURL ?? "nil")")
-                                                print("[DEBUG] artwork ID: \(artwork.id)")
-                                                print("[DEBUG] customThumbnailData: \(artwork.customThumbnailData != nil ? "exists" : "nil")")
                                                 
                                                 // Preload image before showing fullscreen
-                                                print("[DEBUG] Setting fullscreenArtwork to: \(artwork.title)")
                                                 isLoadingImage = true
                                                 
                                                 // Load image in background
@@ -536,7 +531,6 @@ struct ArtworkScreen: View {
                                                         fullscreenArtwork = artwork
                                                         isLoadingImage = false
                                                         showFullscreenArtwork = true
-                                                        print("[DEBUG] showFullscreenArtwork set to true after loading")
                                                     }
                                                 }
                                             }) {
@@ -1224,17 +1218,13 @@ struct ArtworkScreen: View {
     
     func loadArtworks() {
         let key = "character_artworks_\(character.id.uuidString)"
-        print("[DEBUG] loadArtworks - key: \(key)")
         if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
             artworks = decodedArtworks
-            print("[DEBUG] アートワーク読み込み成功: \(artworks.count)件")
             for artwork in artworks {
-                print("[DEBUG] - \(artwork.title): pixivURL=\(artwork.pixivURL ?? "nil"), customThumbnail=\(artwork.customThumbnailData != nil)")
             }
             checkPixivArtworks()
         } else {
-            print("[DEBUG] アートワークの読み込み失敗")
         }
     }
     
@@ -1301,7 +1291,6 @@ struct ArtworkScreen: View {
         let key = "artwork_albums_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
             UserDefaultsHelper.shared.setData(encodedData, forKey: key)
-            print("[DEBUG] ArtworkScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
@@ -1310,7 +1299,6 @@ struct ArtworkScreen: View {
         if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
-            print("[DEBUG] ArtworkScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
         }
     }
     
@@ -1371,7 +1359,6 @@ struct ArtworkScreen: View {
         if let index = albums.firstIndex(where: { $0.id == album.id }) {
             albums.remove(at: index)
             saveAlbumsToUserDefaults()
-            print("[DEBUG] ArtworkScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     
@@ -1409,10 +1396,6 @@ struct FullscreenArtworkView: View {
     @State private var orientation = UIDevice.current.orientation
     
     var body: some View {
-        let _ = print("[DEBUG] FullscreenArtworkView - artwork: \(artwork.title)")
-        let _ = print("[DEBUG] FullscreenArtworkView - imagePath: \(artwork.imagePath ?? "nil")")
-        let _ = print("[DEBUG] FullscreenArtworkView - pixivURL: \(artwork.pixivURL ?? "nil")")
-        let _ = print("[DEBUG] FullscreenArtworkView - preloadedImage: \(preloadedImage != nil ? "exists" : "nil")")
         
         return GeometryReader { geometry in
             ZStack {

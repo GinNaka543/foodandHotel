@@ -108,36 +108,28 @@ struct VisitPlanModel: Codable, Identifiable {
     // Firebaseからの初期化
     init?(dictionary: [String: Any]) {
         // デバッグ情報を追加
-        print("🔍 [DEBUG] VisitPlanModel初期化開始")
-        print("🔍 [DEBUG] 辞書のキー: \(dictionary.keys)")
         
         guard let id = dictionary["id"] as? String else {
-            print("❌ [DEBUG] id が String でない: \(dictionary["id"] ?? "nil")")
             return nil
         }
         
         guard let userId = dictionary["userId"] as? String else {
-            print("❌ [DEBUG] userId が String でない: \(dictionary["userId"] ?? "nil")")
             return nil
         }
         
         guard let animeName = dictionary["animeName"] as? String else {
-            print("❌ [DEBUG] animeName が String でない: \(dictionary["animeName"] ?? "nil")")
             return nil
         }
         
         guard let title = dictionary["title"] as? String else {
-            print("❌ [DEBUG] title が String でない: \(dictionary["title"] ?? "nil")")
             return nil
         }
         
         guard let description = dictionary["description"] as? String else {
-            print("❌ [DEBUG] description が String でない: \(dictionary["description"] ?? "nil")")
             return nil
         }
         
         guard let duration = dictionary["duration"] as? String else {
-            print("❌ [DEBUG] duration が String でない: \(dictionary["duration"] ?? "nil")")
             return nil
         }
         
@@ -148,7 +140,6 @@ struct VisitPlanModel: Codable, Identifiable {
         } else if let stringPrice = dictionary["price"] as? String, let convertedPrice = Int(stringPrice) {
             price = convertedPrice
         } else {
-            print("❌ [DEBUG] price が Int または変換可能な String でない: \(dictionary["price"] ?? "nil")")
             return nil
         }
         
@@ -159,7 +150,6 @@ struct VisitPlanModel: Codable, Identifiable {
         } else if let stringDays = dictionary["numberOfDays"] as? String, let convertedDays = Int(stringDays) {
             numberOfDays = convertedDays
         } else {
-            print("❌ [DEBUG] numberOfDays が Int または変換可能な String でない: \(dictionary["numberOfDays"] ?? "nil")")
             return nil
         }
         
@@ -170,45 +160,35 @@ struct VisitPlanModel: Codable, Identifiable {
         } else if let stringCost = dictionary["totalCost"] as? String, let convertedCost = Int(stringCost) {
             totalCost = convertedCost
         } else {
-            print("❌ [DEBUG] totalCost が Int または変換可能な String でない: \(dictionary["totalCost"] ?? "nil")")
             return nil
         }
         
         guard let isPublicValue = dictionary["isPublic"] else {
-            print("❌ [DEBUG] isPublic が存在しない")
             return nil
         }
         
         guard let purchasedBy = dictionary["purchasedBy"] as? [String] else {
-            print("❌ [DEBUG] purchasedBy が [String] でない: \(dictionary["purchasedBy"] ?? "nil")")
             return nil
         }
         
         guard let createdAtTimestamp = dictionary["createdAt"] as? Double else {
-            print("❌ [DEBUG] createdAt が Double でない: \(dictionary["createdAt"] ?? "nil")")
             return nil
         }
         
         guard let updatedAtTimestamp = dictionary["updatedAt"] as? Double else {
-            print("❌ [DEBUG] updatedAt が Double でない: \(dictionary["updatedAt"] ?? "nil")")
             return nil
         }
         
         guard let startTimeTimestamp = dictionary["startTime"] as? Double else {
-            print("❌ [DEBUG] startTime が Double でない: \(dictionary["startTime"] ?? "nil")")
             return nil
         }
         
         guard let spotsData = dictionary["spots"] as? [[String: Any]] else {
-            print("❌ [DEBUG] spots が [[String: Any]] でない: \(dictionary["spots"] ?? "nil")")
-            print("❌ [DEBUG] spots のタイプ: \(type(of: dictionary["spots"]))")
             if let spotsArray = dictionary["spots"] as? [Any] {
-                print("❌ [DEBUG] spots は配列だが、要素のタイプが異なる: \(spotsArray)")
             }
             return nil
         }
         
-        print("✅ [DEBUG] すべての必須フィールドが存在")
         
         self.id = id
         self.userId = userId
@@ -260,23 +240,18 @@ struct VisitPlanModel: Codable, Identifiable {
         }
         
         // Spotsの変換
-        print("🔍 [DEBUG] spotsData変換開始 - 要素数: \(spotsData.count)")
         self.spots = spotsData.compactMap { spotDict in
-            print("🔍 [DEBUG] spot変換中: \(spotDict)")
             
             // より柔軟な変換を試す
             let idString = spotDict["id"] as? String ?? UUID().uuidString
             let name = spotDict["name"] as? String ?? ""
             
             if name.isEmpty {
-                print("❌ [DEBUG] spot変換失敗 - name が空です: \(spotDict)")
                 return nil
             }
             
-            print("🔍 [DEBUG] spot変換中 - id: \(idString), name: \(name)")
             
             guard !name.isEmpty else {
-                print("❌ [DEBUG] spot変換失敗 - name が空です")
                 return nil
             }
             
@@ -340,12 +315,8 @@ struct VisitPlanModel: Codable, Identifiable {
                 imageUrl: imageUrl,
                 images: images
             )
-            print("✅ [DEBUG] spot変換成功: \(visitSpot.name)")
-            print("🖼️ [DEBUG] imageUrl: '\(imageUrl)'")
-            print("🖼️ [DEBUG] images: \(images)")
             return visitSpot
         }
-        print("🔍 [DEBUG] 最終的なspots配列の要素数: \(self.spots.count)")
     }
 }
 

@@ -20,11 +20,9 @@ class UserDefaultsHelper {
     // データの保存
     func setData(_ data: Data?, forKey key: String) {
         guard let userId = currentUserId else { 
-            print("⚠️ [UserDefaultsHelper] setData - userId is nil")
             return 
         }
         let userKey = keyForUser(key)
-        print("💾 [UserDefaultsHelper] setData - userId: \(userId), key: \(key), userKey: \(userKey)")
         UserDefaults.standard.set(data, forKey: userKey)
         // 即座に同期して確実に保存
         UserDefaults.standard.synchronize()
@@ -33,13 +31,10 @@ class UserDefaultsHelper {
     // データの読み込み
     func getData(forKey key: String) -> Data? {
         guard let userId = currentUserId else { 
-            print("⚠️ [UserDefaultsHelper] getData - userId is nil")
             return nil 
         }
         let userKey = keyForUser(key)
-        print("📖 [UserDefaultsHelper] getData - userId: \(userId), key: \(key), userKey: \(userKey)")
         let data = UserDefaults.standard.data(forKey: userKey)
-        print("📖 [UserDefaultsHelper] getData - data found: \(data != nil)")
         return data
     }
     
@@ -117,7 +112,6 @@ class UserDefaultsHelper {
             if let oldData = UserDefaults.standard.data(forKey: key) {
                 let newKey = keyForUser(key)
                 if UserDefaults.standard.data(forKey: newKey) == nil {
-                    print("🔄 [UserDefaultsHelper] Migrating data - key: \(key) -> \(newKey)")
                     UserDefaults.standard.set(oldData, forKey: newKey)
                     // 古いデータは削除しない（他のユーザーのデータの可能性があるため）
                 }

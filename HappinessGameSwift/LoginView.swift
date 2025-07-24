@@ -206,7 +206,6 @@ struct LoginView: View {
                                     alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\n🎉 新規登録ボーナスとして50ポイントが付与されました！\n\nこのIDは次回ログイン時に必要です。"
                                     showingAlert = true
                                 case .failure(let error):
-                                    print("ポイント付与エラー: \(error)")
                                     // ポイント付与に失敗してもユーザー登録は成功しているので続行
                                     alertTitle = "登録完了"
                                     alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\nこのIDは次回ログイン時に必要です。"

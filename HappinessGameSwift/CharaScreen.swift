@@ -26,11 +26,8 @@ class CharacterManager: ObservableObject {
     func loadCharacters() {
         if let data = UserDefaultsHelper.shared.getData(forKey: "characters"),
            let decoded = try? JSONDecoder().decode([Character].self, from: data) {
-            print("[DEBUG] loadCharacters: 読み込んだキャラ数=\(decoded.count)")
-            for c in decoded { print("[DEBUG] キャラID=\(c.id), name=\(c.name), customFields=\(String(describing: c.customFields))") }
             characters = decoded
         } else {
-            print("[DEBUG] loadCharacters: データなし or デコード失敗")
             characters = []
         }
     }
@@ -38,29 +35,24 @@ class CharacterManager: ObservableObject {
     func saveCharacters() {
         if let data = try? JSONEncoder().encode(characters) {
             UserDefaultsHelper.shared.setData(data, forKey: "characters")
-            print("[DEBUG] saveCharacters: 保存キャラ数=\(characters.count)")
-            for c in characters { print("[DEBUG] 保存キャラID=\(c.id), name=\(c.name), customFields=\(String(describing: c.customFields))") }
             
             // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
-                print("キャラクター変更のFirebase同期開始")
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        print("✅ キャラクター変更のFirebase同期成功")
-                    case .failure(let error):
-                        print("❌ キャラクター変更のFirebase同期エラー: \(error)")
+                        break
+                    case .failure(_):
+                        break
                     }
                 }
             }
         } else {
-            print("[DEBUG] saveCharacters: エンコード失敗")
         }
     }
     
     func updateCharacter(_ updatedCharacter: Character) {
-        print("[DEBUG] updateCharacter: 更新キャラID=\(updatedCharacter.id), name=\(updatedCharacter.name), customFields=\(String(describing: updatedCharacter.customFields))")
         if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
             characters[idx] = updatedCharacter
             saveCharacters()
@@ -68,13 +60,11 @@ class CharacterManager: ObservableObject {
                 self.objectWillChange.send()
             }
         } else {
-            print("[DEBUG] updateCharacter: キャラID見つからず")
         }
     }
     
     func addCharacter(_ character: Character) {
         let exists = characters.contains { $0.id == character.id }
-        print("[DEBUG] addCharacter: 追加キャラID=\(character.id), name=\(character.name), customFields=\(String(describing: character.customFields)), exists=\(exists)")
         if !exists {
             characters.append(character)
             saveCharacters()
@@ -282,6 +272,7 @@ struct CharaScreen: View {
     @State private var showRankingAdmin = false
     @State private var showNavigationMenu = false
     @State private var showCharacterOrderModal = false
+    @State private var showPrivacyPolicy = false
     @State private var bannerTimer: Timer? = nil
     @State private var bannerVideo: MemoryVideo? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
@@ -413,6 +404,9 @@ struct CharaScreen: View {
             CharacterOrderModal()
                 .environmentObject(characterManager)
         }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            PrivacyPolicyView(hasAgreed: .constant(true), isInitialAgreement: false)
+        }
         .onAppear {
             // YouTube動画を収集
             loadYouTubeVideos()
@@ -461,7 +455,10 @@ struct CharaScreen: View {
                     onShowCharacterOrder: {
                         showCharacterOrderModal = true
                     },
-                    onShowAnimeOrder: nil
+                    onShowAnimeOrder: nil,
+                    onShowPrivacyPolicy: {
+                        showPrivacyPolicy = true
+                    }
                 )
                 .transition(.opacity)
                 .zIndex(2)
@@ -837,12 +834,10 @@ struct AddCharacterSheet: View {
                         Spacer()
                         
                         Button(action: {
-                            print("[DEBUG] 追加ボタンタップ")
                             let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
                             let calendar = Calendar.current
                             let date = calendar.date(from: components) ?? Date()
                             let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
-                            print("[AddCharacterSheet] 新しいキャラクター作成: name=\(name), imageIdentifier=\(savedImagePath ?? "nil")")
                             characterManager.addCharacterAtTop(newChar)
                             dismiss()
                         }) {
@@ -908,7 +903,7 @@ struct AddCharacterSheet: View {
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }
-                        .onChange(of: selectedItem) { newValue in
+                        .onChange(of: selectedItem) { _, newValue in
                             if let newItem = newValue {
                                 Task {
                                     if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -916,7 +911,6 @@ struct AddCharacterSheet: View {
                                         let fileName = "icon_\(UUID().uuidString).png"
                                         if let path = saveImageToDocuments(uiImage, fileName: fileName) {
                                             savedImagePath = path
-                                            print("[AddCharacterSheet] 画像を保存: \(path)")
                                         }
                                     }
                                 }
@@ -1210,7 +1204,7 @@ struct CharacterDetailView: View {
                                 }
                             }
                         }
-                        .onChange(of: iconPickerItem) { newValue in
+                        .onChange(of: iconPickerItem) { _, newValue in
                             if let newItem = newValue {
                                 Task {
                                     if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -1298,14 +1292,10 @@ struct CharacterDetailView: View {
             // デバッグ情報を表示
             let currentCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
             if let backgroundPath = currentCharacter.backgroundImagePath {
-                print("[DEBUG] 背景画像パス: \(backgroundPath)")
                 if loadImageFromPath(backgroundPath) != nil {
-                    print("[DEBUG] 背景画像読み込み成功")
                 } else {
-                    print("[DEBUG] 背景画像読み込み失敗: \(backgroundPath)")
                 }
             } else {
-                print("[DEBUG] 背景画像パスがnil")
             }
             
             // キャラクターのサントラがある場合、ランダムに再生
@@ -1507,25 +1497,25 @@ struct AboutView: View {
                         VStack(spacing: 0) {
                             if isEditingProfile {
                                 editableProfileRow(label: "名前", text: $editedName)
-                                    .onChange(of: editedName) { _ in saveCharacter() }
+                                    .onChange(of: editedName) { saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "タグ", text: $editedTag)
-                                    .onChange(of: editedTag) { _ in saveCharacter() }
+                                    .onChange(of: editedTag) { saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 dateProfileRow(label: "誕生日", date: $editedBirthday)
-                                    .onChange(of: editedBirthday) { _ in saveCharacter() }
+                                    .onChange(of: editedBirthday) { saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "年齢", text: $editedAge)
-                                    .onChange(of: editedAge) { _ in saveCharacter() }
+                                    .onChange(of: editedAge) { saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "好きな食べ物", text: $editedFavoriteFood)
-                                    .onChange(of: editedFavoriteFood) { _ in saveCharacter() }
+                                    .onChange(of: editedFavoriteFood) { saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "声優", text: $editedVoiceActor)
-                                    .onChange(of: editedVoiceActor) { _ in saveCharacter() }
+                                    .onChange(of: editedVoiceActor) { saveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: "カップ数", text: $editedCupSize)
-                                    .onChange(of: editedCupSize) { _ in saveCharacter() }
+                                    .onChange(of: editedCupSize) { saveCharacter() }
                             } else {
                                 profileRow(label: "名前", value: character?.name ?? "")
                                 Divider().padding(.leading, 20)
@@ -1575,7 +1565,7 @@ struct AboutView: View {
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
                                     .frame(minHeight: 200)
-                                    .onChange(of: profileDescription) { _ in saveCharacter() }
+                                    .onChange(of: profileDescription) { saveCharacter() }
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
                             }
@@ -1654,9 +1644,6 @@ struct AboutView: View {
                         isEditingDescription = false
                     } else {
                         // 編集選択モーダルを表示
-                        print("DEBUG: 編集ボタンがタップされました")
-                        print("DEBUG: 現在のシート状態:")
-                        print("  - activeSheet: \(String(describing: activeSheet))")
                         activeSheet = .editSelection
                     }
                 }) {
@@ -1736,7 +1723,7 @@ struct AboutView: View {
                 }
                 .padding()
             }
-            .onChange(of: iconPickerItem) { newValue in
+            .onChange(of: iconPickerItem) { _, newValue in
                 if let newValue = newValue {
                     Task {
                         if let data = try? await newValue.loadTransferable(type: Data.self),
@@ -1750,7 +1737,6 @@ struct AboutView: View {
                 switch item {
                 case .soundtrackEdit:
                     SoundtrackEditView { soundtrack in
-                        print("DEBUG: SoundtrackEditView - onSaveが呼ばれました")
                         // サントラを保存
                         guard let idx = characterIndex else { return }
                         var updatedCharacter = characters[idx]
@@ -1767,7 +1753,6 @@ struct AboutView: View {
                         )
                     }
                     .onAppear {
-                        print("DEBUG: SoundtrackEditViewシートが表示されました (from sheet)")
                     }
                 case .iconPicker:
                     NavigationView {
@@ -1811,7 +1796,7 @@ struct AboutView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: iconPickerItem) { _ in
+                    .onChange(of: iconPickerItem) {
                         if let newValue = iconPickerItem {
                             Task {
                                 if let data = try? await newValue.loadTransferable(type: Data.self),
@@ -2524,7 +2509,6 @@ struct NavigationBarItem: View {
         .animation(.easeInOut(duration: 0.1), value: isPressed)
         .contentShape(Rectangle())
         .onTapGesture {
-            print("🎯 [NavigationBarItem] タップ検出: \(title)")
             // 即座にタップアクションを実行
             onTap()
             
@@ -2588,7 +2572,7 @@ struct EditBackgroundView: View {
                         }
                     }
                 }
-                .onChange(of: backgroundPickerItem) { newValue in
+                .onChange(of: backgroundPickerItem) { _, newValue in
                     if let newItem = newValue {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self),
@@ -2723,11 +2707,9 @@ struct CharaEditSelectionSheet: View {
                     }
                     
                     Button(action: {
-                        print("DEBUG: キャラのサントラを編集ボタンがタップされました")
                         dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             activeSheet = .soundtrackEdit
-                            print("DEBUG: activeSheet = \(String(describing: activeSheet))")
                         }
                     }) {
                         HStack {

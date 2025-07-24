@@ -498,7 +498,6 @@ struct VisitScreen_iPad: View {
                 )
             }
         } catch {
-            print("Error decoding saved plans: \(error)")
             savedPlans = []
             userOriginalPlans = []
         }
@@ -516,8 +515,8 @@ struct VisitScreen_iPad: View {
                    let purchasedIds = try? JSONDecoder().decode([String].self, from: purchasedData) {
                     self.purchasedPlans = plans.filter { purchasedIds.contains($0.id) }
                 }
-            case .failure(let error):
-                print("Failed to load plans: \(error)")
+            case .failure(_):
+                break
             }
         }
     }

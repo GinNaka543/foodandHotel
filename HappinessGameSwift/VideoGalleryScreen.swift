@@ -555,9 +555,7 @@ struct VideoGalleryScreen: View {
                     }
                     Divider()
                     Button(role: .destructive, action: {
-                        print("[DEBUG] 削除ボタンが押されました - Video ID: \(video.id)")
                         activeAlert = .deleteVideo(video.id)
-                        print("[DEBUG] activeAlert set to deleteVideo")
                     }) {
                         Label("削除", systemImage: "trash")
                     }
@@ -859,18 +857,13 @@ struct VideoGalleryScreen: View {
         .alert(item: $activeAlert) { alertType in
             switch alertType {
             case .deleteVideo(let videoId):
-                print("[DEBUG] 削除アラートが表示されようとしています - Video ID: \(videoId)")
                 return Alert(
                     title: Text("動画を削除しますか？"),
                     message: Text("この動画は完全に削除されます。"),
                     primaryButton: .destructive(Text("削除")) {
-                        print("[DEBUG] 削除確認アラートの削除ボタンが押されました")
-                        print("[DEBUG] Video ID: \(videoId)")
                         deleteVideo(id: videoId)
-                        print("[DEBUG] 削除処理完了")
                     },
                     secondaryButton: .cancel(Text("キャンセル")) {
-                        print("[DEBUG] 削除キャンセルボタンが押されました")
                     }
                 )
             case .deleteAlbum(let album):
@@ -1377,7 +1370,6 @@ struct VideoGalleryScreen: View {
                 let uiImage = UIImage(cgImage: cgImage.image)
                 thumbnailData = uiImage.jpegData(compressionQuality: 0.8)
             } catch {
-                print("サムネイル生成に失敗: \(error)")
             }
         }
         
@@ -1419,7 +1411,6 @@ struct VideoGalleryScreen: View {
             
             return "AnirecoImages/\(fileName)"
         } catch {
-            print("動画保存エラー: \(error)")
             return ""
         }
     }
@@ -1436,7 +1427,6 @@ struct VideoGalleryScreen: View {
         let key = "videos_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(videos) {
             UserDefaults.standard.set(encodedData, forKey: key)
-            print("VideoGalleryScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
         }
     }
     
@@ -1444,7 +1434,6 @@ struct VideoGalleryScreen: View {
         let key = "video_albums_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
             UserDefaults.standard.set(encodedData, forKey: key)
-            print("[DEBUG] VideoGalleryScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
@@ -1453,27 +1442,19 @@ struct VideoGalleryScreen: View {
         if let data = UserDefaults.standard.data(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
             albums = decodedAlbums
-            print("[DEBUG] VideoGalleryScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
         }
     }
     
     private func deleteVideo(id: UUID) {
-        print("[DEBUG] deleteVideo called with ID: \(id)")
-        print("[DEBUG] Current videos count: \(videos.count)")
         if let idx = videos.firstIndex(where: { $0.id == id }) {
-            print("[DEBUG] Found video at index: \(idx)")
             videos.remove(at: idx)
-            print("[DEBUG] After removal, videos count: \(videos.count)")
-            print("VideoAlbumGridView: 動画削除 - ID: \(id)")
             updateAlbumsAfterVideoDeletion(deletedVideoId: id)
             saveVideosToUserDefaults()
             saveAlbumsToUserDefaults()
-            print("[DEBUG] Delete process completed")
             
             // 動画が削除されたことを通知
             NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
         } else {
-            print("[DEBUG] Video with ID \(id) not found in videos array")
         }
     }
     
@@ -1488,14 +1469,12 @@ struct VideoGalleryScreen: View {
             // 動画が残っている場合は更新されたAlbumを返す
             return Album(tag: album.tag, videos: updatedVideos)
         }
-        print("[DEBUG] VideoGalleryScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
     
     private func deleteAlbum(_ album: Album) {
         if let index = albums.firstIndex(where: { $0.id == album.id }) {
             albums.remove(at: index)
             saveAlbumsToUserDefaults()
-            print("[DEBUG] VideoGalleryScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     
@@ -1522,16 +1501,21 @@ struct VideoGalleryScreen: View {
     }
     
     private func downloadYouTubeVideo(youtubeURL: String) async throws -> URL {
-        let apiKey = "eed595d1demsh4ffce2821e5cd5ap1eac28jsn0896c171f935"
+        // Use server-side proxy endpoint for YouTube downloads
+        let endpoint = Bundle.main.infoDictionary?["YOUTUBE_DOWNLOAD_API_ENDPOINT"] as? String ?? "https://happiness-game.onrender.com/api/youtube-download"
         let encodedURL = youtubeURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? youtubeURL
-        let apiURLString = "https://youtube-info-download-api.p.rapidapi.com/ajax/download.php?format=mp4&add_info=0&url=\(encodedURL)&audio_quality=128&allow_extended_duration=false"
-        guard let apiURL = URL(string: apiURLString) else {
+        
+        guard let apiURL = URL(string: endpoint) else {
             throw NSError(domain: "URL生成エラー", code: 0)
         }
+        // Create POST request to server proxy
         var request = URLRequest(url: apiURL)
-        request.httpMethod = "GET"
-        request.setValue("youtube-info-download-api.p.rapidapi.com", forHTTPHeaderField: "x-rapidapi-host")
-        request.setValue(apiKey, forHTTPHeaderField: "x-rapidapi-key")
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // Send YouTube URL to server
+        let body = ["youtubeUrl": youtubeURL]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
@@ -1539,7 +1523,6 @@ struct VideoGalleryScreen: View {
         }
         // --- レスポンス内容をprintで出力 ---
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("[YouTube APIレスポンス]", jsonString)
         }
         // 2. レスポンスからダウンロードリンクを抽出（仮にJSONで { "link": "..." } 形式とする）
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -1757,7 +1740,6 @@ struct VideoAlbumGridView: View {
     private func deleteVideo(id: UUID) {
         if let idx = videos.firstIndex(where: { $0.id == id }) {
             videos.remove(at: idx)
-            print("VideoAlbumGridView: 動画削除 - ID: \(id)")
             onVideosChanged?()
         }
     }
@@ -1925,7 +1907,6 @@ struct AlbumVideoListScreen: View {
                                 .resizable()
                                 .scaledToFill()
                                 .onAppear {
-                                    print("[DEBUG] AlbumBanner: Using custom thumbnail for video: \(firstVideo.title)")
                                 }
                         } else if let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
                             AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
@@ -1933,28 +1914,20 @@ struct AlbumVideoListScreen: View {
                                     .resizable()
                                     .scaledToFill()
                                     .onAppear {
-                                        print("[DEBUG] AlbumBanner: YouTube thumbnail loaded successfully")
                                     }
                             } placeholder: {
                                 Rectangle()
                                     .fill(Color.gray.opacity(0.3))
                                     .overlay(ProgressView())
                                     .onAppear {
-                                        print("[DEBUG] AlbumBanner: Loading YouTube thumbnail...")
                                     }
                             }
                             .onAppear {
-                                print("[DEBUG] AlbumBanner: Using YouTube thumbnail URL: \(youtubeThumbnailURL) for video: \(firstVideo.title)")
-                                print("[DEBUG] AlbumBanner: YouTube URL: \(firstVideo.youtubeURL ?? "nil")")
                             }
                         } else {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))
                                 .onAppear {
-                                    print("[DEBUG] AlbumBanner: No thumbnail available for video: \(firstVideo.title)")
-                                    print("[DEBUG] AlbumBanner: thumbnailData: \(firstVideo.thumbnailData != nil)")
-                                    print("[DEBUG] AlbumBanner: youtubeThumbnailURL: \(firstVideo.youtubeThumbnailURL ?? "nil")")
-                                    print("[DEBUG] AlbumBanner: youtubeURL: \(firstVideo.youtubeURL ?? "nil")")
                                 }
                         }
                     }
@@ -2168,7 +2141,6 @@ struct AlbumVideoListScreen: View {
                     // 編集処理（必要ならここも拡張）
                 },
                 onDelete: {
-                    print("[DEBUG] AlbumVideoListScreen: onDeleteコールバックが呼ばれました")
                     // 親画面に削除を通知
                     onVideoDeleted?(video)
                     // 画面を閉じる

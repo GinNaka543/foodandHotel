@@ -266,7 +266,6 @@ struct PlanPurchaseView: View {
                 case .success(let pointsModel):
                     userPoints = pointsModel.points
                 case .failure(let error):
-                    print("ポイント取得エラー: \(error)")
                     userPoints = 0
                 }
             }

@@ -84,6 +84,9 @@
 		CC20AB112E26E6C1005F4C2A /* RegisterScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */; };
 		CC20AB122E26E6C1005F4C2A /* UserPointsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */; };
 		CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */; };
+		A1B2C3D4E5F67890A1B2C3D4 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69780F1E2D3C4 /* FirstLaunchView.swift */; };
+		B2C3D4E5F6789012B2C3D4E5 /* TrackingPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */; };
+		C3D4E5F678901234C3D4E5F6 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */; };
 		CC9BAFD02E315AA30088E501 /* VisitScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
@@ -186,7 +189,10 @@
 		CC20AB032E26E6C1005F4C2A /* VisitTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitTypes.swift; sourceTree = "<group>"; };
 		CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen_iPad.swift; sourceTree = "<group>"; };
 		CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitScreen_iPad.swift; sourceTree = "<group>"; };
+		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
+		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
+		F1E2D3C4B5A69780F1E2D3C4 /* FirstLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchView.swift; sourceTree = "<group>"; };
 		F3BC3FCE306518206AAA0831 /* HomeScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen.swift; sourceTree = "<group>"; };
 		FAFB6F7C41707CA22E40FB09 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVKit.framework; sourceTree = "<group>"; };
 		LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListPageScreen.swift; sourceTree = "<group>"; };
@@ -278,6 +284,9 @@
 				CC20AACF2E26E6B0005F4C2A /* LoginScreenView.swift */,
 				CC20AAD02E26E6B0005F4C2A /* LoginView.swift */,
 				CC20AAD12E26E6B0005F4C2A /* NavigationMenuView.swift */,
+				F1E2D3C4B5A69780F1E2D3C4 /* FirstLaunchView.swift */,
+				E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */,
+				D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */,
 				CC20AAD22E26E6B0005F4C2A /* PixivConfirmationScreen.swift */,
 				CC20AAD32E26E6B0005F4C2A /* PixivRedirectView.swift */,
 				CC20AAD42E26E6B0005F4C2A /* PixivThumbnailView.swift */,
@@ -375,7 +384,6 @@
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					D2E01CF40DBA9B5BAA5AF916 = {
-						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -442,13 +450,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -499,6 +503,9 @@
 				CC20AAE52E26E6B0005F4C2A /* PlanPaymentFinalConfirmationView.swift in Sources */,
 				CC20AAE62E26E6B0005F4C2A /* PlanPurchaseCompletionView.swift in Sources */,
 				CC20AAE72E26E6B0005F4C2A /* LoginView.swift in Sources */,
+				A1B2C3D4E5F67890A1B2C3D4 /* FirstLaunchView.swift in Sources */,
+				B2C3D4E5F6789012B2C3D4E5 /* TrackingPermissionView.swift in Sources */,
+				C3D4E5F678901234C3D4E5F6 /* PrivacyPolicyView.swift in Sources */,
 				CC20AAE82E26E6B0005F4C2A /* PointsView.swift in Sources */,
 				CC20AAE92E26E6B0005F4C2A /* ProductAdView.swift in Sources */,
 				CC20AAEA2E26E6B0005F4C2A /* NavigationMenuView.swift in Sources */,
@@ -628,6 +635,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 86452XMRK8;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\".\"",
@@ -638,7 +646,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.HappinessGameSwift;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
 				PRODUCT_NAME = "アニレコ";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -722,6 +730,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 86452XMRK8;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"\".\"",
@@ -732,7 +741,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.HappinessGameSwift;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
 				PRODUCT_NAME = "アニレコ";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

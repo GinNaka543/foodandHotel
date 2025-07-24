@@ -54,7 +54,6 @@ struct CharacterRankingScrollView: View {
                     }
                 }
                 .onReceive(customRankingManager.$selectedRanking) { selectedRanking in
-                    print("🔍 selectedRankingが変更されました: \(selectedRanking?.title ?? "なし")")
                     if selectedRanking != nil {
                         loadRankings()
                         // データが読み込まれたら自動スクロール開始
@@ -64,7 +63,6 @@ struct CharacterRankingScrollView: View {
                     }
                 }
                 .onReceive(customRankingManager.$activeRankings) { activeRankings in
-                    print("🔍 activeRankingsが変更されました: \(activeRankings.count)件")
                     // activeRankingsが更新された後、少し待ってからloadRankingsを実行
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                         loadRankings()
@@ -94,18 +92,12 @@ struct CharacterRankingScrollView: View {
     }
     
     private func loadRankings() {
-        print("🔍 [CharacterRankingScrollView] loadRankings開始")
-        print("🔍 カスタムランキング数: \(customRankingManager.activeRankings.count)")
-        print("🔍 選択されたランキング: \(customRankingManager.selectedRanking?.title ?? "なし")")
         
         // カスタムランキングがある場合はそれを使用
         if let currentRanking = customRankingManager.selectedRanking {
-            print("🔍 カスタムランキング使用: \(currentRanking.title)")
-            print("🔍 アイテム数: \(currentRanking.items?.count ?? 0)")
             
             // アイテムが空の場合は通常のランキングを使用
             guard let items = currentRanking.items, !items.isEmpty else {
-                print("🔍 カスタムランキングのアイテムが空、通常のランキングを取得")
                 loadDefaultRankings()
                 return
             }
@@ -115,8 +107,6 @@ struct CharacterRankingScrollView: View {
             
             // CustomRankingItemをCharacterRankingに変換
             self.rankings = items.map { item in
-                print("🔍   - Rank \(item.rank): \(item.characterName)")
-                print("🔍     画像URL: \(item.customImageURL ?? item.characterImageURL ?? "なし")")
                 
                 return CharacterRanking(
                     characterId: UUID(),
@@ -126,17 +116,13 @@ struct CharacterRankingScrollView: View {
                     externalLink: item.externalLink
                 )
             }
-            print("🔍 変換後のランキング数: \(self.rankings.count)")
             self.isLoading = false
         } else {
-            print("🔍 カスタムランキングなし、通常のランキングを取得")
             // 少し待ってから再度チェック
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                if let currentRanking = self.customRankingManager.selectedRanking {
-                    print("🔍 遅延チェックでカスタムランキング発見: \(currentRanking.title)")
+                if self.customRankingManager.selectedRanking != nil {
                     self.loadRankings()
                 } else {
-                    print("🔍 遅延チェックでもカスタムランキングなし、通常のランキングを取得")
                     self.loadDefaultRankings()
                 }
             }
@@ -147,12 +133,10 @@ struct CharacterRankingScrollView: View {
         firebaseManager.fetchCharacterRankings { result in
             switch result {
             case .success(let fetchedRankings):
-                print("🔍 通常ランキング取得成功: \(fetchedRankings.count)件")
                 self.rankings = fetchedRankings
                 self.rankingTitle = "Popular Character Ranking"
                 self.isLoading = false
-            case .failure(let error):
-                print("❌ ランキング取得エラー: \(error)")
+            case .failure(_):
                 self.isLoading = false
             }
         }
@@ -163,8 +147,8 @@ struct CharacterRankingScrollView: View {
             switch result {
             case .success(let ads):
                 self.characterAds = ads
-            case .failure(let error):
-                print("キャラクター広告取得エラー: \(error)")
+            case .failure(_):
+                break
             }
         }
     }
@@ -237,8 +221,7 @@ struct RankingSelectionView: View {
                                                 .aspectRatio(contentMode: .fill)
                                                 .frame(height: 144)
                                                 .clipped()
-                                        case .failure(let error):
-                                            let _ = print("❌ [RankingSelection] 画像読み込み失敗: \(error)")
+                                        case .failure(_):
                                             Color(.systemGray5)
                                                 .frame(height: 144)
                                                 .overlay(
@@ -261,7 +244,6 @@ struct RankingSelectionView: View {
                                         }
                                     }
                                 } else {
-                                    let _ = print("⚠️ [RankingSelection] ランキング '\(ranking.title)' に画像URLなし")
                                     Color(.systemGray5)
                                         .frame(height: 144)
                                         .overlay(

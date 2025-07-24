@@ -6,6 +6,7 @@ struct NavigationMenuView: View {
     var onShowCharacterOrder: (() -> Void)?
     var onShowAnimeOrder: (() -> Void)?
     var onShowTermsOfService: (() -> Void)?
+    var onShowPrivacyPolicy: (() -> Void)?
     
     var body: some View {
         ZStack {
@@ -97,7 +98,6 @@ struct NavigationMenuView: View {
                         NavigationMenuItem(
                             title: "キャラの順番変更"
                         ) {
-                            print("キャラの順番変更ボタンが押されました")
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 onShowCharacterOrder?()
@@ -108,7 +108,6 @@ struct NavigationMenuView: View {
                         NavigationMenuItem(
                             title: "アニメの順番変更"
                         ) {
-                            print("アニメの順番変更ボタンが押されました")
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 onShowAnimeOrder?()
@@ -133,6 +132,17 @@ struct NavigationMenuView: View {
                                     name: Notification.Name("ShowTermsOfService"),
                                     object: nil
                                 )
+                            }
+                        },
+                        isGrayed: true
+                    )
+                    
+                    NavigationMenuItem(
+                        title: "プライバシーポリシー",
+                        action: {
+                            isPresented = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                onShowPrivacyPolicy?()
                             }
                         },
                         isGrayed: true

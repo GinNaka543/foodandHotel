@@ -124,10 +124,7 @@ struct ProductScreen: View {
                 
                 // 商品を追加ボタン
                 Button(action: {
-                    print("DEBUG: 商品を追加ボタンがタップされました")
-                    print("DEBUG: showCategorySelection = true を設定します")
                     showCategorySelection = true
-                    print("DEBUG: showCategorySelection = \(showCategorySelection)")
                 }) {
                     Text("商品を追加")
                         .font(.system(size: 16, weight: .semibold))
@@ -312,23 +309,17 @@ struct ProductScreen: View {
                     productManager: productManager,
                     wishlistManager: wishlistManager,
                     onCategorySelected: { category in
-                        print("DEBUG: onCategorySelectedが呼ばれました。category = \(String(describing: category))")
                         showCategorySelection = false
                         
                         if category == nil {
                             // 新規カテゴリー作成
-                            print("DEBUG: 新規カテゴリー作成を開始します")
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                print("DEBUG: showNewCategoryCreation = true を設定します")
                                 showNewCategoryCreation = true
-                                print("DEBUG: showNewCategoryCreation = \(showNewCategoryCreation)")
                             }
                         } else {
                             // 既存カテゴリーを選択した場合、商品追加画面を表示
-                            print("DEBUG: 既存カテゴリーが選択されました: \(category!.name)")
                             selectedCategory = category
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                print("DEBUG: showAddWishlistItem = true を設定します")
                                 showAddWishlistItem = true
                             }
                         }
@@ -353,12 +344,10 @@ struct ProductScreen: View {
                     productManager: productManager,
                     wishlistManager: wishlistManager,
                     onComplete: {
-                        print("DEBUG: SimpleCategoryCreationView完了")
                         showNewCategoryCreation = false
                     }
                 )
                 .onAppear {
-                    print("DEBUG: SimpleCategoryCreationViewが表示されました")
                 }
             }
         }
@@ -729,15 +718,11 @@ struct CategorySelectionView: View {
             VStack(spacing: 0) {
                 // 新規カテゴリー作成ボタン
                 Button(action: {
-                    print("DEBUG: 新規カテゴリー作成ボタンがタップされました")
-                    print("DEBUG: showNewCategoryView = \(showNewCategoryView)")
                     
                     // 一旦このモーダルを閉じて、新規作成画面を開く
-                    print("DEBUG: dismissを呼び出します")
                     dismiss()
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        print("DEBUG: onCategorySelected(nil)を呼び出します")
                         onCategorySelected(nil)
                     }
                 }) {
@@ -1657,13 +1642,10 @@ struct SimpleCategoryCreationView: View {
     }
     
     private func createCategoryWithProduct() {
-        print("DEBUG: createCategoryWithProductが呼ばれました")
         guard let price = Int(priceText) else { 
-            print("DEBUG: 価格の変換に失敗しました: \(priceText)")
             return 
         }
         
-        print("DEBUG: カテゴリーを作成します: \(categoryName)")
         // カテゴリーを作成
         let category = CharacterCategory(
             name: categoryName,
@@ -1671,9 +1653,7 @@ struct SimpleCategoryCreationView: View {
             bannerImageData: categoryImage?.jpegData(compressionQuality: 0.8)
         )
         productManager.addCharacterCategory(category)
-        print("DEBUG: カテゴリーが作成されました: \(category.id)")
         
-        print("DEBUG: 商品を作成します: \(productName)")
         // 商品を作成
         let item = WishlistItem(
             name: productName,
@@ -1683,9 +1663,7 @@ struct SimpleCategoryCreationView: View {
             characterCategoryId: category.id
         )
         wishlistManager.addItem(item)
-        print("DEBUG: 商品が作成されました: \(item.id)")
         
-        print("DEBUG: onCompleteを呼び出します")
         onComplete()
     }
 }

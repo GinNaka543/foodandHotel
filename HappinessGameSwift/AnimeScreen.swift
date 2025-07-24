@@ -37,11 +37,8 @@ class AnimeManager: ObservableObject {
     func loadAnimes() {
         if let data = UserDefaultsHelper.shared.getData(forKey: "animes"),
            let decoded = try? JSONDecoder().decode([Anime].self, from: data) {
-            print("[DEBUG] loadAnimes: 読み込んだアニメ数=\(decoded.count)")
-            for a in decoded { print("[DEBUG] アニメID=\(a.id), title=\(a.title), customFields=\(String(describing: a.customFields))") }
             animes = decoded
         } else {
-            print("[DEBUG] loadAnimes: データなし or デコード失敗")
             animes = []
         }
     }
@@ -49,29 +46,24 @@ class AnimeManager: ObservableObject {
     func saveAnimes() {
         if let data = try? JSONEncoder().encode(animes) {
             UserDefaultsHelper.shared.setData(data, forKey: "animes")
-            print("[DEBUG] saveAnimes: 保存アニメ数=\(animes.count)")
-            for a in animes { print("[DEBUG] 保存アニメID=\(a.id), title=\(a.title), customFields=\(String(describing: a.customFields))") }
             
             // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
-                print("アニメ変更のFirebase同期開始")
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        print("✅ アニメ変更のFirebase同期成功")
-                    case .failure(let error):
-                        print("❌ アニメ変更のFirebase同期エラー: \(error)")
+                        break
+                    case .failure(_):
+                        break
                     }
                 }
             }
         } else {
-            print("[DEBUG] saveAnimes: エンコード失敗")
         }
     }
     
     func updateAnime(_ updatedAnime: Anime) {
-        print("[DEBUG] updateAnime: 更新アニメID=\(updatedAnime.id), title=\(updatedAnime.title), customFields=\(String(describing: updatedAnime.customFields))")
         if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
             animes[idx] = updatedAnime
             saveAnimes()
@@ -79,13 +71,11 @@ class AnimeManager: ObservableObject {
                 self.objectWillChange.send()
             }
         } else {
-            print("[DEBUG] updateAnime: アニメID見つからず")
         }
     }
     
     func addAnime(_ anime: Anime) {
         let exists = animes.contains { $0.id == anime.id }
-        print("[DEBUG] addAnime: 追加アニメID=\(anime.id), title=\(anime.title), customFields=\(String(describing: anime.customFields)), exists=\(exists)")
         if !exists {
             animes.append(anime)
             saveAnimes()
@@ -261,6 +251,7 @@ struct AnimeScreen: View {
     @State private var selectedAnime: Anime? = nil
     @State private var showNavigationMenu = false
     @State private var showAnimeOrderModal = false
+    @State private var showPrivacyPolicy = false
     @State private var bannerAnime: Anime? = nil
     @State private var bannerVideo: MemoryVideo? = nil
     @State private var showVideoPlayer = false
@@ -466,20 +457,14 @@ struct AnimeScreen: View {
             .cornerRadius(12)
             .onTapGesture {
                 // 動画を再生
-                print("動画再生ボタンが押されました")
-                print("Video title: \(video.title)")
-                print("YouTube URL: \(video.youtubeURL ?? "nil")")
-                print("Video path: \(video.videoPath)")
                 
                 if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                     // YouTubeの場合は直接URLを開く
-                    print("YouTubeのURLを開きます: \(youtubeURL)")
                     if let url = URL(string: youtubeURL) {
                         UIApplication.shared.open(url)
                     }
                 } else {
                     // アップロード動画の場合はプレイヤーで再生
-                    print("アップロード動画をプレイヤーで再生します")
                     if let anime = animeManager.animes.first(where: { anime in
                         let key = "videos_\(anime.id.uuidString)"
                         if let data = UserDefaults.standard.data(forKey: key),
@@ -488,17 +473,12 @@ struct AnimeScreen: View {
                         }
                         return false
                     }) {
-                        print("対応するアニメが見つかりました: \(anime.title)")
                         selectedVideoAnime = anime
                         selectedVideoId = video.id
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             showVideoPlayer = true
                         }
-                        print("showVideoPlayer: \(showVideoPlayer)")
-                        print("selectedVideoAnime: \(selectedVideoAnime?.title ?? "nil")")
-                        print("selectedVideoId: \(selectedVideoId?.uuidString ?? "nil")")
                     } else {
-                        print("対応するアニメが見つかりませんでした")
                     }
                 }
             }
@@ -640,6 +620,9 @@ struct AnimeScreen: View {
                     onShowCharacterOrder: nil,
                     onShowAnimeOrder: {
                         showAnimeOrderModal = true
+                    },
+                    onShowPrivacyPolicy: {
+                        showPrivacyPolicy = true
                     }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -680,6 +663,9 @@ struct AnimeScreen: View {
             AnimeOrderModal()
                 .environmentObject(animeManager)
         }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            PrivacyPolicyView(hasAgreed: .constant(true), isInitialAgreement: false)
+        }
         .fullScreenCover(item: $selectedAnime) { anime in
             AnimeDetailView(anime: Binding(
                 get: { anime },
@@ -707,9 +693,6 @@ struct AnimeScreen: View {
                    let video = videos.first(where: { $0.id == videoId }) {
                     VideoPlayerScreen(video: video, character: nil, anime: anime, allVideos: videos)
                         .onAppear {
-                            print("VideoPlayerScreenが表示されました")
-                            print("Video: \(video.title)")
-                            print("Anime: \(anime.title)")
                         }
                 } else {
                     VStack {
@@ -722,10 +705,6 @@ struct AnimeScreen: View {
                         .padding()
                     }
                     .onAppear {
-                        print("エラー: 動画が見つかりませんでした")
-                        print("selectedVideoAnime: \(anime.title)")
-                        print("selectedVideoId: \(videoId.uuidString)")
-                        print("key: videos_\(anime.id.uuidString)")
                     }
                 }
             } else {
@@ -739,10 +718,6 @@ struct AnimeScreen: View {
                     .padding()
                 }
                 .onAppear {
-                    print("エラー: 必要な情報がありません")
-                    print("showVideoPlayer: \(showVideoPlayer)")
-                    print("selectedVideoAnime: \(selectedVideoAnime?.title ?? "nil")")
-                    print("selectedVideoId: \(selectedVideoId?.uuidString ?? "nil")")
                 }
             }
         }
@@ -757,7 +732,12 @@ struct AnimeScreen: View {
             if let data = UserDefaults.standard.data(forKey: key),
                let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
                 // YouTube URLを持つ動画のみをフィルタリング
-                let youtubeVideos = videos.filter { $0.youtubeURL != nil && !$0.youtubeURL!.isEmpty }
+                let youtubeVideos = videos.filter { video in
+                    if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                        return true
+                    }
+                    return false
+                }
                 allYouTubeVideos.append(contentsOf: youtubeVideos)
             }
         }
@@ -1215,27 +1195,23 @@ struct AnimeArtworkScreen: View {
                                     // 親画面のartworksリストから削除
                                     if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
                                         artworks.remove(at: idx)
-                                        print("[DEBUG] AnimeArtworkScreen: Albumから画像削除 - ID: \(deletedArtwork.id)")
                                         
                                         // Albumタブの画像リストも更新
                                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
                                         
                                         saveArtworksToUserDefaults()
                                         saveAlbumsToUserDefaults()
-                                        print("[DEBUG] AnimeArtworkScreen: UserDefaultsに保存しました")
                                     }
                                 },
                                 onArtworkEdited: { editedArtwork in
                                     // 親画面のartworksリストを更新
                                     if let idx = artworks.firstIndex(where: { $0.id == editedArtwork.id }) {
                                         artworks[idx] = editedArtwork
-                                        print("[DEBUG] AnimeArtworkScreen: Albumから画像編集 - ID: \(editedArtwork.id)")
                                         
                                         // Albumタブの画像リストも更新
                                         updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
                                         
                                         saveArtworksToUserDefaults()
-                                        print("[DEBUG] AnimeArtworkScreen: UserDefaultsに保存しました")
                                     }
                                 }
                             )
@@ -2175,7 +2151,6 @@ struct AnimeArtworkScreen: View {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
             UserDefaultsHelper.shared.setData(encodedData, forKey: key)
-            print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
@@ -2184,7 +2159,6 @@ struct AnimeArtworkScreen: View {
         if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
-            print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
         }
     }
     
@@ -2199,7 +2173,6 @@ struct AnimeArtworkScreen: View {
             // 画像が残っている場合は更新されたAlbumを返す
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
-        print("[DEBUG] AnimeArtworkScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
     
     private func updateAlbumsAfterArtworkEdit(editedArtwork: Artwork) {
@@ -2214,19 +2187,16 @@ struct AnimeArtworkScreen: View {
             }
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
-        print("[DEBUG] AnimeArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
     }
     
     private func deleteArtworkAlbum(_ album: ArtworkAlbum) {
         if let index = albums.firstIndex(where: { $0.id == album.id }) {
             albums.remove(at: index)
             saveAlbumsToUserDefaults()
-            print("[DEBUG] AnimeArtworkScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     
     private func savePixivArtwork(pixivURL: String, title: String, imageURL: String?, tags: String) {
-        print("[DEBUG] savePixivArtwork開始 - URL: \(pixivURL), title: \(title), tags: \(tags)")
         let tagsArray = tags.isEmpty ? [] : tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         
         let newArtwork = Artwork(
@@ -2240,11 +2210,8 @@ struct AnimeArtworkScreen: View {
             twitterURL: nil
         )
         
-        print("[DEBUG] 新しいPixivアートワーク作成 - ID: \(newArtwork.id)")
         artworks.insert(newArtwork, at: 0)
-        print("[DEBUG] artworks配列に追加 - 現在の総数: \(artworks.count)")
         saveArtworksToUserDefaults()
-        print("[DEBUG] UserDefaultsに保存完了")
         
         // フォームをリセット
         photoTitle = ""
@@ -2802,9 +2769,10 @@ struct AnimeVideoScreen: View {
             )
         }
         .sheet(isPresented: $showThumbnailPicker) {
-            ThumbnailPickerView(
-                video: editingVideo ?? videos.first!,
-                onSave: { newThumbnailData in
+            if let video = editingVideo ?? videos.first {
+                ThumbnailPickerView(
+                    video: video,
+                    onSave: { newThumbnailData in
                     if let editingVideo = editingVideo,
                        let idx = videos.firstIndex(where: { $0.id == editingVideo.id }) {
                         var updated = videos[idx]
@@ -2820,6 +2788,7 @@ struct AnimeVideoScreen: View {
                     self.editingVideo = nil
                 }
             )
+            }
         }
         .fullScreenCover(item: $selectedAlbum) { album in
             AlbumVideoListScreen(
@@ -2829,14 +2798,12 @@ struct AnimeVideoScreen: View {
                     // 動画リストから削除
                     if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
                         videos.remove(at: idx)
-                        print("[DEBUG] AnimeScreen: Albumから動画削除 - ID: \(deletedVideo.id)")
                         
                         // Albumタブの動画リストも更新
                         updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
                         
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
-                        print("[DEBUG] AnimeScreen: UserDefaultsに保存しました")
                         
                         // 動画が削除されたことを通知
                         NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
@@ -2865,7 +2832,6 @@ struct AnimeVideoScreen: View {
                         updateAlbumsAfterVideoDeletion(deletedVideoId: video.id)
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
-                        print("[DEBUG] AnimeScreen: 動画削除完了 - ID: \(video.id)")
                         
                         // 動画が削除されたことを通知
                         NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
@@ -2932,7 +2898,6 @@ struct AnimeVideoScreen: View {
         let key = "videos_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(videos) {
             UserDefaults.standard.set(encodedData, forKey: key)
-            print("AnimeVideoScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
         }
     }
     
@@ -2940,7 +2905,6 @@ struct AnimeVideoScreen: View {
         let key = "video_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
             UserDefaults.standard.set(encodedData, forKey: key)
-            print("[DEBUG] AnimeVideoScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
@@ -2949,7 +2913,6 @@ struct AnimeVideoScreen: View {
         if let data = UserDefaults.standard.data(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
             albums = decodedAlbums
-            print("[DEBUG] AnimeVideoScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
         }
     }
     
@@ -2961,7 +2924,6 @@ struct AnimeVideoScreen: View {
             }
             return Album(tag: album.tag, videos: updatedVideos)
         }
-        print("[DEBUG] AnimeVideoScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
     
     private func deleteVideo(id: UUID) {
@@ -2980,7 +2942,6 @@ struct AnimeVideoScreen: View {
         if let index = albums.firstIndex(where: { $0.id == album.id }) {
             albums.remove(at: index)
             saveVideoAlbumsToUserDefaults()
-            print("[DEBUG] AnimeVideoScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     
@@ -3002,7 +2963,6 @@ struct AnimeVideoScreen: View {
                 let uiImage = UIImage(cgImage: cgImage.image)
                 thumbnailData = uiImage.jpegData(compressionQuality: 0.8)
             } catch {
-                print("サムネイル生成に失敗: \(error)")
             }
         }
         
@@ -3036,7 +2996,6 @@ struct AnimeVideoScreen: View {
             try fileManager.copyItem(at: url, to: fileURL)
             return "AnirecoImages/\(fileName)"
         } catch {
-            print("動画保存エラー: \(error)")
             return ""
         }
     }
@@ -3356,9 +3315,7 @@ struct AnimeVideoScreen: View {
                     }
                     Divider()
                     Button(role: .destructive, action: {
-                        print("[DEBUG] 削除ボタンが押されました - Video ID: \(video.id)")
                         activeAlert = .deleteVideo(video.id)
-                        print("[DEBUG] activeAlert set to deleteVideo")
                     }) {
                         Label("削除", systemImage: "trash")
                     }
@@ -3694,20 +3651,14 @@ struct AnimeAboutView: View {
                         .font(.system(size: 20, weight: .bold))
                 },
                 trailing: Button(action: {
-                    print("DEBUG: 編集ボタンがタップされました")
-                    print("DEBUG: isEditingProfile = \(isEditingProfile)")
-                    print("DEBUG: isEditingDescription = \(isEditingDescription)")
                     if isEditingProfile || isEditingDescription {
                         // 保存処理
-                        print("DEBUG: 保存処理を実行")
                         saveAnime()
                         isEditingProfile = false
                         isEditingDescription = false
                     } else {
                         // 編集選択モーダルを表示
-                        print("DEBUG: 編集選択モーダルを表示")
                         activeSheet = .editSelection
-                        print("DEBUG: activeSheet設定後 = \(String(describing: activeSheet))")
                     }
                 }) {
                     Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
@@ -3808,7 +3759,7 @@ struct AnimeAboutView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: iconPickerItem) { _ in
+                    .onChange(of: iconPickerItem) { _, _ in
                         if let newValue = iconPickerItem {
                             Task {
                                 if let data = try? await newValue.loadTransferable(type: Data.self),
@@ -4050,7 +4001,6 @@ struct AnimeAboutView: View {
             try data.write(to: fileURL)
             return "AnirecoImages/\(fileName)"
         } catch {
-            print("画像保存エラー: \(error)")
             return nil
         }
     }
@@ -5014,11 +4964,9 @@ struct EditSelectionSheet: View {
                     }
                     
                     Button(action: {
-                        print("DEBUG: アニメのサントラを編集ボタンがタップされました")
                         dismiss()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             activeSheet = .soundtrackEdit
-                            print("DEBUG: activeSheet = \(String(describing: activeSheet))")
                         }
                     }) {
                         HStack {

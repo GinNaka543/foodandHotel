@@ -6,7 +6,6 @@ class ImageLoader: ObservableObject {
     @Published var isLoading = false
     
     func loadImage(from url: URL) {
-        print("🔄 [DEBUG] ImageLoader: 画像読み込み開始 - \(url)")
         isLoading = true
         
         URLSession.shared.dataTask(with: url) { data, response, error in
@@ -14,15 +13,12 @@ class ImageLoader: ObservableObject {
                 self.isLoading = false
                 
                 if let error = error {
-                    print("❌ [DEBUG] ImageLoader: エラー - \(error)")
                     return
                 }
                 
                 if let data = data, let loadedImage = UIImage(data: data) {
-                    print("✅ [DEBUG] ImageLoader: 画像読み込み成功 - サイズ: \(loadedImage.size)")
                     self.image = loadedImage
                 } else {
-                    print("❌ [DEBUG] ImageLoader: 画像データの変換に失敗")
                 }
             }
         }.resume()
@@ -40,14 +36,12 @@ struct CustomAsyncImage: View {
     var body: some View {
         Group {
             if let image = loader.image {
-                let _ = print("🎨 [DEBUG] CustomAsyncImage: 画像表示中")
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
                     .frame(width: width, height: height)
                     .clipped()
             } else if loader.isLoading {
-                let _ = print("⏳ [DEBUG] CustomAsyncImage: 読み込み中")
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.purple) // 読み込み中は紫色
                     .frame(width: width, height: height)
@@ -56,7 +50,6 @@ struct CustomAsyncImage: View {
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     )
             } else {
-                let _ = print("❌ [DEBUG] CustomAsyncImage: 画像なし")
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray)
                     .frame(width: width, height: height)
@@ -95,15 +88,10 @@ struct SpotListView: View {
                             showingDetail = true
                         },
                         onToggle: {
-                            print("🔄 DEBUG: チェックボックスがタップされました")
-                            print("  - インデックス: \(index)")
-                            print("  - スポット名: \(spots[index].name)")
-                            print("  - 現在のisCompleted: \(spots[index].isCompleted)")
                             
                             // 直接ここで値を更新
                             spots[index].isCompleted.toggle()
                             
-                            print("  - 更新後のisCompleted: \(spots[index].isCompleted)")
                             
                             // 新しく完了したスポットを追跡
                             if spots[index].isCompleted {
@@ -501,28 +489,15 @@ struct VisitGameScreen: View {
         }
         }
         .onAppear {
-            print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
-            print("🎮 [DEBUG] planTitle: \(planTitle)")
-            print("🎮 [DEBUG] animeName: \(animeName)")
-            print("🎮 [DEBUG] spots.count: \(viewModel.spots.count)")
-            print("🎮 [DEBUG] numberOfDays: \(numberOfDays)")
-            print("🎮 [DEBUG] streamingUrls.count: \(streamingUrls.count)")
-            print("🎮 [DEBUG] streamingUrls: \(streamingUrls.map { $0.name + ": " + $0.url })")
-            print("🎮 [DEBUG] streamingUrls.isEmpty: \(streamingUrls.isEmpty)")
-            print("🎮 [DEBUG] spots dayNumber distribution:")
             for spot in viewModel.spots {
-                print("  - \(spot.name): day \(spot.dayNumber)")
                 if let arrival = spot.arrivalTime, let departure = spot.departureTime {
                     let formatter = DateFormatter()
                     formatter.dateFormat = "HH:mm"
-                    print("    到着: \(formatter.string(from: arrival)), 出発: \(formatter.string(from: departure))")
                 }
                 if let transport = spot.transportToNext {
-                    print("    次への移動: \(transport.method) \(transport.duration)分")
                 }
             }
             if viewModel.spots.isEmpty {
-                print("⚠️ WARNING: spotsが空です！")
             }
             
             // 保存されたプランデータを読み込み
@@ -562,12 +537,9 @@ struct VisitGameScreen: View {
             HStack {
                 // 戻るボタン
                 Button(action: {
-                    print("×ボタンがタップされました")
                     if let onClose = onClose {
-                        print("onCloseを実行します")
                         onClose()
                     } else {
-                        print("dismissを実行します")
                         dismiss()
                     }
                 }) {
@@ -1003,7 +975,6 @@ struct VisitGameScreen: View {
         ]
         
         UserDefaults.standard.set(planData, forKey: planKey)
-        print("📝 プランの変更を保存しました - \(viewModel.spots.count)スポット")
     }
     
     func getThumbnailImage() -> UIImage? {
@@ -1024,7 +995,6 @@ struct VisitGameScreen: View {
         let completedSpotIds = viewModel.spots.filter { $0.isCompleted }.map { $0.id.uuidString }
         UserDefaults.standard.set(completedSpotIds, forKey: visitProgressKey)
         
-        print("✅ 訪問進捗を保存しました: \(completedSpotIds.count)件")
         
         // 簡単な成功フィードバック
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -1044,11 +1014,9 @@ struct VisitGameScreen: View {
         
         guard let planData = UserDefaults.standard.dictionary(forKey: planKey),
               let spotsData = planData["spots"] as? [[String: Any]] else {
-            print("📱 保存されたプランデータが見つかりません")
             return
         }
         
-        print("📱 保存されたプランデータを読み込み中...")
         
         // 保存されたスポットデータから復元
         var restoredSpots: [VisitSpot] = []
@@ -1108,7 +1076,6 @@ struct VisitGameScreen: View {
         // 復元したスポットで置き換え
         if !restoredSpots.isEmpty {
             viewModel.spots = restoredSpots
-            print("📱 プランデータを復元しました - \(restoredSpots.count)スポット")
         }
     }
     
@@ -1118,7 +1085,6 @@ struct VisitGameScreen: View {
             let key = "spot_changes_\(viewModel.spots[i].id.uuidString)"
             
             if let changes = UserDefaults.standard.dictionary(forKey: key) {
-                print("📱 ローカル変更を読み込み: \(viewModel.spots[i].name)")
                 
                 if let name = changes["name"] as? String {
                     viewModel.spots[i].name = name
@@ -1162,7 +1128,6 @@ struct VisitGameScreen: View {
                     viewModel.spots[i].isCompleted = true
                 }
             }
-            print("✅ 訪問進捗を復元しました: \(savedCompletedSpotIds.count)件")
         }
     }
 }
@@ -1648,11 +1613,6 @@ struct SpotCard: View {
                 
                 // チェックボックス
                 Button(action: {
-                    print("🔘 DEBUG: SpotCard - チェックボックスが押されました")
-                    print("  - スポット名: \(spot.name)")
-                    print("  - 現在のisCompleted (プロパティ): \(isCompleted)")
-                    print("  - spot.isCompleted: \(spot.isCompleted)")
-                    print("  - spot.id: \(spot.id)")
                     
                     // ハプティックフィードバック
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)

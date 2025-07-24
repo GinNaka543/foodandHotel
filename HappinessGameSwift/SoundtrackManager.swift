@@ -71,7 +71,6 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             // フェードインを開始
             startFadeIn()
         } catch {
-            print("サントラの再生に失敗: \(error)")
         }
     }
     
@@ -253,7 +252,6 @@ struct SoundtrackPlayerView: View {
             .contentShape(Rectangle()) // タップ領域を明確に
             .onTapGesture {
                 // バー全体をタップした時に曲リストを表示
-                print("SoundtrackPlayerView: バーがタップされました")
                 showingSoundtrackList = true
             }
             .padding(.horizontal, 16)

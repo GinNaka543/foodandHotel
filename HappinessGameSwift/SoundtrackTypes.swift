@@ -148,7 +148,6 @@ struct SoundtrackRow: View {
             audioPlayer = try AVAudioPlayer(data: audioData)
             audioPlayer?.prepareToPlay()
         } catch {
-            print("Failed to setup audio player: \(error)")
         }
     }
     

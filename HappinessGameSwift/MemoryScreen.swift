@@ -99,12 +99,11 @@ struct PhotoThumbnailView: View {
     
     var body: some View {
         VStack {
-            Image(uiImage: UIImage(data: photo.imageData) ?? UIImage())
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 150, height: 150)
-                .clipped()
-                .cornerRadius(12)
+            OptimizedThumbnailView(
+                imageData: photo.imageData,
+                size: CGSize(width: 150, height: 150)
+            )
+            .cornerRadius(12)
             
             Text(photo.title)
                 .font(.caption)
@@ -115,14 +114,24 @@ struct PhotoThumbnailView: View {
 
 struct PhotoDetailView: View {
     let photo: MemoryPhoto
+    @State private var fullImage: UIImage?
     
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                Image(uiImage: UIImage(data: photo.imageData) ?? UIImage())
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .cornerRadius(12)
+                Group {
+                    if let fullImage = fullImage {
+                        Image(uiImage: fullImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .aspectRatio(1, contentMode: .fit)
+                            .overlay(ProgressView())
+                    }
+                }
+                .cornerRadius(12)
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(photo.title)
@@ -149,6 +158,13 @@ struct PhotoDetailView: View {
         }
         .navigationTitle("写真詳細")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            fullImage = UIImage(data: photo.imageData)
+        }
+        .onDisappear {
+            // Release memory when view disappears
+            fullImage = nil
+        }
     }
 }
 

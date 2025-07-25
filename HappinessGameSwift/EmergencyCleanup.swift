@@ -3,7 +3,9 @@ import Foundation
 // MARK: - Emergency Cleanup for Large UserDefaults Data
 final class EmergencyCleanup {
     static func performEmergencyCleanup() {
+        #if DEBUG
         print("=== Starting Emergency UserDefaults Cleanup ===")
+        #endif
         
         let userDefaults = UserDefaults.standard
         let dictionary = userDefaults.dictionaryRepresentation()
@@ -39,7 +41,9 @@ final class EmergencyCleanup {
                 
                 // Remove if it's a soundtrack or large data key
                 if key.contains("soundtrack") || size > 100_000 {
+                    #if DEBUG
                     print("Removing key: \(key) (size: \(formatBytes(size)))")
+                    #endif
                     userDefaults.removeObject(forKey: key)
                     removedCount += 1
                     totalRemovedSize += size
@@ -50,9 +54,11 @@ final class EmergencyCleanup {
         // Force synchronization
         userDefaults.synchronize()
         
+        #if DEBUG
         print("=== Emergency Cleanup Complete ===")
         print("Removed \(removedCount) keys")
         print("Total size removed: \(formatBytes(totalRemovedSize))")
+        #endif
         
         // Clear all caches to free memory
         ImageCache.shared.clearAllCache()
@@ -75,11 +81,15 @@ final class EmergencyCleanup {
             $0.contains("soundtracks")
         }
         
+        #if DEBUG
         print("Found \(soundtrackKeys.count) soundtrack keys to remove")
+        #endif
         
         for key in soundtrackKeys {
             userDefaults.removeObject(forKey: key)
+            #if DEBUG
             print("Removed soundtrack key: \(key)")
+            #endif
         }
         
         userDefaults.synchronize()

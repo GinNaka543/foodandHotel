@@ -315,3 +315,180 @@ struct OptimizedLocalImage: View {
         return thumbnail
     }
 }
+
+// MARK: - Optimized Thumbnail View
+struct OptimizedThumbnailView: View {
+    let imageData: Data?
+    let size: CGSize
+    
+    @State private var thumbnail: UIImage?
+    
+    init(imageData: Data?, size: CGSize = CGSize(width: 150, height: 150)) {
+        self.imageData = imageData
+        self.size = size
+    }
+    
+    var body: some View {
+        Group {
+            if let thumbnail = thumbnail {
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size.width, height: size.height)
+                    .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: size.width, height: size.height)
+                    .overlay(
+                        ProgressView()
+                            .scaleEffect(0.5)
+                    )
+            }
+        }
+        .task {
+            await generateThumbnail()
+        }
+        .onDisappear {
+            // Release thumbnail when view disappears
+            thumbnail = nil
+        }
+    }
+    
+    private func generateThumbnail() async {
+        guard let imageData = imageData,
+              let originalImage = UIImage(data: imageData) else { return }
+        
+        await MainActor.run {
+            self.thumbnail = ImageOptimizer.generateThumbnail(
+                from: originalImage,
+                targetSize: size
+            )
+        }
+    }
+}
+
+// MARK: - Optimized Local File Image
+struct OptimizedFileImage: View {
+    let path: String
+    let targetSize: CGSize
+    
+    @State private var image: UIImage?
+    
+    init(path: String, targetSize: CGSize = CGSize(width: 300, height: 300)) {
+        self.path = path
+        self.targetSize = targetSize
+    }
+    
+    var body: some View {
+        Group {
+            if let image = image {
+                Image(uiImage: image)
+                    .resizable()
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .overlay(ProgressView())
+            }
+        }
+        .task {
+            await loadOptimizedImage()
+        }
+        .onDisappear {
+            // Release image when view disappears
+            image = nil
+        }
+    }
+    
+    private func loadOptimizedImage() async {
+        // Check cache first
+        let cacheKey = "\(path)_\(Int(targetSize.width))x\(Int(targetSize.height))"
+        if let cachedImage = ImageCache.shared.image(for: cacheKey) {
+            await MainActor.run {
+                self.image = cachedImage
+            }
+            return
+        }
+        
+        // Load from file system
+        await Task.detached(priority: .userInitiated) {
+            if let loadedImage = loadImageFromPath(path) {
+                let optimized = ImageOptimizer.optimizeForDisplay(
+                    loadedImage,
+                    targetSize: targetSize
+                )
+                
+                // Cache the optimized image
+                ImageCache.shared.store(optimized, for: cacheKey)
+                
+                await MainActor.run {
+                    self.image = optimized
+                }
+            }
+        }.value
+    }
+    
+    private func loadImageFromPath(_ path: String) -> UIImage? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let imagePath = documentsPath.appendingPathComponent(path)
+        return UIImage(contentsOfFile: imagePath.path)
+    }
+}
+
+// MARK: - Memory Efficient Grid
+struct MemoryEfficientImageGrid<Item: Identifiable>: View {
+    let items: [Item]
+    let columns: Int
+    let spacing: CGFloat
+    let imageLoader: (Item) -> Data?
+    let onTap: (Item) -> Void
+    
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: spacing), count: columns)
+    }
+    
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: gridColumns, spacing: spacing) {
+                ForEach(items) { item in
+                    OptimizedThumbnailView(
+                        imageData: imageLoader(item),
+                        size: CGSize(width: 150, height: 150)
+                    )
+                    .cornerRadius(12)
+                    .onTapGesture {
+                        onTap(item)
+                    }
+                }
+            }
+            .padding(spacing)
+        }
+    }
+}
+
+// MARK: - Extensions for ImageOptimizer
+extension ImageOptimizer {
+    static func generateThumbnail(from image: UIImage, targetSize: CGSize) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        return renderer.image { context in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+    }
+    
+    static func optimizeForDisplay(_ image: UIImage, targetSize: CGSize) -> UIImage {
+        let scale = min(targetSize.width / image.size.width, targetSize.height / image.size.height)
+        
+        // Don't upscale
+        if scale >= 1.0 { return image }
+        
+        let newSize = CGSize(
+            width: image.size.width * scale,
+            height: image.size.height * scale
+        )
+        
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { context in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+}

@@ -138,11 +138,13 @@ struct VideoGalleryScreen: View {
     // バナービュー
     var bannerView: some View {
         Group {
-            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: 60)
+            if let imageIdentifier = currentCharacter.imageIdentifier {
+                OptimizedFileImage(
+                    path: imageIdentifier,
+                    targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
+                )
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
             } else {
                 Rectangle()
@@ -245,11 +247,11 @@ struct VideoGalleryScreen: View {
                         }) {
                             ZStack {
                                 // 背景画像
-                                if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(height: 180)
+                                if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData {
+                                    OptimizedThumbnailView(
+                                        imageData: thumbnailData,
+                                        size: CGSize(width: UIScreen.main.bounds.width - 40, height: 180)
+                                    )
                                         .clipped()
                                 } else if let firstVideo = album.videos.first, let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
                                     AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
@@ -482,11 +484,11 @@ struct VideoGalleryScreen: View {
         }) {
             HStack(alignment: .top, spacing: 8) {
                 // サムネイル
-                if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 165, height: 90)
+                if let thumbnailData = video.thumbnailData {
+                    OptimizedThumbnailView(
+                        imageData: thumbnailData,
+                        size: CGSize(width: 165, height: 90)
+                    )
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                         .clipped()
                 } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {

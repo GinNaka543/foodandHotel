@@ -280,8 +280,10 @@ struct HappinessGameSwiftApp: App {
         // Initialize memory pressure monitoring
         _ = MemoryPressureManager.shared
         
+        #if DEBUG
         // Track app launch performance
         let launchTracker = PerformanceMonitor.shared.startTracking(.appLaunch)
+        #endif
         
         // Configure Firebase
         FirebaseApp.configure()
@@ -331,13 +333,18 @@ struct HappinessGameSwiftApp: App {
         // Stripe決済の事前初期化
         preloadStripePayment()
         
+        #if DEBUG
         // End launch tracking
         launchTracker.end()
+        #endif
         
+        #if DEBUG
         // Setup app lifecycle monitoring
         setupLifecycleMonitoring()
+        #endif
     }
     
+    #if DEBUG
     private func setupLifecycleMonitoring() {
         NotificationCenter.default.addObserver(
             forName: UIApplication.didEnterBackgroundNotification,
@@ -357,6 +364,7 @@ struct HappinessGameSwiftApp: App {
             PerformanceMonitor.shared.trackEvent(.appEnterForeground)
         }
     }
+    #endif
     
     private func preloadStripePayment() {
         // アプリ起動時にStripeの支払いインテントを事前に作成

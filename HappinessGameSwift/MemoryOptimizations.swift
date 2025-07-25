@@ -117,7 +117,9 @@ extension AppOptimizationManager {
                 try? FileManager.default.removeItem(at: file)
             }
         } catch {
+            #if DEBUG
             print("Failed to clear temp files: \(error)")
+            #endif
         }
     }
 }
@@ -137,12 +139,17 @@ struct MemoryMonitoringModifier: ViewModifier {
     }
     
     private func startMemoryMonitoring() {
-        memoryTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { _ in
+        memoryTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
             let memoryUsage = PerformanceMonitor.shared.getReport().memoryUsage
             
             if memoryUsage > 150 {
+                #if DEBUG
                 print("⚠️ High memory usage detected: \(memoryUsage)MB - Performing cleanup")
+                #endif
                 AppOptimizationManager.shared.performAggressiveMemoryCleanup()
+            } else if memoryUsage > 100 {
+                // Lighter cleanup for moderate memory usage
+                ImageCache.shared.clearMemoryCache()
             }
         }
     }
@@ -173,7 +180,9 @@ class LowMemoryMode: ObservableObject {
         // Enable low memory mode for devices with 3GB or less
         if memoryGB <= 3 {
             isEnabled = true
+            #if DEBUG
             print("Low memory mode enabled for device with \(String(format: "%.1f", memoryGB))GB RAM")
+            #endif
         }
         
         // Listen for memory warnings

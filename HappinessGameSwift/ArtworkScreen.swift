@@ -154,11 +154,13 @@ struct ArtworkScreen: View {
     // バナービュー
     var bannerView: some View {
         Button(action: { activeSheet = .addPhoto }) {
-            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: 60)
+            if let imageIdentifier = currentCharacter.imageIdentifier {
+                OptimizedFileImage(
+                    path: imageIdentifier,
+                    targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
+                )
+                .aspectRatio(contentMode: .fill)
+                .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
             } else {
                 Rectangle()
@@ -183,11 +185,13 @@ struct ArtworkScreen: View {
                 // Profile section
                 HStack(spacing: 12) {
                     // Character icon
-                    if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 67, height: 67)
+                    if let imageIdentifier = currentCharacter.imageIdentifier {
+                        OptimizedFileImage(
+                            path: imageIdentifier,
+                            targetSize: CGSize(width: 67, height: 67)
+                        )
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 67, height: 67)
                             .clipShape(Circle())
                     } else {
                         Circle()
@@ -537,18 +541,19 @@ struct ArtworkScreen: View {
                                                 VStack(alignment: .leading, spacing: 0) {
                                                     ZStack {
                                                         Color.white
-                                                        if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                            Image(uiImage: uiImage)
-                                                                .resizable()
-                                                                .aspectRatio(contentMode: .fill)
-                                                                .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
+                                                        if let imagePath = artwork.imagePath {
+                                                            OptimizedFileImage(
+                                                                path: imagePath,
+                                                                targetSize: CGSize(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
+                                                            )
+                                                            .aspectRatio(contentMode: .fill)
+                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                         } else if let pixivURL = artwork.pixivURL {
-                                                            if let customThumbnailData = artwork.customThumbnailData,
-                                                               let uiImage = UIImage(data: customThumbnailData) {
-                                                                Image(uiImage: uiImage)
-                                                                    .resizable()
-                                                                    .aspectRatio(contentMode: .fill)
-                                                                    .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
+                                                            if let customThumbnailData = artwork.customThumbnailData {
+                                                                OptimizedThumbnailView(
+                                                                    imageData: customThumbnailData,
+                                                                    size: CGSize(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
+                                                                )
                                                             } else {
                                                                 PixivThumbnailView(pixivURL: pixivURL)
                                                                     .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)

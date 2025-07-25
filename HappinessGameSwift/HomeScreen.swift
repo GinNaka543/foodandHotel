@@ -484,7 +484,9 @@ struct FriendListIconView: View {
     let fallbackSystemName: String
     let color: Color
     var body: some View {
+        #if DEBUG
         let _ = print("[FriendListIconView] 画像数: \(images.count), nilでない画像数: \(images.compactMap { $0 }.count)")
+        #endif
         ZStack {
             if images.count == 1 {
                 iconImage(images[0], fallback: fallbackSystemName, color: color)

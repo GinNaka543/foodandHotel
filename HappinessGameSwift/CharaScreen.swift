@@ -477,13 +477,12 @@ struct CharaScreen: View {
             if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                 ZStack(alignment: .bottomLeading) {
                     // カスタムサムネイルまたはYouTubeサムネイルを表示
-                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                    if let thumbnailData = video.thumbnailData {
                         ZStack {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                .clipped()
+                            OptimizedThumbnailView(
+                                imageData: thumbnailData,
+                                size: CGSize(width: UIScreen.main.bounds.width - 32, height: 176)
+                            )
                             
                             // 暗いオーバーレイを追加
                             Color.black.opacity(0.2)
@@ -751,12 +750,14 @@ struct CharacterRow: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 48, height: 48)
-                    .clipShape(Circle())
+            if let imageIdentifier = character.imageIdentifier {
+                OptimizedFileImage(
+                    path: imageIdentifier,
+                    targetSize: CGSize(width: 48, height: 48)
+                )
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
             } else {
                 Circle()
                     .fill(Color.gray.opacity(0.3))

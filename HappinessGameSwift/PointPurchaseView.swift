@@ -248,7 +248,9 @@ struct PointPurchaseView: View {
         request.timeoutInterval = 10
         
         URLSession.shared.dataTask(with: request) { _, _, _ in
+            #if DEBUG
             print("Backend service warmed up")
+            #endif
         }.resume()
     }
 }

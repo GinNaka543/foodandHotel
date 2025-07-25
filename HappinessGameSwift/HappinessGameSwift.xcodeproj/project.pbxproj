@@ -89,6 +89,13 @@
 		CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */; };
 		CC9BAFD02E315AA30088E501 /* VisitScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */; };
 		CC9BB04B2E33CB610088E501 /* KeepAliveManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB04A2E33CB610088E501 /* KeepAliveManager.swift */; };
+		CC9BB04D2E33DB390088E501 /* SoundtrackStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB04C2E33DB390088E501 /* SoundtrackStorage.swift */; };
+		CC9BB04F2E33DB6D0088E501 /* VideoStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB04E2E33DB6D0088E501 /* VideoStorage.swift */; };
+		CC9BB0512E33DB910088E501 /* PerformanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0502E33DB910088E501 /* PerformanceMonitor.swift */; };
+		CC9BB0532E33DBA10088E501 /* DataMigrationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0522E33DBA10088E501 /* DataMigrationManager.swift */; };
+		CC9BB0552E33DBC20088E501 /* VisitPlanStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0542E33DBC20088E501 /* VisitPlanStorage.swift */; };
+		CC9BB0572E33DBD00088E501 /* VisitPlanDataStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0562E33DBD00088E501 /* VisitPlanDataStorage.swift */; };
+		CC9BB0592E33DBDA0088E501 /* ArtworkStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -191,6 +198,13 @@
 		CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen_iPad.swift; sourceTree = "<group>"; };
 		CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitScreen_iPad.swift; sourceTree = "<group>"; };
 		CC9BB04A2E33CB610088E501 /* KeepAliveManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAliveManager.swift; sourceTree = "<group>"; };
+		CC9BB04C2E33DB390088E501 /* SoundtrackStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundtrackStorage.swift; sourceTree = "<group>"; };
+		CC9BB04E2E33DB6D0088E501 /* VideoStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoStorage.swift; sourceTree = "<group>"; };
+		CC9BB0502E33DB910088E501 /* PerformanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceMonitor.swift; sourceTree = "<group>"; };
+		CC9BB0522E33DBA10088E501 /* DataMigrationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataMigrationManager.swift; sourceTree = "<group>"; };
+		CC9BB0542E33DBC20088E501 /* VisitPlanStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanStorage.swift; sourceTree = "<group>"; };
+		CC9BB0562E33DBD00088E501 /* VisitPlanDataStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanDataStorage.swift; sourceTree = "<group>"; };
+		CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkStorage.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -255,6 +269,13 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */,
+				CC9BB0562E33DBD00088E501 /* VisitPlanDataStorage.swift */,
+				CC9BB0542E33DBC20088E501 /* VisitPlanStorage.swift */,
+				CC9BB0522E33DBA10088E501 /* DataMigrationManager.swift */,
+				CC9BB0502E33DB910088E501 /* PerformanceMonitor.swift */,
+				CC9BB04E2E33DB6D0088E501 /* VideoStorage.swift */,
+				CC9BB04C2E33DB390088E501 /* SoundtrackStorage.swift */,
 				CC9BB04A2E33CB610088E501 /* KeepAliveManager.swift */,
 				CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */,
 				CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */,
@@ -475,10 +496,13 @@
 			files = (
 				D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */,
 				58B0BEEC55B602A43A48470D /* AddVideoView.swift in Sources */,
+				CC9BB0572E33DBD00088E501 /* VisitPlanDataStorage.swift in Sources */,
 				FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */,
 				86306C4517312F565813E5D7 /* HomeScreen.swift in Sources */,
 				CC20AAB52E26E68D005F4C2A /* CharacterListScreen.swift in Sources */,
+				CC9BB04D2E33DB390088E501 /* SoundtrackStorage.swift in Sources */,
 				CC20AAB62E26E68D005F4C2A /* CharacterRankingScrollView.swift in Sources */,
+				CC9BB04F2E33DB6D0088E501 /* VideoStorage.swift in Sources */,
 				CC20AAB72E26E68D005F4C2A /* CustomRankingModels.swift in Sources */,
 				CC1BB37F2E279DBD006EE695 /* TermsOfServiceView.swift in Sources */,
 				CC1BB3802E279DBD006EE695 /* SpotEditView.swift in Sources */,
@@ -526,6 +550,8 @@
 				CC20AAF02E26E6B0005F4C2A /* LoginScreenView.swift in Sources */,
 				CC20AAF12E26E6B0005F4C2A /* PlanPurchaseView.swift in Sources */,
 				CC20AAF22E26E6B0005F4C2A /* PlanPublicationConfirmationView.swift in Sources */,
+				CC9BB0592E33DBDA0088E501 /* ArtworkStorage.swift in Sources */,
+				CC9BB0512E33DB910088E501 /* PerformanceMonitor.swift in Sources */,
 				CC20AAF32E26E6B0005F4C2A /* PlanPaymentConfirmationView.swift in Sources */,
 				44E38804BC15161C44726B1C /* ProfileScreen.swift in Sources */,
 				116B9C0B56F15D176892A506 /* TitleScreen.swift in Sources */,
@@ -546,6 +572,7 @@
 				CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */,
 				CC1BB3882E28571B006EE695 /* AnimeOrderModal.swift in Sources */,
 				CC1BB3942E310AC8006EE695 /* SoundtrackTypes.swift in Sources */,
+				CC9BB0532E33DBA10088E501 /* DataMigrationManager.swift in Sources */,
 				CC20AAAE2E26E682005F4C2A /* AnimeListScreen.swift in Sources */,
 				CC20AAC12E26E697005F4C2A /* GitHubImageManager.swift in Sources */,
 				CC20AAC22E26E697005F4C2A /* FirebaseAdView.swift in Sources */,
@@ -553,6 +580,7 @@
 				CC20AAC42E26E697005F4C2A /* FirebaseManager.swift in Sources */,
 				CC1BB38A2E2A47BA006EE695 /* MultipleFirebaseAdView.swift in Sources */,
 				CC20AAC52E26E697005F4C2A /* GitHubRepoModel.swift in Sources */,
+				CC9BB0552E33DBC20088E501 /* VisitPlanStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

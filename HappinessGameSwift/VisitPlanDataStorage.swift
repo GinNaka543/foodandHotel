@@ -67,7 +67,7 @@ class VisitPlanDataStorage {
             "numberOfDays": plan.numberOfDays,
             "isPurchased": plan.isPurchased,
             "isDraft": plan.isDraft,
-            "streamingUrls": plan.streamingUrls.map { ["service": $0.service, "url": $0.url] },
+            "streamingUrls": plan.streamingUrls.map { ["service": $0.name, "url": $0.url] },
             "hasThumbnail": plan.thumbnailData != nil
         ]
         
@@ -141,7 +141,7 @@ class VisitPlanDataStorage {
         if let streamingUrlsData = metadata["streamingUrls"] as? [[String: String]] {
             planData.streamingUrls = streamingUrlsData.compactMap { dict in
                 guard let service = dict["service"], let url = dict["url"] else { return nil }
-                return StreamingService(service: service, url: url)
+                return StreamingService(name: service, url: url, icon: nil)
             }
         }
         
@@ -195,7 +195,10 @@ class VisitPlanDataStorage {
             
             // Remove old data after successful migration
             UserDefaults.standard.removeObject(forKey: "savedPlans")
-            UserDefaultsHelper.shared.removeData(forKey: "savedPlans")
+            // Also remove user-specific key if exists
+            if let userId = UserDefaults.standard.string(forKey: "userId") {
+                UserDefaults.standard.removeObject(forKey: "\(userId)_savedPlans")
+            }
         }
         
         // Migrate draft plans
@@ -212,7 +215,6 @@ class VisitPlanDataStorage {
                 
                 // Remove old data
                 UserDefaults.standard.removeObject(forKey: draftKey)
-                UserDefaultsHelper.shared.removeData(forKey: draftKey)
             }
         }
     }

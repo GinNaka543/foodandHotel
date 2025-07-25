@@ -2336,5 +2336,17 @@ struct VideoNavigationButtonStyle: ButtonStyle {
 }
 
 #Preview {
-    VideoGalleryScreen(character: Character(id: UUID(), imageIdentifier: nil, name: "キャラクター名", tag: "タグ", birthday: Date(), favoriteFood: "", age: "", voiceActor: "", cupSize: "", seichi: "", height: ""))
+    VideoGalleryScreen(character: Character(
+        id: UUID(),
+        imageIdentifier: nil,
+        name: "キャラクター名",
+        tag: "タグ",
+        birthday: Date(),
+        favoriteFood: "",
+        age: "",
+        voiceActor: "",
+        cupSize: "",
+        seichi: "",
+        height: ""
+    ))
 } 

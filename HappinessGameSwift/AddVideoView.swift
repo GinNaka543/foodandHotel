@@ -113,33 +113,6 @@ struct AddVideoView: View {
             }
             .padding(.horizontal, 20)
             
-            // YouTubeダウンロードボタン
-            Button(action: {
-                if let url = URL(string: "https://y2down.cc/ja4O") {
-                    UIApplication.shared.open(url)
-                }
-            }) {
-                HStack {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.green)
-                    Text("YouTubeから動画をダウンロードする")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: "arrow.up.forward.square")
-                        .foregroundColor(.gray)
-                        .font(.system(size: 14))
-                }
-                .padding()
-                .background(Color.green.opacity(0.1))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.green, lineWidth: 1)
-                )
-            }
-            .padding(.horizontal, 20)
             
             Spacer()
         }

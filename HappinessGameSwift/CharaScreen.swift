@@ -1007,6 +1007,7 @@ struct CharacterDetailView: View {
     @State private var showAbout = false
     @State private var showEditBackgroundModal = false
     @State private var showEditIconModal = false // ← 追加
+    @State private var showEditTitleTagModal = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
     @State private var tempIconImage: UIImage? = nil
@@ -1030,9 +1031,6 @@ struct CharacterDetailView: View {
                 }
                 .ignoresSafeArea()
                 .overlay(Color.black.opacity(0.35).ignoresSafeArea())
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             } else {
                 LinearGradient(
                     gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
@@ -1040,9 +1038,6 @@ struct CharacterDetailView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             }
             
             // コンテンツ
@@ -1104,6 +1099,9 @@ struct CharacterDetailView: View {
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         .padding(.top, 20)
+                        .onTapGesture {
+                            showEditTitleTagModal = true
+                        }
                     // 誕生日
                     Text(DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday).uppercased())
                         .font(.system(size: 16, weight: .medium))
@@ -1285,6 +1283,12 @@ struct CharacterDetailView: View {
                     }
                 })
                     .environmentObject(characterManager)
+            }
+            .sheet(isPresented: $showEditTitleTagModal) {
+                EditTitleTagBackgroundView(
+                    character: $character,
+                    characterManager: characterManager
+                )
             }
         }
         .navigationBarHidden(true)
@@ -2738,5 +2742,185 @@ struct CharaEditSelectionSheet: View {
                 }
             }
         }
+    }
+}
+
+// タイトル、タグ、背景編集ビュー
+struct EditTitleTagBackgroundView: View {
+    @Binding var character: Character
+    @ObservedObject var characterManager: CharacterManager
+    @Environment(\.dismiss) var dismiss
+    @State private var editedName: String = ""
+    @State private var editedTag: String = ""
+    @State private var backgroundPickerItem: PhotosPickerItem? = nil
+    @State private var tempBackgroundImage: UIImage? = nil
+    @State private var showDeleteConfirmation = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // タイトル編集
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("名前")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField("キャラクター名", text: $editedName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                .padding(.horizontal)
+                
+                // タグ編集
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("タグ")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField("#タグ", text: $editedTag)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                .padding(.horizontal)
+                
+                // 背景画像編集
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("背景画像")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.horizontal)
+                    
+                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
+                        ZStack {
+                            if let tempBackgroundImage = tempBackgroundImage {
+                                Image(uiImage: tempBackgroundImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 150)
+                                    .clipped()
+                                    .cornerRadius(10)
+                            } else if let backgroundPath = character.backgroundImagePath,
+                                      let backgroundImage = loadImageFromPath(backgroundPath) {
+                                Image(uiImage: backgroundImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 150)
+                                    .clipped()
+                                    .cornerRadius(10)
+                            } else {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(height: 150)
+                                    .overlay(
+                                        VStack(spacing: 8) {
+                                            Image(systemName: "photo")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.gray)
+                                            Text("タップして背景を選択")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.gray)
+                                        }
+                                    )
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    // 背景削除ボタン
+                    if character.backgroundImagePath != nil || tempBackgroundImage != nil {
+                        Button(action: {
+                            showDeleteConfirmation = true
+                        }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                                Text("背景を削除")
+                                    .foregroundColor(.red)
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding(.top)
+            .navigationTitle("編集")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        saveChanges()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+            .onAppear {
+                editedName = character.name
+                editedTag = character.tag
+            }
+            .onChange(of: backgroundPickerItem) { _, newValue in
+                if let newItem = newValue {
+                    Task {
+                        if let data = try? await newItem.loadTransferable(type: Data.self),
+                           let uiImage = UIImage(data: data) {
+                            tempBackgroundImage = uiImage
+                        }
+                    }
+                }
+            }
+            .alert("背景を削除", isPresented: $showDeleteConfirmation) {
+                Button("削除", role: .destructive) {
+                    deleteBackground()
+                }
+                Button("キャンセル", role: .cancel) {}
+            } message: {
+                Text("背景画像を削除しますか？")
+            }
+        }
+    }
+    
+    private func saveChanges() {
+        var updatedCharacter = character
+        updatedCharacter.name = editedName
+        updatedCharacter.tag = editedTag
+        
+        // 背景画像の保存
+        if let tempBackgroundImage = tempBackgroundImage {
+            let fileName = "background_\(UUID().uuidString).png"
+            let imagePath = saveImageToDocuments(tempBackgroundImage, fileName: fileName)
+            
+            // 古い背景画像を削除
+            if let oldPath = character.backgroundImagePath {
+                try? FileManager.default.removeItem(atPath: oldPath)
+            }
+            
+            updatedCharacter.backgroundImagePath = imagePath
+        }
+        
+        // 更新を反映
+        character = updatedCharacter
+        characterManager.updateCharacter(updatedCharacter)
+        characterManager.refreshUI()
+        
+        dismiss()
+    }
+    
+    private func deleteBackground() {
+        var updatedCharacter = character
+        
+        // 背景画像ファイルを削除
+        if let backgroundPath = character.backgroundImagePath {
+            try? FileManager.default.removeItem(atPath: backgroundPath)
+        }
+        
+        updatedCharacter.backgroundImagePath = nil
+        tempBackgroundImage = nil
+        
+        // 更新を反映
+        character = updatedCharacter
+        characterManager.updateCharacter(updatedCharacter)
+        characterManager.refreshUI()
     }
 }

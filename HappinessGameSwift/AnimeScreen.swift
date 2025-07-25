@@ -2717,9 +2717,12 @@ struct AnimeVideoScreen: View {
                         videos[idx] = updated
                         saveVideosToUserDefaults()
                     }
+                    showThumbnailPicker = false
+                    editingVideo = nil
                 },
                 onCancel: {
                     showThumbnailPicker = false
+                    editingVideo = nil
                 }
             )
         }
@@ -4232,7 +4235,6 @@ struct AnimeDetailView: View {
     @State private var editWatchStatuses: Set<WatchStatus> = []
     @State private var showEditGenresModal = false
     @State private var editGenres: Set<AnimeGenre> = []
-    @State private var showEditBackgroundModal = false
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
     @State private var currentDisplayedIcon: UIImage? = nil
@@ -4255,9 +4257,6 @@ struct AnimeDetailView: View {
                 }
                 .ignoresSafeArea()
                 .overlay(Color.black.opacity(0.3).ignoresSafeArea())
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             } else {
                 LinearGradient(
                     gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
@@ -4265,9 +4264,6 @@ struct AnimeDetailView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             }
             
             // コンテンツ
@@ -4486,36 +4482,128 @@ struct AnimeDetailView: View {
         .navigationBarHidden(true)
         // タイトル編集モーダル
         .sheet(isPresented: $showEditTitleModal) {
-            VStack(spacing: 20) {
-                Text("タイトルとハッシュタグを編集")
-                    .font(.headline)
-                VStack(spacing: 12) {
-                    TextField("タイトル", text: $editTitle)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    TextField("ハッシュタグ", text: $editHashtag)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                }
-                HStack {
-                    Button("キャンセル") {
-                        showEditTitleModal = false
+            NavigationView {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Text("アニメ情報を編集")
+                            .font(.headline)
+                        
+                        // タイトルとハッシュタグ
+                        VStack(spacing: 12) {
+                            TextField("タイトル", text: $editTitle)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            TextField("ハッシュタグ", text: $editHashtag)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        }
+                        
+                        // 背景画像
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("背景画像")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
+                                VStack {
+                                    if let backgroundImage = backgroundImage {
+                                        Image(uiImage: backgroundImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(height: 176)
+                                            .clipped()
+                                            .cornerRadius(12)
+                                    } else if let imagePath = anime.backgroundImagePath,
+                                              let uiImage = loadImageFromPath(imagePath) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(height: 176)
+                                            .clipped()
+                                            .cornerRadius(12)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(height: 176)
+                                            .overlay(
+                                                VStack {
+                                                    Image(systemName: "photo.fill")
+                                                        .font(.system(size: 50))
+                                                        .foregroundColor(.gray)
+                                                    Text("背景画像を選択")
+                                                        .foregroundColor(.gray)
+                                                }
+                                            )
+                                    }
+                                }
+                            }
+                            .onChange(of: backgroundPickerItem) { _, newValue in
+                                if let newItem = newValue {
+                                    Task {
+                                        if let data = try? await newItem.loadTransferable(type: Data.self),
+                                           let uiImage = UIImage(data: data) {
+                                            backgroundImage = uiImage
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if backgroundImage != nil || anime.backgroundImagePath != nil {
+                                Button(action: {
+                                    backgroundImage = nil
+                                    backgroundPickerItem = nil
+                                }) {
+                                    Text("背景画像を削除")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                            }
+                        }
+                        
+                        HStack {
+                            Button("キャンセル") {
+                                showEditTitleModal = false
+                                // Reset temporary states
+                                backgroundImage = nil
+                                backgroundPickerItem = nil
+                            }
+                            Spacer()
+                            Button("保存") {
+                                guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                                var updatedAnime = animes[idx]
+                                updatedAnime.title = editTitle
+                                updatedAnime.hashtag = editHashtag
+                                
+                                // Save background image if changed
+                                if let newBackgroundImage = backgroundImage {
+                                    let backgroundPath = saveImageToDocuments(newBackgroundImage, fileName: "anime_bg_\(anime.id.uuidString).png")
+                                    updatedAnime.backgroundImagePath = backgroundPath
+                                } else if backgroundImage == nil && backgroundPickerItem == nil && anime.backgroundImagePath != nil {
+                                    // User deleted the background
+                                    if let oldPath = updatedAnime.backgroundImagePath {
+                                        try? FileManager.default.removeItem(atPath: oldPath)
+                                    }
+                                    updatedAnime.backgroundImagePath = nil
+                                }
+                                
+                                animes[idx] = updatedAnime
+                                animeManager.updateAnime(updatedAnime)
+                                showEditTitleModal = false
+                                
+                                // Reset temporary states
+                                backgroundImage = nil
+                                backgroundPickerItem = nil
+                            }
+                            .disabled(editTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
                     }
-                    Spacer()
-                    Button("保存") {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        updatedAnime.title = editTitle
-                        updatedAnime.hashtag = editHashtag
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditTitleModal = false
-                    }
-                    .disabled(editTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .padding()
                 }
+                .navigationBarHidden(true)
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
+            .onAppear {
+                // Reset background image state when modal appears
+                backgroundImage = nil
+                backgroundPickerItem = nil
+            }
         }
         // 公開日編集モーダル（無効化）
         // 視聴ステータス編集モーダル
@@ -4635,86 +4723,6 @@ struct AnimeDetailView: View {
             .background(Color(.systemBackground))
             .cornerRadius(16)
             .padding(40)
-        }
-        // 背景画像編集モーダル
-        .sheet(isPresented: $showEditBackgroundModal) {
-            NavigationView {
-                VStack(spacing: 20) {
-                    Text("背景画像を選択")
-                        .font(.headline)
-                    
-                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
-                        VStack {
-                            if let backgroundImage = backgroundImage {
-                                Image(uiImage: backgroundImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 176)
-                                    .clipped()
-                                    .cornerRadius(12)
-                            } else if let imagePath = anime.backgroundImagePath,
-                                      let uiImage = loadImageFromPath(imagePath) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 176)
-                                    .clipped()
-                                    .cornerRadius(12)
-                            } else {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(height: 176)
-                                    .overlay(
-                                        VStack {
-                                            Image(systemName: "photo.fill")
-                                                .font(.system(size: 50))
-                                                .foregroundColor(.gray)
-                                            Text("背景画像を選択")
-                                                .foregroundColor(.gray)
-                                        }
-                                    )
-                            }
-                        }
-                    }
-                    .onChange(of: backgroundPickerItem) { _, newValue in
-                        if let newItem = newValue {
-                            Task {
-                                if let data = try? await newItem.loadTransferable(type: Data.self),
-                                   let uiImage = UIImage(data: data) {
-                                    backgroundImage = uiImage
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding()
-                .navigationBarTitle("背景画像", displayMode: .inline)
-                .navigationBarItems(
-                    leading: Button("キャンセル") {
-                        backgroundImage = nil
-                        showEditBackgroundModal = false
-                    },
-                    trailing: Button("保存") {
-                        if let backgroundImage = backgroundImage {
-                            // 画像をドキュメントディレクトリに保存
-                            let fileName = "anime_bg_\(UUID().uuidString).png"
-                            if let imagePath = saveImageToDocuments(backgroundImage, fileName: fileName) {
-                                // アニメ情報を更新
-                                guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                                var updatedAnime = animes[idx]
-                                updatedAnime.backgroundImagePath = imagePath
-                                animes[idx] = updatedAnime
-                                anime = updatedAnime  // Bindingも更新
-                                animeManager.updateAnime(updatedAnime)
-                            }
-                        }
-                        showEditBackgroundModal = false
-                    }
-                    .disabled(backgroundImage == nil)
-                )
-            }
         }
         // アイコン編集モーダル
         .sheet(isPresented: $showEditIconModal) {

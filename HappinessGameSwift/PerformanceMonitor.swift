@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import SwiftUI
 import os.log
 
 // MARK: - Performance Monitor

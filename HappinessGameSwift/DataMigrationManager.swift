@@ -67,14 +67,29 @@ class DataMigrationManager {
         var largeKeys: [(key: String, size: Int)] = []
         
         for (key, value) in dictionary {
-            if let data = try? JSONSerialization.data(withJSONObject: value, options: []) {
-                let size = data.count
-                totalSize += size
-                
-                // Track keys larger than 100KB
-                if size > 100_000 {
-                    largeKeys.append((key: key, size: size))
+            do {
+                // Skip non-serializable types
+                if JSONSerialization.isValidJSONObject(value) {
+                    let data = try JSONSerialization.data(withJSONObject: value, options: [])
+                    let size = data.count
+                    totalSize += size
+                    
+                    // Track keys larger than 100KB
+                    if size > 100_000 {
+                        largeKeys.append((key: key, size: size))
+                    }
+                } else {
+                    // For non-JSON serializable objects, estimate size
+                    if let data = value as? Data {
+                        let size = data.count
+                        totalSize += size
+                        if size > 100_000 {
+                            largeKeys.append((key: key, size: size))
+                        }
+                    }
                 }
+            } catch {
+                print("Error serializing key \(key): \(error)")
             }
         }
         
@@ -132,13 +147,24 @@ class DataMigrationManager {
         var keysToRemove: [(key: String, size: Int)] = []
         
         for (key, value) in dictionary {
-            if let data = try? JSONSerialization.data(withJSONObject: value, options: []) {
-                let size = data.count
+            do {
+                var size = 0
+                
+                if JSONSerialization.isValidJSONObject(value) {
+                    let data = try JSONSerialization.data(withJSONObject: value, options: [])
+                    size = data.count
+                } else if let data = value as? Data {
+                    size = data.count
+                }
                 
                 // Remove any individual key larger than 500KB
                 if size > 500_000 {
                     keysToRemove.append((key: key, size: size))
                 }
+            } catch {
+                print("Error checking size for key \(key): \(error)")
+                // Remove problematic keys
+                keysToRemove.append((key: key, size: 0))
             }
         }
         

@@ -280,7 +280,16 @@ struct HappinessGameSwiftApp: App {
         // Track app launch performance
         let launchTracker = PerformanceMonitor.shared.startTracking(.appLaunch)
         
-        FirebaseApp.configure()
+        // Configure Firebase with error handling
+        do {
+            FirebaseApp.configure()
+            #if DEBUG
+            print("Firebase configured successfully")
+            print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")")
+            #endif
+        } catch {
+            print("Firebase configuration error: \(error)")
+        }
         
         // Stripe SDKを初期化
         // Read Stripe publishable key from Info.plist
@@ -295,13 +304,16 @@ struct HappinessGameSwiftApp: App {
         // Initialize app optimizations
         _ = AppOptimizationManager.shared
         
+        // First, enforce UserDefaults size limit to prevent crashes
+        DataMigrationManager.shared.enforceUserDefaultsSizeLimit()
+        
         // 画像パスの移行処理を実行
         ImageMigrationHelper.shared.migrateAllImagePaths()
         
         // Migrate large data from UserDefaults to file storage
         DataMigrationManager.shared.performMigrationIfNeeded()
         
-        // Enforce UserDefaults size limit
+        // Enforce size limit again after migration
         DataMigrationManager.shared.enforceUserDefaultsSizeLimit()
         
         // Clean up old data

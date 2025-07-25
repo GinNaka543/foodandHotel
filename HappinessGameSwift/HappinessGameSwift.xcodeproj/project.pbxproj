@@ -18,7 +18,10 @@
 		58B0BEEC55B602A43A48470D /* AddVideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C89171126C03EEF19913ED /* AddVideoView.swift */; };
 		86306C4517312F565813E5D7 /* HomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BC3FCE306518206AAA0831 /* HomeScreen.swift */; };
 		93A03E18D939A7552014894F /* VideoGalleryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */; };
+		A1B2C3D4E5F67890A1B2C3D4 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69780F1E2D3C4 /* FirstLaunchView.swift */; };
+		B2C3D4E5F6789012B2C3D4E5 /* TrackingPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */; };
 		C3C8E480920840E6B38DD715 /* MemoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6BD18F23F8A6F79B12B00E /* MemoryScreen.swift */; };
+		C3D4E5F678901234C3D4E5F6 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */; };
 		CC1BB37F2E279DBD006EE695 /* TermsOfServiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB37E2E279DBD006EE695 /* TermsOfServiceView.swift */; };
 		CC1BB3802E279DBD006EE695 /* SpotEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB37D2E279DBD006EE695 /* SpotEditView.swift */; };
 		CC1BB3842E28144D006EE695 /* PlanConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1BB3832E28144D006EE695 /* PlanConfirmationView.swift */; };
@@ -84,10 +87,8 @@
 		CC20AB112E26E6C1005F4C2A /* RegisterScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */; };
 		CC20AB122E26E6C1005F4C2A /* UserPointsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */; };
 		CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */; };
-		A1B2C3D4E5F67890A1B2C3D4 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E2D3C4B5A69780F1E2D3C4 /* FirstLaunchView.swift */; };
-		B2C3D4E5F6789012B2C3D4E5 /* TrackingPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */; };
-		C3D4E5F678901234C3D4E5F6 /* PrivacyPolicyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */; };
 		CC9BAFD02E315AA30088E501 /* VisitScreen_iPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */; };
+		CC9BB04B2E33CB610088E501 /* KeepAliveManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB04A2E33CB610088E501 /* KeepAliveManager.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -189,6 +190,7 @@
 		CC20AB032E26E6C1005F4C2A /* VisitTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitTypes.swift; sourceTree = "<group>"; };
 		CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreen_iPad.swift; sourceTree = "<group>"; };
 		CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitScreen_iPad.swift; sourceTree = "<group>"; };
+		CC9BB04A2E33CB610088E501 /* KeepAliveManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAliveManager.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -253,6 +255,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CC9BB04A2E33CB610088E501 /* KeepAliveManager.swift */,
 				CC9BAFCF2E315AA30088E501 /* VisitScreen_iPad.swift */,
 				CC9BAFCD2E315A970088E501 /* HomeScreen_iPad.swift */,
 				CC1BB3932E310AC8006EE695 /* SoundtrackTypes.swift */,
@@ -450,9 +453,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -532,6 +539,7 @@
 				CC20AAAB2E26E682005F4C2A /* AlbumArtworkListScreen.swift in Sources */,
 				CC20AAAC2E26E682005F4C2A /* AnimeRankingScreen.swift in Sources */,
 				CC20AACA2E26E6A0005F4C2A /* ImageMigrationHelper.swift in Sources */,
+				CC9BB04B2E33CB610088E501 /* KeepAliveManager.swift in Sources */,
 				CC20AACB2E26E6A0005F4C2A /* ImageExtractor.swift in Sources */,
 				CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */,
 				CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */,

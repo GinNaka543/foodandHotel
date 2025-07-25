@@ -921,60 +921,9 @@ struct VisitGameScreen: View {
     }
     
     func savePlanProgress() {
-        // プラン全体を保存
-        let planKey = "visit_plan_\(planId?.uuidString ?? planTitle)"
-        
-        // スポット情報を保存用の辞書に変換
-        let spotsData = viewModel.spots.map { spot -> [String: Any] in
-            var spotDict: [String: Any] = [
-                "id": spot.id.uuidString,
-                "name": spot.name,
-                "address": spot.address,
-                "notes": spot.notes,
-                "nearestStation": spot.nearestStation,
-                "stayDuration": spot.stayDuration,
-                "isCompleted": spot.isCompleted,
-                "timeRange": spot.timeRange,
-                "activity": spot.activity,
-                "dayNumber": spot.dayNumber,
-                "spotCost": spot.spotCost,
-                "imageUrl": spot.imageUrl,
-                "images": spot.images
-            ]
-            
-            // 日付の保存
-            if let arrivalTime = spot.arrivalTime {
-                spotDict["arrivalTime"] = arrivalTime.timeIntervalSince1970
-            }
-            if let departureTime = spot.departureTime {
-                spotDict["departureTime"] = departureTime.timeIntervalSince1970
-            }
-            
-            // 交通手段の保存
-            if let transport = spot.transportToNext {
-                spotDict["transportToNext"] = [
-                    "method": transport.method,
-                    "duration": transport.duration,
-                    "cost": transport.cost,
-                    "route": transport.route
-                ]
-            }
-            
-            // 画像データの保存（Base64エンコード）
-            if let imageData = spot.imageData {
-                spotDict["imageDataBase64"] = imageData.base64EncodedString()
-            }
-            
-            return spotDict
-        }
-        
-        // プラン全体の情報を保存
-        let planData: [String: Any] = [
-            "spots": spotsData,
-            "lastModified": Date().timeIntervalSince1970
-        ]
-        
-        UserDefaults.standard.set(planData, forKey: planKey)
+        // Use new storage system that saves images to files
+        let planIdString = planId?.uuidString ?? planTitle
+        VisitPlanStorage.shared.savePlan(planId: planIdString, planTitle: planTitle, spots: viewModel.spots)
     }
     
     func getThumbnailImage() -> UIImage? {
@@ -1010,15 +959,23 @@ struct VisitGameScreen: View {
     
     // 保存されたプランデータを読み込む関数
     func loadSavedPlanData() {
-        let planKey = "visit_plan_\(planId?.uuidString ?? planTitle)"
+        let planIdString = planId?.uuidString ?? planTitle
+        
+        // First try to load using the new storage system
+        if let restoredSpots = VisitPlanStorage.shared.loadPlan(planId: planIdString) {
+            viewModel.spots = restoredSpots
+            return
+        }
+        
+        // Fallback to old method for backward compatibility
+        let planKey = "visit_plan_\(planIdString)"
         
         guard let planData = UserDefaults.standard.dictionary(forKey: planKey),
               let spotsData = planData["spots"] as? [[String: Any]] else {
             return
         }
         
-        
-        // 保存されたスポットデータから復元
+        // If we found old data, migrate it
         var restoredSpots: [VisitSpot] = []
         
         for spotData in spotsData {
@@ -1076,6 +1033,9 @@ struct VisitGameScreen: View {
         // 復元したスポットで置き換え
         if !restoredSpots.isEmpty {
             viewModel.spots = restoredSpots
+            
+            // Migrate to new storage format
+            VisitPlanStorage.shared.savePlan(planId: planIdString, planTitle: planTitle, spots: restoredSpots)
         }
     }
     

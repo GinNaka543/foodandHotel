@@ -27,16 +27,10 @@ struct Soundtrack: Identifiable, Codable, Equatable {
 extension Character {
     var soundtracks: [Soundtrack] {
         get {
-            if let data = UserDefaults.standard.data(forKey: "character_soundtracks_\(id.uuidString)"),
-               let soundtracks = try? JSONDecoder().decode([Soundtrack].self, from: data) {
-                return soundtracks
-            }
-            return []
+            return SoundtrackStorage.shared.loadSoundtracks(for: id.uuidString)
         }
         set {
-            if let data = try? JSONEncoder().encode(newValue) {
-                UserDefaults.standard.set(data, forKey: "character_soundtracks_\(id.uuidString)")
-            }
+            SoundtrackStorage.shared.saveSoundtracks(for: id.uuidString, soundtracks: newValue)
         }
     }
 }
@@ -45,16 +39,10 @@ extension Character {
 extension Anime {
     var soundtracks: [Soundtrack] {
         get {
-            if let data = UserDefaults.standard.data(forKey: "anime_soundtracks_\(id.uuidString)"),
-               let soundtracks = try? JSONDecoder().decode([Soundtrack].self, from: data) {
-                return soundtracks
-            }
-            return []
+            return SoundtrackStorage.shared.loadAnimeSoundtracks(for: id.uuidString)
         }
         set {
-            if let data = try? JSONEncoder().encode(newValue) {
-                UserDefaults.standard.set(data, forKey: "anime_soundtracks_\(id.uuidString)")
-            }
+            SoundtrackStorage.shared.saveAnimeSoundtracks(for: id.uuidString, soundtracks: newValue)
         }
     }
 }

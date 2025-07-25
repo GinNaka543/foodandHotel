@@ -1217,15 +1217,8 @@ struct ArtworkScreen: View {
     // MARK: - Helper Functions
     
     func loadArtworks() {
-        let key = "character_artworks_\(character.id.uuidString)"
-        if let data = UserDefaultsHelper.shared.getData(forKey: key),
-           let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
-            artworks = decodedArtworks
-            for artwork in artworks {
-            }
-            checkPixivArtworks()
-        } else {
-        }
+        artworks = ArtworkStorage.shared.loadArtworks(for: character.id.uuidString)
+        checkPixivArtworks()
     }
     
     func checkPixivArtworks() {
@@ -1281,10 +1274,7 @@ struct ArtworkScreen: View {
     }
     
     func saveArtworksToUserDefaults() {
-        let key = "character_artworks_\(character.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(artworks) {
-            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
-        }
+        ArtworkStorage.shared.saveArtworks(for: character.id.uuidString, artworks: artworks)
     }
     
     private func saveAlbumsToUserDefaults() {

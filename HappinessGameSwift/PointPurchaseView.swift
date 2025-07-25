@@ -71,7 +71,7 @@ struct PointPurchaseView: View {
                                             TextField("金額を入力 (円)", text: $customAmount)
                                                 .keyboardType(.numberPad)
                                                 .textFieldStyle(RoundedBorderTextFieldStyle())
-                                                .onChange(of: customAmount) { newValue in
+                                                .onChange(of: customAmount) { oldValue, newValue in
                                                     if let amount = Int(newValue), amount > 0 {
                                                         selectedPackage = PointPackage(points: amount, price: amount, isPopular: false)
                                                     } else {
@@ -172,6 +172,10 @@ struct PointPurchaseView: View {
             }
             .background(Color(.systemGroupedBackground))
         }
+        .onAppear {
+            // バックエンドサービスを事前に起動（Render.comのコールドスタート対策）
+            prewarmBackendService()
+        }
         .alert("購入完了", isPresented: $showingSuccess) {
             Button("OK") {
                 dismiss()
@@ -194,6 +198,14 @@ struct PointPurchaseView: View {
             errorMessage = "ユーザーIDが見つかりません。再度ログインしてください。"
             isPurchasing = false
             return
+        }
+        
+        // タイムアウトタイマーを設定（45秒）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 45) {
+            if self.isPurchasing {
+                self.isPurchasing = false
+                self.errorMessage = "処理がタイムアウトしました。もう一度お試しください。"
+            }
         }
         
         // Stripe決済処理
@@ -222,6 +234,19 @@ struct PointPurchaseView: View {
                 }
             }
         }
+    }
+    
+    private func prewarmBackendService() {
+        // Send a health check request to warm up the backend service
+        guard let url = URL(string: "https://happiness-game.onrender.com/api/health") else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 10
+        
+        URLSession.shared.dataTask(with: request) { _, _, _ in
+            print("Backend service warmed up")
+        }.resume()
     }
 }
 

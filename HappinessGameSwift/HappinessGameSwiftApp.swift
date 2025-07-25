@@ -4,6 +4,7 @@ import FirebaseAuth
 import FirebaseFirestore
 import StripePaymentSheet
 import UIKit
+import BackgroundTasks
 
 // AppDelegate for orientation control
 class AppDelegate: NSObject, UIApplicationDelegate {
@@ -288,12 +289,27 @@ struct HappinessGameSwiftApp: App {
             fatalError("STRIPE_PUBLISHABLE_KEY not found in Info.plist")
         }
         
-        cleanupLargeUserDefaultsEntries()
         // 画像パスの移行処理を実行
         ImageMigrationHelper.shared.migrateAllImagePaths()
         
+        // Migrate large data from UserDefaults to file storage
+        DataMigrationManager.shared.performMigrationIfNeeded()
+        
+        // Enforce UserDefaults size limit
+        DataMigrationManager.shared.enforceUserDefaultsSizeLimit()
+        
+        // Clean up old data
+        DataMigrationManager.shared.cleanupOldData()
+        
+        // Debug: Check UserDefaults size
+        print("=== UserDefaults Size Analysis ===")
+        print(DataMigrationManager.shared.estimateUserDefaultsSize())
+        print("===================================")
+        
         // Stripe決済の事前初期化
         preloadStripePayment()
+        
+        // Keep-alive service removed - handled by external services
     }
     
     private func preloadStripePayment() {
@@ -365,7 +381,7 @@ struct HappinessGameSwiftApp: App {
                         // 開発用: サンプル画像を自動生成
                         createSampleImagesIfNeeded()
                         // ユーザーIDを確認
-                        if let userId = UserDefaults.standard.string(forKey: "userId") {
+                        if UserDefaults.standard.string(forKey: "userId") != nil {
                             // 既存データの移行を実行
                             UserDefaultsHelper.shared.migrateDataIfNeeded()
                             // データを再読み込み

@@ -467,7 +467,7 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $showingPoints) {
             PointsView()
-        }
+}
         .onAppear {
             if !hasLoadedData {
                 characterManager.loadCharacters()

@@ -72,5 +72,14 @@
 	<string>画像を撮影するためにカメラへのアクセスが必要です。</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>アプリの品質向上のため、匿名化された使用状況データを収集します。広告トラッキングは行いません。</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.happinessgame.keepalive</string>
+	</array>
 </dict>
 </plist>

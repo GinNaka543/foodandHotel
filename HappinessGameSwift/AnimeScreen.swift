@@ -2080,12 +2080,8 @@ struct AnimeArtworkScreen: View {
     }
     
     private func loadArtworks() {
-        let key = "anime_artworks_\(anime.id.uuidString)"
-        if let data = UserDefaultsHelper.shared.getData(forKey: key),
-           let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
-            artworks = decodedArtworks
-            checkPixivArtworks()
-        }
+        artworks = ArtworkStorage.shared.loadAnimeArtworks(for: anime.id.uuidString)
+        checkPixivArtworks()
     }
     
     private func checkPixivArtworks() {
@@ -2141,10 +2137,7 @@ struct AnimeArtworkScreen: View {
     }
     
     private func saveArtworksToUserDefaults() {
-        let key = "anime_artworks_\(anime.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(artworks) {
-            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
-        }
+        ArtworkStorage.shared.saveAnimeArtworks(for: anime.id.uuidString, artworks: artworks)
     }
     
     private func saveAlbumsToUserDefaults() {
@@ -2890,18 +2883,11 @@ struct AnimeVideoScreen: View {
     }
     
     private func loadVideos() {
-        let key = "videos_\(anime.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decodedVideos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
-            videos = decodedVideos
-        }
+        videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
     }
     
     private func saveVideosToUserDefaults() {
-        let key = "videos_\(anime.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(videos) {
-            UserDefaults.standard.set(encodedData, forKey: key)
-        }
+        VideoStorage.shared.saveAnimeVideos(for: anime.id.uuidString, videos: videos)
     }
     
     private func saveVideoAlbumsToUserDefaults() {

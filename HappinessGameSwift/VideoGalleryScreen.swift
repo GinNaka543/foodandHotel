@@ -1416,18 +1416,11 @@ struct VideoGalleryScreen: View {
     }
     
     private func loadVideos() {
-        let key = "videos_\(character.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decodedVideos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
-            videos = decodedVideos
-        }
+        videos = VideoStorage.shared.loadVideos(for: character.id.uuidString)
     }
     
     private func saveVideosToUserDefaults() {
-        let key = "videos_\(character.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(videos) {
-            UserDefaults.standard.set(encodedData, forKey: key)
-        }
+        VideoStorage.shared.saveVideos(for: character.id.uuidString, videos: videos)
     }
     
     private func saveAlbumsToUserDefaults() {

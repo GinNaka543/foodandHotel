@@ -849,6 +849,15 @@ class FirebaseManager: ObservableObject {
             .limit(to: 50)
             .getDocuments { snapshot, error in
                 if let error = error {
+                    // インデックスエラーの場合は詳細なメッセージを表示
+                    let nsError = error as NSError
+                    if nsError.domain == "FIRFirestoreErrorDomain" && nsError.code == 9 {
+                        print("⚠️ Firebase Index Required!")
+                        print("⚠️ Please create an index for this query.")
+                        print("⚠️ Collection: pointTransactions")
+                        print("⚠️ Fields: userId (Ascending), createdAt (Descending)")
+                        print("⚠️ Check the console for a direct link to create the index.")
+                    }
                     completion(.failure(error))
                     return
                 }

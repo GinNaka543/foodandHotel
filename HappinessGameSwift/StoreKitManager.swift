@@ -15,10 +15,10 @@ class StoreKitManager: NSObject, ObservableObject {
     
     // Product IDの定義（App Store Connectで設定したものと一致させる）
     private let productIds = Set([
-        "com.anireco.happiness.game.points.100.v2",
-        "com.anireco.happiness.game.points.500.v2",
-        "com.anireco.happiness.game.points.1000.v2",
-        "com.anireco.happiness.game.points.2000.v2"
+        "com.nakajima.HappinessGameSwift.points.100",
+        "com.nakajima.HappinessGameSwift.points.500",
+        "com.nakajima.HappinessGameSwift.points.1000",
+        "com.nakajima.HappinessGameSwift.points.2000"
     ])
     
     override init() {
@@ -75,11 +75,11 @@ class StoreKitManager: NSObject, ObservableObject {
     
     // MARK: - Product IDからポイント数を抽出
     private func extractPoints(from productId: String) -> Int {
-        // "com.anireco.happiness.game.points.1000.v2" -> 1000
+        // "com.nakajima.HappinessGameSwift.points.1000" -> 1000
         let components = productId.split(separator: ".")
-        // points.1000.v2 の場合、インデックス5が数値
-        if components.count >= 6,
-           let points = Int(components[5]) {
+        // points.1000 の場合、インデックス4が数値
+        if components.count >= 5,
+           let points = Int(components[4]) {
             return points
         }
         return 0

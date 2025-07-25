@@ -277,6 +277,9 @@ struct HappinessGameSwiftApp: App {
     @State private var hasRequestedTracking = UserDefaults.standard.bool(forKey: "hasRequestedTracking")
     
     init() {
+        // Track app launch performance
+        let launchTracker = PerformanceMonitor.shared.startTracking(.appLaunch)
+        
         FirebaseApp.configure()
         
         // Stripe SDKを初期化
@@ -288,6 +291,9 @@ struct HappinessGameSwiftApp: App {
         } else {
             fatalError("STRIPE_PUBLISHABLE_KEY not found in Info.plist")
         }
+        
+        // Initialize app optimizations
+        _ = AppOptimizationManager.shared
         
         // 画像パスの移行処理を実行
         ImageMigrationHelper.shared.migrateAllImagePaths()
@@ -301,15 +307,41 @@ struct HappinessGameSwiftApp: App {
         // Clean up old data
         DataMigrationManager.shared.cleanupOldData()
         
-        // Debug: Check UserDefaults size
+        // Debug: Check UserDefaults size (only in debug mode)
+        #if DEBUG
         print("=== UserDefaults Size Analysis ===")
         print(DataMigrationManager.shared.estimateUserDefaultsSize())
         print("===================================")
+        #endif
         
         // Stripe決済の事前初期化
         preloadStripePayment()
         
-        // Keep-alive service removed - handled by external services
+        // End launch tracking
+        launchTracker.end()
+        
+        // Setup app lifecycle monitoring
+        setupLifecycleMonitoring()
+    }
+    
+    private func setupLifecycleMonitoring() {
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            PerformanceMonitor.shared.trackEvent(.appEnterBackground)
+            // Clean up resources
+            ImageCache.shared.clearMemoryCache()
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            PerformanceMonitor.shared.trackEvent(.appEnterForeground)
+        }
     }
     
     private func preloadStripePayment() {

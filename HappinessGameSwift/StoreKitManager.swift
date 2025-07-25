@@ -24,6 +24,11 @@ class StoreKitManager: NSObject, ObservableObject {
     override init() {
         super.init()
         
+        #if DEBUG
+        print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
+        print("Product IDs: \(productIds)")
+        #endif
+        
         // 支払いキューのオブザーバーとして登録
         paymentQueue.add(self)
         

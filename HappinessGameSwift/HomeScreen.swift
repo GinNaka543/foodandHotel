@@ -1496,6 +1496,7 @@ struct UserProfileScreenTemp: View {
     @State private var showBirthdayPicker = false
     @State private var animeQuote: String = ""
     @State private var showingLogoutConfirmation = false
+    @State private var showingPurchaseHistory = false
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -1652,6 +1653,30 @@ struct UserProfileScreenTemp: View {
                                 .padding(.bottom, 32)
                             }
                             
+                            // 購入履歴セクション
+                            VStack(spacing: 16) {
+                                Divider()
+                                    .padding(.horizontal, 16)
+                                
+                                Button(action: {
+                                    showingPurchaseHistory = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "doc.text")
+                                            .foregroundColor(.purple)
+                                        Text("購入履歴")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.purple)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 12))
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                }
+                            }
+                            
                             // ログアウトボタン
                             VStack(spacing: 16) {
                                 Divider()
@@ -1724,6 +1749,9 @@ struct UserProfileScreenTemp: View {
         }
         .onChange(of: profileManager.currentUser) { oldValue, newValue in
             loadCurrentProfile()
+        }
+        .sheet(isPresented: $showingPurchaseHistory) {
+            PurchaseHistoryView()
         }
         .fullScreenCover(isPresented: $showingLogoutConfirmation) {
             LogoutConfirmationView(

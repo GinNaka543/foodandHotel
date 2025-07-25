@@ -342,6 +342,7 @@ struct SettingsView: View {
     @State private var notificationsEnabled = true
     @State private var autoSaveEnabled = true
     @State private var darkModeEnabled = false
+    @State private var showingPurchaseHistory = false
     
     var body: some View {
         NavigationView {
@@ -358,6 +359,21 @@ struct SettingsView: View {
                 
                 Section("表示") {
                     Toggle("ダークモード", isOn: $darkModeEnabled)
+                }
+                
+                Section("購入情報") {
+                    Button(action: {
+                        showingPurchaseHistory = true
+                    }) {
+                        HStack {
+                            Text("購入履歴")
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                                .font(.caption)
+                        }
+                    }
                 }
                 
                 Section("アプリ情報") {
@@ -378,6 +394,213 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showingPurchaseHistory) {
+            PurchaseHistoryView()
+        }
+    }
+}
+
+// MARK: - Purchase History View
+struct PurchaseHistoryView: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var receiptManager = PurchaseReceiptManager.shared
+    @State private var selectedReceipt: PurchaseReceipt?
+    @State private var showingReceiptDetail = false
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                if receiptManager.receipts.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "doc.text")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        
+                        Text("購入履歴がありません")
+                            .font(.title2)
+                            .fontWeight(.medium)
+                        
+                        Text("ポイントやプランを購入すると\nこちらに履歴が表示されます")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        ForEach(receiptManager.receipts) { receipt in
+                            PurchaseReceiptRow(receipt: receipt) {
+                                selectedReceipt = receipt
+                                showingReceiptDetail = true
+                            }
+                        }
+                    }
+                    .listStyle(InsetGroupedListStyle())
+                }
+            }
+            .navigationTitle("購入履歴")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完了") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showingReceiptDetail) {
+            if let receipt = selectedReceipt {
+                ReceiptDetailView(receipt: receipt)
+            }
+        }
+    }
+}
+
+struct PurchaseReceiptRow: View {
+    let receipt: PurchaseReceipt
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(receipt.description)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text(receipt.formattedDate)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    HStack {
+                        Text(receipt.transactionType.displayName)
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.2))
+                            .cornerRadius(4)
+                        
+                        Text(receipt.status.displayName)
+                            .font(.caption)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.green.opacity(0.2))
+                            .cornerRadius(4)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing) {
+                    Text(receipt.formattedAmount)
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    if receipt.points > 0 {
+                        Text("+\(receipt.points)pt")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Receipt Detail View
+struct ReceiptDetailView: View {
+    let receipt: PurchaseReceipt
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    VStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.green)
+                        
+                        Text("購入明細書")
+                            .font(.title)
+                            .fontWeight(.bold)
+                        
+                        Text("ありがとうございました")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.top)
+                    
+                    // Receipt Details
+                    VStack(spacing: 16) {
+                        ReceiptDetailRow(title: "明細書番号", value: receipt.receiptNumber)
+                        ReceiptDetailRow(title: "購入日時", value: receipt.formattedDate)
+                        ReceiptDetailRow(title: "取引種別", value: receipt.transactionType.displayName)
+                        ReceiptDetailRow(title: "商品名", value: receipt.description)
+                        ReceiptDetailRow(title: "支払方法", value: receipt.paymentMethod.displayName)
+                        ReceiptDetailRow(title: "ステータス", value: receipt.status.displayName)
+                        
+                        Divider()
+                        
+                        ReceiptDetailRow(title: "金額", value: receipt.formattedAmount, isTotal: true)
+                        
+                        if receipt.points > 0 {
+                            ReceiptDetailRow(title: "獲得ポイント", value: "\(receipt.points)ポイント", isHighlight: true)
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    
+                    // Footer
+                    VStack(spacing: 8) {
+                        Text("アニレコ")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                        
+                        Text("この明細書は電子レシートです")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.bottom)
+                }
+                .padding()
+            }
+            .navigationTitle("明細書")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完了") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ReceiptDetailRow: View {
+    let title: String
+    let value: String
+    var isTotal: Bool = false
+    var isHighlight: Bool = false
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(isTotal ? .headline : .body)
+                .fontWeight(isTotal ? .semibold : .regular)
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Text(value)
+                .font(isTotal ? .headline : .body)
+                .fontWeight(isTotal ? .bold : .medium)
+                .foregroundColor(isHighlight ? .green : .primary)
         }
     }
 }

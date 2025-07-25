@@ -97,6 +97,7 @@
 		CC9BB0572E33DBD00088E501 /* VisitPlanDataStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0562E33DBD00088E501 /* VisitPlanDataStorage.swift */; };
 		CC9BB0592E33DBDA0088E501 /* ArtworkStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */; };
 		CC9BB05B2E33DDC20088E501 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB05A2E33DDC20088E501 /* ImageCache.swift */; };
+		CC9BB05D2E33DE3F0088E501 /* OptimizationConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB05C2E33DE3F0088E501 /* OptimizationConfig.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -207,6 +208,7 @@
 		CC9BB0562E33DBD00088E501 /* VisitPlanDataStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisitPlanDataStorage.swift; sourceTree = "<group>"; };
 		CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkStorage.swift; sourceTree = "<group>"; };
 		CC9BB05A2E33DDC20088E501 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
+		CC9BB05C2E33DE3F0088E501 /* OptimizationConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationConfig.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -271,6 +273,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CC9BB05C2E33DE3F0088E501 /* OptimizationConfig.swift */,
 				CC9BB05A2E33DDC20088E501 /* ImageCache.swift */,
 				CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */,
 				CC9BB0562E33DBD00088E501 /* VisitPlanDataStorage.swift */,
@@ -497,6 +500,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC9BB05D2E33DE3F0088E501 /* OptimizationConfig.swift in Sources */,
 				D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */,
 				58B0BEEC55B602A43A48470D /* AddVideoView.swift in Sources */,
 				CC9BB0572E33DBD00088E501 /* VisitPlanDataStorage.swift in Sources */,

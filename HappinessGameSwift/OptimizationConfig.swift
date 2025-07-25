@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
 import UIKit
+import CoreGraphics
+import ImageIO
 
 // MARK: - Optimization Configuration
 struct OptimizationConfig {
@@ -274,16 +276,40 @@ struct SafeImageView: View {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let imagePath = documentsPath.appendingPathComponent(imageName)
         
-        if let image = UIImage.loadOptimized(from: imagePath, maxSize: CGSize(width: 800, height: 800)) {
-            ImageCache.shared.store(image, for: imageName)
-            await MainActor.run {
-                self.loadedImage = image
-                self.isLoading = false
+        // Load image with optimization
+        await Task {
+            var loadedImage: UIImage?
+            
+            // Try to load with CoreGraphics for better memory efficiency
+            if let imageSource = CGImageSourceCreateWithURL(imagePath as CFURL, nil) {
+                let options: [CFString: Any] = [
+                    kCGImageSourceThumbnailMaxPixelSize: 800,
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceShouldCacheImmediately: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true
+                ]
+                
+                if let cgImage = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options as CFDictionary) {
+                    loadedImage = UIImage(cgImage: cgImage)
+                }
             }
-        } else {
-            await MainActor.run {
-                self.isLoading = false
+            
+            // Fallback to standard loading
+            if loadedImage == nil {
+                loadedImage = UIImage(contentsOfFile: imagePath.path)
             }
-        }
+            
+            if let image = loadedImage {
+                ImageCache.shared.store(image, for: imageName)
+                await MainActor.run {
+                    self.loadedImage = image
+                    self.isLoading = false
+                }
+            } else {
+                await MainActor.run {
+                    self.isLoading = false
+                }
+            }
+        }.value
     }
 }

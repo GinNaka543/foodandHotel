@@ -1412,18 +1412,20 @@ struct AboutView: View {
                                                 Spacer()
                                                 HStack {
                                                     VStack(alignment: .leading, spacing: 4) {
-                                                        Text(character.name)
+                                                        Text(isEditingProfile ? editedName : character.name)
                                                             .font(.system(size: 24, weight: .bold))
                                                             .foregroundColor(.white)
                                                         
-                                                        if !character.tag.isEmpty {
-                                                            Text(character.tag)
+                                                        let tagText = isEditingProfile ? editedTag : character.tag
+                                                        if !tagText.isEmpty {
+                                                            Text(tagText)
                                                                 .font(.system(size: 16, weight: .medium))
                                                                 .foregroundColor(.white)
                                                         }
                                                         
-                                                        if !character.voiceActor.isEmpty {
-                                                            Text(character.voiceActor)
+                                                        let voiceActorText = isEditingProfile ? editedVoiceActor : character.voiceActor
+                                                        if !voiceActorText.isEmpty {
+                                                            Text(voiceActorText)
                                                                 .font(.system(size: 14, weight: .regular))
                                                                 .foregroundColor(.white.opacity(0.8))
                                                         }
@@ -1456,18 +1458,20 @@ struct AboutView: View {
                                                 Spacer()
                                                 HStack {
                                                     VStack(alignment: .leading, spacing: 4) {
-                                                        Text(character.name)
+                                                        Text(isEditingProfile ? editedName : character.name)
                                                             .font(.system(size: 24, weight: .bold))
                                                             .foregroundColor(.white)
                                                         
-                                                        if !character.tag.isEmpty {
-                                                            Text(character.tag)
+                                                        let tagText = isEditingProfile ? editedTag : character.tag
+                                                        if !tagText.isEmpty {
+                                                            Text(tagText)
                                                                 .font(.system(size: 16, weight: .medium))
                                                                 .foregroundColor(.white)
                                                         }
                                                         
-                                                        if !character.voiceActor.isEmpty {
-                                                            Text(character.voiceActor)
+                                                        let voiceActorText = isEditingProfile ? editedVoiceActor : character.voiceActor
+                                                        if !voiceActorText.isEmpty {
+                                                            Text(voiceActorText)
                                                                 .font(.system(size: 14, weight: .regular))
                                                                 .foregroundColor(.white.opacity(0.8))
                                                         }

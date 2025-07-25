@@ -6,7 +6,7 @@ class DataMigrationManager {
     
     private init() {}
     
-    private let migrationCompleteKey = "DataMigrationCompleted_v2" // Incremented version to force re-migration
+    private let migrationCompleteKey = "DataMigrationCompleted_v3" // Force re-migration to clean up large soundtracks
     
     // Call this on app launch
     func performMigrationIfNeeded() {

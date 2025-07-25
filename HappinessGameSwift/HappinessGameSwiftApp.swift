@@ -304,6 +304,9 @@ struct HappinessGameSwiftApp: App {
         // Initialize app optimizations
         _ = AppOptimizationManager.shared
         
+        // Emergency cleanup for large data
+        EmergencyCleanup.performEmergencyCleanup()
+        
         // First, enforce UserDefaults size limit to prevent crashes
         DataMigrationManager.shared.enforceUserDefaultsSizeLimit()
         

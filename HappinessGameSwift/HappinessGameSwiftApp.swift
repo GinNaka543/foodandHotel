@@ -121,14 +121,14 @@ class AuthenticationManager: ObservableObject {
     }
     
     func logout() {
-        // 現在のユーザーのローカルデータをクリア
-        UserDefaultsHelper.shared.clearCurrentUserData()
-        
-        // ユーザー認証情報を削除
+        // ユーザー認証情報を削除（データは保持）
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "username")
         UserDefaults.standard.removeObject(forKey: "isLoggedIn")
         isLoggedIn = false
+        
+        // 注意: ユーザーのデータ（キャラクター、アニメ等）は削除しない
+        // 再ログイン時に同じユーザーIDでログインすれば、データは自動的に復元される
     }
     
     func completePayment() {
@@ -144,7 +144,7 @@ class AuthenticationManager: ObservableObject {
         db.collection("device_subscriptions").document(deviceId).updateData([
             "hasPaid": true,
             "paymentDate": Date().timeIntervalSince1970,
-            "amount": 500,
+            "amount": 600,
             "lastSeenAt": Date().timeIntervalSince1970
         ]) { _ in
             // Successfully updated device subscription
@@ -381,7 +381,7 @@ struct HappinessGameSwiftApp: App {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             
             let body: [String: Any] = [
-                "amount": 500,
+                "amount": 600,
                 "userId": userId,
                 "pointAmount": 500,
                 "type": "app_subscription"
@@ -1020,7 +1020,7 @@ struct PaymentPopupView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                         
-                        Text("引き続きアプリをご利用いただくには\n500円（500ポイント）が必要です")
+                        Text("引き続きアプリをご利用いただくには\n600円（600ポイント）が必要です")
                             .font(.body)
                             .multilineTextAlignment(.center)
                             .foregroundColor(.white.opacity(0.9))

@@ -112,7 +112,7 @@ struct PricingPage: View {
                 HStack {
                     Image(systemName: "calendar.badge.clock")
                         .foregroundColor(.yellow)
-                    Text("2ヶ月後から500円")
+                    Text("2ヶ月後から600円")
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -131,7 +131,7 @@ struct PricingPage: View {
                     .multilineTextAlignment(.center)
                     .foregroundColor(.white.opacity(0.9))
                 
-                Text("2ヶ月経過後、継続利用には500円が必要となります。")
+                Text("2ヶ月経過後、継続利用には600円が必要となります。")
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.white.opacity(0.9))

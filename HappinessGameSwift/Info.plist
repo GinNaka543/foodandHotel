@@ -81,5 +81,7 @@
 	<array>
 		<string>com.happinessgame.keepalive</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

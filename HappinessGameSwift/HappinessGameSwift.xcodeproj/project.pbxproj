@@ -101,6 +101,7 @@
 		CC9BB05F2E33E04B0088E501 /* EmergencyCleanup.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB05E2E33E04B0088E501 /* EmergencyCleanup.swift */; };
 		CC9BB0682E33E5030088E501 /* MemoryPressureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */; };
 		CC9BB06A2E33E8370088E501 /* ImageOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0692E33E8370088E501 /* ImageOptimizer.swift */; };
+		CC9BB07C2E3414670088E501 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB07B2E3414670088E501 /* StoreKitManager.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -215,6 +216,7 @@
 		CC9BB05E2E33E04B0088E501 /* EmergencyCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyCleanup.swift; sourceTree = "<group>"; };
 		CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPressureManager.swift; sourceTree = "<group>"; };
 		CC9BB0692E33E8370088E501 /* ImageOptimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageOptimizer.swift; sourceTree = "<group>"; };
+		CC9BB07B2E3414670088E501 /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -279,6 +281,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CC9BB07B2E3414670088E501 /* StoreKitManager.swift */,
 				CC9BB0692E33E8370088E501 /* ImageOptimizer.swift */,
 				CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */,
 				CC9BB05E2E33E04B0088E501 /* EmergencyCleanup.swift */,
@@ -518,6 +521,7 @@
 				CC20AAB52E26E68D005F4C2A /* CharacterListScreen.swift in Sources */,
 				CC9BB04D2E33DB390088E501 /* SoundtrackStorage.swift in Sources */,
 				CC20AAB62E26E68D005F4C2A /* CharacterRankingScrollView.swift in Sources */,
+				CC9BB07C2E3414670088E501 /* StoreKitManager.swift in Sources */,
 				CC9BB04F2E33DB6D0088E501 /* VideoStorage.swift in Sources */,
 				CC20AAB72E26E68D005F4C2A /* CustomRankingModels.swift in Sources */,
 				CC1BB37F2E279DBD006EE695 /* TermsOfServiceView.swift in Sources */,

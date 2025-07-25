@@ -1,26 +1,16 @@
 import SwiftUI
+import StoreKit
 
 struct PointPurchaseView: View {
     @Environment(\.dismiss) var dismiss
-    @StateObject private var stripeManager = StripePaymentManager.shared
+    @StateObject private var storeKitManager = StoreKitManager.shared
     @StateObject private var firebaseManager = FirebaseManager.shared
-    @State private var selectedPackage: PointPackage?
+    @State private var selectedProduct: SKProduct?
     @State private var isPurchasing = false
     @State private var showingSuccess = false
     @State private var errorMessage = ""
-    @State private var shouldDismissBeforePayment = false
-    @State private var showCustomAmount = false
-    @State private var customAmount = ""
     
     let onPurchaseComplete: () -> Void
-    
-    let pointPackages = [
-        PointPackage(points: 1000, price: 1000, isPopular: false),
-        PointPackage(points: 3000, price: 3000, isPopular: false),
-        PointPackage(points: 5000, price: 5000, isPopular: true),
-        PointPackage(points: 10000, price: 10000, isPopular: false),
-        PointPackage(points: 20000, price: 20000, isPopular: false)
-    ]
     
     var body: some View {
         NavigationView {
@@ -39,117 +29,79 @@ struct PointPurchaseView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
                 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // 説明
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("ポイントパッケージを選択")
-                                .font(.system(size: 18, weight: .semibold))
-                            
-                            Text("1円 = 1ポイントでお得にポイントを購入できます。\nポイントはプランの公開や購入に使用できます。")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                if storeKitManager.isLoading {
+                    Spacer()
+                    ProgressView("商品を読み込み中...")
+                        .padding()
+                    Spacer()
+                } else if storeKitManager.products.isEmpty {
+                    Spacer()
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.circle")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        Text("商品を読み込めませんでした")
+                            .font(.title3)
+                            .foregroundColor(.gray)
+                        Button("再読み込み") {
+                            storeKitManager.loadProducts()
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        // ポイントパッケージ
-                        LazyVStack(spacing: 12) {
-                            // カスタム金額入力
-                            Button(action: {
-                                showCustomAmount.toggle()
-                                if showCustomAmount {
-                                    selectedPackage = nil
-                                }
-                            }) {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("カスタム金額")
-                                            .font(.system(size: 20, weight: .bold))
-                                            .foregroundColor(.primary)
-                                        
-                                        if showCustomAmount {
-                                            VStack(alignment: .leading, spacing: 8) {
-                                                TextField("金額を入力 (円)", text: $customAmount)
-                                                    .keyboardType(.numberPad)
-                                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                                    .onChange(of: customAmount) { oldValue, newValue in
-                                                        if let amount = Int(newValue), amount >= 59 {
-                                                            selectedPackage = PointPackage(points: amount, price: amount, isPopular: false)
-                                                        } else {
-                                                            selectedPackage = nil
-                                                        }
-                                                    }
-                                                
-                                                Text("※ 最低金額は59円です")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.gray)
-                                            }
-                                        } else {
-                                            Text("お好きな金額を入力できます（最低59円）")
-                                                .font(.system(size: 16))
-                                                .foregroundColor(.gray)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                    
-                                    Image(systemName: showCustomAmount ? "checkmark.circle.fill" : "circle")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(showCustomAmount ? .purple : .gray)
-                                }
-                                .padding(16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color(.systemBackground))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12)
-                                                .stroke(
-                                                    showCustomAmount ? Color.purple : Color.gray.opacity(0.3),
-                                                    lineWidth: showCustomAmount ? 2 : 1
-                                                )
-                                        )
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            ForEach(pointPackages, id: \.points) { package in
-                                PointPackageCard(
-                                    package: package,
-                                    isSelected: selectedPackage?.points == package.points && !showCustomAmount,
-                                    onSelect: { 
-                                        selectedPackage = package
-                                        showCustomAmount = false
-                                        customAmount = ""
-                                    }
-                                )
-                            }
-                        }
-                        
-                        // エラーメッセージ
-                        if !errorMessage.isEmpty {
-                            Text(errorMessage)
-                                .foregroundColor(.red)
-                                .font(.system(size: 14))
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .padding()
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.red.opacity(0.1))
-                                .cornerRadius(8)
-                        }
+                        .foregroundColor(.blue)
                     }
-                    .padding(20)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            // 説明
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("ポイントパッケージを選択")
+                                    .font(.system(size: 18, weight: .semibold))
+                                
+                                Text("ポイントはプランの公開や購入に使用できます。")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            // ポイントパッケージ（StoreKitの商品を表示）
+                            LazyVStack(spacing: 12) {
+                                ForEach(storeKitManager.products, id: \.productIdentifier) { product in
+                                    StoreKitProductCard(
+                                        product: product,
+                                        isSelected: selectedProduct?.productIdentifier == product.productIdentifier,
+                                        onSelect: { 
+                                            selectedProduct = product
+                                        }
+                                    )
+                                }
+                            }
+                            
+                            // エラーメッセージ
+                            if !errorMessage.isEmpty {
+                                Text(errorMessage)
+                                    .foregroundColor(.red)
+                                    .font(.system(size: 14))
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .padding()
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.red.opacity(0.1))
+                                    .cornerRadius(8)
+                            }
+                        }
+                        .padding(20)
+                    }
                 }
                 
                 // 購入ボタン
                 VStack(spacing: 16) {
-                    if let package = selectedPackage {
+                    if let product = selectedProduct {
                         HStack {
-                            Text("合計: ¥\(package.price)")
+                            Text("合計:")
                                 .font(.system(size: 18, weight: .semibold))
                             Spacer()
-                            Text("\(package.points)ポイント")
-                                .font(.system(size: 16))
+                            Text(localizedPrice(for: product))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.purple)
                         }
                         .padding(.horizontal, 20)
@@ -169,12 +121,12 @@ struct PointPurchaseView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(
-                            selectedPackage != nil && !isPurchasing ? 
+                            selectedProduct != nil && !isPurchasing ? 
                             Color.purple : Color.gray
                         )
                         .cornerRadius(12)
                     }
-                    .disabled(selectedPackage == nil || isPurchasing)
+                    .disabled(selectedProduct == nil || isPurchasing)
                     .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 20)
@@ -182,8 +134,9 @@ struct PointPurchaseView: View {
             .background(Color(.systemGroupedBackground))
         }
         .onAppear {
-            // バックエンドサービスを事前に起動（Render.comのコールドスタート対策）
-            prewarmBackendService()
+            if storeKitManager.products.isEmpty {
+                storeKitManager.loadProducts()
+            }
         }
         .alert("購入完了", isPresented: $showingSuccess) {
             Button("OK") {
@@ -191,101 +144,94 @@ struct PointPurchaseView: View {
                 onPurchaseComplete()
             }
         } message: {
-            if let package = selectedPackage {
-                Text("\(package.points)ポイントを購入しました！")
+            if let product = selectedProduct {
+                Text("\(extractPoints(from: product.productIdentifier))ポイントを購入しました！")
             }
         }
     }
     
+    private func extractPoints(from productId: String) -> Int {
+        // "com.anireco.happiness.game.points.1000" -> 1000
+        let components = productId.split(separator: ".")
+        // points.1000 の場合、インデックス5が数値
+        if components.count >= 6,
+           let points = Int(components[5]) {
+            return points
+        }
+        return 0
+    }
+    
+    private func localizedPrice(for product: SKProduct) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = product.priceLocale
+        return formatter.string(from: product.price) ?? "\(product.price)"
+    }
+    
     private func purchasePoints() {
-        guard let package = selectedPackage else { return }
+        guard let product = selectedProduct else { return }
         
         isPurchasing = true
         errorMessage = ""
         
-        guard let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty else {
-            errorMessage = "ユーザーIDが見つかりません。再度ログインしてください。"
-            isPurchasing = false
-            return
-        }
-        
-        // タイムアウトタイマーを設定（5秒）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            if self.isPurchasing {
-                self.isPurchasing = false
-                self.errorMessage = "サーバーへの接続に時間がかかっています。\n\n原因：\n• サーバーが起動中の可能性があります\n• ネットワーク接続が不安定です\n\n対処法：\nアプリを完全に終了して再起動してください。"
-            }
-        }
-        
-        // Stripe決済処理
-        stripeManager.purchasePoints(userId: userId, package: package) { result in
+        storeKitManager.purchase(product) { result in
             DispatchQueue.main.async {
+                isPurchasing = false
+                
                 switch result {
                 case .success:
-                    // ポイントをFirebaseに追加
-                    firebaseManager.addPointsToUser(userId: userId, points: package.points, description: "\(package.points)ポイント購入") { pointResult in
-                        DispatchQueue.main.async {
-                            isPurchasing = false
-                            switch pointResult {
-                            case .success:
-                                // 購入明細書を保存
-                                let receipt = PurchaseReceipt(
-                                    transactionType: .pointPurchase,
-                                    amount: package.price,
-                                    points: package.points,
-                                    paymentMethod: .creditCard,
-                                    description: "\(package.points)ポイント購入"
-                                )
-                                PurchaseReceiptManager.shared.addReceipt(receipt)
-                                
-                                showingSuccess = true
-                            case .failure(let error):
-                                errorMessage = "ポイントの追加に失敗しました: \(error.localizedDescription)"
-                            }
-                        }
-                    }
+                    showingSuccess = true
                 case .failure(let error):
-                    isPurchasing = false
-                    // キャンセルの場合はエラーメッセージを表示しない
-                    if (error as NSError).code != 1004 {
-                        errorMessage = "決済に失敗しました: \(error.localizedDescription)"
+                    if let storeError = error as? StoreError,
+                       storeError == .userCancelled {
+                        // キャンセルの場合はエラーメッセージを表示しない
+                        return
                     }
+                    errorMessage = error.localizedDescription
                 }
             }
         }
     }
-    
-    private func prewarmBackendService() {
-        // Send a health check request to warm up the backend service
-        guard let url = URL(string: "https://happiness-game.onrender.com/api/health") else { return }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 10
-        
-        URLSession.shared.dataTask(with: request) { _, _, _ in
-            #if DEBUG
-            print("Backend service warmed up")
-            #endif
-        }.resume()
-    }
 }
 
-struct PointPackageCard: View {
-    let package: PointPackage
+// MARK: - StoreKit商品カード
+struct StoreKitProductCard: View {
+    let product: SKProduct
     let isSelected: Bool
     let onSelect: () -> Void
+    
+    private var points: Int {
+        // "com.anireco.happiness.game.points.1000" -> 1000
+        let components = product.productIdentifier.split(separator: ".")
+        // points.1000 の場合、インデックス5が数値
+        if components.count >= 6,
+           let points = Int(components[5]) {
+            return points
+        }
+        return 0
+    }
+    
+    private var isPopular: Bool {
+        points == 1000
+    }
+    
+    private var localizedPrice: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = product.priceLocale
+        return formatter.string(from: product.price) ?? "\(product.price)"
+    }
     
     var body: some View {
         Button(action: onSelect) {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("\(package.points)ポイント")
+                        Text("\(points)ポイント")
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.primary)
                         
-                        if package.isPopular {
+                        if isPopular {
                             Text("人気")
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.white)
@@ -298,13 +244,15 @@ struct PointPackageCard: View {
                         Spacer()
                     }
                     
-                    Text("¥\(package.price)")
+                    Text(localizedPrice)
                         .font(.system(size: 16))
                         .foregroundColor(.gray)
                     
-                    Text("1ポイント = ¥\(String(format: "%.0f", package.pricePerPoint))")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                    if let pricePerPoint = calculatePricePerPoint() {
+                        Text("1ポイント = \(pricePerPoint)")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
                 }
                 
                 Spacer()
@@ -327,6 +275,20 @@ struct PointPackageCard: View {
             )
         }
         .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func calculatePricePerPoint() -> String? {
+        guard points > 0 else { return nil }
+        
+        let pricePerPoint = product.price.doubleValue / Double(points)
+        
+        // 価格フォーマッター
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = product.priceLocale
+        formatter.maximumFractionDigits = 0
+        
+        return formatter.string(from: NSNumber(value: pricePerPoint))
     }
 }
 

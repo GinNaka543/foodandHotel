@@ -68,18 +68,24 @@ struct PointPurchaseView: View {
                                             .foregroundColor(.primary)
                                         
                                         if showCustomAmount {
-                                            TextField("金額を入力 (円)", text: $customAmount)
-                                                .keyboardType(.numberPad)
-                                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                                .onChange(of: customAmount) { oldValue, newValue in
-                                                    if let amount = Int(newValue), amount > 0 {
-                                                        selectedPackage = PointPackage(points: amount, price: amount, isPopular: false)
-                                                    } else {
-                                                        selectedPackage = nil
+                                            VStack(alignment: .leading, spacing: 8) {
+                                                TextField("金額を入力 (円)", text: $customAmount)
+                                                    .keyboardType(.numberPad)
+                                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                                    .onChange(of: customAmount) { oldValue, newValue in
+                                                        if let amount = Int(newValue), amount >= 59 {
+                                                            selectedPackage = PointPackage(points: amount, price: amount, isPopular: false)
+                                                        } else {
+                                                            selectedPackage = nil
+                                                        }
                                                     }
-                                                }
+                                                
+                                                Text("※ 最低金額は59円です")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            }
                                         } else {
-                                            Text("お好きな金額を入力できます")
+                                            Text("お好きな金額を入力できます（最低59円）")
                                                 .font(.system(size: 16))
                                                 .foregroundColor(.gray)
                                         }

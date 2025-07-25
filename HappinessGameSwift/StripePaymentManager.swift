@@ -215,7 +215,8 @@ class StripePaymentManager: NSObject, ObservableObject {
             "amount": package.price,
             "userId": userId,
             "pointAmount": package.points,
-            "type": "point_purchase"
+            "type": "point_purchase",
+            "statement_descriptor": "アニレコポイント購入"
         ]
         
         do {

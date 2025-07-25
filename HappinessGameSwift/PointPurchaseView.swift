@@ -124,7 +124,10 @@ struct PointPurchaseView: View {
                             Text(errorMessage)
                                 .foregroundColor(.red)
                                 .font(.system(size: 14))
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
                                 .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color.red.opacity(0.1))
                                 .cornerRadius(8)
                         }
@@ -200,11 +203,11 @@ struct PointPurchaseView: View {
             return
         }
         
-        // タイムアウトタイマーを設定（45秒）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 45) {
+        // タイムアウトタイマーを設定（5秒）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             if self.isPurchasing {
                 self.isPurchasing = false
-                self.errorMessage = "処理がタイムアウトしました。もう一度お試しください。"
+                self.errorMessage = "サーバーへの接続に時間がかかっています。\n\n原因：\n• サーバーが起動中の可能性があります\n• ネットワーク接続が不安定です\n\n対処法：\nアプリを完全に終了して再起動してください。"
             }
         }
         

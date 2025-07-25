@@ -277,19 +277,18 @@ struct HappinessGameSwiftApp: App {
     @State private var hasRequestedTracking = UserDefaults.standard.bool(forKey: "hasRequestedTracking")
     
     init() {
+        // Initialize memory pressure monitoring
+        _ = MemoryPressureManager.shared
+        
         // Track app launch performance
         let launchTracker = PerformanceMonitor.shared.startTracking(.appLaunch)
         
-        // Configure Firebase with error handling
-        do {
-            FirebaseApp.configure()
-            #if DEBUG
-            print("Firebase configured successfully")
-            print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")")
-            #endif
-        } catch {
-            print("Firebase configuration error: \(error)")
-        }
+        // Configure Firebase
+        FirebaseApp.configure()
+        #if DEBUG
+        print("Firebase configured successfully")
+        print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")")
+        #endif
         
         // Stripe SDKを初期化
         // Read Stripe publishable key from Info.plist

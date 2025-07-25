@@ -9,14 +9,14 @@ final class ImageCache {
     private let diskCacheURL: URL
     private let ioQueue = DispatchQueue(label: "com.happinessgame.imagecache", attributes: .concurrent)
     
-    // Cache size limits
-    private let maxMemoryCost = 50 * 1024 * 1024 // 50MB
-    private let maxDiskSize = 200 * 1024 * 1024 // 200MB
+    // Cache size limits - Further reduced for better memory management
+    private let maxMemoryCost = 10 * 1024 * 1024 // 10MB
+    private let maxDiskSize = 50 * 1024 * 1024 // 50MB
     
     private init() {
         // Configure memory cache
         memoryCache.totalCostLimit = maxMemoryCost
-        memoryCache.countLimit = 100 // Max 100 images in memory
+        memoryCache.countLimit = 30 // Max 30 images in memory
         
         // Setup disk cache directory
         let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
@@ -99,12 +99,20 @@ final class ImageCache {
         try? FileManager.default.createDirectory(at: diskCacheURL, withIntermediateDirectories: true)
     }
     
+    func reduceMemoryLimit(to bytes: Int) {
+        memoryCache.totalCostLimit = bytes
+    }
+    
+    func reduceCountLimit(to count: Int) {
+        memoryCache.countLimit = count
+    }
+    
     // MARK: - Private Methods
     
     private func compressImage(_ image: UIImage) -> Data? {
         // Calculate optimal compression based on image size
-        let maxDimension: CGFloat = 1920 // Max width/height
-        let compressionQuality: CGFloat = 0.8
+        let maxDimension: CGFloat = 1280 // Max width/height - reduced from 1920
+        let compressionQuality: CGFloat = 0.6 // Reduced from 0.8
         
         var resizedImage = image
         

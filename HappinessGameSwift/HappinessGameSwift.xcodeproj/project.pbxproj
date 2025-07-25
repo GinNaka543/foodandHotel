@@ -98,6 +98,8 @@
 		CC9BB0592E33DBDA0088E501 /* ArtworkStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */; };
 		CC9BB05B2E33DDC20088E501 /* ImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB05A2E33DDC20088E501 /* ImageCache.swift */; };
 		CC9BB05D2E33DE3F0088E501 /* OptimizationConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB05C2E33DE3F0088E501 /* OptimizationConfig.swift */; };
+		CC9BB05F2E33E04B0088E501 /* EmergencyCleanup.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB05E2E33E04B0088E501 /* EmergencyCleanup.swift */; };
+		CC9BB0682E33E5030088E501 /* MemoryPressureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -209,6 +211,8 @@
 		CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkStorage.swift; sourceTree = "<group>"; };
 		CC9BB05A2E33DDC20088E501 /* ImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCache.swift; sourceTree = "<group>"; };
 		CC9BB05C2E33DE3F0088E501 /* OptimizationConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptimizationConfig.swift; sourceTree = "<group>"; };
+		CC9BB05E2E33E04B0088E501 /* EmergencyCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmergencyCleanup.swift; sourceTree = "<group>"; };
+		CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPressureManager.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -273,6 +277,8 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */,
+				CC9BB05E2E33E04B0088E501 /* EmergencyCleanup.swift */,
 				CC9BB05C2E33DE3F0088E501 /* OptimizationConfig.swift */,
 				CC9BB05A2E33DDC20088E501 /* ImageCache.swift */,
 				CC9BB0582E33DBDA0088E501 /* ArtworkStorage.swift */,
@@ -543,6 +549,7 @@
 				CC20AAE72E26E6B0005F4C2A /* LoginView.swift in Sources */,
 				A1B2C3D4E5F67890A1B2C3D4 /* FirstLaunchView.swift in Sources */,
 				B2C3D4E5F6789012B2C3D4E5 /* TrackingPermissionView.swift in Sources */,
+				CC9BB0682E33E5030088E501 /* MemoryPressureManager.swift in Sources */,
 				C3D4E5F678901234C3D4E5F6 /* PrivacyPolicyView.swift in Sources */,
 				CC20AAE82E26E6B0005F4C2A /* PointsView.swift in Sources */,
 				CC20AAE92E26E6B0005F4C2A /* ProductAdView.swift in Sources */,
@@ -576,6 +583,7 @@
 				CC9BB04B2E33CB610088E501 /* KeepAliveManager.swift in Sources */,
 				CC20AACB2E26E6A0005F4C2A /* ImageExtractor.swift in Sources */,
 				CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */,
+				CC9BB05F2E33E04B0088E501 /* EmergencyCleanup.swift in Sources */,
 				CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */,
 				CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */,
 				CC1BB3882E28571B006EE695 /* AnimeOrderModal.swift in Sources */,

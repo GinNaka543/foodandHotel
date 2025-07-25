@@ -844,6 +844,15 @@ public struct VisitScreen: View {
         firebaseManager.usePoints(userId: userId, points: plan.price, reason: "プラン購入: \(plan.title)") { result in
             switch result {
             case .success:
+                // 購入明細書を保存
+                let receipt = PurchaseReceipt(
+                    transactionType: .planPurchase,
+                    amount: plan.price,
+                    points: 0,
+                    paymentMethod: .points,
+                    description: "旅行プラン: \(plan.title)"
+                )
+                PurchaseReceiptManager.shared.addReceipt(receipt)
                 
                 // Firebase に購入記録を保存
                 let purchase = PlanPurchase(

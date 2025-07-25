@@ -228,6 +228,16 @@ struct PointPurchaseView: View {
                             isPurchasing = false
                             switch pointResult {
                             case .success:
+                                // 購入明細書を保存
+                                let receipt = PurchaseReceipt(
+                                    transactionType: .pointPurchase,
+                                    amount: package.price,
+                                    points: package.points,
+                                    paymentMethod: .creditCard,
+                                    description: "\(package.points)ポイント購入"
+                                )
+                                PurchaseReceiptManager.shared.addReceipt(receipt)
+                                
                                 showingSuccess = true
                             case .failure(let error):
                                 errorMessage = "ポイントの追加に失敗しました: \(error.localizedDescription)"

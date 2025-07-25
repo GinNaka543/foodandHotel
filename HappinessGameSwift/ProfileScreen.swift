@@ -7,6 +7,7 @@ struct ProfileScreen: View {
     @State private var totalVideos = 0
     @State private var showingSettings = false
     @State private var showingLogoutConfirmation = false
+    @State private var showingPurchaseHistory = false
     @EnvironmentObject var authManager: AuthenticationManager
     
     var body: some View {
@@ -52,6 +53,22 @@ struct ProfileScreen: View {
                     .cornerRadius(12)
                     .shadow(radius: 2)
                     
+                    // 購入履歴ボタン
+                    Button(action: {
+                        showingPurchaseHistory = true
+                    }) {
+                        HStack {
+                            Image(systemName: "doc.text")
+                            Text("購入履歴")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.purple)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.purple.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    
                     // ログアウトボタン
                     Button(action: {
                         showingLogoutConfirmation = true
@@ -71,6 +88,9 @@ struct ProfileScreen: View {
             .navigationTitle("プロフィール")
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showingPurchaseHistory) {
+                PurchaseHistoryView()
             }
         }
         .fullScreenCover(isPresented: $showingLogoutConfirmation) {

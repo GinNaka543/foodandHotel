@@ -50,7 +50,9 @@ struct PremiumUpgradeView: View {
                     }) {
                         Text(localizedPrice(for: product))
                             .font(.system(size: 36, weight: .bold))
-                        selectedProduct = product
+                            .onAppear {
+                                selectedProduct = product
+                            }
                     } else {
                         Text("¥600")
                             .font(.system(size: 36, weight: .bold))

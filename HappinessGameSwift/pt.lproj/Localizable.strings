@@ -1,0 +1,62 @@
+/* Portuguese */
+
+/* Common */
+"app_name" = "AniReco";
+"done" = "Concluído";
+"cancel" = "Cancelar";
+"save" = "Salvar";
+"delete" = "Excluir";
+"edit" = "Editar";
+"close" = "Fechar";
+"loading" = "Carregando...";
+"error" = "Erro";
+"success" = "Sucesso";
+"retry" = "Tentar novamente";
+
+/* Language */
+"language_title" = "Idioma";
+
+/* Tab Bar */
+"home" = "Início";
+"memory" = "Memória";
+"ranking" = "Ranking";
+"visit" = "Visitar";
+
+/* Terms and Privacy */
+"terms_of_service" = "Termos de serviço";
+"privacy_policy" = "Política de privacidade";
+
+/* Premium */
+"premium_upgrade_title" = "Atualizar para Premium";
+"free_trial_ended" = "O período de teste terminou";
+"premium_features_unlimited" = "Registro ilimitado de anime";
+"premium_features_all_access" = "Acesso a todos os recursos";
+"premium_features_updates" = "Atualizações regulares";
+"premium_features_support" = "Apoiar o desenvolvedor";
+"permanent_license" = "Licença permanente";
+"purchase" = "Comprar";
+"later" = "Mais tarde";
+
+/* Points */
+"points" = "Pontos";
+"point_purchase" = "Comprar pontos";
+"purchase_points_description" = "Os pontos podem ser usados para publicar e comprar planos.";
+"processing" = "Processando...";
+"purchase_complete" = "Compra concluída";
+"points_purchased" = "%d pontos comprados!";
+
+/* Profile */
+"profile_edit" = "Editar perfil";
+"purchase_history" = "Histórico de compras";
+"receipt_details" = "Detalhes do recibo";
+"transaction_type" = "Tipo de transação";
+"payment_method" = "Método de pagamento";
+"amount" = "Valor";
+"status" = "Status";
+"date" = "Data";
+"receipt_number" = "Número do recibo";
+
+/* Errors */
+"error_product_not_found" = "Produto não encontrado";
+"error_purchase_failed" = "Falha na compra";
+"error_network" = "Erro de rede";

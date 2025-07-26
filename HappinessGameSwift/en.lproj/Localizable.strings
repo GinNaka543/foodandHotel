@@ -1,0 +1,62 @@
+/* English */
+
+/* Common */
+"app_name" = "AniReco";
+"done" = "Done";
+"cancel" = "Cancel";
+"save" = "Save";
+"delete" = "Delete";
+"edit" = "Edit";
+"close" = "Close";
+"loading" = "Loading...";
+"error" = "Error";
+"success" = "Success";
+"retry" = "Retry";
+
+/* Language */
+"language_title" = "Language";
+
+/* Tab Bar */
+"home" = "Home";
+"memory" = "Memory";
+"ranking" = "Ranking";
+"visit" = "Visit";
+
+/* Terms and Privacy */
+"terms_of_service" = "Terms of Service";
+"privacy_policy" = "Privacy Policy";
+
+/* Premium */
+"premium_upgrade_title" = "Upgrade to Premium";
+"free_trial_ended" = "Free trial has ended";
+"premium_features_unlimited" = "Unlimited anime registration";
+"premium_features_all_access" = "Access to all features";
+"premium_features_updates" = "Regular updates";
+"premium_features_support" = "Support the developer";
+"permanent_license" = "Permanent License";
+"purchase" = "Purchase";
+"later" = "Later";
+
+/* Points */
+"points" = "Points";
+"point_purchase" = "Purchase Points";
+"purchase_points_description" = "Points can be used to publish and purchase plans.";
+"processing" = "Processing...";
+"purchase_complete" = "Purchase Complete";
+"points_purchased" = "Purchased %d points!";
+
+/* Profile */
+"profile_edit" = "Edit Profile";
+"purchase_history" = "Purchase History";
+"receipt_details" = "Receipt Details";
+"transaction_type" = "Transaction Type";
+"payment_method" = "Payment Method";
+"amount" = "Amount";
+"status" = "Status";
+"date" = "Date";
+"receipt_number" = "Receipt Number";
+
+/* Errors */
+"error_product_not_found" = "Product not found";
+"error_purchase_failed" = "Purchase failed";
+"error_network" = "Network error";

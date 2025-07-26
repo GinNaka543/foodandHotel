@@ -1,0 +1,62 @@
+/* Italian */
+
+/* Common */
+"app_name" = "AniReco";
+"done" = "Fatto";
+"cancel" = "Annulla";
+"save" = "Salva";
+"delete" = "Elimina";
+"edit" = "Modifica";
+"close" = "Chiudi";
+"loading" = "Caricamento...";
+"error" = "Errore";
+"success" = "Successo";
+"retry" = "Riprova";
+
+/* Language */
+"language_title" = "Lingua";
+
+/* Tab Bar */
+"home" = "Home";
+"memory" = "Memoria";
+"ranking" = "Classifica";
+"visit" = "Visita";
+
+/* Terms and Privacy */
+"terms_of_service" = "Termini di servizio";
+"privacy_policy" = "Informativa sulla privacy";
+
+/* Premium */
+"premium_upgrade_title" = "Passa a Premium";
+"free_trial_ended" = "Il periodo di prova è terminato";
+"premium_features_unlimited" = "Registrazione anime illimitata";
+"premium_features_all_access" = "Accesso a tutte le funzioni";
+"premium_features_updates" = "Aggiornamenti regolari";
+"premium_features_support" = "Supporta lo sviluppatore";
+"permanent_license" = "Licenza permanente";
+"purchase" = "Acquista";
+"later" = "Più tardi";
+
+/* Points */
+"points" = "Punti";
+"point_purchase" = "Acquista punti";
+"purchase_points_description" = "I punti possono essere utilizzati per pubblicare e acquistare piani.";
+"processing" = "Elaborazione...";
+"purchase_complete" = "Acquisto completato";
+"points_purchased" = "Acquistati %d punti!";
+
+/* Profile */
+"profile_edit" = "Modifica profilo";
+"purchase_history" = "Cronologia acquisti";
+"receipt_details" = "Dettagli ricevuta";
+"transaction_type" = "Tipo di transazione";
+"payment_method" = "Metodo di pagamento";
+"amount" = "Importo";
+"status" = "Stato";
+"date" = "Data";
+"receipt_number" = "Numero ricevuta";
+
+/* Errors */
+"error_product_not_found" = "Prodotto non trovato";
+"error_purchase_failed" = "Acquisto fallito";
+"error_network" = "Errore di rete";

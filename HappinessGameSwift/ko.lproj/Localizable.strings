@@ -1,0 +1,62 @@
+/* Korean */
+
+/* Common */
+"app_name" = "애니레코";
+"done" = "완료";
+"cancel" = "취소";
+"save" = "저장";
+"delete" = "삭제";
+"edit" = "편집";
+"close" = "닫기";
+"loading" = "로딩 중...";
+"error" = "오류";
+"success" = "성공";
+"retry" = "재시도";
+
+/* Language */
+"language_title" = "언어";
+
+/* Tab Bar */
+"home" = "홈";
+"memory" = "메모리";
+"ranking" = "랭킹";
+"visit" = "방문";
+
+/* Terms and Privacy */
+"terms_of_service" = "이용약관";
+"privacy_policy" = "개인정보 처리방침";
+
+/* Premium */
+"premium_upgrade_title" = "프리미엄 업그레이드";
+"free_trial_ended" = "무료 체험이 종료되었습니다";
+"premium_features_unlimited" = "무제한 애니메이션 등록";
+"premium_features_all_access" = "모든 기능 이용";
+"premium_features_updates" = "정기 업데이트";
+"premium_features_support" = "개발자 지원";
+"permanent_license" = "영구 라이선스";
+"purchase" = "구매";
+"later" = "나중에";
+
+/* Points */
+"points" = "포인트";
+"point_purchase" = "포인트 구매";
+"purchase_points_description" = "포인트는 플랜 공개 및 구매에 사용할 수 있습니다.";
+"processing" = "처리 중...";
+"purchase_complete" = "구매 완료";
+"points_purchased" = "%d 포인트를 구매했습니다!";
+
+/* Profile */
+"profile_edit" = "프로필 편집";
+"purchase_history" = "구매 내역";
+"receipt_details" = "영수증 상세";
+"transaction_type" = "거래 유형";
+"payment_method" = "결제 수단";
+"amount" = "금액";
+"status" = "상태";
+"date" = "날짜";
+"receipt_number" = "영수증 번호";
+
+/* Errors */
+"error_product_not_found" = "상품을 찾을 수 없습니다";
+"error_purchase_failed" = "구매 실패";
+"error_network" = "네트워크 오류";

@@ -1,0 +1,62 @@
+/* Simplified Chinese */
+
+/* Common */
+"app_name" = "动画记录";
+"done" = "完成";
+"cancel" = "取消";
+"save" = "保存";
+"delete" = "删除";
+"edit" = "编辑";
+"close" = "关闭";
+"loading" = "加载中...";
+"error" = "错误";
+"success" = "成功";
+"retry" = "重试";
+
+/* Language */
+"language_title" = "语言";
+
+/* Tab Bar */
+"home" = "主页";
+"memory" = "记忆";
+"ranking" = "排行榜";
+"visit" = "访问";
+
+/* Terms and Privacy */
+"terms_of_service" = "服务条款";
+"privacy_policy" = "隐私政策";
+
+/* Premium */
+"premium_upgrade_title" = "升级到高级版";
+"free_trial_ended" = "免费试用已结束";
+"premium_features_unlimited" = "无限制动画注册";
+"premium_features_all_access" = "使用所有功能";
+"premium_features_updates" = "定期更新";
+"premium_features_support" = "支持开发者";
+"permanent_license" = "永久许可证";
+"purchase" = "购买";
+"later" = "稍后";
+
+/* Points */
+"points" = "积分";
+"point_purchase" = "购买积分";
+"purchase_points_description" = "积分可用于发布和购买计划。";
+"processing" = "处理中...";
+"purchase_complete" = "购买完成";
+"points_purchased" = "已购买 %d 积分！";
+
+/* Profile */
+"profile_edit" = "编辑个人资料";
+"purchase_history" = "购买记录";
+"receipt_details" = "收据详情";
+"transaction_type" = "交易类型";
+"payment_method" = "支付方式";
+"amount" = "金额";
+"status" = "状态";
+"date" = "日期";
+"receipt_number" = "收据编号";
+
+/* Errors */
+"error_product_not_found" = "找不到产品";
+"error_purchase_failed" = "购买失败";
+"error_network" = "网络错误";

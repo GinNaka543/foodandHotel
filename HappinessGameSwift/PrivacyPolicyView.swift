@@ -4,6 +4,7 @@ struct PrivacyPolicyView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var hasAgreed: Bool
     let isInitialAgreement: Bool
+    @StateObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         NavigationView {
@@ -143,9 +144,12 @@ struct PrivacyPolicyView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    LanguageButton()
+                }
                 if !isInitialAgreement {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button("閉じる") {
+                        Button(NSLocalizedString("close", comment: "")) {
                             dismiss()
                         }
                     }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TermsOfServiceView: View {
     @Environment(\.dismiss) var dismiss
+    @StateObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         NavigationView {
@@ -111,8 +112,11 @@ struct TermsOfServiceView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    LanguageButton()
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
+                    Button(NSLocalizedString("close", comment: "")) {
                         dismiss()
                     }
                 }

@@ -1,0 +1,62 @@
+/* French */
+
+/* Common */
+"app_name" = "AniReco";
+"done" = "Terminé";
+"cancel" = "Annuler";
+"save" = "Enregistrer";
+"delete" = "Supprimer";
+"edit" = "Modifier";
+"close" = "Fermer";
+"loading" = "Chargement...";
+"error" = "Erreur";
+"success" = "Succès";
+"retry" = "Réessayer";
+
+/* Language */
+"language_title" = "Langue";
+
+/* Tab Bar */
+"home" = "Accueil";
+"memory" = "Mémoire";
+"ranking" = "Classement";
+"visit" = "Visiter";
+
+/* Terms and Privacy */
+"terms_of_service" = "Conditions d'utilisation";
+"privacy_policy" = "Politique de confidentialité";
+
+/* Premium */
+"premium_upgrade_title" = "Passer à Premium";
+"free_trial_ended" = "La période d'essai est terminée";
+"premium_features_unlimited" = "Enregistrement d'anime illimité";
+"premium_features_all_access" = "Accès à toutes les fonctionnalités";
+"premium_features_updates" = "Mises à jour régulières";
+"premium_features_support" = "Soutenir le développeur";
+"permanent_license" = "Licence permanente";
+"purchase" = "Acheter";
+"later" = "Plus tard";
+
+/* Points */
+"points" = "Points";
+"point_purchase" = "Acheter des points";
+"purchase_points_description" = "Les points peuvent être utilisés pour publier et acheter des plans.";
+"processing" = "Traitement...";
+"purchase_complete" = "Achat terminé";
+"points_purchased" = "%d points achetés !";
+
+/* Profile */
+"profile_edit" = "Modifier le profil";
+"purchase_history" = "Historique des achats";
+"receipt_details" = "Détails du reçu";
+"transaction_type" = "Type de transaction";
+"payment_method" = "Mode de paiement";
+"amount" = "Montant";
+"status" = "Statut";
+"date" = "Date";
+"receipt_number" = "Numéro de reçu";
+
+/* Errors */
+"error_product_not_found" = "Produit introuvable";
+"error_purchase_failed" = "Échec de l'achat";
+"error_network" = "Erreur réseau";

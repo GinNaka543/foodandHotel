@@ -53,22 +53,6 @@ struct ProfileScreen: View {
                     .cornerRadius(12)
                     .shadow(radius: 2)
                     
-                    // 購入履歴ボタン
-                    Button(action: {
-                        showingPurchaseHistory = true
-                    }) {
-                        HStack {
-                            Image(systemName: "doc.text")
-                            Text(NSLocalizedString("purchase_history", comment: "Purchase history"))
-                        }
-                        .font(.headline)
-                        .foregroundColor(.purple)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.purple.opacity(0.1))
-                        .cornerRadius(12)
-                    }
-                    
                     // ログアウトボタン
                     Button(action: {
                         showingLogoutConfirmation = true

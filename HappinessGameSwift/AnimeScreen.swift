@@ -1540,7 +1540,7 @@ struct AnimeArtworkScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "photo")
                                 .font(.system(size: 24))
-                            Text("Artwork")
+                            Text(NSLocalizedString("artwork", comment: "Artwork"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(!showAlbum ? .black : .gray)
@@ -1581,7 +1581,7 @@ struct AnimeArtworkScreen: View {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 24))
                             }
-                            Text("About")
+                            Text(NSLocalizedString("about", comment: "About"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.black)
@@ -2568,7 +2568,7 @@ struct AnimeVideoScreen: View {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 24))
                             }
-                            Text("About")
+                            Text(NSLocalizedString("about", comment: "About"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.black)
@@ -3645,7 +3645,7 @@ struct AnimeAboutView: View {
                 }
             }
             .background(Color.white)
-            .navigationBarTitle("About", displayMode: .inline)
+            .navigationBarTitle(NSLocalizedString("about", comment: "About"), displayMode: .inline)
             .navigationBarItems(
                 leading: Button(action: {
                     saveAnime()
@@ -4368,7 +4368,7 @@ struct AnimeDetailView: View {
                                 Image(systemName: "info.circle")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("About").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("about", comment: "About")).font(.caption2).foregroundColor(.white)
                             }
                             .frame(width: 80, height: 60)
                         }

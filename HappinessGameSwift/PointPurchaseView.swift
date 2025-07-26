@@ -114,7 +114,7 @@ struct PointPurchaseView: View {
                                     .scaleEffect(0.8)
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             }
-                            Text(isPurchasing ? "処理中..." : "購入する")
+                            Text(isPurchasing ? NSLocalizedString("processing", comment: "Processing...") : NSLocalizedString("purchase", comment: "Purchase"))
                                 .font(.system(size: 17, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -138,7 +138,7 @@ struct PointPurchaseView: View {
                 storeKitManager.loadProducts()
             }
         }
-        .alert("購入完了", isPresented: $showingSuccess) {
+        .alert(NSLocalizedString("purchase_complete", comment: "Purchase Complete"), isPresented: $showingSuccess) {
             Button("OK") {
                 dismiss()
                 onPurchaseComplete()

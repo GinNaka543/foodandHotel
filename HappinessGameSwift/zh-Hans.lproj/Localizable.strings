@@ -50,6 +50,7 @@
 "edit_title" = "编辑标题";
 "change_thumbnail" = "更改缩略图";
 "tap_to_add" = "点击添加";
+"about" = "关于";
 "profile" = "个人资料";
 "voice_actors" = "配音演员";
 "characters" = "角色";
@@ -75,6 +76,12 @@
 "edit_profile" = "编辑个人资料";
 "edit_description" = "编辑描述";
 "add_soundtrack" = "添加原声带";
+
+/* Soundtrack Modal */
+"music_file" = "音乐文件";
+"artist_optional" = "艺术家（可选）";
+"select_mp3_file" = "选择MP3文件";
+"select_another_file" = "选择其他文件";
 "views_ago" = "%@次观看 · %@";
 "years_ago" = "%d年前";
 "months_ago" = "%d个月前";
@@ -180,6 +187,10 @@
 "processing" = "处理中...";
 "purchase_complete" = "购买完成";
 "points_purchased" = "已购买 %d 积分！";
+"purchase" = "购买";
+"points_purchase_description" = "%@购买";
+"premium_upgrade_lifetime" = "高级升级（终身许可）";
+"anireco_point_purchase" = "ANICOLLE积分购买";
 
 /* Profile */
 "profile_edit" = "编辑个人资料";
@@ -302,6 +313,8 @@
 "character_order_menu" = "更改角色顺序";
 "anime_order_menu" = "更改动画顺序";
 "registration_error" = "注册错误";
+"username_can_be_changed_later" = "※用户名可以稍后更改";
+"already_have_account" = "已有账号？在此登录";
 
 /* Home Screen */
 "no_characters_registered" = "未注册任何角色";
@@ -316,6 +329,10 @@
 "birthday" = "生日";
 "enter_anime_quote" = "输入动画台词";
 "complete" = "完成";
+"add_watch_schedule" = "添加观看计划";
+"watch_schedule_date" = "观看计划日期";
+"example_12" = "例：12";
+"example_watch_with_friends" = "例：和朋友一起看";
 
 /* Points */
 "current_points" = "当前积分";
@@ -358,17 +375,17 @@
 "add_favorite_character" = "Add your favorite character";
 "add_image_anime" = "Add Image";
 "add_new_category" = "Add New Category";
-"add_new_character_anime" = "Add new character/anime";
+"add_new_character_anime" = "添加新角色/动漫";
 "add_new_product" = "Add New Product";
 "add_original_plan" = "Add Original Plan";
 "add_product" = "Add Product";
-"add_product_button" = "Add Product";
+"add_product_button" = "添加产品";
 "add_products_instruction" = "Add from the \"Add Product\" button in the top right";
 "add_site_name" = "Add site name";
 "add_soundtrack" = "Add Soundtrack";
 "add_video_anime" = "Add Video";
 "add_viewing_schedule" = "Add Viewing Schedule";
-"age" = "Age";
+"age" = "年龄";
 "album_video_count" = "%d videos";
 "all" = "All";
 "anime" = "Anime";
@@ -383,11 +400,11 @@
 "cancel_button" = "Cancel";
 "cannot_access_after_logout" = "You cannot access your account without this information after logout";
 "cannot_restore_without_info" = "Without this information, you cannot restore your account";
-"category_info_section" = "Category Information";
+"category_info_section" = "类别信息";
 "category_list" = "Category List";
 "category_management" = "Category Management";
 "change_background_image" = "Change Background Image";
-"change_banner_image" = "Change Banner Image";
+"change_banner_image" = "更改横幅图片";
 "change_image" = "Change Image";
 "character_anime_label" = "Character/Anime";
 "character_name" = "Character Name";
@@ -404,7 +421,7 @@
 "create_button" = "Create";
 "create_original_plan" = "Create your original travel plan";
 "create_video_album" = "Create Album";
-"cup_size" = "Cup Size";
+"cup_size" = "罩杯";
 "date" = "Date";
 "date_format_day_weekday" = "MMM d (E)";
 "date_format_long" = "MMMM d, yyyy";
@@ -452,8 +469,8 @@
 "episode_number" = "Episode Number";
 "episode_number_optional" = "Episode Number (Optional)";
 "favorite_anime_quote" = "Favorite Anime Quote";
-"favorite_food" = "Favorite Food";
-"first_product_required" = "First Product (Required)";
+"favorite_food" = "喜欢的食物";
+"first_product_required" = "第一个产品（必填）";
 "free" = "Free";
 "from_youtube" = "From YouTube";
 "genre" = "Genre";
@@ -468,8 +485,12 @@
 "important_confirm_before_logout" = "Important: Confirm Before Logout";
 "isekai" = "Isekai";
 "just_now" = "Just now";
-"link_optional" = "Link (Optional)";
+"link_optional" = "链接（可选）";
 "loading_draft_plans" = "Loading draft plans...";
+"customize" = "自定义";
+"days_unit" = "天";
+"start_time" = "开始时间";
+"trip_days" = "旅行天数";
 "loading_plans" = "Loading plans...";
 "manage_character_info" = "Manage your favorite character info and check anytime";
 "manage_viewing_status" = "Manage viewing status to prevent missing episodes";
@@ -480,10 +501,10 @@
 "minutes_ago" = "%d minutes ago";
 "month" = "Month";
 "months_ago" = "%d months ago";
-"name" = "Name";
-"name_label" = "Name";
+"name" = "名字";
+"name_label" = "名称";
 "new_category_creation" = "New Category Creation";
-"new_character_format" = "New %@";
+"new_character_format" = "新建%@";
 "new_product_title" = "New Product";
 "next" = "Next";
 "no_albums_anime" = "No albums yet";
@@ -497,7 +518,7 @@
 "none_status" = "None";
 "not_set" = "Not set";
 "not_set" = "Not set";
-"or_text" = "or";
+"or_text" = "或";
 "original" = "Original";
 "other_category" = "Other";
 "price_format" = "¥%d";
@@ -524,17 +545,17 @@
 "really_delete" = "Really delete?";
 "register_anime_video" = "Register a video";
 "register_favorite_anime" = "Register your favorite anime";
-"register_favorite_character_anime_products" = "Register and manage products\nof your favorite characters and anime";
+"register_favorite_character_anime_products" = "注册和管理您喜爱的\n角色和动漫产品";
 "register_from_youtube" = "From YouTube";
 "register_video" = "Register a video";
-"register_wishlist_items" = "Register wishlist items";
+"register_wishlist_items" = "注册愿望清单项目";
 "registered_products" = "Registered Products";
 "romcom" = "Romance Comedy";
 "same_tag_albums" = "Albums can be created with the same tag";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";
-"search_by_anime_or_character" = "Search by anime or character";
+"search_by_anime_or_character" = "按动漫或角色搜索";
 "search_by_title_or_anime" = "Search by title or anime";
 "search_character" = "Search character";
 "search_results_not_found" = "No search results";
@@ -544,14 +565,14 @@
 "select_anime_title" = "Select Anime";
 "select_background_anime" = "Select Background Image";
 "select_background_image" = "Select Background Image";
-"select_banner_image" = "Select Banner Image";
+"select_banner_image" = "选择横幅图片";
 "select_birthday" = "Select Birthday";
 "select_character_message" = "Please select a character";
 "select_delivery_days" = "Select delivery days";
 "select_edit_item" = "Select item to edit";
 "select_edit_item_artwork" = "Select item to edit";
 "select_edit_item_title" = "Select Edit Item";
-"select_existing_character_anime" = "Select existing character/anime";
+"select_existing_character_anime" = "选择现有角色/动漫";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";
 "select_icon_image" = "Select Icon Image";
@@ -564,11 +585,11 @@
 "site_name" = "Site Name";
 "soundtrack" = "Soundtrack";
 "soundtrack_not_set" = "Soundtrack not set";
-"specify_product_owner" = "Specify whose product this is";
+"specify_product_owner" = "请指定此产品的所有者";
 "sports" = "Sports";
 "spots_count" = "%d spots";
 "status" = "Status";
-"tag" = "Tag";
+"tag" = "标签";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";
@@ -584,7 +605,7 @@
 "type_label" = "Type";
 "unset_genre" = "Not Set";
 "user_id_label" = "User ID:";
-"video" = "Video";
+"video" = "视频";
 "video_count_albums" = "%d videos, %d albums";
 "video_load_error" = "Could not load video";
 "view_count_time_ago" = "%@ views • %@";
@@ -593,7 +614,7 @@
 "visit_tab_all" = "All";
 "visit_tab_original" = "Original";
 "visit_tab_purchased" = "Purchased";
-"voice_actor" = "Voice Actor";
+"voice_actor" = "声优";
 "voice_actors" = "Voice Actors";
 "watch_again" = "Watch Again";
 "watch_again_status" = "Watch Again";
@@ -763,3 +784,9 @@
 "home_page" = "主页";
 "character_page" = "角色页面";
 "product_page" = "产品页面";
+
+/* Order Menu */
+"character_order_menu" = "更改角色顺序";
+"anime_order_menu" = "更改动漫顺序";
+"character_order_title" = "更改角色顺序";
+"anime_order_title" = "更改动漫顺序";

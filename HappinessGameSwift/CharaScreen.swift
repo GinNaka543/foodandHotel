@@ -1129,7 +1129,7 @@ struct CharacterDetailView: View {
                                 Image(systemName: "photo.on.rectangle")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("ArtWork").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("artwork", comment: "Artwork")).font(.caption2).foregroundColor(.white)
                             }
                             .frame(width: 90, height: 70)
                             .contentShape(Rectangle())
@@ -1141,7 +1141,7 @@ struct CharacterDetailView: View {
                                 Image(systemName: "video")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("Video").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("video", comment: "Video")).font(.caption2).foregroundColor(.white)
                             }
                             .frame(width: 90, height: 70)
                             .contentShape(Rectangle())
@@ -1153,7 +1153,7 @@ struct CharacterDetailView: View {
                                 Image(systemName: "info.circle")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("About").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("about", comment: "About")).font(.caption2).foregroundColor(.white)
                             }
                             .frame(width: 90, height: 70)
                             .contentShape(Rectangle())
@@ -1648,7 +1648,7 @@ struct AboutView: View {
                 }
             }
             .background(Color.white)
-            .navigationBarTitle("About", displayMode: .inline)
+            .navigationBarTitle(NSLocalizedString("about", comment: ""), displayMode: .inline)
             .navigationBarItems(
                 leading: Button(action: {
                     saveCharacter()

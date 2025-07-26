@@ -50,6 +50,7 @@
 "edit_title" = "Modifica titolo";
 "change_thumbnail" = "Cambia miniatura";
 "tap_to_add" = "Tocca per aggiungere";
+"about" = "Informazioni";
 "profile" = "Profilo";
 "voice_actors" = "Doppiatori";
 "characters" = "Personaggi";
@@ -75,6 +76,12 @@
 "edit_profile" = "Modifica profilo";
 "edit_description" = "Modifica descrizione";
 "add_soundtrack" = "Aggiungi colonna sonora";
+
+/* Soundtrack Modal */
+"music_file" = "File musicale";
+"artist_optional" = "Artista (opzionale)";
+"select_mp3_file" = "Seleziona file MP3";
+"select_another_file" = "Seleziona un altro file";
 "views_ago" = "%@ visualizzazioni · %@";
 "years_ago" = "%d anni fa";
 "months_ago" = "%d mesi fa";
@@ -180,6 +187,10 @@
 "processing" = "Elaborazione...";
 "purchase_complete" = "Acquisto completato";
 "points_purchased" = "Acquistati %d punti!";
+"purchase" = "Acquista";
+"points_purchase_description" = "Acquisto di %@";
+"premium_upgrade_lifetime" = "Aggiornamento Premium (Licenza a vita)";
+"anireco_point_purchase" = "Acquisto punti ANICOLLE";
 
 /* Profile */
 "profile_edit" = "Modifica profilo";
@@ -302,6 +313,8 @@
 "character_order_menu" = "Cambia ordine personaggi";
 "anime_order_menu" = "Cambia ordine anime";
 "registration_error" = "Errore di registrazione";
+"username_can_be_changed_later" = "※Il nome utente può essere modificato in seguito";
+"already_have_account" = "Hai già un account? Accedi qui";
 
 /* Home Screen */
 "no_characters_registered" = "Nessun personaggio registrato";
@@ -316,6 +329,10 @@
 "birthday" = "Compleanno";
 "enter_anime_quote" = "Inserisci una citazione anime";
 "complete" = "Completa";
+"add_watch_schedule" = "Aggiungi programma di visione";
+"watch_schedule_date" = "Data di visione programmata";
+"example_12" = "es. 12";
+"example_watch_with_friends" = "es. Guardare con gli amici";
 
 /* Points */
 "current_points" = "Punti attuali";
@@ -358,17 +375,17 @@
 "add_favorite_character" = "Add your favorite character";
 "add_image_anime" = "Add Image";
 "add_new_category" = "Add New Category";
-"add_new_character_anime" = "Add new character/anime";
+"add_new_character_anime" = "Aggiungi nuovo personaggio/anime";
 "add_new_product" = "Add New Product";
 "add_original_plan" = "Add Original Plan";
 "add_product" = "Add Product";
-"add_product_button" = "Add Product";
+"add_product_button" = "Aggiungi prodotto";
 "add_products_instruction" = "Add from the \"Add Product\" button in the top right";
 "add_site_name" = "Add site name";
 "add_soundtrack" = "Add Soundtrack";
 "add_video_anime" = "Add Video";
 "add_viewing_schedule" = "Add Viewing Schedule";
-"age" = "Age";
+"age" = "Età";
 "album_video_count" = "%d videos";
 "all" = "All";
 "anime" = "Anime";
@@ -383,11 +400,11 @@
 "cancel_button" = "Cancel";
 "cannot_access_after_logout" = "You cannot access your account without this information after logout";
 "cannot_restore_without_info" = "Without this information, you cannot restore your account";
-"category_info_section" = "Category Information";
+"category_info_section" = "Informazioni categoria";
 "category_list" = "Category List";
 "category_management" = "Category Management";
 "change_background_image" = "Change Background Image";
-"change_banner_image" = "Change Banner Image";
+"change_banner_image" = "Cambia immagine banner";
 "change_image" = "Change Image";
 "character_anime_label" = "Character/Anime";
 "character_name" = "Character Name";
@@ -404,7 +421,7 @@
 "create_button" = "Create";
 "create_original_plan" = "Create your original travel plan";
 "create_video_album" = "Create Album";
-"cup_size" = "Cup Size";
+"cup_size" = "Taglia coppa";
 "date" = "Date";
 "date_format_day_weekday" = "MMM d (E)";
 "date_format_long" = "MMMM d, yyyy";
@@ -452,8 +469,8 @@
 "episode_number" = "Episode Number";
 "episode_number_optional" = "Episode Number (Optional)";
 "favorite_anime_quote" = "Favorite Anime Quote";
-"favorite_food" = "Favorite Food";
-"first_product_required" = "First Product (Required)";
+"favorite_food" = "Cibo preferito";
+"first_product_required" = "Primo prodotto (richiesto)";
 "free" = "Free";
 "from_youtube" = "From YouTube";
 "genre" = "Genre";
@@ -468,8 +485,12 @@
 "important_confirm_before_logout" = "Important: Confirm Before Logout";
 "isekai" = "Isekai";
 "just_now" = "Just now";
-"link_optional" = "Link (Optional)";
+"link_optional" = "Link (opzionale)";
 "loading_draft_plans" = "Loading draft plans...";
+"customize" = "Personalizza";
+"days_unit" = "giorni";
+"start_time" = "Ora di inizio";
+"trip_days" = "Giorni di viaggio";
 "loading_plans" = "Loading plans...";
 "manage_character_info" = "Manage your favorite character info and check anytime";
 "manage_viewing_status" = "Manage viewing status to prevent missing episodes";
@@ -480,10 +501,10 @@
 "minutes_ago" = "%d minutes ago";
 "month" = "Month";
 "months_ago" = "%d months ago";
-"name" = "Name";
-"name_label" = "Name";
+"name" = "Nome";
+"name_label" = "Nome";
 "new_category_creation" = "New Category Creation";
-"new_character_format" = "New %@";
+"new_character_format" = "Nuovo %@";
 "new_product_title" = "New Product";
 "next" = "Next";
 "no_albums_anime" = "No albums yet";
@@ -497,7 +518,7 @@
 "none_status" = "None";
 "not_set" = "Not set";
 "not_set" = "Not set";
-"or_text" = "or";
+"or_text" = "o";
 "original" = "Original";
 "other_category" = "Other";
 "price_format" = "¥%d";
@@ -524,17 +545,17 @@
 "really_delete" = "Really delete?";
 "register_anime_video" = "Register a video";
 "register_favorite_anime" = "Register your favorite anime";
-"register_favorite_character_anime_products" = "Register and manage products\nof your favorite characters and anime";
+"register_favorite_character_anime_products" = "Registra e gestisci i prodotti\ndei tuoi personaggi e anime preferiti";
 "register_from_youtube" = "From YouTube";
 "register_video" = "Register a video";
-"register_wishlist_items" = "Register wishlist items";
+"register_wishlist_items" = "Registra articoli lista desideri";
 "registered_products" = "Registered Products";
 "romcom" = "Romance Comedy";
 "same_tag_albums" = "Albums can be created with the same tag";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";
-"search_by_anime_or_character" = "Search by anime or character";
+"search_by_anime_or_character" = "Cerca per anime o personaggio";
 "search_by_title_or_anime" = "Search by title or anime";
 "search_character" = "Search character";
 "search_results_not_found" = "No search results";
@@ -544,14 +565,14 @@
 "select_anime_title" = "Select Anime";
 "select_background_anime" = "Select Background Image";
 "select_background_image" = "Select Background Image";
-"select_banner_image" = "Select Banner Image";
+"select_banner_image" = "Seleziona immagine banner";
 "select_birthday" = "Select Birthday";
 "select_character_message" = "Please select a character";
 "select_delivery_days" = "Select delivery days";
 "select_edit_item" = "Select item to edit";
 "select_edit_item_artwork" = "Select item to edit";
 "select_edit_item_title" = "Select Edit Item";
-"select_existing_character_anime" = "Select existing character/anime";
+"select_existing_character_anime" = "Seleziona personaggio/anime esistente";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";
 "select_icon_image" = "Select Icon Image";
@@ -564,7 +585,7 @@
 "site_name" = "Site Name";
 "soundtrack" = "Soundtrack";
 "soundtrack_not_set" = "Soundtrack not set";
-"specify_product_owner" = "Specify whose product this is";
+"specify_product_owner" = "Specifica il proprietario di questo prodotto";
 "sports" = "Sports";
 "spots_count" = "%d spots";
 "status" = "Status";
@@ -593,7 +614,7 @@
 "visit_tab_all" = "All";
 "visit_tab_original" = "Original";
 "visit_tab_purchased" = "Purchased";
-"voice_actor" = "Voice Actor";
+"voice_actor" = "Doppiatore";
 "voice_actors" = "Voice Actors";
 "watch_again" = "Watch Again";
 "watch_again_status" = "Watch Again";
@@ -763,3 +784,9 @@
 "home_page" = "Pagina principale";
 "character_page" = "Pagina personaggi";
 "product_page" = "Pagina prodotti";
+
+/* Order Menu */
+"character_order_menu" = "Cambia ordine personaggi";
+"anime_order_menu" = "Cambia ordine anime";
+"character_order_title" = "Cambia ordine personaggi";
+"anime_order_title" = "Cambia ordine anime";

@@ -114,13 +114,14 @@ class StoreKitManager: NSObject, ObservableObject {
         
         // 商品情報を取得
         let product = products.first { $0.productIdentifier == productId }
-        let displayName = product?.localizedTitle ?? "\(points)ポイント"
+        let displayName = product?.localizedTitle ?? String(format: NSLocalizedString("points_format", comment: "%d Points"), points)
         
         // Firebaseにポイントを追加
+        let purchaseDescription = String(format: NSLocalizedString("points_purchase_description", comment: "%@ purchase"), displayName)
         FirebaseManager.shared.addPointsToUser(
             userId: userId,
             points: points,
-            description: "\(displayName)購入"
+            description: purchaseDescription
         ) { result in
             DispatchQueue.main.async {
                 switch result {
@@ -166,7 +167,7 @@ class StoreKitManager: NSObject, ObservableObject {
             amount: 600,
             points: 0,
             paymentMethod: .applePay,
-            description: "プレミアムアップグレード（永続ライセンス）"
+            description: NSLocalizedString("premium_upgrade_lifetime", comment: "Premium Upgrade (Lifetime License)")
         )
         PurchaseReceiptManager.shared.addReceipt(receipt)
         

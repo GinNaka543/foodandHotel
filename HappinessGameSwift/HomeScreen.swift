@@ -1180,7 +1180,7 @@ struct DayScheduleDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
+                    Button(NSLocalizedString("close", comment: "Close")) {
                         dismiss()
                     }
                 }
@@ -1259,7 +1259,7 @@ struct AddScheduleSheetForDate: View {
                     Section(header: Text("詳細（任意）")) {
                         HStack {
                             Text("話数")
-                            TextField("例: 12", text: $episode)
+                            TextField(NSLocalizedString("example_12", comment: "e.g. 12"), text: $episode)
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                         }
@@ -1274,16 +1274,16 @@ struct AddScheduleSheetForDate: View {
                     }
                 }
             }
-            .navigationTitle("視聴予定を追加")
+            .navigationTitle(NSLocalizedString("add_watch_schedule", comment: "Add watch schedule"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("追加") {
+                    Button(NSLocalizedString("add", comment: "Add")) {
                         if let anime = selectedAnime {
                             onAdd(anime, Int(episode), note.isEmpty ? nil : note)
                             dismiss()
@@ -1358,12 +1358,12 @@ struct AnimeSelectionView: View {
                     }
                 }
             }
-            .searchable(text: $searchText, prompt: "アニメを検索")
-            .navigationTitle("アニメを選択")
+            .searchable(text: $searchText, prompt: NSLocalizedString("search_anime", comment: "Search anime"))
+            .navigationTitle(NSLocalizedString("select_anime", comment: "Select anime"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
+                    Button(NSLocalizedString("close", comment: "Close")) {
                         dismiss()
                     }
                 }
@@ -1389,7 +1389,7 @@ struct AddScheduleSheet: View {
             VStack(spacing: 20) {
                 // 日付選択
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("視聴予定日")
+                    Text(NSLocalizedString("watch_schedule_date", comment: "Watch schedule date"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.gray)
                     DatePicker("", selection: $selectedDate, displayedComponents: .date)
@@ -1400,7 +1400,7 @@ struct AddScheduleSheet: View {
                 
                 // アニメ選択
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("アニメ")
+                    Text(NSLocalizedString("anime", comment: "Anime"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.gray)
                     
@@ -1437,10 +1437,10 @@ struct AddScheduleSheet: View {
                 
                 // エピソード番号（オプション）
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("エピソード番号（オプション）")
+                    Text(NSLocalizedString("episode_number_optional", comment: "Episode number (optional)"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.gray)
-                    TextField("例: 12", text: $episode)
+                    TextField(NSLocalizedString("example_12", comment: "e.g. 12"), text: $episode)
                         .keyboardType(.numberPad)
                         .padding()
                         .background(Color.gray.opacity(0.1))
@@ -1450,10 +1450,10 @@ struct AddScheduleSheet: View {
                 
                 // メモ（オプション）
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("メモ（オプション）")
+                    Text(NSLocalizedString("memo_optional", comment: "Memo (optional)"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.gray)
-                    TextField("例: 友達と一緒に見る", text: $note)
+                    TextField(NSLocalizedString("example_watch_with_friends", comment: "e.g. Watch with friends"), text: $note)
                         .padding()
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(8)
@@ -1466,13 +1466,13 @@ struct AddScheduleSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         showingAddSchedule = false
                         resetAction()
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("追加") {
+                    Button(NSLocalizedString("add", comment: "Add")) {
                         addAction()
                         showingAddSchedule = false
                     }

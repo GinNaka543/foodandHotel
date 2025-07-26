@@ -152,12 +152,12 @@ struct VisitPlanningScreen: View {
                                     if numberOfDays <= 7 {
                                         Menu {
                                             ForEach(1...7, id: \.self) { days in
-                                                Button("\(days)日間") {
+                                                Button(String(format: NSLocalizedString("days_format", comment: "%d days"), days)) {
                                                     numberOfDays = days
                                                 }
                                             }
                                             Divider()
-                                            Button("カスタマイズ") {
+                                            Button(NSLocalizedString("customize", comment: "Customize")) {
                                                 showingCustomDaysPicker = true
                                             }
                                         } label: {
@@ -178,12 +178,12 @@ struct VisitPlanningScreen: View {
                                     } else {
                                         Menu {
                                             ForEach(1...7, id: \.self) { days in
-                                                Button("\(days)日間") {
+                                                Button(String(format: NSLocalizedString("days_format", comment: "%d days"), days)) {
                                                     numberOfDays = days
                                                 }
                                             }
                                             Divider()
-                                            Button("カスタマイズ") {
+                                            Button(NSLocalizedString("customize", comment: "Customize")) {
                                                 showingCustomDaysPicker = true
                                             }
                                         } label: {
@@ -1006,7 +1006,7 @@ struct CustomDaysPickerView: View {
                         .multilineTextAlignment(.center)
                         .keyboardType(.numberPad)
                     
-                    Text("日間")
+                    Text(NSLocalizedString("days_unit", comment: "days"))
                         .font(.system(size: 16))
                 }
                 
@@ -1931,7 +1931,7 @@ struct EditSpotView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         if let index = spots.firstIndex(where: { $0.id == spot.id }) {
                             spots[index].name = spotName
                             spots[index].address = spotAddress

@@ -56,11 +56,11 @@ struct RegisterScreenView: View {
                         VStack(spacing: 24) {
                             // ユーザー名
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("ユーザー名")
+                                Text(NSLocalizedString("username", comment: "Username"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                 
-                                TextField("ユーザー名を入力", text: $username)
+                                TextField(NSLocalizedString("enter_username", comment: "Enter username"), text: $username)
                                     .font(.system(size: 16))
                                     .padding()
                                     .background(Color(.systemGray6))
@@ -68,7 +68,7 @@ struct RegisterScreenView: View {
                                     .autocapitalization(.none)
                             }
                             
-                            Text("※ユーザー名は後から変更できます")
+                            Text(NSLocalizedString("username_can_be_changed_later", comment: "Username can be changed later"))
                                 .font(.system(size: 12))
                                 .foregroundColor(.gray)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -83,7 +83,7 @@ struct RegisterScreenView: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
                                 }
-                                Text("新規登録")
+                                Text(NSLocalizedString("register", comment: "Register"))
                                     .font(.system(size: 17, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -103,7 +103,7 @@ struct RegisterScreenView: View {
                         Button(action: {
                             dismiss()
                         }) {
-                            Text("すでにアカウントをお持ちの方はこちら")
+                            Text(NSLocalizedString("already_have_account", comment: "Already have an account? Sign in here"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.blue)
                         }
@@ -115,7 +115,7 @@ struct RegisterScreenView: View {
             .navigationBarHidden(true)
         }
         .alert(alertTitle, isPresented: $showingAlert) {
-            if alertTitle == "登録完了" {
+            if alertTitle == NSLocalizedString("registration_complete", comment: "Registration Complete") {
                 Button("OK") {
                     saveUserData(username: username, userId: generatedUserId)
                     authManager.login()
@@ -152,7 +152,7 @@ struct RegisterScreenView: View {
                         FirebaseManager.shared.addPointsToUser(
                             userId: generatedUserId,
                             points: 50,
-                            description: "新規登録ボーナス"
+                            description: NSLocalizedString("registration_bonus", comment: "Registration bonus")
                         ) { pointsResult in
                             DispatchQueue.main.async {
                                 isLoading = false
@@ -160,29 +160,13 @@ struct RegisterScreenView: View {
                                 case .success:
                                     // ボーナス付与済みフラグを設定
                                     UserDefaults.standard.set(true, forKey: "hasReceivedFirstTimeBonus")
-                                    alertTitle = "登録完了"
-                                    alertMessage = """
-                                    ユーザーIDが発行されました。
-                                    
-                                    ユーザーID: \(generatedUserId)
-                                    
-                                    🎉 新規登録ボーナスとして50ポイントが付与されました！
-                                    
-                                    このIDは次回ログイン時に必要です。
-                                    必ずメモやスクリーンショットで保存してください。
-                                    """
+                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
+                                    alertMessage = String(format: NSLocalizedString("registration_complete_with_bonus", comment: "Registration complete with bonus"), generatedUserId)
                                     showingAlert = true
                                 case .failure(let error):
                                     // ポイント付与に失敗してもユーザー登録は成功しているので続行
-                                    alertTitle = "登録完了"
-                                    alertMessage = """
-                                    ユーザーIDが発行されました。
-                                    
-                                    ユーザーID: \(generatedUserId)
-                                    
-                                    このIDは次回ログイン時に必要です。
-                                    必ずメモやスクリーンショットで保存してください。
-                                    """
+                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
+                                    alertMessage = String(format: NSLocalizedString("registration_complete_message", comment: "Registration complete message"), generatedUserId)
                                     showingAlert = true
                                 }
                             }

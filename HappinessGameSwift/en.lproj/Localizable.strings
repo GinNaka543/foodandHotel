@@ -55,6 +55,7 @@
 "pt" = "pt";
 
 /* Anime Page */
+"about" = "About";
 "watch_anime" = "Watch Anime";
 "anime_title" = "Anime Title";
 "edit_tags" = "Edit Tags";
@@ -193,6 +194,10 @@
 "processing" = "Processing...";
 "purchase_complete" = "Purchase Complete";
 "points_purchased" = "Purchased %d points!";
+"purchase" = "Purchase";
+"points_purchase_description" = "%@ purchase";
+"premium_upgrade_lifetime" = "Premium Upgrade (Lifetime License)";
+"anireco_point_purchase" = "ANIRECO Point Purchase";
 
 /* Profile */
 "profile_edit" = "Edit Profile";
@@ -340,6 +345,10 @@
 "episode_number_optional" = "Episode Number (Optional)";
 "memo_optional" = "Memo (Optional)";
 "memo_example" = "e.g. Watch with friends";
+"add_watch_schedule" = "Add watch schedule";
+"watch_schedule_date" = "Watch schedule date";
+"example_12" = "e.g. 12";
+"example_watch_with_friends" = "e.g. Watch with friends";
 "change_profile_image" = "Change Profile Image";
 "enter_name" = "Enter Name";
 "birthday" = "Birthday";
@@ -378,6 +387,10 @@
 "purchase_plan" = "Purchase Plan";
 "search_by_title_or_anime" = "Search by title or anime";
 "loading_draft_plans" = "Loading draft plans...";
+"customize" = "Customize";
+"days_unit" = "days";
+"start_time" = "Start time";
+"trip_days" = "Trip days";
 
 /* Login */
 "username" = "Username";
@@ -398,6 +411,8 @@
 "registration_complete_with_bonus" = "Please save your User ID:\n\n%@\n\n🎉 50 points have been awarded as a new registration bonus!\n\nThis ID is required for your next login.";
 "registration_complete_message" = "Please save your User ID:\n\n%@\n\nThis ID is required for your next login.";
 "registration_error" = "Registration Error";
+"username_can_be_changed_later" = "※Username can be changed later";
+"already_have_account" = "Already have an account? Sign in here";
 
 /* Character Screen */
 "add_character" = "Add Character";
@@ -434,6 +449,13 @@
 "edit_profile" = "Edit Profile";
 "edit_description" = "Edit Description";
 "add_soundtrack" = "Add Soundtrack";
+
+/* Soundtrack Modal */
+"music_file" = "Music File";
+"artist_optional" = "Artist (optional)";
+"select_mp3_file" = "Select MP3 File";
+"select_another_file" = "Select Another File";
+
 "select_edit_item_title" = "Select Edit Item";
 "tap_to_select_background" = "Tap to select background";
 "delete_background" = "Delete Background";

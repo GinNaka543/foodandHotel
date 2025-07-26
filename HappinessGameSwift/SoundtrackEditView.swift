@@ -24,12 +24,12 @@ struct SoundtrackEditView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("基本情報")) {
-                    TextField("タイトル", text: $title)
-                    TextField("アーティスト (任意)", text: $artist)
+                Section(header: Text(NSLocalizedString("basic_info", comment: ""))) {
+                    TextField(NSLocalizedString("title", comment: ""), text: $title)
+                    TextField(NSLocalizedString("artist_optional", comment: ""), text: $artist)
                 }
                 
-                Section(header: Text("音楽ファイル")) {
+                Section(header: Text(NSLocalizedString("music_file", comment: ""))) {
                     if let url = selectedAudioURL {
                         HStack {
                             VStack(alignment: .leading) {
@@ -59,12 +59,12 @@ struct SoundtrackEditView: View {
                         HStack {
                             Image(systemName: "music.note")
                                 .foregroundColor(.purple)
-                            Text(selectedAudioURL == nil ? "MP3ファイルを選択" : "別のファイルを選択")
+                            Text(selectedAudioURL == nil ? NSLocalizedString("select_mp3_file", comment: "") : NSLocalizedString("select_another_file", comment: ""))
                         }
                     }
                 }
                 
-                Section(header: Text("サムネイル画像")) {
+                Section(header: Text(NSLocalizedString("thumbnail_image", comment: ""))) {
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
@@ -82,24 +82,24 @@ struct SoundtrackEditView: View {
                         HStack {
                             Image(systemName: "photo")
                                 .foregroundColor(.purple)
-                            Text(selectedImage == nil ? "画像を選択" : "画像を変更")
+                            Text(selectedImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""))
                         }
                     }
                 }
                 
             }
-            .navigationTitle("サントラ追加")
+            .navigationTitle(NSLocalizedString("add_soundtrack", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "")) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "")) {
                         saveSoundtrack()
                     }
                     .disabled(title.isEmpty || selectedAudioURL == nil)

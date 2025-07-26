@@ -20,10 +20,11 @@
 "home" = "ホーム";
 "memory" = "メモリー";
 "ranking" = "ランキング";
-"visit" = "Visit";
+"visit" = "聖地旅";
 "character" = "キャラ";
 "anime" = "アニメ";
 "artwork" = "アートワーク";
+"video" = "ビデオ";
 "album" = "アルバム";
 "product" = "プロダクト";
 
@@ -88,6 +89,12 @@
 "edit_profile" = "プロフィールを編集";
 "edit_description" = "概要を編集";
 "add_soundtrack" = "サントラ追加";
+
+/* Soundtrack Modal */
+"music_file" = "音楽ファイル";
+"artist_optional" = "アーティスト (任意)";
+"select_mp3_file" = "MP3ファイルを選択";
+"select_another_file" = "別のファイルを選択";
 "views_ago" = "%@回・%@";
 "years_ago" = "%d年前";
 "months_ago" = "%dヶ月前";
@@ -192,9 +199,20 @@
 "processing" = "処理中...";
 "purchase_complete" = "購入完了";
 "points_purchased" = "%dポイントを購入しました！";
+"purchase" = "購入する";
+"points_purchase_description" = "%@購入";
+"premium_upgrade_lifetime" = "プレミアムアップグレード（永続ライセンス）";
+"anireco_point_purchase" = "ANICOLLEポイント購入";
 
 /* Profile */
+"about" = "アバウト";
 "profile" = "プロフィール";
+"name" = "名前";
+"tag" = "タグ";
+"age" = "年齢";
+"favorite_food" = "好きな食べ物";
+"voice_actor" = "声優";
+"cup_size" = "カップサイズ";
 "profile_edit" = "プロフィール編集";
 "purchase_history" = "購入履歴";
 "current_points" = "現在のポイント";
@@ -348,6 +366,8 @@
 "registration_complete_with_bonus" = "ユーザーIDを必ず保存してください：\n\n%@\n\n🎉 新規登録ボーナスとして50ポイントが付与されました！\n\nこのIDは次回ログイン時に必要です。";
 "registration_complete_message" = "ユーザーIDを必ず保存してください：\n\n%@\n\nこのIDは次回ログイン時に必要です。";
 "registration_error" = "登録エラー";
+"username_can_be_changed_later" = "※ユーザー名は後から変更できます";
+"already_have_account" = "すでにアカウントをお持ちの方はこちら";
 
 /* Home Screen */
 "date_format_long" = "yyyy年M月d日";
@@ -384,6 +404,10 @@
 "episode_number_optional" = "エピソード番号（オプション）";
 "memo_optional" = "メモ（オプション）";
 "memo_example" = "例: 友達と一緒に見る";
+"add_watch_schedule" = "視聴予定を追加";
+"watch_schedule_date" = "視聴予定日";
+"example_12" = "例: 12";
+"example_watch_with_friends" = "例: 友達と一緒に見る";
 "change_profile_image" = "プロフィール画像を変更";
 "enter_name" = "名前を入力";
 "birthday" = "誕生日";
@@ -422,6 +446,29 @@
 "purchase_plan" = "プランを購入する";
 "search_by_title_or_anime" = "タイトルもしくはアニメから検索";
 "loading_draft_plans" = "下書きプランを読み込み中...";
+"customize" = "カスタマイズ";
+"days_unit" = "日間";
+"start_time" = "開始時刻";
+"trip_days" = "旅行日数";
+"plan_title" = "プラン名";
+"timeline" = "タイムライン";
+"day_format" = "第%d日目";
+"add_spots_to_create_itinerary" = "スポットを追加して旅程を作成";
+"overview" = "概要";
+"review_itinerary" = "旅程を確認";
+"save_draft" = "下書き保存";
+"finalize_plan" = "プランを確定";
+"how_long_does_it_take" = "所要時間はどのくらいですか？";
+"minutes" = "分";
+"which_route_optional" = "どのルートを使いますか？（任意）";
+"stay_duration_format" = "滞在時間: %d分";
+"spot_name" = "スポット名";
+"stay_time_period" = "滞在時間帯";
+"time_separator" = "〜";
+"spot_spending" = "このスポットでいくら使いますか？";
+"tap_to_select_thumbnail" = "タップしてサムネイルを選択";
+"spot_images" = "スポット画像";
+"detail_images_main" = "詳細画像（メイン画像）";
 
 /* Visit Game Screen */
 "start_time_format" = "開始時刻: %@";
@@ -497,3 +544,30 @@
 "home_page" = "ホームページ";
 "character_page" = "キャラページ";
 "product_page" = "プロダクトページ";
+
+/* Product Search and Management */
+"search_by_anime_or_character" = "アニメやキャラクターで検索";
+"register_wishlist_items" = "欲しい商品を登録";
+"register_favorite_character_anime_products" = "好きなキャラクターやアニメの\n商品を登録・管理";
+"add_product_button" = "商品を追加";
+
+/* Product Modal UI */
+"add_new_character_anime" = "新しいキャラクター・アニメを追加";
+"specify_product_owner" = "この商品の所有者を指定してください";
+"or_text" = "または";
+"select_existing_character_anime" = "既存のキャラクター・アニメを選択";
+"select_banner_image" = "バナー画像を選択";
+"change_banner_image" = "バナー画像を変更";
+"first_product_required" = "最初の商品（必須）";
+"link_optional" = "リンク（任意）";
+
+/* Character and Category */
+"new_character_format" = "新規%@";
+"category_info_section" = "カテゴリー情報";
+"name_label" = "名前";
+
+/* Order Menu */
+"character_order_menu" = "キャラクター順序変更";
+"anime_order_menu" = "アニメ順序変更";
+"character_order_title" = "キャラクター順序変更";
+"anime_order_title" = "アニメ順序変更";

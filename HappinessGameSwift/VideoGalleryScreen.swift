@@ -213,11 +213,11 @@ struct VideoGalleryScreen: View {
                     .font(.system(size: 60))
                     .foregroundColor(.purple)
                 
-                Text("まだアルバムがありません")
+                Text(NSLocalizedString("no_albums_yet", comment: "No albums yet"))
                     .font(.title2)
                     .fontWeight(.semibold)
                 
-                Text("同じタグのビデオからアルバムを作成できます")
+                Text(NSLocalizedString("create_album_from_videos", comment: "Create album from videos"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -226,7 +226,7 @@ struct VideoGalleryScreen: View {
                 Button(action: {
                     activeSheet = .tagInput
                 }) {
-                    Label("アルバムを作成", systemImage: "plus.circle.fill")
+                    Label(NSLocalizedString("create_album", comment: "Create album"), systemImage: "plus.circle.fill")
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
@@ -297,7 +297,7 @@ struct VideoGalleryScreen: View {
                                             Text(album.tag)
                                                 .font(.system(size: 20, weight: .bold))
                                                 .foregroundColor(.white)
-                                            Text("\(album.videos.count)個の動画")
+                                            Text(String(format: NSLocalizedString("videos_individual_count", comment: "Video count"), album.videos.count))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(.white.opacity(0.8))
                                         }
@@ -357,11 +357,11 @@ struct VideoGalleryScreen: View {
                         .font(.system(size: 60))
                         .foregroundColor(.purple)
                     
-                    Text("まだビデオがありません")
+                    Text(NSLocalizedString("no_videos_yet", comment: "No videos yet"))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("右上の追加ボタンからビデオを追加できます")
+                    Text(NSLocalizedString("add_video_instruction", comment: "Add video instruction"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -370,7 +370,7 @@ struct VideoGalleryScreen: View {
                     Button(action: {
                         showAddSheet = true
                     }) {
-                        Label("ビデオを追加", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("add_video", comment: "Add video"), systemImage: "plus.circle.fill")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding(.horizontal, 20)
@@ -441,7 +441,7 @@ struct VideoGalleryScreen: View {
     private func formatViewCount(_ count: Int) -> String {
         if count >= 10000 {
             let formatted = Double(count) / 10000.0
-            return String(format: "%.1f万", formatted)
+            return String(format: NSLocalizedString("ten_thousand", comment: "10k format"), formatted)
         } else {
             return "\(count)"
         }
@@ -454,17 +454,17 @@ struct VideoGalleryScreen: View {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: "Years ago"), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: "Months ago"), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: "Days ago"), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: "Hours ago"), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: "Minutes ago"), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "Just now")
         }
     }
     
@@ -542,24 +542,24 @@ struct VideoGalleryScreen: View {
                         editText = video.title
                         activeSheet = .editTitle(video)
                     }) {
-                        Label("タイトルを編集", systemImage: "pencil")
+                        Label(NSLocalizedString("edit_title", comment: "Edit title"), systemImage: "pencil")
                     }
                     Button(action: {
                         editText = video.tags.joined(separator: ", ")
                         activeSheet = .editTags(video)
                     }) {
-                        Label("タグを編集", systemImage: "tag")
+                        Label(NSLocalizedString("edit_tags", comment: "Edit tags"), systemImage: "tag")
                     }
                     Button(action: {
                         activeSheet = .thumbnailPicker(video)
                     }) {
-                        Label("サムネイルを変更", systemImage: "photo")
+                        Label(NSLocalizedString("change_thumbnail", comment: "Change thumbnail"), systemImage: "photo")
                     }
                     Divider()
                     Button(role: .destructive, action: {
                         activeAlert = .deleteVideo(video.id)
                     }) {
-                        Label("削除", systemImage: "trash")
+                        Label(NSLocalizedString("delete", comment: "Delete"), systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -606,7 +606,7 @@ struct VideoGalleryScreen: View {
                 Text("@\(currentCharacter.name)")
                     .font(.system(size: 12.7))
                     .foregroundColor(.black)
-                Text("\(videos.count)本の動画・アルバム数\(albums.count)")
+                Text(String(format: NSLocalizedString("video_album_count", comment: "Video album count"), videos.count, albums.count))
                     .font(.system(size: 15.4))
                     .foregroundColor(.gray)
             }
@@ -673,7 +673,7 @@ struct VideoGalleryScreen: View {
                     VStack(spacing: 4) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 24))
-                        Text("戻る")
+                        Text(NSLocalizedString("back", comment: "Back"))
                             .font(.system(size: 10))
                     }
                     .foregroundColor(.gray)
@@ -768,7 +768,7 @@ struct VideoGalleryScreen: View {
                             showAddSheet = true 
                         }
                     }) {
-                        Text(showAlbum ? "アルバムを追加する" : "動画を追加する")
+                        Text(showAlbum ? NSLocalizedString("video_add_album", comment: "Add album") : NSLocalizedString("video_add_video", comment: "Add video"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -860,26 +860,26 @@ struct VideoGalleryScreen: View {
             switch alertType {
             case .deleteVideo(let videoId):
                 return Alert(
-                    title: Text("動画を削除しますか？"),
-                    message: Text("この動画は完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
+                    title: Text(NSLocalizedString("delete_video_confirm_title", comment: "Delete video?")),
+                    message: Text(NSLocalizedString("delete_video_confirm_message", comment: "Delete permanently")),
+                    primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                         deleteVideo(id: videoId)
                     },
-                    secondaryButton: .cancel(Text("キャンセル")) {
+                    secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel"))) {
                     }
                 )
             case .deleteAlbum(let album):
                 return Alert(
-                    title: Text("アルバムを削除しますか？"),
-                    message: Text("このアルバムは完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
+                    title: Text(NSLocalizedString("delete_album_confirm_title", comment: "Delete album?")),
+                    message: Text(NSLocalizedString("delete_album_confirm_message", comment: "Delete permanently")),
+                    primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                         deleteAlbum(album)
                     },
                     secondaryButton: .cancel(Text("キャンセル"))
                 )
             case .youtubeError(let message):
                 return Alert(
-                    title: Text("YouTubeダウンロードエラー"),
+                    title: Text(NSLocalizedString("youtube_download_error", comment: "YouTube error")),
                     message: Text(message),
                     dismissButton: .default(Text("OK"))
                 )
@@ -897,12 +897,12 @@ struct VideoGalleryScreen: View {
     // タグ入力シート
     var tagInputSheet: some View {
         VStack(spacing: 24) {
-            Text("同じタグからアルバムを作れます")
+            Text(NSLocalizedString("create_album_instruction", comment: "Create album instruction"))
                 .font(.headline)
-            TextField("#タグ名", text: $newTag)
+            TextField(NSLocalizedString("tag_name_placeholder", comment: "Tag name"), text: $newTag)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal, 24)
-            Button("保存") {
+            Button(NSLocalizedString("save", comment: "Save")) {
                 let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !tag.isEmpty {
                     let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
@@ -921,7 +921,7 @@ struct VideoGalleryScreen: View {
             .background(Color.black)
             .foregroundColor(.white)
             .cornerRadius(10)
-            Button("キャンセル") {
+            Button(NSLocalizedString("cancel", comment: "Cancel")) {
                 activeSheet = nil
                 showTagInput = false
             }
@@ -933,7 +933,7 @@ struct VideoGalleryScreen: View {
     // タイトル編集シート
     func editTitleSheet(video: MemoryVideo) -> some View {
         VStack(spacing: 24) {
-            Text("タイトルを編集")
+            Text(NSLocalizedString("edit_title", comment: "Edit title"))
                 .font(.headline)
                 .padding(.top, 24)
             
@@ -946,7 +946,7 @@ struct VideoGalleryScreen: View {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .foregroundColor(.red)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -963,7 +963,7 @@ struct VideoGalleryScreen: View {
                     }
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -986,7 +986,7 @@ struct VideoGalleryScreen: View {
     // タグ編集シート
     func editTagsSheet(video: MemoryVideo) -> some View {
         VStack(spacing: 24) {
-            Text("タグを編集")
+            Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                 .font(.headline)
                 .padding(.top, 24)
             
@@ -999,7 +999,7 @@ struct VideoGalleryScreen: View {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .foregroundColor(.red)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -1016,7 +1016,7 @@ struct VideoGalleryScreen: View {
                     }
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -1045,7 +1045,7 @@ struct VideoGalleryScreen: View {
                     VStack(spacing: 24) {
                         ProgressView()
                             .scaleEffect(2)
-                        Text("YouTube動画をダウンロード中…")
+                        Text(NSLocalizedString("downloading_youtube_video", comment: "Downloading YouTube video"))
                             .font(.title2)
                             .foregroundColor(.white)
                             .bold()
@@ -1139,7 +1139,7 @@ struct VideoGalleryScreen: View {
                     HStack {
                         Image(systemName: "play.circle.fill")
                             .font(.title)
-                        Text("YouTubeで開く")
+                        Text(NSLocalizedString("open_in_youtube", comment: "Open in YouTube"))
                             .font(.headline)
                     }
                     .foregroundColor(.white)
@@ -1153,7 +1153,7 @@ struct VideoGalleryScreen: View {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .foregroundColor(.gray)
                         .padding()
                 }
@@ -1205,7 +1205,7 @@ struct VideoGalleryScreen: View {
                     Button(action: {
                         expandedVideo = nil
                     }) {
-                        Text("閉じる")
+                        Text(NSLocalizedString("close", comment: "Close"))
                             .font(.headline)
                             .foregroundColor(.blue)
                             .padding(.horizontal, 20)
@@ -1264,7 +1264,7 @@ struct VideoGalleryScreen: View {
                     .padding(.vertical, 10)
                 HStack(spacing: 24) {
                     Button(action: { showEditTitle = false }) {
-                        Text("キャンセル")
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
                             .foregroundColor(.blue)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -1281,7 +1281,7 @@ struct VideoGalleryScreen: View {
                             expandedVideo = nil
                         }
                     }) {
-                        Text("保存")
+                        Text(NSLocalizedString("save", comment: "Save"))
                             .foregroundColor(.blue)
                             .fontWeight(.bold)
                             .frame(maxWidth: .infinity)
@@ -1305,7 +1305,7 @@ struct VideoGalleryScreen: View {
             Color.black.opacity(0.25)
                 .edgesIgnoringSafeArea(.all)
             VStack(spacing: 20) {
-                Text("タグを編集")
+                Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                     .font(.headline)
                     .padding(.top, 12)
                 TextField("タグ（カンマ区切り）", text: $editText)
@@ -1315,7 +1315,7 @@ struct VideoGalleryScreen: View {
                     .padding(.vertical, 10)
                 HStack(spacing: 24) {
                     Button(action: { showEditTags = false }) {
-                        Text("キャンセル")
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
                             .foregroundColor(.blue)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -1332,7 +1332,7 @@ struct VideoGalleryScreen: View {
                             expandedVideo = nil
                         }
                     }) {
-                        Text("保存")
+                        Text(NSLocalizedString("save", comment: "Save"))
                             .foregroundColor(.blue)
                             .fontWeight(.bold)
                             .frame(maxWidth: .infinity)
@@ -1863,7 +1863,7 @@ struct AlbumVideoListScreen: View {
     private func formatViewCount(_ count: Int) -> String {
         if count >= 10000 {
             let formatted = Double(count) / 10000.0
-            return String(format: "%.1f万", formatted)
+            return String(format: NSLocalizedString("ten_thousand", comment: "10k format"), formatted)
         } else {
             return "\(count)"
         }
@@ -1876,17 +1876,17 @@ struct AlbumVideoListScreen: View {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: "Years ago"), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: "Months ago"), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: "Days ago"), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: "Hours ago"), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: "Minutes ago"), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "Just now")
         }
     }
     
@@ -1941,7 +1941,7 @@ struct AlbumVideoListScreen: View {
                         Text("#" + tag)
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.white)
-                        Text("\(videos.count)件の動画")
+                        Text(String(format: NSLocalizedString("videos_count_format", comment: "Video count"), videos.count))
                             .font(.system(size: 16))
                             .foregroundColor(.white.opacity(0.9))
                     }
@@ -2038,24 +2038,24 @@ struct AlbumVideoListScreen: View {
                                         editText = video.title
                                         activeSheet = .editTitle(video)
                                     }) {
-                                        Label("タイトルを編集", systemImage: "pencil")
+                                        Label(NSLocalizedString("edit_title", comment: "Edit title"), systemImage: "pencil")
                                     }
                                     Button(action: {
                                         editText = video.tags.joined(separator: ", ")
                                         activeSheet = .editTags(video)
                                     }) {
-                                        Label("タグを編集", systemImage: "tag")
+                                        Label(NSLocalizedString("edit_tags", comment: "Edit tags"), systemImage: "tag")
                                     }
                                     Button(action: {
                                         activeSheet = .thumbnailPicker(video)
                                     }) {
-                                        Label("サムネイルを変更", systemImage: "photo")
+                                        Label(NSLocalizedString("change_thumbnail", comment: "Change thumbnail"), systemImage: "photo")
                                     }
                                     Divider()
                                     Button(role: .destructive, action: {
                                         activeAlert = .deleteVideo(video.id)
                                     }) {
-                                        Label("削除", systemImage: "trash")
+                                        Label(NSLocalizedString("delete", comment: "Delete"), systemImage: "trash")
                                     }
                                 } label: {
                                     Image(systemName: "ellipsis")
@@ -2106,9 +2106,9 @@ struct AlbumVideoListScreen: View {
             switch alertType {
             case .deleteVideo(let videoId):
                 return Alert(
-                    title: Text("動画を削除しますか？"),
-                    message: Text("この動画は完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
+                    title: Text(NSLocalizedString("delete_video_confirm_title", comment: "Delete video?")),
+                    message: Text(NSLocalizedString("delete_video_confirm_message", comment: "Delete permanently")),
+                    primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                         if let video = localVideos.first(where: { $0.id == videoId }) {
                             onVideoDeleted?(video)
                             if let idx = localVideos.firstIndex(where: { $0.id == videoId }) {
@@ -2148,7 +2148,7 @@ struct AlbumVideoListScreen: View {
     // タイトル編集シート
     func editTitleSheet(video: MemoryVideo) -> some View {
         VStack(spacing: 24) {
-            Text("タイトルを編集")
+            Text(NSLocalizedString("edit_title", comment: "Edit title"))
                 .font(.headline)
                 .padding(.top, 24)
             
@@ -2161,7 +2161,7 @@ struct AlbumVideoListScreen: View {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .foregroundColor(.red)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -2177,7 +2177,7 @@ struct AlbumVideoListScreen: View {
                     }
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -2200,7 +2200,7 @@ struct AlbumVideoListScreen: View {
     // タグ編集シート
     func editTagsSheet(video: MemoryVideo) -> some View {
         VStack(spacing: 24) {
-            Text("タグを編集")
+            Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                 .font(.headline)
                 .padding(.top, 24)
             
@@ -2213,7 +2213,7 @@ struct AlbumVideoListScreen: View {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .foregroundColor(.red)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
@@ -2229,7 +2229,7 @@ struct AlbumVideoListScreen: View {
                     }
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -2296,7 +2296,7 @@ struct AlbumVideoListScreen: View {
                     HStack {
                         Image(systemName: "play.circle.fill")
                             .font(.title)
-                        Text("YouTubeで開く")
+                        Text(NSLocalizedString("open_in_youtube", comment: "Open in YouTube"))
                             .font(.headline)
                     }
                     .foregroundColor(.white)
@@ -2310,7 +2310,7 @@ struct AlbumVideoListScreen: View {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .foregroundColor(.gray)
                         .padding()
                 }

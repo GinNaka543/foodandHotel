@@ -119,7 +119,7 @@ struct HomeScreen: View {
         let names = characterManager.characters.filter { !$0.name.isEmpty }.map { $0.name }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
-            return joinedNames.isEmpty ? "キャラクターが登録されていません" : joinedNames
+            return joinedNames.isEmpty ? NSLocalizedString("no_characters_registered", comment: "No characters registered") : joinedNames
         } else {
             let truncated = String(joinedNames.prefix(30))
             return truncated + "..."
@@ -131,7 +131,7 @@ struct HomeScreen: View {
         let names = animeManager.animes.map { $0.title }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
-            return joinedNames.isEmpty ? "アニメが登録されていません" : joinedNames
+            return joinedNames.isEmpty ? NSLocalizedString("no_anime_registered", comment: "No anime registered") : joinedNames
         } else {
             let truncated = String(joinedNames.prefix(30))
             return truncated + "..."
@@ -206,7 +206,7 @@ struct HomeScreen: View {
                             Text(profileManager.currentUser.username.isEmpty ? "中島 銀星" : profileManager.currentUser.username)
                                 .font(.system(size: 25, weight: .bold)) // 28 * 0.9 ≒ 25
                                 .foregroundColor(.primary)
-                            Text(profileManager.currentUser.animeQuote.isEmpty ? "好きなアニメのセリフを設定" : profileManager.currentUser.animeQuote)
+                            Text(profileManager.currentUser.animeQuote.isEmpty ? NSLocalizedString("set_anime_quote", comment: "Set anime quote") : profileManager.currentUser.animeQuote)
                                 .font(.system(size: 14)) // 16 * 0.9 ≒ 14
                                 .foregroundColor(.gray)
                                 .lineLimit(2)
@@ -215,6 +215,10 @@ struct HomeScreen: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     Spacer()
+                    
+                    // 言語切り替えボタン
+                    LanguageButton()
+                        .padding(.trailing, 8)
                     
                     // ユーザーアイコン
                     Button(action: {
@@ -740,14 +744,14 @@ struct EmptyScheduleView: View {
                 .font(.system(size: 40))
                 .foregroundColor(.purple.opacity(0.6))
             
-            Text("スケジュールが登録されていません")
+            Text(NSLocalizedString("schedule_empty", comment: "No schedules registered"))
                 .font(.system(size: 16))
                 .foregroundColor(.gray)
             
             Button(action: {
                 showingAddSchedule.wrappedValue = true
             }) {
-                Label("スケジュールを追加", systemImage: "plus.circle.fill")
+                Label(NSLocalizedString("schedule_add", comment: "Add schedule"), systemImage: "plus.circle.fill")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
@@ -816,9 +820,9 @@ struct ScheduleView: View {
     
     private func getSelectedAnimeTitle() -> String {
         if selectedAnimeId.isEmpty {
-            return "アニメを選択"
+            return NSLocalizedString("anime_select", comment: "Select anime")
         }
-        return animeManager.animes.first(where: { $0.id.uuidString == selectedAnimeId })?.title ?? "アニメを選択"
+        return animeManager.animes.first(where: { $0.id.uuidString == selectedAnimeId })?.title ?? NSLocalizedString("anime_select", comment: "Select anime")
     }
     
     private func addScheduleItem() {
@@ -1402,7 +1406,7 @@ struct AddScheduleSheet: View {
                     
                     let validAnimes = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
                     if validAnimes.isEmpty {
-                        Text("アニメが登録されていません")
+                        Text(NSLocalizedString("no_anime_registered", comment: "No anime registered"))
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                             .padding()
@@ -1458,7 +1462,7 @@ struct AddScheduleSheet: View {
                 
                 Spacer()
             }
-            .navigationTitle("スケジュール追加")
+            .navigationTitle(NSLocalizedString("schedule_add_title", comment: "Add Schedule"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -1516,7 +1520,7 @@ struct UserProfileScreenTemp: View {
                         
                         Spacer()
                         
-                        Text("プロフィール編集")
+                        Text(NSLocalizedString("profile_edit", comment: "Profile edit"))
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.black)
                         
@@ -1582,7 +1586,7 @@ struct UserProfileScreenTemp: View {
                                     }
                                 }
                                 
-                                Text("プロフィール画像を変更")
+                                Text(NSLocalizedString("change_profile_image", comment: "Change profile image"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.blue)
                             }
@@ -1593,10 +1597,10 @@ struct UserProfileScreenTemp: View {
                             VStack(alignment: .leading, spacing: 0) {
                                 // ユーザー名
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("ユーザー名")
+                                    Text(NSLocalizedString("username", comment: "Username"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
-                                    TextField("名前を入力", text: $username)
+                                    TextField(NSLocalizedString("enter_name", comment: "Enter name"), text: $username)
                                         .font(.system(size: 16))
                                         .padding(.vertical, 12)
                                         .padding(.horizontal, 16)
@@ -1611,14 +1615,14 @@ struct UserProfileScreenTemp: View {
                                 
                                 // 誕生日
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("誕生日")
+                                    Text(NSLocalizedString("birthday", comment: "Birthday"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
                                     
                                     Button(action: { showBirthdayPicker.toggle() }) {
                                         HStack {
                                             Text(profileManager.currentUser.birthday != nil ? 
-                                                DateFormatter.japaneseDate.string(from: birthday) : "誕生日を設定")
+                                                DateFormatter.japaneseDate.string(from: birthday) : NSLocalizedString("set_birthday", comment: "Set birthday"))
                                                 .font(.system(size: 16))
                                                 .foregroundColor(profileManager.currentUser.birthday != nil ? .black : .gray)
                                             Spacer()
@@ -1636,10 +1640,10 @@ struct UserProfileScreenTemp: View {
                                 
                                 // アニメのセリフ
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("好きなアニメのセリフ")
+                                    Text(NSLocalizedString("favorite_anime_quote", comment: "Favorite anime quote"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
-                                    TextField("アニメのセリフを入力", text: $animeQuote)
+                                    TextField(NSLocalizedString("enter_anime_quote", comment: "Enter anime quote"), text: $animeQuote)
                                         .font(.system(size: 16))
                                         .padding(.vertical, 12)
                                         .padding(.horizontal, 16)
@@ -1688,7 +1692,7 @@ struct UserProfileScreenTemp: View {
                                     HStack {
                                         Image(systemName: "rectangle.portrait.and.arrow.right")
                                             .foregroundColor(.red)
-                                        Text("ログアウト")
+                                        Text(NSLocalizedString("logout", comment: "Logout"))
                                             .font(.system(size: 16))
                                             .foregroundColor(.red)
                                         Spacer()
@@ -1728,14 +1732,14 @@ struct UserProfileScreenTemp: View {
         }
         .sheet(isPresented: $showBirthdayPicker) {
             NavigationView {
-                DatePicker("誕生日を選択", selection: $birthday, displayedComponents: .date)
+                DatePicker(NSLocalizedString("select_birthday", comment: "Select birthday"), selection: $birthday, displayedComponents: .date)
                     .datePickerStyle(WheelDatePickerStyle())
                     .labelsHidden()
-                    .navigationTitle("誕生日")
+                    .navigationTitle(NSLocalizedString("birthday", comment: "Birthday"))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("完了") {
+                            Button(NSLocalizedString("complete", comment: "Complete")) {
                                 showBirthdayPicker = false
                                 saveProfile()
                             }
@@ -1918,7 +1922,7 @@ struct LogoutConfirmationView: View {
                     
                     // ユーザー名
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("ユーザー名")
+                        Text(NSLocalizedString("username", comment: "Username"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
@@ -1989,7 +1993,7 @@ struct LogoutConfirmationView: View {
                         isPresented = false
                         onLogout()
                     }) {
-                        Text("ログアウト")
+                        Text(NSLocalizedString("logout", comment: "Logout"))
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)

@@ -280,7 +280,7 @@ struct VisitGameScreen: View {
                 HStack {
                     Image(systemName: "clock.fill")
                         .foregroundColor(.blue)
-                    Text("開始時刻: \(timeFormatter.string(from: startTime))")
+                    Text(String(format: NSLocalizedString("start_time_format", comment: "Start time: %@"), timeFormatter.string(from: startTime)))
                         .font(.system(size: 14, weight: .medium))
                     Spacer()
                 }
@@ -299,12 +299,12 @@ struct VisitGameScreen: View {
                         .foregroundColor(.purple)
                         .scaleEffect(1.1)
                         .animation(.easeInOut(duration: 0.3).repeatCount(1), value: filteredSpotsCompletedCount)
-                    Text("Day \(selectedDay)のスポットを\nすべて巡りました！")
+                    Text(String(format: NSLocalizedString("day_spots_completed", comment: "Day %d spots\ncompleted!"), selectedDay))
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.purple)
                         .multilineTextAlignment(.center)
                     if completedSpotsCount == viewModel.spots.count {
-                        Text("すべての日程が完了しました\nお疲れ様でした")
+                        Text(NSLocalizedString("all_schedule_completed", comment: "All schedules completed\nGreat job"))
                             .font(.system(size: 16))
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
@@ -664,7 +664,7 @@ struct VisitGameScreen: View {
                         HStack(spacing: 4) {
                             Image(systemName: "calendar")
                                 .font(.system(size: 14))
-                            Text("\(numberOfDays)日間")
+                            Text(String(format: NSLocalizedString("days_count", comment: "%d days"), numberOfDays))
                                 .font(.system(size: 14))
                         }
                         .foregroundColor(.white.opacity(0.9))
@@ -672,7 +672,7 @@ struct VisitGameScreen: View {
                         HStack(spacing: 4) {
                             Image(systemName: "location")
                                 .font(.system(size: 14))
-                            Text("\(viewModel.spots.count)スポット")
+                            Text(String(format: NSLocalizedString("spots_count_game", comment: "%d spots"), viewModel.spots.count))
                                 .font(.system(size: 14))
                         }
                         .foregroundColor(.white.opacity(0.9))
@@ -887,11 +887,11 @@ struct VisitGameScreen: View {
                 .font(.system(size: 50))
                 .foregroundColor(.green)
             
-            Text("すべて完了しました！")
+            Text(NSLocalizedString("all_completed", comment: "All completed!"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.green)
             
-            Text("お疲れ様でした")
+            Text(NSLocalizedString("great_job", comment: "Great job"))
                 .font(.system(size: 16))
                 .foregroundColor(.gray)
         }
@@ -909,7 +909,7 @@ struct VisitGameScreen: View {
         }) {
             HStack {
                 Image(systemName: "square.and.arrow.down.fill")
-                Text("旅をセーブ")
+                Text(NSLocalizedString("save_trip", comment: "Save Trip"))
             }
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.white)
@@ -1223,7 +1223,7 @@ struct AnimeStyleSpotCard: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "clock")
                                     .font(.system(size: 11))
-                                Text("\(duration)分")
+                                Text(String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), duration))
                                     .font(.system(size: 12))
                                 
                                 if !spot.activity.isEmpty {
@@ -1254,7 +1254,7 @@ struct AnimeStyleSpotCard: View {
                     if let transport = spot.transportToNext {
                         HStack(spacing: 8) {
                             // 交通手段アイコン
-                            Image(systemName: transport.method == "電車" ? "tram.fill" : 
+                            Image(systemName: transport.method == NSLocalizedString("train", comment: "Train") ? "tram.fill" : 
                                             transport.method == "バス" ? "bus.fill" : 
                                             transport.method == "徒歩" ? "figure.walk" : "car.fill")
                                 .font(.system(size: 14))
@@ -1264,7 +1264,7 @@ struct AnimeStyleSpotCard: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(.orange)
                             
-                            Text("• \(transport.duration)分")
+                            Text(String(format: "• %@", String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), transport.duration)))
                                 .font(.system(size: 13))
                                 .foregroundColor(.gray)
                             
@@ -1298,7 +1298,7 @@ struct AnimeStyleSpotCard: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "plus.circle")
                                     .font(.system(size: 12))
-                                Text("交通手段を追加")
+                                Text(NSLocalizedString("add_transportation", comment: "Add Transportation"))
                                     .font(.system(size: 12))
                             }
                             .foregroundColor(.orange)
@@ -1483,7 +1483,7 @@ struct SpotCard: View {
                 .background(Color.green.opacity(0.3)) // デバッグ用背景色
                 
                 // 滞在時間バッジ（左上に配置）
-                Text("\(spot.stayDuration)分")
+                Text(String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), spot.stayDuration))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
@@ -1649,7 +1649,7 @@ struct TransportCard: View {
                         .foregroundColor(.orange)
                     Text(transport.method)
                         .font(.system(size: 14, weight: .medium))
-                    Text("・ \(transport.duration)分")
+                    Text(String(format: "• %@", String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), transport.duration)))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                     if transport.cost > 0 {
@@ -1781,7 +1781,7 @@ struct SpotDetailPageView: View {
                     // 滞在時間帯
                     if !spot.timeRange.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("滞在時間帯")
+                            Text(NSLocalizedString("stay_duration", comment: "Stay duration"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             HStack {
@@ -1798,7 +1798,7 @@ struct SpotDetailPageView: View {
                     // ここで何をするのか
                     if !spot.activity.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("ここで何をするのか")
+                            Text(NSLocalizedString("what_to_do_here", comment: "What to do here"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             Text(spot.activity)
@@ -1815,11 +1815,11 @@ struct SpotDetailPageView: View {
                                 .foregroundColor(.blue)
                                 .font(.system(size: 16))
                                 .frame(width: 20)
-                            Text("滞在時間")
+                            Text(NSLocalizedString("stay_time", comment: "Stay time"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                                 .frame(width: 80, alignment: .leading)
-                            Text("\(spot.stayDuration)分")
+                            Text(String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), spot.stayDuration))
                                 .font(.system(size: 16))
                                 .foregroundColor(.blue)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1832,7 +1832,7 @@ struct SpotDetailPageView: View {
                                     .foregroundColor(.blue)
                                     .font(.system(size: 16))
                                     .frame(width: 20)
-                                Text("住所")
+                                Text(NSLocalizedString("address", comment: "Address"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .frame(width: 80, alignment: .leading)
@@ -1850,7 +1850,7 @@ struct SpotDetailPageView: View {
                                     .foregroundColor(.blue)
                                     .font(.system(size: 16))
                                     .frame(width: 20)
-                                Text("費用")
+                                Text(NSLocalizedString("cost", comment: "Cost"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .frame(width: 80, alignment: .leading)
@@ -1865,7 +1865,7 @@ struct SpotDetailPageView: View {
                     // メモ
                     if !spot.notes.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("メモ")
+                            Text(NSLocalizedString("memo", comment: "Memo"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             Text(spot.notes)
@@ -1880,7 +1880,7 @@ struct SpotDetailPageView: View {
                     
                     if hasLocalImages || hasWebImages {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("詳細画像")
+                            Text(NSLocalizedString("detail_images", comment: "Detail images"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             
@@ -1927,7 +1927,7 @@ struct SpotDetailPageView: View {
                         }) {
                             HStack {
                                 Image(systemName: "map")
-                                Text("地図で開く")
+                                Text(NSLocalizedString("open_in_map", comment: "Open in Map"))
                             }
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -2066,15 +2066,15 @@ struct FullScreenWebImageView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(2.0)
                 } else {
-                    Text("画像を読み込めませんでした")
+                    Text(NSLocalizedString("image_load_failed", comment: "Failed to load image"))
                         .foregroundColor(.white)
                 }
             }
-            .navigationTitle("画像")
+            .navigationTitle(NSLocalizedString("image", comment: "Image"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
+                    Button(NSLocalizedString("close", comment: "Close")) {
                         isPresented = false
                     }
                     .foregroundColor(.white)
@@ -2183,30 +2183,30 @@ struct GameAddSpotView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("基本情報")) {
-                    TextField("スポット名", text: $name)
-                    TextField("住所", text: $address)
-                    TextField("アクティビティ", text: $activity)
+                Section(header: Text(NSLocalizedString("basic_info", comment: "Basic Information"))) {
+                    TextField(NSLocalizedString("spot_name", comment: "Spot name"), text: $name)
+                    TextField(NSLocalizedString("address", comment: "Address"), text: $address)
+                    TextField(NSLocalizedString("activity", comment: "Activity"), text: $activity)
                 }
                 
-                Section(header: Text("詳細")) {
-                    Stepper("滞在時間: \(stayDuration)分", value: $stayDuration, in: 15...480, step: 15)
+                Section(header: Text(NSLocalizedString("details", comment: "Details"))) {
+                    Stepper(String(format: NSLocalizedString("stay_duration_stepper", comment: "Stay duration: %d minutes"), stayDuration), value: $stayDuration, in: 15...480, step: 15)
                     
                     HStack {
-                        Text("費用")
+                        Text(NSLocalizedString("cost_label", comment: "Cost"))
                         Spacer()
                         TextField("0", value: $spotCost, format: .number)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
-                        Text("円")
+                        Text(CurrencyManager.shared.getLocalizedCurrencyName())
                     }
                     
-                    TextField("メモ", text: $notes, axis: .vertical)
+                    TextField(NSLocalizedString("memo", comment: "Memo"), text: $notes, axis: .vertical)
                         .lineLimit(3...6)
                 }
                 
-                Section(header: Text("画像")) {
+                Section(header: Text(NSLocalizedString("images", comment: "Images"))) {
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
@@ -2221,22 +2221,22 @@ struct GameAddSpotView: View {
                         }) {
                             HStack {
                                 Image(systemName: "photo")
-                                Text("画像を選択")
+                                Text(NSLocalizedString("select_image", comment: "Select image"))
                             }
                         }
                     }
                 }
             }
-            .navigationTitle("スポットを追加")
+            .navigationTitle(NSLocalizedString("add_spot", comment: "Add Spot"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         let newSpot = VisitSpot(
                             name: name,
                             address: address,
@@ -2276,38 +2276,38 @@ struct GameAddTransportView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("交通手段")) {
-                    Picker("移動方法", selection: $method) {
+                Section(header: Text(NSLocalizedString("transportation_method", comment: "Transportation method"))) {
+                    Picker(NSLocalizedString("movement_method", comment: "Movement method"), selection: $method) {
                         ForEach(transportMethods, id: \.self) { method in
                             Text(method).tag(method)
                         }
                     }
                     
-                    Stepper("移動時間: \(duration)分", value: $duration, in: 5...180, step: 5)
+                    Stepper(String(format: NSLocalizedString("travel_time_stepper", comment: "Travel time: %d minutes"), duration), value: $duration, in: 5...180, step: 5)
                     
                     HStack {
-                        Text("交通費")
+                        Text(NSLocalizedString("transportation_cost", comment: "Transportation cost"))
                         Spacer()
                         TextField("0", value: $cost, format: .number)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
-                        Text("円")
+                        Text(CurrencyManager.shared.getLocalizedCurrencyName())
                     }
                     
-                    TextField("経路情報（例：JR山手線→東西線）", text: $route)
+                    TextField(NSLocalizedString("route_info_placeholder", comment: "Route info (e.g. JR Yamanote Line → Tozai Line)"), text: $route)
                 }
             }
-            .navigationTitle("交通手段")
+            .navigationTitle(NSLocalizedString("transportation", comment: "Transportation"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         let newTransport = TransportInfo(
                             method: method,
                             duration: duration,
@@ -2446,7 +2446,7 @@ struct ImprovedCompletionView: View {
                 
                 // 完了テキスト
                 VStack(spacing: 8) {
-                    Text("🎉 お疲れ様でした！")
+                    Text(NSLocalizedString("congratulations", comment: "🎉 Congratulations!"))
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.primary)
                     
@@ -2455,7 +2455,7 @@ struct ImprovedCompletionView: View {
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                     
-                    Text("アニメ：\(animeName)")
+                    Text(String(format: NSLocalizedString("anime_label", comment: "Anime: %@"), animeName))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.blue)
                 }
@@ -2465,7 +2465,7 @@ struct ImprovedCompletionView: View {
                 Button(action: dismissView) {
                     HStack {
                         Image(systemName: "checkmark")
-                        Text("完了")
+                        Text(NSLocalizedString("complete", comment: "Complete"))
                     }
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
@@ -2581,7 +2581,7 @@ struct AllDaysCompletionView: View {
                 }
                 
                 // タイトル
-                Text("お疲れ様でした！")
+                Text(NSLocalizedString("congratulations", comment: "🎉 Congratulations!"))
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
                     .opacity(opacity)
@@ -2596,7 +2596,7 @@ struct AllDaysCompletionView: View {
                     .animation(.easeInOut(duration: 0.8).delay(0.5), value: opacity)
                 
                 // 完了メッセージ
-                Text("すべての日程が完了しました")
+                Text(NSLocalizedString("all_schedule_completed", comment: "All schedules completed\nGreat job"))
                     .font(.system(size: 16))
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
@@ -2607,7 +2607,7 @@ struct AllDaysCompletionView: View {
                 Button(action: {
                     dismissView()
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2756,7 +2756,7 @@ struct StreamingServicesSheet: View {
                     }
                     
                     VStack(spacing: 8) {
-                        Text("アニメを観る")
+                        Text(NSLocalizedString("watch_anime", comment: "Watch Anime"))
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.black)
                         
@@ -2777,11 +2777,11 @@ struct StreamingServicesSheet: View {
                                 Image(systemName: "tv.slash")
                                     .font(.system(size: 60))
                                     .foregroundColor(.gray)
-                                Text("ストリーミングサービスが設定されていません")
+                                Text(NSLocalizedString("streaming_not_configured", comment: "Streaming service not configured"))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
-                                Text("管理者による設定が必要です")
+                                Text(NSLocalizedString("admin_setup_required", comment: "Admin setup required"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
@@ -2801,7 +2801,7 @@ struct StreamingServicesSheet: View {
                 Button(action: {
                     isPresented = false
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2844,7 +2844,7 @@ struct StreamingServiceRow: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
                     
-                    Text("タップして視聴")
+                    Text(NSLocalizedString("tap_to_watch", comment: "Tap to watch"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                 }

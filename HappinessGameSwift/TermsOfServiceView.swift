@@ -8,103 +8,103 @@ struct TermsOfServiceView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("利用規約")
+                    Text("Terms of Service")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .padding(.bottom, 10)
                     
-                    Text("最終更新日: 2025年7月23日")
+                    Text("Last Updated: July 23, 2025")
                         .font(.caption)
                         .foregroundColor(.gray)
                     
                     Group {
-                        Text("第1条（利用規約の適用）")
+                        Text("Article 1 (Application of Terms of Service)")
                             .font(.headline)
-                        Text("本利用規約（以下「本規約」といいます）は、アニレコ（以下「本アプリ」といいます）の利用に関する条件を、本アプリを利用するユーザー（以下「ユーザー」といいます）と運営者との間で定めるものです。")
+                        Text("These Terms of Service (hereinafter referred to as \"Terms\") set forth the conditions for the use of ANICOLLE! (hereinafter referred to as \"the App\") between users of the App (hereinafter referred to as \"Users\") and the operator.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第2条（利用登録）")
+                        Text("Article 2 (User Registration)")
                             .font(.headline)
-                        Text("1. ユーザーは、本規約に同意の上、所定の方法により利用登録を行うものとします。\n2. 利用登録の申請に際して虚偽の事項を届け出た場合、利用登録を取り消すことがあります。")
+                        Text("1. Users shall register for use in accordance with the prescribed method after agreeing to these Terms.\n2. If false information is provided during registration, the registration may be cancelled.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第3条（ユーザーIDおよびパスワードの管理）")
+                        Text("Article 3 (Management of User ID and Password)")
                             .font(.headline)
-                        Text("1. ユーザーは、自己の責任において、本アプリのユーザーIDおよびパスワードを適切に管理するものとします。\n2. ユーザーIDおよびパスワードが第三者によって使用されたことにより生じた損害については、運営者は一切の責任を負いません。")
+                        Text("1. Users shall appropriately manage their User ID and password for the App at their own responsibility.\n2. The operator assumes no responsibility for any damages resulting from the use of User IDs and passwords by third parties.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第4条（利用料金）")
+                        Text("Article 4 (Usage Fees)")
                             .font(.headline)
-                        Text("1. 本アプリは初回登録から2ヶ月間は無料でご利用いただけます。\n2. 無料期間終了後は、継続してご利用いただく場合、600円（税込）の利用料金が必要となります。\n3. 利用料金をお支払いいただけない場合、本アプリの一部または全部の機能が制限される場合があります。\n4. 一度お支払いいただいた利用料金は、理由の如何を問わず返金いたしません。")
+                        Text("1. The App can be used free of charge for 2 months from initial registration.\n2. After the free period ends, a usage fee of 600 yen (tax included) is required to continue using the App.\n3. If the usage fee is not paid, some or all functions of the App may be restricted.\n4. Usage fees once paid will not be refunded for any reason.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第5条（禁止事項）")
+                        Text("Article 5 (Prohibited Activities)")
                             .font(.headline)
-                        Text("ユーザーは、本アプリの利用にあたり、以下の行為をしてはなりません：\n• 法令または公序良俗に違反する行為\n• 犯罪行為に関連する行為\n• 本アプリの運営を妨害するおそれのある行為\n• 他のユーザーに関する個人情報等を収集または蓄積する行為\n• 不正アクセスをし、またはこれを試みる行為\n• 他のユーザーに成りすます行為\n• 本アプリに関連して、反社会的勢力に対して直接または間接に利益を供与する行為")
+                        Text("Users shall not engage in the following activities when using the App:\n• Activities that violate laws or public order and morals\n• Activities related to criminal acts\n• Activities that may interfere with the operation of the App\n• Activities that collect or accumulate personal information about other users\n• Activities that involve unauthorized access or attempts thereof\n• Activities impersonating other users\n• Activities that directly or indirectly provide benefits to antisocial forces in connection with the App")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第6条（本アプリの提供の停止等）")
+                        Text("Article 6 (Suspension of App Services)")
                             .font(.headline)
-                        Text("運営者は、以下のいずれかの事由があると判断した場合、ユーザーに事前に通知することなく本アプリの全部または一部の提供を停止または中断することができるものとします：\n• 本アプリにかかるコンピュータシステムの保守点検または更新を行う場合\n• 地震、落雷、火災、停電または天災などの不可抗力により、本アプリの提供が困難となった場合\n• コンピュータまたは通信回線等が事故により停止した場合")
+                        Text("The operator may suspend or interrupt all or part of the App services without prior notice to users if any of the following circumstances are deemed to exist:\n• When performing maintenance, inspection, or updates of the computer system related to the App\n• When it becomes difficult to provide the App due to force majeure such as earthquakes, lightning, fire, power outages, or natural disasters\n• When computers or communication lines are stopped due to accidents")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第7条（著作権）")
+                        Text("Article 7 (Copyright)")
                             .font(.headline)
-                        Text("1. 本アプリ内で提供されるコンテンツ（文章、画像、動画、音声等）の著作権は、運営者または正当な権利者に帰属します。\n2. ユーザーは、本アプリのコンテンツを個人的な利用の範囲を超えて使用することはできません。")
+                        Text("1. The copyright of content (text, images, videos, audio, etc.) provided within the App belongs to the operator or legitimate rights holders.\n2. Users may not use the App's content beyond the scope of personal use.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第8条（免責事項）")
+                        Text("Article 8 (Disclaimer)")
                             .font(.headline)
-                        Text("1. 本アプリに掲載される情報の正確性には万全を期していますが、運営者は本アプリの情報の正確性、有用性、適時性等について保証するものではありません。\n2. 本アプリの利用によりユーザーに生じた損害について、運営者は一切の責任を負いません。")
+                        Text("1. While every effort is made to ensure the accuracy of information posted on the App, the operator does not guarantee the accuracy, usefulness, or timeliness of the App's information.\n2. The operator assumes no responsibility for any damages incurred by users through the use of the App.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第9条（情報の収集および共有）")
+                        Text("Article 9 (Collection and Sharing of Information)")
                             .font(.headline)
-                        Text("1. 本アプリでは、ユーザーが登録した好きなアニメや好きな声優キャラクターの文字情報を収集し、サービス向上や他のユーザーとの共有機能提供のために使用する場合があります。\n2. ユーザーは、本アプリを利用することにより、上記の情報収集および共有について同意したものとみなします。\n3. その他の個人情報については、別途定めるプライバシーポリシーに従って適切に取り扱います。")
+                        Text("1. The App may collect text information about users' favorite anime and voice actor characters registered by users, and use it to improve services and provide sharing functions with other users.\n2. By using the App, users are deemed to have consented to the above information collection and sharing.\n3. Other personal information will be handled appropriately in accordance with the separately established Privacy Policy.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第10条（利用方法）")
+                        Text("Article 10 (Usage Method)")
                             .font(.headline)
-                        Text("デバイスを変更した場合、ユーザーが持つ文字情報は保存されますが、画像は保存されませんのでご了承ください。新しいデバイスでログイン後、画像は再度アップロードする必要があります。")
+                        Text("When changing devices, user text information will be saved, but images will not be saved. After logging in on a new device, images will need to be uploaded again.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第11条（プライバシーポリシー）")
+                        Text("Article 11 (Privacy Policy)")
                             .font(.headline)
-                        Text("本アプリの利用において取得したユーザーの個人情報は、別途定めるプライバシーポリシーに従って適切に取り扱います。")
+                        Text("Personal information obtained through the use of the App will be handled appropriately in accordance with the separately established Privacy Policy.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第12条（利用規約の変更）")
+                        Text("Article 12 (Changes to Terms of Service)")
                             .font(.headline)
-                        Text("運営者は、必要と判断した場合には、ユーザーに通知することなく本規約を変更することができるものとします。変更後の本規約は、本アプリ内に掲載したときから効力を生じるものとします。")
+                        Text("The operator may change these Terms without notifying users when deemed necessary. The revised Terms shall take effect when posted within the App.")
                             .font(.body)
                     }
                     
                     Group {
-                        Text("第13条（準拠法・裁判管轄）")
+                        Text("Article 13 (Governing Law and Jurisdiction)")
                             .font(.headline)
-                        Text("1. 本規約の解釈にあたっては、日本法を準拠法とします。\n2. 本アプリに関して紛争が生じた場合には、運営者の本店所在地を管轄する裁判所を専属的合意管轄とします。")
+                        Text("1. These Terms shall be governed by Japanese law.\n2. Any disputes arising in connection with the App shall be subject to the exclusive jurisdiction of the court having jurisdiction over the location of the operator's head office.")
                             .font(.body)
                     }
                 }

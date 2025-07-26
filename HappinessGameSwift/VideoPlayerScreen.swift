@@ -167,7 +167,7 @@ struct VideoPlayerScreen: View {
                         
                         // 検索バー（表示時）
                         if showSearchBar {
-                            TextField("検索", text: $searchText, onCommit: {
+                            TextField(NSLocalizedString("search", comment: "Search"), text: $searchText, onCommit: {
                                 filterVideos()
                             })
                             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -208,7 +208,7 @@ struct VideoPlayerScreen: View {
                                 .fill(Color.black)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                                 .overlay(
-                                    Text("プレイヤーを初期化中...")
+                                    Text(NSLocalizedString("initializing_player", comment: "Initializing player..."))
                                         .foregroundColor(.white)
                                 )
                         }
@@ -227,7 +227,7 @@ struct VideoPlayerScreen: View {
                             
                             // 関連動画
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("関連動画")
+                                Text(NSLocalizedString("related_videos", comment: "Related videos"))
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 16)
@@ -296,11 +296,11 @@ struct VideoPlayerScreen: View {
                                                             .foregroundColor(.black)
                                                             .lineLimit(2)
                                                         
-                                                        Text(character?.name ?? anime?.title ?? "アニメコレクター")
+                                                        Text(character?.name ?? anime?.title ?? NSLocalizedString("app_name", comment: "ANICOLLE"))
                                                             .font(.system(size: 12))
                                                             .foregroundColor(.gray)
                                                         
-                                                        Text("\(formatViewCount(relatedVideo.viewCount ?? 0))回・\(timeAgo(from: relatedVideo.date))")
+                                                        Text(String(format: NSLocalizedString("view_count_time_ago", comment: "%@ views • %@"), formatViewCount(relatedVideo.viewCount ?? 0), timeAgo(from: relatedVideo.date)))
                                                             .font(.system(size: 12))
                                                             .foregroundColor(.gray)
                                                     }
@@ -328,7 +328,7 @@ struct VideoPlayerScreen: View {
                         Button(action: {
                             presentationMode.wrappedValue.dismiss()
                         }) {
-                            Text("戻る")
+                            Text(NSLocalizedString("back", comment: "Back"))
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
@@ -351,13 +351,13 @@ struct VideoPlayerScreen: View {
     @ViewBuilder
     private var menuSheet: some View {
         VStack(spacing: 24) {
-            Text("動画の編集")
+            Text(NSLocalizedString("edit_video", comment: "Edit video"))
                 .font(.headline)
-            TextField("タイトル", text: $editTitle)
+            TextField(NSLocalizedString("title", comment: "Title"), text: $editTitle)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-            TextField("タグ（カンマ区切り）", text: $editTags)
+            TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editTags)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-            Button("タイトル・タグを保存") {
+            Button(NSLocalizedString("save_title_tags", comment: "Save title and tags")) {
                 let tagsArray = editTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 // ローカルのvideoも更新
                 video.title = editTitle
@@ -370,7 +370,7 @@ struct VideoPlayerScreen: View {
             .background(Color.blue)
             .foregroundColor(.white)
             .cornerRadius(10)
-            Button("サムネイルを変更") {
+            Button(NSLocalizedString("change_thumbnail", comment: "Change thumbnail")) {
                 showMenuSheet = false
                 // 少し遅延させてからサムネイルピッカーを表示
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -382,25 +382,25 @@ struct VideoPlayerScreen: View {
             .background(Color.green)
             .foregroundColor(.white)
             .cornerRadius(10)
-            Button("動画を削除") {
+            Button(NSLocalizedString("delete_video", comment: "Delete video")) {
                 showDeleteAlert = true
             }
             .foregroundColor(.red)
-            Button("キャンセル") {
+            Button(NSLocalizedString("cancel", comment: "Cancel")) {
                 showMenuSheet = false
             }
         }
         .padding(32)
         .alert(isPresented: $showDeleteAlert) {
             Alert(
-                title: Text("本当に削除しますか？"),
-                message: Text("この動画は完全に削除されます。"),
-                primaryButton: .destructive(Text("削除")) {
+                title: Text(NSLocalizedString("really_delete", comment: "Really delete?")),
+                message: Text(NSLocalizedString("delete_video_confirm_message", comment: "This video will be permanently deleted.")),
+                primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                     onDelete?()
                     showMenuSheet = false
                     presentationMode.wrappedValue.dismiss()
                 },
-                secondaryButton: .cancel(Text("キャンセル"))
+                secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
             )
         }
     }
@@ -425,17 +425,17 @@ extension VideoPlayerScreen {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: "%d years ago"), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: "%d months ago"), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: "%d days ago"), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: "%d hours ago"), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: "%d minutes ago"), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "Just now")
         }
     }
     
@@ -638,7 +638,7 @@ extension VideoPlayerScreen {
                     HStack {
                         Image(systemName: "play.circle.fill")
                             .font(.title)
-                        Text("YouTubeで開く")
+                        Text(NSLocalizedString("open_in_youtube", comment: "Open in YouTube"))
                             .font(.headline)
                     }
                     .foregroundColor(.white)
@@ -652,7 +652,7 @@ extension VideoPlayerScreen {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .foregroundColor(.gray)
                         .padding()
                 }
@@ -667,11 +667,11 @@ extension VideoPlayerScreen {
     @ViewBuilder
     func editTitleSheet() -> some View {
         VStack(spacing: 24) {
-            Text("タイトルを編集")
+            Text(NSLocalizedString("edit_title", comment: "Edit title"))
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タイトル", text: $editText)
+            TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)
@@ -695,7 +695,7 @@ extension VideoPlayerScreen {
                     onSave?(editText, tags)
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -719,11 +719,11 @@ extension VideoPlayerScreen {
     @ViewBuilder
     func editTagsSheet() -> some View {
         VStack(spacing: 24) {
-            Text("タグを編集")
+            Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タグ（カンマ区切り）", text: $editText)
+            TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)
@@ -748,7 +748,7 @@ extension VideoPlayerScreen {
                     onSave?(title, tags)
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -831,10 +831,10 @@ private struct VideoInfoView: View {
                     .lineLimit(2)
                 
                 HStack(spacing: 4) {
-                    Text("\(formatViewCount(video.viewCount ?? 0))回視聴")
+                    Text(String(format: NSLocalizedString("views_count", comment: "%@ views"), formatViewCount(video.viewCount ?? 0)))
                     Text("・")
                     Text("\(timeAgo(from: video.date))")
-                    Text("...もっと見る")
+                    Text(NSLocalizedString("show_more", comment: "Show more"))
                         .foregroundColor(.gray)
                     Spacer()
                 }
@@ -874,7 +874,7 @@ private struct VideoInfoView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
                     
-                    Text("総動画再生数 \(formatViewCount(totalViewCount))回")
+                    Text(String(format: NSLocalizedString("total_video_views", comment: "Total video views %@ times"), formatViewCount(totalViewCount)))
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                 }
@@ -882,7 +882,7 @@ private struct VideoInfoView: View {
                 Spacer()
                 
                 Button(action: showMenuSheet) {
-                    Text("編集")
+                    Text(NSLocalizedString("edit", comment: "Edit"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.black)
                         .padding(.horizontal, 20)
@@ -929,17 +929,17 @@ private struct VideoInfoView: View {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: "%d years ago"), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: "%d months ago"), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: "%d days ago"), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: "%d hours ago"), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: "%d minutes ago"), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "Just now")
         }
     }
     
@@ -977,7 +977,7 @@ private struct YouTubeVideoView: View {
                     HStack {
                         Image(systemName: "play.circle.fill")
                             .font(.title)
-                        Text("YouTubeで開く")
+                        Text(NSLocalizedString("open_in_youtube", comment: "Open in YouTube"))
                             .font(.headline)
                     }
                     .foregroundColor(.white)
@@ -989,7 +989,7 @@ private struct YouTubeVideoView: View {
                 }
                 
                 Button(action: dismiss) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .foregroundColor(.gray)
                         .padding()
                 }

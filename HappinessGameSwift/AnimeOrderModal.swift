@@ -9,11 +9,11 @@ struct AnimeOrderModal: View {
         NavigationView {
             VStack {
                 VStack(spacing: 8) {
-                    Text("アニメの順番を変更")
+                    Text(NSLocalizedString("anime_order_title", comment: "Anime order title"))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("ドラッグ&ドロップで順番を変更できます")
+                    Text(NSLocalizedString("drag_drop_to_reorder", comment: "Drag and drop instruction"))
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -55,13 +55,13 @@ struct AnimeOrderModal: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel button")) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save button")) {
                         saveOrder()
                         dismiss()
                     }

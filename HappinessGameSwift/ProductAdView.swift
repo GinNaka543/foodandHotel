@@ -53,7 +53,7 @@ struct ProductAdView: View {
                         
                         Spacer()
                         
-                        Text("広告")
+                        Text(NSLocalizedString("advertisement", comment: "Advertisement"))
                             .font(.system(size: 10))
                             .foregroundColor(.gray)
                             .padding(.horizontal, 6)

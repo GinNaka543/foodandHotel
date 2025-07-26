@@ -22,7 +22,7 @@ struct HomeScreen_iPad: View {
         let names = characterManager.characters.filter { !$0.name.isEmpty }.map { $0.name }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
-            return joinedNames.isEmpty ? "キャラクターが登録されていません" : joinedNames
+            return joinedNames.isEmpty ? NSLocalizedString("no_characters_registered", comment: "No characters registered") : joinedNames
         } else {
             let truncated = String(joinedNames.prefix(30))
             return truncated + "..."
@@ -33,7 +33,7 @@ struct HomeScreen_iPad: View {
         let names = animeManager.animes.map { $0.title }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
-            return joinedNames.isEmpty ? "アニメが登録されていません" : joinedNames
+            return joinedNames.isEmpty ? NSLocalizedString("no_anime_registered", comment: "No anime registered") : joinedNames
         } else {
             let truncated = String(joinedNames.prefix(30))
             return truncated + "..."
@@ -114,7 +114,7 @@ struct HomeScreen_iPad: View {
                             .font(.title2)
                             .fontWeight(.bold)
                         
-                        Text(profileManager.currentUser.animeQuote.isEmpty ? "好きなアニメのセリフを設定" : profileManager.currentUser.animeQuote)
+                        Text(profileManager.currentUser.animeQuote.isEmpty ? NSLocalizedString("set_anime_quote", comment: "Set anime quote") : profileManager.currentUser.animeQuote)
                             .font(.caption)
                             .foregroundColor(.gray)
                             .lineLimit(2)
@@ -332,14 +332,14 @@ struct ScheduleView_iPad: View {
                         .font(.system(size: 60))
                         .foregroundColor(.purple.opacity(0.6))
                     
-                    Text("スケジュールが登録されていません")
+                    Text(NSLocalizedString("schedule_empty", comment: "No schedules registered"))
                         .font(.title3)
                         .foregroundColor(.gray)
                     
                     Button(action: {
                         showingAddSchedule = true
                     }) {
-                        Label("スケジュールを追加", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("schedule_add", comment: "Add schedule"), systemImage: "plus.circle.fill")
                             .font(.body)
                             .fontWeight(.medium)
                             .foregroundColor(.white)

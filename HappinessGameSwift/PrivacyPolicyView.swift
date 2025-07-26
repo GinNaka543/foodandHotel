@@ -10,132 +10,132 @@ struct PrivacyPolicyView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("プライバシーポリシー")
+                    Text("Privacy Policy")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .padding(.bottom, 10)
                     
                     Group {
                         PrivacySectionView(
-                            title: "1. 収集する情報",
+                            title: "1. Information We Collect",
                             content: """
-                            本アプリ「アニレコ」は、以下の情報を収集します：
+                            The App "ANICOLLE!" collects the following information:
                             
-                            • ユーザー登録情報（ユーザー名、ユーザーID）
-                            • アプリ内で作成されたコンテンツ（キャラクター、アニメの記録）
-                            • デバイス情報（デバイスID、OSバージョン）
-                            • アプリの利用状況（ログイン日時、機能の使用頻度）
-                            • 支払い情報（Stripeを通じた決済情報、ただしクレジットカード番号は保存しません）
+                            • User registration information (username, user ID)
+                            • Content created within the app (character, anime records)
+                            • Device information (device ID, OS version)
+                            • App usage (login times, feature usage frequency)
+                            • Payment information (payment info through Stripe, but credit card numbers are not stored)
                             
-                            ※メールアドレスは収集しません
+                            Note: We do not collect email addresses
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "2. 情報の使用目的",
+                            title: "2. Purpose of Information Use",
                             content: """
-                            収集した情報は以下の目的でのみ使用されます：
+                            The collected information is used only for the following purposes:
                             
-                            • アプリの基本機能の提供
-                            • ユーザー認証とアカウント管理
-                            • 課金・ポイント管理
-                            • キャラクター・アニメ情報のバックアップ（データ喪失時の復旧用）
-                            • アプリの改善とカスタマーサポート
-                            • 法的要求への対応
+                            • Providing basic app functionality
+                            • User authentication and account management
+                            • Payment and point management
+                            • Backing up character and anime information (for data recovery)
+                            • App improvement and customer support
+                            • Responding to legal requirements
                             
-                            注記：お客様が登録したキャラクターやアニメの情報は、デバイスの故障や機種変更時にデータを復旧できるよう、バックアップ目的でのみサーバーに保存されます。
+                            Note: Character and anime information you register is stored on servers solely for backup purposes, allowing data recovery in case of device failure or replacement.
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "3. データの保存と管理",
+                            title: "3. Data Storage and Management",
                             content: """
-                            • ユーザーが作成したコンテンツ（キャラクター、アニメ情報）は、バックアップ目的でFirebaseサーバーに安全に保存されます
-                            • この仕組みにより、以下の場合でもデータを失うことなく復旧できます：
-                              - デバイスの故障や紛失
-                              - アプリの再インストール
-                              - 新しいデバイスへの機種変更
-                            • 認証情報、ポイント情報、課金情報もFirebaseサーバーで管理されます
-                            • すべての通信はHTTPSで暗号化されています
-                            • ユーザーは自分のデータをいつでも削除することができます
-                            • バックアップデータは、ユーザーアカウントに紐づいて保存され、他のユーザーがアクセスすることはできません
+                            • User-created content (character, anime information) is securely stored on Firebase servers for backup purposes
+                            • This system allows data recovery without loss in the following cases:
+                              - Device failure or loss
+                              - App reinstallation
+                              - Device replacement
+                            • Authentication information, point information, and payment information are also managed on Firebase servers
+                            • All communications are encrypted with HTTPS
+                            • Users can delete their data at any time
+                            • Backup data is stored linked to user accounts and cannot be accessed by other users
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "4. 第三者への情報提供",
+                            title: "4. Information Disclosure to Third Parties",
                             content: """
-                            当社は、以下の場合を除き、ユーザーの個人情報を第三者に提供することはありません：
+                            We do not provide users' personal information to third parties except in the following cases:
                             
-                            • ユーザーの同意がある場合
-                            • 法令に基づく開示請求があった場合
-                            • 人命、身体または財産の保護のために必要な場合
+                            • When user consent is obtained
+                            • When disclosure is required by law
+                            • When necessary to protect life, body, or property
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "5. セキュリティ",
+                            title: "5. Security",
                             content: """
-                            当社は、ユーザーの情報を適切に保護するため、以下の対策を実施しています：
+                            We implement the following measures to properly protect user information:
                             
-                            • HTTPS通信による暗号化
-                            • Firebase Authenticationによる安全な認証
-                            • APIキーの適切な管理
-                            • 定期的なセキュリティアップデート
+                            • Encryption through HTTPS communication
+                            • Secure authentication with Firebase Authentication
+                            • Proper API key management
+                            • Regular security updates
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "6. Cookieおよびトラッキング",
+                            title: "6. Cookies and Tracking",
                             content: """
-                            • 本アプリは、ユーザー体験向上のためにCookieを使用しません
-                            • 広告表示のためのトラッキングは行いません
-                            • アプリの利用統計は匿名化された形で収集されます
-                            • 収集したキャラクター・アニメ情報は、バックアップ・復旧目的以外には使用されません
+                            • This app does not use cookies to improve user experience
+                            • We do not track for advertising purposes
+                            • App usage statistics are collected in anonymized form
+                            • Collected character and anime information is not used for purposes other than backup and recovery
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "7. データのバックアップと復旧",
+                            title: "7. Data Backup and Recovery",
                             content: """
-                            お客様の大切なデータを守るため、以下のバックアップ機能を提供しています：
+                            We provide the following backup features to protect your valuable data:
                             
-                            • 自動バックアップ：キャラクターやアニメの登録・編集時に自動的にサーバーに保存
-                            • データ復旧：ログイン時に自動的にバックアップデータから復元
-                            • バックアップの目的：
-                              - デバイスの故障・紛失時のデータ保護
-                              - アプリ削除・再インストール時のデータ復旧
-                              - 機種変更時のデータ移行
+                            • Automatic backup: Automatically saved to servers when registering or editing characters and anime
+                            • Data recovery: Automatically restored from backup data upon login
+                            • Purpose of backup:
+                              - Data protection in case of device failure or loss
+                              - Data recovery when app is deleted and reinstalled
+                              - Data migration when changing devices
                             
-                            重要：このバックアップデータは、お客様のデータ保護のためだけに使用され、他の目的（マーケティング、分析、第三者への提供など）には一切使用されません。
+                            Important: This backup data is used solely for protecting your data and is never used for other purposes (marketing, analysis, provision to third parties, etc.).
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "8. 子供のプライバシー",
+                            title: "8. Children's Privacy",
                             content: """
-                            本アプリは13歳未満の子供を対象としていません。13歳未満の方は保護者の同意を得てご利用ください。
+                            This app is not intended for children under 13 years old. Those under 13 should obtain parental consent before use.
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "9. プライバシーポリシーの変更",
+                            title: "9. Changes to Privacy Policy",
                             content: """
-                            当社は、必要に応じてプライバシーポリシーを変更することがあります。重要な変更がある場合は、アプリ内で通知します。
+                            We may change our privacy policy as necessary. In case of significant changes, we will notify users within the app.
                             """
                         )
                         
                         PrivacySectionView(
-                            title: "10. お問い合わせ",
+                            title: "10. Contact Us",
                             content: """
-                            プライバシーに関するお問い合わせは、以下までご連絡ください：
+                            For privacy-related inquiries, please contact us at:
                             
-                            メール: fneko543@gmail.com
+                            Email: fneko543@gmail.com
                             """
                         )
                     }
                     
-                    Text("最終更新日: 2025年7月24日")
+                    Text("Last Updated: July 24, 2025")
                         .font(.caption)
                         .foregroundColor(.gray)
                         .padding(.top, 20)
@@ -163,7 +163,7 @@ struct PrivacyPolicyView: View {
                             UserDefaults.standard.set(true, forKey: "hasAgreedToPrivacyPolicy")
                             dismiss()
                         }) {
-                            Text("同意してアプリを開始する")
+                            Text("Agree and Start Using the App")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -172,7 +172,7 @@ struct PrivacyPolicyView: View {
                                 .cornerRadius(12)
                         }
                         
-                        Text("プライバシーポリシーに同意することで、アプリの利用を開始できます")
+                        Text("By agreeing to the Privacy Policy, you can start using the app")
                             .font(.caption)
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)

@@ -47,7 +47,7 @@ struct TargetedAdBannerView: View {
                             .foregroundColor(.secondary)
                             .lineLimit(2)
                         
-                        Text("広告")
+                        Text(NSLocalizedString("advertisement", comment: "Advertisement"))
                             .font(.system(size: 10))
                             .foregroundColor(.gray)
                             .padding(.horizontal, 6)

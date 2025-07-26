@@ -53,7 +53,7 @@ struct NavigationMenuView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         // ホーム
                         NavigationMenuItem(
-                            title: "ホーム"
+                            title: NSLocalizedString("home", comment: "Home menu item")
                         ) {
                             mainTab.selectedTab = .home
                             isPresented = false
@@ -61,7 +61,7 @@ struct NavigationMenuView: View {
                         
                         // キャラクター
                         NavigationMenuItem(
-                            title: "キャラクター"
+                            title: NSLocalizedString("character", comment: "Character menu item")
                         ) {
                             mainTab.selectedTab = .chara
                             isPresented = false
@@ -69,7 +69,7 @@ struct NavigationMenuView: View {
                         
                         // アニメ
                         NavigationMenuItem(
-                            title: "アニメ"
+                            title: NSLocalizedString("anime", comment: "Anime menu item")
                         ) {
                             mainTab.selectedTab = .anime
                             isPresented = false
@@ -77,7 +77,7 @@ struct NavigationMenuView: View {
                         
                         // ビジット
                         NavigationMenuItem(
-                            title: "ビジット"
+                            title: NSLocalizedString("visit", comment: "Visit menu item")
                         ) {
                             mainTab.selectedTab = .visit
                             isPresented = false
@@ -85,7 +85,7 @@ struct NavigationMenuView: View {
                         
                         // プロダクト
                         NavigationMenuItem(
-                            title: "プロダクト"
+                            title: NSLocalizedString("product", comment: "Product menu item")
                         ) {
                             mainTab.selectedTab = .card
                             isPresented = false
@@ -96,7 +96,7 @@ struct NavigationMenuView: View {
                         
                         // キャラの順番変更
                         NavigationMenuItem(
-                            title: "キャラの順番変更"
+                            title: NSLocalizedString("character_order_menu", comment: "Character order menu item")
                         ) {
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -106,7 +106,7 @@ struct NavigationMenuView: View {
                         
                         // アニメの順番変更
                         NavigationMenuItem(
-                            title: "アニメの順番変更"
+                            title: NSLocalizedString("anime_order_menu", comment: "Anime order menu item")
                         ) {
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -124,7 +124,7 @@ struct NavigationMenuView: View {
                         .padding(.bottom, 8)
                     
                     NavigationMenuItem(
-                        title: "利用規約",
+                        title: NSLocalizedString("terms_of_service", comment: "Terms of service"),
                         action: {
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -138,7 +138,7 @@ struct NavigationMenuView: View {
                     )
                     
                     NavigationMenuItem(
-                        title: "プライバシーポリシー",
+                        title: NSLocalizedString("privacy_policy", comment: "Privacy policy"),
                         action: {
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {

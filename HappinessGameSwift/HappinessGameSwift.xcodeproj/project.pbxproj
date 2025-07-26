@@ -109,6 +109,8 @@
 		CCF665F92E34CDBE00D86A20 /* PaymentGatekeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665F82E34CDBE00D86A20 /* PaymentGatekeeper.swift */; };
 		CCF665FB2E34CDDD00D86A20 /* PaymentBlockerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665FA2E34CDDD00D86A20 /* PaymentBlockerView.swift */; };
 		CCF665FD2E34CDF700D86A20 /* PremiumUpgradeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665FC2E34CDF700D86A20 /* PremiumUpgradeView.swift */; };
+		CCF665FF2E35364600D86A20 /* CurrencyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665FE2E35364600D86A20 /* CurrencyManager.swift */; };
+		CCF666012E3537FB00D86A20 /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666002E3537FB00D86A20 /* NetworkManager.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -138,7 +140,7 @@
 		75C89171126C03EEF19913ED /* AddVideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddVideoView.swift; sourceTree = "<group>"; };
 		7F5660315220E1949A4A65D1 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = AVFoundation.framework; sourceTree = "<group>"; };
 		9BBC865F71B5748DCB560583 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		9C27E3F30AF355A359930A81 /* アニレコ.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "アニレコ.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C27E3F30AF355A359930A81 /* ANICOLLE!.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ANICOLLE!.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPhotoView.swift; sourceTree = "<group>"; };
 		B0DAC2E1371DEC57CB8ED484 /* Pods-HappinessGameSwift.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappinessGameSwift.release.xcconfig"; path = "Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift.release.xcconfig"; sourceTree = "<group>"; };
 		B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGalleryScreen.swift; sourceTree = "<group>"; };
@@ -239,6 +241,8 @@
 		CCF665F82E34CDBE00D86A20 /* PaymentGatekeeper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentGatekeeper.swift; sourceTree = "<group>"; };
 		CCF665FA2E34CDDD00D86A20 /* PaymentBlockerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentBlockerView.swift; sourceTree = "<group>"; };
 		CCF665FC2E34CDF700D86A20 /* PremiumUpgradeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PremiumUpgradeView.swift; sourceTree = "<group>"; };
+		CCF665FE2E35364600D86A20 /* CurrencyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyManager.swift; sourceTree = "<group>"; };
+		CCF666002E3537FB00D86A20 /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -274,7 +278,7 @@
 		5D7F3282768988288E89E3E7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				9C27E3F30AF355A359930A81 /* アニレコ.app */,
+				9C27E3F30AF355A359930A81 /* ANICOLLE!.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -303,6 +307,8 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCF666002E3537FB00D86A20 /* NetworkManager.swift */,
+				CCF665FE2E35364600D86A20 /* CurrencyManager.swift */,
 				CCF665FC2E34CDF700D86A20 /* PremiumUpgradeView.swift */,
 				CCF665FA2E34CDDD00D86A20 /* PaymentBlockerView.swift */,
 				CCF665F82E34CDBE00D86A20 /* PaymentGatekeeper.swift */,
@@ -442,7 +448,7 @@
 			);
 			name = HappinessGameSwift;
 			productName = HappinessGameSwift;
-			productReference = 9C27E3F30AF355A359930A81 /* アニレコ.app */;
+			productReference = 9C27E3F30AF355A359930A81 /* ANICOLLE!.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -590,6 +596,7 @@
 				CC1BB3922E3106A8006EE695 /* SoundtrackEditView.swift in Sources */,
 				CC1BB3962E310B00006EE695 /* SoundtrackManager.swift in Sources */,
 				CC20AAE22E26E6B0005F4C2A /* PlanPublicationChoiceView.swift in Sources */,
+				CCF666012E3537FB00D86A20 /* NetworkManager.swift in Sources */,
 				CCF665F32E34CC5D00D86A20 /* LocalizationManager.swift in Sources */,
 				CC20AAE32E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift in Sources */,
 				CC20AAE42E26E6B0005F4C2A /* PixivThumbnailView.swift in Sources */,
@@ -636,6 +643,7 @@
 				CC9BAFCE2E315A970088E501 /* HomeScreen_iPad.swift in Sources */,
 				CC9BB05F2E33E04B0088E501 /* EmergencyCleanup.swift in Sources */,
 				CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */,
+				CCF665FF2E35364600D86A20 /* CurrencyManager.swift in Sources */,
 				CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */,
 				CCF665F52E34CD8800D86A20 /* LanguageButton.swift in Sources */,
 				CC1BB3882E28571B006EE695 /* AnimeOrderModal.swift in Sources */,
@@ -764,7 +772,7 @@
 					"\".\"",
 				);
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "アニレコ";
+				INFOPLIST_KEY_CFBundleDisplayName = "ANICOLLE!";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "画像を撮影するためにカメラへのアクセスが必要です。";
@@ -785,7 +793,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
-				PRODUCT_NAME = "アニレコ";
+				PRODUCT_NAME = "ANICOLLE!";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -874,7 +882,7 @@
 					"\".\"",
 				);
 				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "アニレコ";
+				INFOPLIST_KEY_CFBundleDisplayName = "ANICOLLE!";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "画像を撮影するためにカメラへのアクセスが必要です。";
@@ -895,7 +903,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
-				PRODUCT_NAME = "アニレコ";
+				PRODUCT_NAME = "ANICOLLE!";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

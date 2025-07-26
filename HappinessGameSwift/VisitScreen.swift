@@ -25,14 +25,25 @@ public struct VisitScreen: View {
     @State private var selectedDraftPlan: VisitPlanData? = nil
     @State private var isLoadingDraft = false
     @State private var isLoadingPlan = false
-    @State private var loadingMessage = "プランを読み込み中..."
+    @State private var loadingMessage = ""
     @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
     enum VisitTab: String, CaseIterable {
-        case all = "オール"
-        case original = "オリジナル"
-        case purchased = "購入済み"
+        case all = "all"
+        case original = "original"
+        case purchased = "purchased"
+        
+        var displayName: String {
+            switch self {
+            case .all:
+                return NSLocalizedString("visit_tab_all", comment: "All tab")
+            case .original:
+                return NSLocalizedString("visit_tab_original", comment: "Original tab")
+            case .purchased:
+                return NSLocalizedString("visit_tab_purchased", comment: "Purchased tab")
+            }
+        }
     }
     @State private var selectedTab: VisitTab = .all
     @State private var showSearchBar = true
@@ -102,15 +113,16 @@ public struct VisitScreen: View {
                     thumbnailUrl: plan.thumbnailUrl
                 )
             }
-            .alert("プランを削除しますか？", isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
-                Button("削除", role: .destructive) {
+            .alert(NSLocalizedString("delete_plan_confirm_title", comment: "Delete plan?"), isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
+                Button(NSLocalizedString("delete", comment: "Delete"), role: .destructive) {
                     deleteOriginalPlan(plan)
                 }
-                Button("キャンセル", role: .cancel) { }
+                Button(NSLocalizedString("cancel", comment: "Cancel"), role: .cancel) { }
             } message: { plan in
-                Text("「\(plan.title)」を削除します。この操作は取り消せません。")
+                Text(String(format: NSLocalizedString("delete_plan_confirm_message", comment: "Delete \"%@\". This action cannot be undone."), plan.title))
             }
             .onAppear {
+                loadingMessage = NSLocalizedString("loading_plans", comment: "Loading plans...")
                 // userIdが設定されていない場合は新しいUUIDを生成
                 if currentUserId.isEmpty || UserDefaults.standard.string(forKey: "userId") == nil {
                     let newUserId = UUID().uuidString
@@ -185,7 +197,7 @@ public struct VisitScreen: View {
                     Group {
                         if plan.isDraft {
                             // 下書きプランの場合は「下書き」バッジを表示
-                            Text("下書き")
+                            Text(NSLocalizedString("draft", comment: "Draft"))
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
@@ -194,7 +206,7 @@ public struct VisitScreen: View {
                                 .cornerRadius(8)
                         } else if selectedTab == .purchased {
                             // 購入済みタブでは「購入済み」バッジを表示
-                            Text("購入済み")
+                            Text(NSLocalizedString("purchased", comment: "Purchased"))
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
@@ -203,7 +215,7 @@ public struct VisitScreen: View {
                                 .cornerRadius(8)
                         } else if selectedTab == .original && plan.price == 0 {
                             // オリジナルタブで無料プランの場合は「オリジナル」バッジを表示
-                            Text("オリジナル")
+                            Text(NSLocalizedString("original", comment: "Original"))
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
@@ -212,7 +224,7 @@ public struct VisitScreen: View {
                                 .cornerRadius(8)
                         } else if plan.price == 0 {
                             // その他のタブで無料プランの場合は「無料」バッジを表示
-                            Text("無料")
+                            Text(NSLocalizedString("free", comment: "Free"))
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
@@ -279,7 +291,7 @@ public struct VisitScreen: View {
                             Text(plan.duration)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.blue)
-                            Text("\(plan.spots.count)スポット")
+                            Text(String(format: NSLocalizedString("spots_count", comment: "%d spots"), plan.spots.count))
                                 .font(.system(size: 10))
                                 .foregroundColor(.gray)
                         }
@@ -307,11 +319,11 @@ public struct VisitScreen: View {
                 Image(systemName: "map")
                     .font(.system(size: 50))
                     .foregroundColor(.purple)
-                Text(selectedTab == .purchased ? "購入したプランがありません" : selectedTab == .original ? "オリジナルの旅行プランを作ろう" : "まだプランがありません")
+                Text(selectedTab == .purchased ? NSLocalizedString("no_purchased_plans", comment: "No purchased plans") : selectedTab == .original ? NSLocalizedString("create_original_plan", comment: "Create your original travel plan") : NSLocalizedString("no_plans_yet", comment: "No plans yet"))
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.black)
                 if selectedTab == .original {
-                    Text("アニメの聖地を巡る、あなただけの旅行プランを作成しましょう")
+                    Text(NSLocalizedString("create_anime_pilgrimage_plan", comment: "Create your own travel plan to visit anime sacred places"))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
@@ -320,7 +332,7 @@ public struct VisitScreen: View {
                     Button(action: { showingPlanningScreen = true }) {
                         HStack {
                             Image(systemName: "plus")
-                            Text("オリジナルプランを追加")
+                            Text(NSLocalizedString("add_original_plan", comment: "Add original plan"))
                         }
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
@@ -337,7 +349,7 @@ public struct VisitScreen: View {
                     }
                     .padding(.top, 20)
                 } else if selectedTab == .purchased {
-                    Text("お気に入りのプランを購入して\nアニメの世界を体験しよう")
+                    Text(NSLocalizedString("purchase_favorite_plan_message", comment: "Purchase your favorite plan and\nexperience the anime world"))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
@@ -346,7 +358,7 @@ public struct VisitScreen: View {
                     Button(action: { selectedTab = .all }) {
                         HStack {
                             Image(systemName: "cart")
-                            Text("プランを購入する")
+                            Text(NSLocalizedString("purchase_plan", comment: "Purchase plan"))
                         }
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
@@ -395,10 +407,13 @@ public struct VisitScreen: View {
                             .foregroundColor(.black)
                     }
                     Spacer()
+                    // 言語切り替えボタン
+                    LanguageButton()
+                        .padding(.trailing, 8)
                     // Amazon風検索バー（常時表示）
                     HStack(spacing: 0) {
                         HStack {
-                            TextField("タイトルもしくはアニメから検索", text: $searchText)
+                            TextField(NSLocalizedString("search_by_title_or_anime", comment: "Search by title or anime"), text: $searchText)
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
                                 .font(.system(size: 14))
@@ -449,7 +464,7 @@ public struct VisitScreen: View {
                             Button(action: { 
                                 selectedTab = tab
                             }) {
-                                Text(tab.rawValue)
+                                Text(tab.displayName)
                                     .font(.system(size: 16, weight: .regular))
                                     .foregroundColor(selectedTab == tab ? .white : .black)
                                     .padding(.horizontal, 18)
@@ -514,7 +529,7 @@ public struct VisitScreen: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(1.5)
                             
-                            Text(isLoadingDraft ? "下書きプランを読み込み中..." : loadingMessage)
+                            Text(isLoadingDraft ? NSLocalizedString("loading_draft_plans", comment: "Loading draft plans...") : loadingMessage)
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.white)
                         }

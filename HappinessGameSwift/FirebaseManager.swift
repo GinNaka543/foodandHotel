@@ -847,7 +847,7 @@ class FirebaseManager: ObservableObject {
             .whereField("userId", isEqualTo: userId)
             .order(by: "createdAt", descending: true)
             .limit(to: 50)
-            .getDocuments { snapshot, error in
+            .getDocuments { [weak self] snapshot, error in
                 if let error = error {
                     // インデックスエラーの場合は詳細なメッセージを表示
                     let nsError = error as NSError
@@ -857,6 +857,11 @@ class FirebaseManager: ObservableObject {
                         print("⚠️ Collection: pointTransactions")
                         print("⚠️ Fields: userId (Ascending), createdAt (Descending)")
                         print("⚠️ Check the console for a direct link to create the index.")
+                        print("🔄 Falling back to basic query without ordering...")
+                        
+                        // フォールバック: ソートなしでクエリを実行
+                        self?.getPointTransactionsFallback(userId: userId, completion: completion)
+                        return
                     }
                     completion(.failure(error))
                     return
@@ -885,6 +890,46 @@ class FirebaseManager: ObservableObject {
                 } ?? []
                 
                 completion(.success(transactions))
+            }
+    }
+    
+    // フォールバック: インデックスが作成されるまでの代替クエリ
+    private func getPointTransactionsFallback(userId: String, completion: @escaping (Result<[PointTransactionModel], Error>) -> Void) {
+        print("🔄 Using fallback query for point transactions...")
+        
+        db.collection("pointTransactions")
+            .whereField("userId", isEqualTo: userId)
+            .limit(to: 50)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ Fallback query also failed: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                let transactions = snapshot?.documents.compactMap { doc -> PointTransactionModel? in
+                    let data = doc.data()
+                    
+                    guard let id = data["id"] as? String,
+                          let userId = data["userId"] as? String,
+                          let amount = data["amount"] as? Int,
+                          let type = data["type"] as? String,
+                          let description = data["description"] as? String,
+                          let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() else {
+                        return nil
+                    }
+                    
+                    guard let transactionType = PointTransactionModel.TransactionType(rawValue: type) else {
+                        return nil
+                    }
+                    
+                    return PointTransactionModel(id: id, userId: userId, amount: amount, type: transactionType, description: description, createdAt: createdAt)
+                } ?? []
+                
+                // クライアントサイドでソート（インデックスがないため）
+                let sortedTransactions = transactions.sorted { $0.createdAt > $1.createdAt }
+                print("✅ Fallback query successful, returned \(sortedTransactions.count) transactions")
+                completion(.success(sortedTransactions))
             }
     }
     

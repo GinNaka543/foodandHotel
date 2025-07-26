@@ -79,6 +79,10 @@ class LocalizationManager: ObservableObject {
     
     func setLanguage(_ language: AppLanguage) {
         currentLanguage = language
+        // アプリを再起動
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            exit(0)
+        }
     }
 }
 

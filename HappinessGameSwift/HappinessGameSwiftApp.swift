@@ -294,6 +294,14 @@ struct HappinessGameSwiftApp: App {
         #if DEBUG
         print("Firebase configured successfully")
         print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")")
+        
+        // Start network monitoring and diagnostics
+        NetworkManager.shared.startMonitoring()
+        
+        // Delay network diagnostics to avoid blocking app launch
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 3.0) {
+            NetworkManager.shared.diagnoseNetworkIssues()
+        }
         #endif
         
         // Stripe SDKを初期化
@@ -440,18 +448,18 @@ struct HappinessGameSwiftApp: App {
                             .environmentObject(productManager)
                             .environmentObject(authManager)
                             .environmentObject(paymentGatekeeper)
-                    }
-                    .onAppear {
-                        // 開発用: サンプル画像を自動生成
-                        createSampleImagesIfNeeded()
-                        // ユーザーIDを確認
-                        if UserDefaults.standard.string(forKey: "userId") != nil {
-                            // 既存データの移行を実行
-                            UserDefaultsHelper.shared.migrateDataIfNeeded()
-                            // データを再読み込み
-                            characterManager.loadCharacters()
-                            animeManager.loadAnimes()
-                        }
+                            .onAppear {
+                                // 開発用: サンプル画像を自動生成
+                                createSampleImagesIfNeeded()
+                                // ユーザーIDを確認
+                                if UserDefaults.standard.string(forKey: "userId") != nil {
+                                    // 既存データの移行を実行
+                                    UserDefaultsHelper.shared.migrateDataIfNeeded()
+                                    // データを再読み込み
+                                    characterManager.loadCharacters()
+                                    animeManager.loadAnimes()
+                                }
+                            }
                     }
                 } else {
                     AuthSelectionView(authManager: authManager)
@@ -516,11 +524,11 @@ struct MainContainerView: View {
         
         var title: String {
             switch self {
-            case .home: return "ホーム"
-            case .chara: return "キャラ"
-            case .anime: return "アニメ"
-            case .visit: return "聖地旅"
-            case .card: return "プロダクト"
+            case .home: return NSLocalizedString("home", comment: "Home tab")
+            case .chara: return NSLocalizedString("character", comment: "Character tab")
+            case .anime: return NSLocalizedString("anime", comment: "Anime tab")
+            case .visit: return NSLocalizedString("visit", comment: "Visit tab")
+            case .card: return NSLocalizedString("product", comment: "Product tab")
             }
         }
     }

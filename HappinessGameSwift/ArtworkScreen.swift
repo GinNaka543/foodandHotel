@@ -269,7 +269,7 @@ struct ArtworkScreen: View {
                     photoTags = ""
                     activeSheet = .addPhoto
                 }) {
-                    Text("写真を追加する")
+                    Text(NSLocalizedString("add_photo", comment: "Add photo"))
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -325,11 +325,11 @@ struct ArtworkScreen: View {
                                         .font(.system(size: 60))
                                         .foregroundColor(.purple)
                                     
-                                    Text("まだアルバムがありません")
+                                    Text(NSLocalizedString("no_albums_yet", comment: "No albums yet"))
                                         .font(.title2)
                                         .fontWeight(.semibold)
                                     
-                                    Text("同じタグのアートワークからアルバムを作成できます")
+                                    Text(NSLocalizedString("create_album_from_artworks", comment: "Create album from artworks with same tag"))
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                         .multilineTextAlignment(.center)
@@ -338,7 +338,7 @@ struct ArtworkScreen: View {
                                     Button(action: {
                                         showTagInput = true
                                     }) {
-                                        Label("アルバムを作成", systemImage: "plus.circle.fill")
+                                        Label(NSLocalizedString("create_album", comment: "Create album"), systemImage: "plus.circle.fill")
                                             .font(.headline)
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 20)
@@ -488,11 +488,11 @@ struct ArtworkScreen: View {
                                         .font(.system(size: 60))
                                         .foregroundColor(.purple)
                                     
-                                    Text("まだアートワークがありません")
+                                    Text(NSLocalizedString("no_artworks_yet", comment: "No artworks yet"))
                                         .font(.title2)
                                         .fontWeight(.semibold)
                                     
-                                    Text("右上の追加ボタンからアートワークを追加できます")
+                                    Text(NSLocalizedString("add_artwork_instruction", comment: "Add artwork instruction"))
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                         .multilineTextAlignment(.center)
@@ -501,7 +501,7 @@ struct ArtworkScreen: View {
                                     Button(action: {
                                         activeSheet = .addPhoto
                                     }) {
-                                        Label("アートワークを追加", systemImage: "plus.circle.fill")
+                                        Label(NSLocalizedString("add_artwork", comment: "Add artwork"), systemImage: "plus.circle.fill")
                                             .font(.headline)
                                             .foregroundColor(.white)
                                             .padding(.horizontal, 20)

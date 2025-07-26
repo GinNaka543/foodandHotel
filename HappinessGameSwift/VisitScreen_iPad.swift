@@ -101,7 +101,7 @@ struct VisitScreen_iPad: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
-                    TextField("タイトルもしくはアニメから検索", text: $searchText)
+                    TextField(NSLocalizedString("search_by_title_or_anime", comment: "Search by title or anime"), text: $searchText)
                         .textFieldStyle(PlainTextFieldStyle())
                         .onSubmit {
                             activeSearchText = searchText

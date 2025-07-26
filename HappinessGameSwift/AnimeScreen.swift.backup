@@ -357,103 +357,157 @@ struct AnimeScreen: View {
         .padding(.bottom, 7)
     }
     
-    // バナービュー（簡素化版 - デバッグ用）
+    // バナービュー
     private var bannerView: some View {
         let _ = print("🎯 [AnimeScreen] bannerView called. bannerVideo exists: \(bannerVideo != nil)")
         
-        return Group {
-            if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+        if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                 let _ = print("🔍 [AnimeScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
-                
-                VStack {
-                    if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
-                        let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
-                        AsyncImage(url: URL(string: thumbnailURL)) { image in
-                            image
+                ZStack(alignment: .bottomLeading) {
+                    // カスタムサムネイルまたはYouTubeサムネイルを表示
+                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
+                        ZStack {
+                            Image(uiImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(height: 180)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
                                 .clipped()
-                        } placeholder: {
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(height: 180)
-                                .overlay(
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                )
+                            
+                            // 暗いオーバーレイを追加
+                            Color.black.opacity(0.2)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
                         }
-                        .cornerRadius(12)
-                        .overlay(
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(video.title)
-                                            .foregroundColor(.white)
-                                            .font(.headline)
-                                            .lineLimit(2)
-                                            .shadow(color: .black.opacity(0.7), radius: 2)
-                                        if let viewCount = video.viewCount {
-                                            Text("\(viewCount.formatted()) views")
-                                                .foregroundColor(.white.opacity(0.8))
-                                                .font(.caption)
-                                                .shadow(color: .black.opacity(0.7), radius: 2)
-                                        }
-                                    }
-                                    Spacer()
-                                    Image(systemName: "play.circle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.title)
-                                        .shadow(color: .black.opacity(0.7), radius: 2)
+                    } else if let customThumbnailURL = video.youtubeThumbnailURL {
+                        ZStack {
+                            AsyncImage(url: URL(string: customThumbnailURL)) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                        .clipped()
+                                case .failure(_), .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                @unknown default:
+                                    EmptyView()
                                 }
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
                             }
-                        )
-                        .onTapGesture {
-                            if let url = URL(string: youtubeURL) {
-                                UIApplication.shared.open(url)
-                            }
+                            
+                            // 暗いオーバーレイを追加
+                            Color.black.opacity(0.2)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
                         }
                     } else {
-                        let _ = print("⚠️ [AnimeScreen] No thumbnail URL available, using fallback")
-                        Rectangle()
-                            .fill(Color.blue.opacity(0.8))
-                            .frame(height: 180)
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "play.rectangle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.largeTitle)
-                                    Text(video.title)
-                                        .foregroundColor(.white)
-                                        .font(.headline)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal)
-                                }
-                            )
-                            .cornerRadius(12)
-                            .onTapGesture {
-                                if let url = URL(string: youtubeURL) {
-                                    UIApplication.shared.open(url)
+                        ZStack {
+                            AsyncImage(url: URL(string: getYouTubeThumbnailURLForBanner(from: youtubeURL))) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                        .clipped()
+                                        .onAppear {
+                                            print("✅ [AnimeScreen] Successfully loaded YouTube thumbnail")
+                                        }
+                                case .failure(let error):
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                        .onAppear {
+                                            print("❌ [AnimeScreen] Failed to load YouTube thumbnail: \(error)")
+                                        }
+                                case .empty:
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                        .onAppear {
+                                            print("⏳ [AnimeScreen] Loading YouTube thumbnail...")
+                                        }
+                                @unknown default:
+                                    EmptyView()
                                 }
                             }
+                            
+                            // 暗いオーバーレイを追加
+                            Color.black.opacity(0.2)
+                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        }
+                        .onAppear {
+                            print("🎥 [AnimeScreen] Generating YouTube thumbnail URL from: \(youtubeURL)")
+                        }
+                    }
+                
+                // 動画情報
+                VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(video.title)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
+                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                        
+                        if !video.tags.isEmpty {
+                            Text("#" + video.tags.joined(separator: " #"))
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
+                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
+                                .lineLimit(1)
+                        }
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 16))
+                        Text(NSLocalizedString("watch", comment: "Watch"))
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.black)
+                    .cornerRadius(4)
+                }
+                .padding()
+            }
+            .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+            .cornerRadius(12)
+            .onTapGesture {
+                // 動画を再生
+                
+                if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                    // YouTubeの場合は直接URLを開く
+                    if let url = URL(string: youtubeURL) {
+                        UIApplication.shared.open(url)
+                    }
+                } else {
+                    // アップロード動画の場合はプレイヤーで再生
+                    if let anime = animeManager.animes.first(where: { anime in
+                        let key = "videos_\(anime.id.uuidString)"
+                        if let data = UserDefaults.standard.data(forKey: key),
+                           let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
+                            return videos.contains(where: { $0.id == video.id })
+                        }
+                        return false
+                    }) {
+                        selectedVideoAnime = anime
+                        selectedVideoId = video.id
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            showVideoPlayer = true
+                        }
+                    } else {
                     }
                 }
-                .padding(.horizontal, 16)
+            }
             } else {
-                // YouTube動画が登録されていない場合の表示
+                // 動画が登録されていない場合は紫のグラデーション
                 ZStack {
                     AnimatedGradientView()
-                        .frame(width: UIScreen.main.bounds.width - 32, height: 180)
+                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
                         .cornerRadius(12)
                     
                     VStack {
@@ -481,8 +535,9 @@ struct AnimeScreen: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
-            }
+        } else {
+            // bannerVideoがない場合の表示
+            EmptyView()
         }
     }
     
@@ -726,14 +781,11 @@ struct AnimeScreen: View {
     // YouTube動画を収集
     private func loadYouTubeVideos() {
         print("🔍 [AnimeScreen] Loading YouTube videos...")
-        print("🔍 [AnimeScreen] Total animes available: \(animeManager.animes.count)")
         allYouTubeVideos = []
         for anime in animeManager.animes {
-            // VideoStorage.swiftを使用して動画を取得  
-            let videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
-            print("🔍 [AnimeScreen] VideoStorage returned \(videos.count) videos for anime: \(anime.title)")
-            if !videos.isEmpty {
-                print("🔍 [AnimeScreen] Found \(videos.count) total videos for anime: \(anime.title)")
+            let key = "videos_\(anime.id.uuidString)"
+            if let data = UserDefaults.standard.data(forKey: key),
+               let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
                 // YouTube URLを持つ動画のみをフィルタリング
                 let youtubeVideos = videos.filter { video in
                     if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
@@ -743,17 +795,6 @@ struct AnimeScreen: View {
                 }
                 allYouTubeVideos.append(contentsOf: youtubeVideos)
                 print("🔍 [AnimeScreen] Found \(youtubeVideos.count) YouTube videos for anime: \(anime.title)")
-                
-                // 個別の動画情報も出力
-                for video in videos {
-                    if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
-                        print("🎥 [AnimeScreen] YouTube video: \(video.title) - URL: \(youtubeURL)")
-                    } else {
-                        print("📱 [AnimeScreen] Local video: \(video.title)")
-                    }
-                }
-            } else {
-                print("❌ [AnimeScreen] No video data found for anime: \(anime.title)")
             }
         }
         print("🔍 [AnimeScreen] Total YouTube videos found: \(allYouTubeVideos.count)")
@@ -5007,4 +5048,3 @@ struct EditSelectionSheet: View {
         }
     }
 }
-

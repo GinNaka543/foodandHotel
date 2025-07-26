@@ -88,7 +88,7 @@ struct ProductScreen: View {
     @State private var activeSearchText = ""
     @State private var selectedProduct: Product?
     @State private var showingAdminPanel = false
-    @State private var selectedTab = "欲しい商品"
+    @State private var selectedTab = "wishlist_items"
     @State private var showAddWishlistItem = false
     @State private var navigateToCategoryList = false
     @State private var selectedCategory: CharacterCategory?
@@ -122,11 +122,15 @@ struct ProductScreen: View {
                 
                 Spacer()
                 
+                // 言語切り替えボタン
+                LanguageButton()
+                    .padding(.trailing, 8)
+                
                 // 商品を追加ボタン
                 Button(action: {
                     showCategorySelection = true
                 }) {
-                    Text("商品を追加")
+                    Text(NSLocalizedString("add_product", comment: ""))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
@@ -147,7 +151,7 @@ struct ProductScreen: View {
             // 検索バー（Amazon風デザイン）
             HStack(spacing: 0) {
                 HStack {
-                    TextField("アニメもしくはキャラから検索", text: $searchText)
+                    TextField(NSLocalizedString("search_by_anime_or_character", comment: ""), text: $searchText)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .font(.system(size: 14))
@@ -220,11 +224,11 @@ struct ProductScreen: View {
                                     .foregroundColor(.gray.opacity(0.5))
                                 
                                 VStack(spacing: 8) {
-                                    Text("欲しい商品を登録しよう")
+                                    Text(NSLocalizedString("register_wishlist_items", comment: ""))
                                         .font(.system(size: 20, weight: .semibold))
                                         .foregroundColor(.black)
                                     
-                                    Text("好きなキャラクターやアニメの\n商品を登録して管理できます")
+                                    Text(NSLocalizedString("register_favorite_character_anime_products", comment: ""))
                                         .font(.system(size: 14))
                                         .foregroundColor(.gray)
                                         .multilineTextAlignment(.center)
@@ -237,7 +241,7 @@ struct ProductScreen: View {
                                     HStack {
                                         Image(systemName: "plus.circle.fill")
                                             .font(.system(size: 18))
-                                        Text("商品を追加する")
+                                        Text(NSLocalizedString("add_product_button", comment: ""))
                                             .font(.system(size: 16, weight: .semibold))
                                     }
                                     .foregroundColor(.white)
@@ -262,10 +266,10 @@ struct ProductScreen: View {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 50))
                                     .foregroundColor(.gray)
-                                Text("検索結果がありません")
+                                Text(NSLocalizedString("search_results_not_found", comment: ""))
                                     .font(.system(size: 16))
                                     .foregroundColor(.gray)
-                                Text("別のキーワードで検索してください")
+                                Text(NSLocalizedString("search_with_different_keyword", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                             }
@@ -401,7 +405,7 @@ struct CategoryBannerView: View {
                             Text(title)
                                 .font(.system(size: 20, weight: .bold))
                                 .foregroundColor(.white)
-                            Text("\(itemCount)個の商品")
+                            Text(String(format: NSLocalizedString("product_count_format", comment: ""), itemCount))
                                 .font(.system(size: 14))
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -465,7 +469,7 @@ struct WishlistItemRow: View {
             VStack(alignment: .leading, spacing: 6) {
                 // 商品名
                 if isEditingTitle {
-                    TextField("商品名", text: $tempTitle, onCommit: {
+                    TextField(NSLocalizedString("product_name", comment: ""), text: $tempTitle, onCommit: {
                         saveTitle()
                     })
                     .font(.system(size: 14))
@@ -499,7 +503,7 @@ struct WishlistItemRow: View {
                 
                 // サイト名
                 if isEditingSite {
-                    TextField("サイト名", text: $tempSiteName, onCommit: {
+                    TextField(NSLocalizedString("site_name", comment: ""), text: $tempSiteName, onCommit: {
                         saveSiteName()
                     })
                     .font(.system(size: 12))
@@ -509,7 +513,7 @@ struct WishlistItemRow: View {
                         Image(systemName: "globe")
                             .font(.system(size: 10))
                             .foregroundColor(.gray)
-                        Text(item.siteName.isEmpty ? "サイト名を追加" : item.siteName)
+                        Text(item.siteName.isEmpty ? NSLocalizedString("add_site_name", comment: "") : item.siteName)
                             .font(.system(size: 12))
                             .foregroundColor(item.siteName.isEmpty ? .gray.opacity(0.6) : .gray)
                     }
@@ -545,18 +549,18 @@ struct WishlistItemRow: View {
                 
                 // メモ欄
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("メモ:")
+                    Text(NSLocalizedString("memo_label", comment: ""))
                         .font(.system(size: 11))
                         .foregroundColor(.gray)
                     
                     if isEditingMemo {
-                        TextField("メモを入力", text: $tempMemo, onCommit: {
+                        TextField(NSLocalizedString("enter_memo", comment: ""), text: $tempMemo, onCommit: {
                             saveMemo()
                         })
                         .font(.system(size: 12))
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     } else {
-                        Text(item.memo.isEmpty ? "タップしてメモを追加" : item.memo)
+                        Text(item.memo.isEmpty ? NSLocalizedString("tap_to_add_memo", comment: "") : item.memo)
                             .font(.system(size: 12))
                             .foregroundColor(item.memo.isEmpty ? .gray.opacity(0.6) : Color(UIColor.label))
                             .lineLimit(2)
@@ -577,7 +581,7 @@ struct WishlistItemRow: View {
                     HStack(spacing: 4) {
                         Image(systemName: "cart.fill")
                             .font(.system(size: 12))
-                        Text("商品を見る")
+                        Text(NSLocalizedString("view_product", comment: ""))
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -602,29 +606,29 @@ struct WishlistItemRow: View {
             Button(action: {
                 showDeleteAlert = true
             }) {
-                Label("削除", systemImage: "trash")
+                Label(NSLocalizedString("delete", comment: ""), systemImage: "trash")
             }
         }
         .alert(isPresented: $showDeleteAlert) {
             Alert(
-                title: Text("削除確認"),
-                message: Text("この商品を削除しますか？"),
-                primaryButton: .destructive(Text("削除")) {
+                title: Text(NSLocalizedString("delete_confirm_title", comment: "")),
+                message: Text(NSLocalizedString("delete_product_confirm_message", comment: "")),
+                primaryButton: .destructive(Text(NSLocalizedString("delete", comment: ""))) {
                     wishlistManager.removeItem(item)
                 },
-                secondaryButton: .cancel(Text("キャンセル"))
+                secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "")))
             )
         }
         .sheet(isPresented: $showDeliveryPicker) {
             NavigationView {
                 VStack {
-                    Text("配送までの日数を選択")
+                    Text(NSLocalizedString("select_delivery_days", comment: ""))
                         .font(.headline)
                         .padding()
                     
-                    Picker("配送日数", selection: $tempDeliveryDays) {
+                    Picker(NSLocalizedString("delivery_days", comment: ""), selection: $tempDeliveryDays) {
                         ForEach(1...30, id: \.self) { days in
-                            Text("\(days)日後")
+                            Text(String(format: NSLocalizedString("days_later_format", comment: ""), days))
                                 .tag(days)
                         }
                     }
@@ -634,10 +638,10 @@ struct WishlistItemRow: View {
                     Spacer()
                 }
                 .navigationBarItems(
-                    leading: Button("キャンセル") {
+                    leading: Button(NSLocalizedString("cancel", comment: "")) {
                         showDeliveryPicker = false
                     },
-                    trailing: Button("保存") {
+                    trailing: Button(NSLocalizedString("save", comment: "")) {
                         updateDeliveryDays(tempDeliveryDays)
                         showDeliveryPicker = false
                     }
@@ -677,9 +681,9 @@ struct WishlistItemRow: View {
     
     private func getDeliveryText() -> String {
         if item.deliveryDays == 1 {
-            return "明日配送可能"
+            return NSLocalizedString("delivery_tomorrow", comment: "")
         } else {
-            return "\(item.deliveryDays)日後に配送"
+            return String(format: NSLocalizedString("delivery_days_format", comment: ""), item.deliveryDays)
         }
     }
     
@@ -731,10 +735,10 @@ struct CategorySelectionView: View {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 50))
                                 .foregroundColor(.blue)
-                            Text("新規キャラ/アニメを追加")
+                            Text(NSLocalizedString("add_new_character_anime", comment: ""))
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.black)
-                            Text("誰の商品なのか指定します")
+                            Text(NSLocalizedString("specify_product_owner", comment: ""))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -754,12 +758,12 @@ struct CategorySelectionView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 20)
                 
-                Text("または")
+                Text(NSLocalizedString("or_text", comment: ""))
                     .font(.system(size: 16))
                     .foregroundColor(.gray)
                     .padding(.vertical, 20)
                 
-                Text("既存のキャラ/アニメを選択")
+                Text(NSLocalizedString("select_existing_character_anime", comment: ""))
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.black)
                     .padding(.bottom, 16)
@@ -803,7 +807,7 @@ struct CategorySelectionView: View {
                                             Text(category.name)
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(.black)
-                                            Text("\(category.type.rawValue) ・ \(itemCount)個の商品")
+                                            Text("\(category.type.rawValue) ・ " + String(format: NSLocalizedString("product_count_format", comment: ""), itemCount))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(.gray)
                                         }
@@ -826,10 +830,10 @@ struct CategorySelectionView: View {
                     .padding(.horizontal, 16)
                 }
             }
-            .navigationTitle("商品を追加")
+            .navigationTitle(NSLocalizedString("add_product", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("キャンセル") {
+                leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
                 }
             )
@@ -851,7 +855,7 @@ struct AddWishlistItemView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("商品画像") {
+                Section(NSLocalizedString("product_image", comment: "")) {
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
@@ -861,27 +865,27 @@ struct AddWishlistItemView: View {
                     }
                     
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                        Label(selectedImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""), 
                               systemImage: "photo")
                     }
                 }
                 
-                Section("商品情報") {
-                    TextField("商品名", text: $name)
-                    TextField("価格", text: $priceText)
+                Section(NSLocalizedString("basic_info_section", comment: "")) {
+                    TextField(NSLocalizedString("product_name", comment: ""), text: $name)
+                    TextField(NSLocalizedString("price_label", comment: ""), text: $priceText)
                         .keyboardType(.numberPad)
-                    TextField("リンク", text: $link)
+                    TextField(NSLocalizedString("purchase_link", comment: ""), text: $link)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                 }
             }
-            .navigationTitle("商品を追加")
+            .navigationTitle(NSLocalizedString("add_product", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("キャンセル") {
+                leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
                 },
-                trailing: Button("保存") {
+                trailing: Button(NSLocalizedString("save", comment: "")) {
                     if let price = Int(priceText), !name.isEmpty {
                         let imageData = selectedImage?.jpegData(compressionQuality: 0.8)
                         let item = WishlistItem(
@@ -1002,7 +1006,7 @@ struct ProductDetailView: View {
                     // 商品説明
                     if !product.description.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("商品説明")
+                            Text(NSLocalizedString("product_description", comment: ""))
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.gray)
                             Text(product.description)
@@ -1015,7 +1019,7 @@ struct ProductDetailView: View {
                         Button(action: {
                             UIApplication.shared.open(url)
                         }) {
-                            Text("購入する")
+                            Text(NSLocalizedString("purchase_button", comment: ""))
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -1028,10 +1032,10 @@ struct ProductDetailView: View {
                 }
                 .padding(16)
             }
-            .navigationTitle("商品詳細")
+            .navigationTitle(NSLocalizedString("product_details", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                trailing: Button("閉じる") {
+                trailing: Button(NSLocalizedString("close", comment: "")) {
                     dismiss()
                 }
             )
@@ -1050,16 +1054,16 @@ struct ProductAdminPanel: View {
     var body: some View {
         NavigationView {
             List {
-                Section("カテゴリー管理") {
+                Section(NSLocalizedString("category_management", comment: "")) {
                     Button(action: {
                         showingAddCategory = true
                     }) {
-                        Label("新規カテゴリー追加", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("add_new_category", comment: ""), systemImage: "plus.circle.fill")
                             .foregroundColor(.blue)
                     }
                 }
                 
-                Section("カテゴリー一覧") {
+                Section(NSLocalizedString("category_list", comment: "")) {
                     ForEach(productManager.characterCategories) { category in
                         HStack {
                             VStack(alignment: .leading) {
@@ -1084,16 +1088,16 @@ struct ProductAdminPanel: View {
                     }
                 }
                 
-                Section("商品管理") {
+                Section(NSLocalizedString("product_management", comment: "")) {
                     Button(action: {
                         showingAddProduct = true
                     }) {
-                        Label("新規商品追加", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("add_new_product", comment: ""), systemImage: "plus.circle.fill")
                             .foregroundColor(.green)
                     }
                 }
                 
-                Section("商品一覧") {
+                Section(NSLocalizedString("product_list", comment: "")) {
                     ForEach(productManager.products) { product in
                         HStack {
                             VStack(alignment: .leading) {
@@ -1111,7 +1115,7 @@ struct ProductAdminPanel: View {
                             }
                             Spacer()
                             if !product.isActive {
-                                Text("非表示")
+                                Text(NSLocalizedString("hidden_label", comment: ""))
                                     .font(.caption)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 2)
@@ -1130,10 +1134,10 @@ struct ProductAdminPanel: View {
                     }
                 }
             }
-            .navigationTitle("商品管理")
+            .navigationTitle(NSLocalizedString("product_management", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                trailing: Button("完了") {
+                trailing: Button(NSLocalizedString("complete", comment: "")) {
                     dismiss()
                 }
             )
@@ -1188,7 +1192,7 @@ struct CategoryListView: View {
                 // 検索バー（Amazon風デザイン）
                 HStack(spacing: 0) {
                     HStack {
-                        TextField("商品を検索", text: $searchText)
+                        TextField(NSLocalizedString("search_by_anime_or_character", comment: ""), text: $searchText)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                             .font(.system(size: 14))
@@ -1277,10 +1281,10 @@ struct CategoryListView: View {
                             Spacer()
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(category?.name ?? "その他")
+                                    Text(category?.name ?? NSLocalizedString("other_category", comment: ""))
                                         .font(.system(size: 24, weight: .bold))
                                         .foregroundColor(.white)
-                                    Text("\(categoryItems.count)個の商品")
+                                    Text(String(format: NSLocalizedString("product_count_format", comment: ""), categoryItems.count))
                                         .font(.system(size: 16))
                                         .foregroundColor(.white.opacity(0.8))
                                 }
@@ -1300,10 +1304,10 @@ struct CategoryListView: View {
                             Image(systemName: activeSearchText.isEmpty ? "cart" : "magnifyingglass")
                                 .font(.system(size: 50))
                                 .foregroundColor(.gray)
-                            Text(activeSearchText.isEmpty ? "商品がありません" : "検索結果がありません")
+                            Text(activeSearchText.isEmpty ? NSLocalizedString("no_products", comment: "") : NSLocalizedString("search_results_not_found", comment: ""))
                                 .font(.system(size: 16))
                                 .foregroundColor(.gray)
-                            Text(activeSearchText.isEmpty ? "右上の「商品追加」から追加してください" : "別のキーワードで検索してください")
+                            Text(activeSearchText.isEmpty ? NSLocalizedString("add_products_instruction", comment: "") : NSLocalizedString("search_with_different_keyword", comment: ""))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -1324,7 +1328,7 @@ struct CategoryListView: View {
             }
             .padding(.bottom, 100)
         }
-        .navigationTitle(category?.name ?? "その他")
+        .navigationTitle(category?.name ?? NSLocalizedString("other_category", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -1355,7 +1359,7 @@ struct CategoryListView: View {
                     Button(action: {
                         showAddWishlistItem = true
                     }) {
-                        Text("商品追加")
+                        Text(NSLocalizedString("add_product", comment: ""))
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 12)
@@ -1408,17 +1412,17 @@ struct AddEditProductView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("基本情報") {
-                    TextField("商品名", text: $title)
-                    TextField("価格", text: $priceText)
+                Section(NSLocalizedString("basic_info_section", comment: "")) {
+                    TextField(NSLocalizedString("product_form_title", comment: ""), text: $title)
+                    TextField(NSLocalizedString("price_label", comment: ""), text: $priceText)
                         .keyboardType(.numberPad)
-                    TextField("商品説明", text: $description, axis: .vertical)
+                    TextField(NSLocalizedString("description_label", comment: ""), text: $description, axis: .vertical)
                         .lineLimit(3...6)
-                    TextField("購入リンク", text: $link)
+                    TextField(NSLocalizedString("purchase_link", comment: ""), text: $link)
                         .autocapitalization(.none)
                 }
                 
-                Section("商品画像") {
+                Section(NSLocalizedString("product_image", comment: "")) {
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
@@ -1428,14 +1432,14 @@ struct AddEditProductView: View {
                     }
                     
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                        Label(selectedImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""), 
                               systemImage: "photo")
                     }
                 }
                 
-                Section("カテゴリー") {
-                    Picker("キャラクター・アニメ", selection: $selectedCategoryId) {
-                        Text("なし").tag(nil as UUID?)
+                Section(NSLocalizedString("category_info_section", comment: "")) {
+                    Picker(NSLocalizedString("character_anime_label", comment: ""), selection: $selectedCategoryId) {
+                        Text(NSLocalizedString("none_option", comment: "")).tag(nil as UUID?)
                         ForEach(productManager.characterCategories) { category in
                             Text("\(category.name) (\(category.type.rawValue))")
                                 .tag(category.id as UUID?)
@@ -1444,11 +1448,11 @@ struct AddEditProductView: View {
                     .pickerStyle(MenuPickerStyle())
                 }
                 
-                Section("表示設定") {
-                    Toggle("アクティブ", isOn: $isActive)
+                Section(NSLocalizedString("display_settings_section", comment: "")) {
+                    Toggle(NSLocalizedString("active_toggle", comment: ""), isOn: $isActive)
                     
                     VStack(alignment: .leading) {
-                        Text("広告配置")
+                        Text(NSLocalizedString("ad_placement", comment: ""))
                             .font(.headline)
                         ForEach(AdPlacement.allCases, id: \.self) { placement in
                             HStack {
@@ -1469,13 +1473,13 @@ struct AddEditProductView: View {
                     }
                 }
             }
-            .navigationTitle(editingProduct == nil ? "新規商品" : "商品編集")
+            .navigationTitle(editingProduct == nil ? NSLocalizedString("new_product_title", comment: "") : NSLocalizedString("edit_product_title", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("キャンセル") {
+                leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
                 },
-                trailing: Button("保存") {
+                trailing: Button(NSLocalizedString("save", comment: "")) {
                     saveProduct()
                 }
                 .disabled(title.isEmpty || priceText.isEmpty)
@@ -1564,10 +1568,10 @@ struct SimpleCategoryCreationView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("カテゴリー情報") {
-                    TextField("名前", text: $categoryName)
+                Section(NSLocalizedString("category_info_section", comment: "")) {
+                    TextField(NSLocalizedString("name_label", comment: ""), text: $categoryName)
                     
-                    Picker("タイプ", selection: $selectedType) {
+                    Picker(NSLocalizedString("type_label", comment: ""), selection: $selectedType) {
                         ForEach(CharacterType.allCases, id: \.self) { type in
                             Text(type.rawValue).tag(type)
                         }
@@ -1584,16 +1588,16 @@ struct SimpleCategoryCreationView: View {
                     }
                     
                     PhotosPicker(selection: $categoryPhotoItem, matching: .images) {
-                        Label(categoryImage == nil ? "バナー画像を選択" : "バナー画像を変更", 
+                        Label(categoryImage == nil ? NSLocalizedString("select_banner_image", comment: "") : NSLocalizedString("change_banner_image", comment: ""), 
                               systemImage: "photo")
                     }
                 }
                 
-                Section("最初の商品（必須）") {
-                    TextField("商品名", text: $productName)
-                    TextField("価格", text: $priceText)
+                Section(NSLocalizedString("first_product_required", comment: "")) {
+                    TextField(NSLocalizedString("product_name", comment: ""), text: $productName)
+                    TextField(NSLocalizedString("price_label", comment: ""), text: $priceText)
                         .keyboardType(.numberPad)
-                    TextField("リンク（任意）", text: $link)
+                    TextField(NSLocalizedString("link_optional", comment: ""), text: $link)
                         .autocapitalization(.none)
                     
                     // 商品画像
@@ -1606,18 +1610,18 @@ struct SimpleCategoryCreationView: View {
                     }
                     
                     PhotosPicker(selection: $productPhotoItem, matching: .images) {
-                        Label(productImage == nil ? "商品画像を選択" : "商品画像を変更", 
+                        Label(productImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""), 
                               systemImage: "photo")
                     }
                 }
             }
-            .navigationTitle("新規\(selectedType.rawValue)追加")
+            .navigationTitle(String(format: NSLocalizedString("new_character_format", comment: ""), selectedType.rawValue))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("キャンセル") {
+                leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
                 },
-                trailing: Button("作成") {
+                trailing: Button(NSLocalizedString("create", comment: "")) {
                     createCategoryWithProduct()
                 }
                 .disabled(categoryName.isEmpty || productName.isEmpty || priceText.isEmpty)
@@ -1683,9 +1687,9 @@ struct NewCategoryCreationView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("基本情報") {
-                    TextField("名前", text: $name)
-                    Picker("タイプ", selection: $selectedType) {
+                Section(NSLocalizedString("basic_info_section", comment: "")) {
+                    TextField(NSLocalizedString("name_label", comment: ""), text: $name)
+                    Picker(NSLocalizedString("type_label", comment: ""), selection: $selectedType) {
                         ForEach(CharacterType.allCases, id: \.self) { type in
                             Text(type.rawValue).tag(type)
                         }
@@ -1693,7 +1697,7 @@ struct NewCategoryCreationView: View {
                     .pickerStyle(SegmentedPickerStyle())
                 }
                 
-                Section("バナー画像") {
+                Section(NSLocalizedString("product_image", comment: "")) {
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
@@ -1703,18 +1707,18 @@ struct NewCategoryCreationView: View {
                     }
                     
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                        Label(selectedImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""), 
                               systemImage: "photo")
                     }
                 }
             }
-            .navigationTitle("新規\(selectedType.rawValue)追加")
+            .navigationTitle(String(format: NSLocalizedString("new_character_format", comment: ""), selectedType.rawValue))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("キャンセル") {
+                leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
                 },
-                trailing: Button("次へ") {
+                trailing: Button(NSLocalizedString("next", comment: "")) {
                     showProductAdd = true
                 }
                 .disabled(name.isEmpty)
@@ -1748,7 +1752,7 @@ struct NewCategoryCreationView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(name)
                                 .font(.system(size: 18, weight: .semibold))
-                            Text("最初の商品を追加してください")
+                            Text(NSLocalizedString("first_product_required", comment: ""))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -1772,7 +1776,7 @@ struct NewCategoryCreationView: View {
                         }
                     )
                 }
-                .navigationTitle("商品を追加")
+                .navigationTitle(NSLocalizedString("add_product", comment: ""))
                 .navigationBarTitleDisplayMode(.inline)
             }
             .interactiveDismissDisabled()
@@ -1797,7 +1801,7 @@ struct AddWishlistItemForm: View {
     
     var body: some View {
         Form {
-            Section("商品画像") {
+            Section(NSLocalizedString("product_image", comment: "")) {
                 if let image = selectedImage {
                     Image(uiImage: image)
                         .resizable()
@@ -1807,16 +1811,16 @@ struct AddWishlistItemForm: View {
                 }
                 
                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                    Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                    Label(selectedImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""), 
                           systemImage: "photo")
                 }
             }
             
-            Section("商品情報") {
+            Section(NSLocalizedString("basic_info_section", comment: "")) {
                 TextField("商品名", text: $productName)
-                TextField("価格", text: $priceText)
+                TextField(NSLocalizedString("price_label", comment: ""), text: $priceText)
                     .keyboardType(.numberPad)
-                TextField("リンク", text: $link)
+                TextField(NSLocalizedString("purchase_link", comment: ""), text: $link)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
             }
@@ -1849,7 +1853,7 @@ struct AddWishlistItemForm: View {
                         }
                     }
                 }) {
-                    Text("完了")
+                    Text(NSLocalizedString("complete", comment: ""))
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1919,7 +1923,7 @@ struct NewCategoryProductAddView: View {
                 .background(Color.gray.opacity(0.1))
                 
                 Form {
-                    Section("商品画像") {
+                    Section(NSLocalizedString("product_image", comment: "")) {
                         if let image = selectedImage {
                             Image(uiImage: image)
                                 .resizable()
@@ -1929,25 +1933,25 @@ struct NewCategoryProductAddView: View {
                         }
                         
                         PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                            Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                            Label(selectedImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""), 
                                   systemImage: "photo")
                         }
                     }
                     
-                    Section("商品情報") {
-                        TextField("商品名", text: $name)
-                        TextField("価格", text: $priceText)
+                    Section(NSLocalizedString("basic_info_section", comment: "")) {
+                        TextField(NSLocalizedString("product_name", comment: ""), text: $name)
+                        TextField(NSLocalizedString("price_label", comment: ""), text: $priceText)
                             .keyboardType(.numberPad)
-                        TextField("リンク", text: $link)
+                        TextField(NSLocalizedString("purchase_link", comment: ""), text: $link)
                             .autocapitalization(.none)
                             .disableAutocorrection(true)
                     }
                 }
             }
-            .navigationTitle("商品を追加")
+            .navigationTitle(NSLocalizedString("add_product", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                trailing: Button("完了") {
+                trailing: Button(NSLocalizedString("complete", comment: "")) {
                     if let price = Int(priceText), !name.isEmpty {
                         // カテゴリーを保存
                         productManager.addCharacterCategory(category)
@@ -1994,9 +1998,9 @@ struct AddEditCategoryView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("基本情報") {
-                    TextField("カテゴリー名", text: $name)
-                    Picker("タイプ", selection: $selectedType) {
+                Section(NSLocalizedString("basic_info_section", comment: "")) {
+                    TextField(NSLocalizedString("name_label", comment: ""), text: $name)
+                    Picker(NSLocalizedString("type_label", comment: ""), selection: $selectedType) {
                         ForEach(CharacterType.allCases, id: \.self) { type in
                             Text(type.rawValue).tag(type)
                         }
@@ -2004,7 +2008,7 @@ struct AddEditCategoryView: View {
                     .pickerStyle(SegmentedPickerStyle())
                 }
                 
-                Section("バナー画像") {
+                Section(NSLocalizedString("product_image", comment: "")) {
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
@@ -2014,18 +2018,18 @@ struct AddEditCategoryView: View {
                     }
                     
                     PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                        Label(selectedImage == nil ? "画像を選択" : "画像を変更", 
+                        Label(selectedImage == nil ? NSLocalizedString("select_image", comment: "") : NSLocalizedString("change_image", comment: ""), 
                               systemImage: "photo")
                     }
                 }
             }
-            .navigationTitle(editingCategory == nil ? "新規カテゴリー" : "カテゴリー編集")
+            .navigationTitle(editingCategory == nil ? NSLocalizedString("new_category_creation", comment: "") : NSLocalizedString("category_management", comment: ""))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
-                leading: Button("キャンセル") {
+                leading: Button(NSLocalizedString("cancel", comment: "")) {
                     dismiss()
                 },
-                trailing: Button("保存") {
+                trailing: Button(NSLocalizedString("save", comment: "")) {
                     saveCategory()
                 }
                 .disabled(name.isEmpty)
@@ -2084,7 +2088,7 @@ struct CategoryInfoSection: View {
     var body: some View {
         Section("カテゴリー情報") {
             // カテゴリー名
-            TextField("カテゴリー名", text: $editedName)
+            TextField(NSLocalizedString("name_label", comment: ""), text: $editedName)
                 .font(.system(size: 16))
             
             // バナー画像
@@ -2094,7 +2098,7 @@ struct CategoryInfoSection: View {
                 PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                     HStack {
                         Image(systemName: "photo")
-                        Text("バナー画像を変更")
+                        Text(NSLocalizedString("change_banner_image", comment: ""))
                     }
                     .font(.system(size: 16))
                     .foregroundColor(.blue)
@@ -2135,7 +2139,7 @@ struct CategoryBannerImage: View {
                         Image(systemName: "photo")
                             .font(.system(size: 40))
                             .foregroundColor(.gray)
-                        Text("バナー画像なし")
+                        Text(NSLocalizedString("no_banner_image", comment: ""))
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                     }
@@ -2152,10 +2156,10 @@ struct CategoryProductsSection: View {
     @Binding var showDeleteItemAlert: Bool
     
     var body: some View {
-        Section("登録されている商品") {
+        Section(NSLocalizedString("registered_products", comment: "")) {
             let categoryItems = wishlistManager.getItemsForCategory(category.id)
             if categoryItems.isEmpty {
-                Text("商品がありません")
+                Text(NSLocalizedString("no_products", comment: ""))
                     .foregroundColor(.gray)
                     .font(.system(size: 14))
             } else {

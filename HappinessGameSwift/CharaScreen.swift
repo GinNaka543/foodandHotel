@@ -324,6 +324,7 @@ struct CharaScreen: View {
                     }
                     .padding(.horizontal, 16)
                 .padding(.top, 12)
+                .padding(.bottom, 8)
                 // スクロール可能なコンテンツ
                 ScrollView {
                     VStack(spacing: 0) {

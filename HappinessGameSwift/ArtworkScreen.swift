@@ -263,13 +263,19 @@ struct ArtworkScreen: View {
                     .padding(.bottom, 12)
                 }
                 
-                // Add button moved here
+                // Add button moved here - changes based on tab
                 Button(action: { 
-                    photoTitle = ""
-                    photoTags = ""
-                    activeSheet = .addPhoto
+                    if showAlbum {
+                        // アルバムタブの場合：アルバム作成
+                        showTagInput = true
+                    } else {
+                        // アートワークタブの場合：画像追加
+                        photoTitle = ""
+                        photoTags = ""
+                        activeSheet = .addPhoto
+                    }
                 }) {
-                    Text(NSLocalizedString("add_photo", comment: "Add photo"))
+                    Text(showAlbum ? NSLocalizedString("create_album", comment: "Create album") : NSLocalizedString("add_photo", comment: "Add photo"))
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -621,20 +627,6 @@ struct ArtworkScreen: View {
                 }
             }
             
-            // Albumタブ時のみ右下に＋ボタン
-            if showAlbum {
-                Button(action: { showTagInput = true }) {
-                    Text("#")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 56, height: 56)
-                        .background(Color.black)
-                        .clipShape(Circle())
-                        .shadow(radius: 6)
-                        .padding(.bottom, 32)
-                        .padding(.trailing, 24)
-                }
-            }
             
             // Navigation bar at bottom
             VStack {

@@ -370,9 +370,11 @@
 "add_anime_button" = "Aggiungi anime";
 "add_artwork" = "Add Artwork";
 "add_artwork_instruction" = "You can add artworks from the add button in the top right";
-"add_character" = "Add Character";
+/* Character Screen */
+"add_character" = "Aggiungi personaggio";
+"add_favorite_character" = "Aggiungi il tuo personaggio preferito";
+"manage_character_info" = "Gestisci le informazioni del tuo personaggio preferito e consultale quando vuoi";
 "add_character_button" = "Aggiungi personaggio";
-"add_favorite_character" = "Add your favorite character";
 "add_image_anime" = "Add Image";
 "add_new_category" = "Add New Category";
 "add_new_character_anime" = "Aggiungi nuovo personaggio/anime";

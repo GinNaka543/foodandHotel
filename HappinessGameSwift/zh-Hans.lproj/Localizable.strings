@@ -370,9 +370,11 @@
 "add_anime_button" = "添加动画";
 "add_artwork" = "Add Artwork";
 "add_artwork_instruction" = "You can add artworks from the add button in the top right";
-"add_character" = "Add Character";
+/* Character Screen */
+"add_character" = "添加角色";
+"add_favorite_character" = "添加你喜欢的角色";
+"manage_character_info" = "管理你喜欢的角色信息并随时查看";
 "add_character_button" = "添加角色";
-"add_favorite_character" = "Add your favorite character";
 "add_image_anime" = "Add Image";
 "add_new_category" = "Add New Category";
 "add_new_character_anime" = "添加新角色/动漫";

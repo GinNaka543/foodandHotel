@@ -566,6 +566,12 @@
 "category_info_section" = "カテゴリー情報";
 "name_label" = "名前";
 
+/* Character Screen */
+"add_character" = "キャラクターを追加";
+"add_favorite_character" = "お気に入りのキャラクターを追加";
+"manage_character_info" = "お気に入りのキャラクター情報を管理していつでも確認";
+"add_character_button" = "キャラクターを追加";
+
 /* Order Menu */
 "character_order_menu" = "キャラクター順序変更";
 "anime_order_menu" = "アニメ順序変更";

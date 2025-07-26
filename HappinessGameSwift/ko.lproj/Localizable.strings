@@ -370,9 +370,11 @@
 "add_anime_button" = "애니메이션 추가";
 "add_artwork" = "Add Artwork";
 "add_artwork_instruction" = "You can add artworks from the add button in the top right";
-"add_character" = "Add Character";
+/* Character Screen */
+"add_character" = "캐릭터 추가";
+"add_favorite_character" = "좋아하는 캐릭터 추가";
+"manage_character_info" = "좋아하는 캐릭터 정보를 관리하고 언제든지 확인";
 "add_character_button" = "캐릭터 추가";
-"add_favorite_character" = "Add your favorite character";
 "add_image_anime" = "Add Image";
 "add_new_category" = "Add New Category";
 "add_new_character_anime" = "새 캐릭터/애니메이션 추가";

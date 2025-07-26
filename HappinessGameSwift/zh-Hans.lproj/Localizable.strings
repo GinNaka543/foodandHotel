@@ -333,6 +333,18 @@
 "user_id_not_found" = "未找到用户ID";
 "points_fetch_failed" = "获取积分失败：%@";
 
+/* Product Screen */
+"add_first_product" = "添加第一个产品";
+"edit_category" = "编辑分类";
+"delete_category" = "删除分类";
+"delete_category_title" = "删除分类";
+"delete_category_confirmation" = "您确定要删除\"%@\"吗？\n该分类中的所有产品也将被删除。";
+"delete_item_title" = "删除产品";
+"delete_item_confirmation" = "您确定要删除\"%@\"吗？";
+
+/* Points */
+"pt" = "分";
+
 /* Missing translations - using English */
 "active_toggle" = "Active";
 "ad_placement" = "Ad Placement";

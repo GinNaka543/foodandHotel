@@ -251,7 +251,7 @@ struct TransactionRow: View {
                 Text(transaction.amount > 0 ? "+\(transaction.amount)" : "\(transaction.amount)")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(transaction.amount > 0 ? .green : .red)
-                Text("pt")
+                Text(NSLocalizedString("pt", comment: ""))
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
             }

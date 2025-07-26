@@ -497,7 +497,7 @@ struct CharaScreen: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 )
                         }
-                        .cornerRadius(12)
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
                         .overlay(
                             VStack {
                                 Spacer()
@@ -554,7 +554,7 @@ struct CharaScreen: View {
                                         .padding(.horizontal)
                                 }
                             )
-                            .cornerRadius(12)
+                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
                             .onTapGesture {
                                 if let url = URL(string: youtubeURL) {
                                     UIApplication.shared.open(url)
@@ -568,7 +568,7 @@ struct CharaScreen: View {
                 ZStack {
                     AnimatedGradientView()
                         .frame(width: UIScreen.main.bounds.width - 32, height: 180)
-                        .cornerRadius(12)
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
                     
                     VStack {
                         Spacer()

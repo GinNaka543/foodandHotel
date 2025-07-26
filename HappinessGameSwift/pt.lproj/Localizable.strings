@@ -333,6 +333,18 @@
 "user_id_not_found" = "ID do usuário não encontrado";
 "points_fetch_failed" = "Falha ao buscar pontos: %@";
 
+/* Product Screen */
+"add_first_product" = "Adicionar primeiro produto";
+"edit_category" = "Editar categoria";
+"delete_category" = "Excluir categoria";
+"delete_category_title" = "Excluir categoria";
+"delete_category_confirmation" = "Tem certeza de que deseja excluir \"%@\"?\nTodos os produtos desta categoria também serão excluídos.";
+"delete_item_title" = "Excluir produto";
+"delete_item_confirmation" = "Tem certeza de que deseja excluir \"%@\"?";
+
+/* Points */
+"pt" = "pt";
+
 /* Missing translations - using English */
 "active_toggle" = "Active";
 "ad_placement" = "Ad Placement";

@@ -42,6 +42,18 @@
 "purchase" = "Purchase";
 "later" = "Later";
 
+/* Product Screen */
+"add_first_product" = "Add the first product";
+"edit_category" = "Edit Category";
+"delete_category" = "Delete Category";
+"delete_category_title" = "Delete Category";
+"delete_category_confirmation" = "Are you sure you want to delete \"%@\"?\nAll products in this category will also be deleted.";
+"delete_item_title" = "Delete Product";
+"delete_item_confirmation" = "Are you sure you want to delete \"%@\"?";
+
+/* Points */
+"pt" = "pt";
+
 /* Anime Page */
 "watch_anime" = "Watch Anime";
 "anime_title" = "Anime Title";

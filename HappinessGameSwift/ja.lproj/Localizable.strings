@@ -42,6 +42,18 @@
 "purchase" = "購入する";
 "later" = "後で";
 
+/* Product Screen */
+"add_first_product" = "最初の商品を追加してください";
+"edit_category" = "カテゴリー編集";
+"delete_category" = "このカテゴリーを削除";
+"delete_category_title" = "カテゴリーを削除";
+"delete_category_confirmation" = "「%@」を削除しますか？\nこのカテゴリーに含まれる商品も全て削除されます。";
+"delete_item_title" = "商品を削除";
+"delete_item_confirmation" = "「%@」を削除しますか？";
+
+/* Points */
+"pt" = "pt";
+
 /* Anime Page */
 "watch_anime" = "アニメを見る";
 "anime_title" = "アニメタイトル";

@@ -1913,7 +1913,7 @@ struct NewCategoryProductAddView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(category.name)
                             .font(.system(size: 18, weight: .semibold))
-                        Text("最初の商品を追加してください")
+                        Text(NSLocalizedString("add_first_product", comment: ""))
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                     }
@@ -2258,7 +2258,7 @@ struct CategoryEditView: View {
             VStack(spacing: 0) {
                 // カスタムヘッダー
                 ZStack {
-                    Text("カテゴリー編集")
+                    Text(NSLocalizedString("edit_category", comment: ""))
                         .font(.system(size: 17, weight: .semibold))
                         .frame(maxWidth: .infinity)
                     
@@ -2303,7 +2303,7 @@ struct CategoryEditView: View {
                             HStack {
                                 Spacer()
                                 Image(systemName: "trash")
-                                Text("このカテゴリーを削除")
+                                Text(NSLocalizedString("delete_category", comment: ""))
                                 Spacer()
                             }
                             .foregroundColor(.red)
@@ -2328,17 +2328,17 @@ struct CategoryEditView: View {
                 }
             }
         }
-        .alert("カテゴリーを削除", isPresented: $showDeleteAlert) {
-            Button("キャンセル", role: .cancel) {}
-            Button("削除", role: .destructive) {
+        .alert(NSLocalizedString("delete_category_title", comment: ""), isPresented: $showDeleteAlert) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
                 deleteCategory()
             }
         } message: {
-            Text("「\(category.name)」を削除しますか？\nこのカテゴリーに含まれる商品も全て削除されます。")
+            Text(String(format: NSLocalizedString("delete_category_confirmation", comment: ""), category.name))
         }
-        .alert("商品を削除", isPresented: $showDeleteItemAlert) {
-            Button("キャンセル", role: .cancel) {}
-            Button("削除", role: .destructive) {
+        .alert(NSLocalizedString("delete_item_title", comment: ""), isPresented: $showDeleteItemAlert) {
+            Button(NSLocalizedString("cancel", comment: ""), role: .cancel) {}
+            Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
                 if let item = itemToDelete {
                     withAnimation {
                         wishlistManager.removeItem(item)
@@ -2346,7 +2346,7 @@ struct CategoryEditView: View {
                 }
             }
         } message: {
-            Text("「\(itemToDelete?.name ?? "")」を削除しますか？")
+            Text(String(format: NSLocalizedString("delete_item_confirmation", comment: ""), itemToDelete?.name ?? ""))
         }
     }
     

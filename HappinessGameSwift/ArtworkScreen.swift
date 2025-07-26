@@ -622,7 +622,7 @@ struct ArtworkScreen: View {
             }
             
             // Albumタブ時のみ右下に＋ボタン
-            if showAlbum && !albums.isEmpty {
+            if showAlbum {
                 Button(action: { showTagInput = true }) {
                     Text("#")
                         .font(.system(size: 28, weight: .bold))

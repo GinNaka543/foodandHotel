@@ -329,6 +329,7 @@ struct CharaScreen: View {
                     VStack(spacing: 0) {
                         // 広告バナー
                         bannerView
+                            .padding(.bottom, 16)
                         
                         // キャラリスト
                         if filteredCharacters.isEmpty {

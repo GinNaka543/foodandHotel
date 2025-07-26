@@ -745,3 +745,16 @@
 "watch_anime" = "观看动画";
 "tap_to_watch" = "点击观看";
 "create" = "创建";
+
+/* Points Purchase Modal */
+"purchase_points" = "购买积分";
+"loading_products" = "正在加载产品...";
+"failed_to_load_products" = "加载产品失败";
+"reload" = "重新加载";
+"select_points_package" = "选择积分套餐";
+"points_usage_description" = "积分可用于发布和购买计划。";
+"total" = "总计：";
+"points_purchased_success" = "成功购买%d积分！";
+"points_format" = "%d积分";
+"popular" = "热门";
+"price_per_point" = "1积分 = %@";

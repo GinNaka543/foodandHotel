@@ -17,7 +17,7 @@ struct PointPurchaseView: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Text("ポイント購入")
+                    Text(NSLocalizedString("purchase_points", comment: ""))
                         .font(.system(size: 20, weight: .bold))
                     Spacer()
                     Button(action: { dismiss() }) {
@@ -31,7 +31,7 @@ struct PointPurchaseView: View {
                 
                 if storeKitManager.isLoading {
                     Spacer()
-                    ProgressView("商品を読み込み中...")
+                    ProgressView(NSLocalizedString("loading_products", comment: ""))
                         .padding()
                     Spacer()
                 } else if storeKitManager.products.isEmpty {
@@ -40,10 +40,10 @@ struct PointPurchaseView: View {
                         Image(systemName: "exclamationmark.circle")
                             .font(.system(size: 60))
                             .foregroundColor(.gray)
-                        Text("商品を読み込めませんでした")
+                        Text(NSLocalizedString("failed_to_load_products", comment: ""))
                             .font(.title3)
                             .foregroundColor(.gray)
-                        Button("再読み込み") {
+                        Button(NSLocalizedString("reload", comment: "")) {
                             storeKitManager.loadProducts()
                         }
                         .foregroundColor(.blue)
@@ -54,10 +54,10 @@ struct PointPurchaseView: View {
                         VStack(spacing: 20) {
                             // 説明
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("ポイントパッケージを選択")
+                                Text(NSLocalizedString("select_points_package", comment: ""))
                                     .font(.system(size: 18, weight: .semibold))
                                 
-                                Text("ポイントはプランの公開や購入に使用できます。")
+                                Text(NSLocalizedString("points_usage_description", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                             }
@@ -97,7 +97,7 @@ struct PointPurchaseView: View {
                 VStack(spacing: 16) {
                     if let product = selectedProduct {
                         HStack {
-                            Text("合計:")
+                            Text(NSLocalizedString("total", comment: ""))
                                 .font(.system(size: 18, weight: .semibold))
                             Spacer()
                             Text(localizedPrice(for: product))
@@ -145,7 +145,7 @@ struct PointPurchaseView: View {
             }
         } message: {
             if let product = selectedProduct {
-                Text("\(extractPoints(from: product.productIdentifier))ポイントを購入しました！")
+                Text(String(format: NSLocalizedString("points_purchased_success", comment: ""), extractPoints(from: product.productIdentifier)))
             }
         }
     }
@@ -227,12 +227,12 @@ struct StoreKitProductCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("\(points)ポイント")
+                        Text(String(format: NSLocalizedString("points_format", comment: ""), points))
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.primary)
                         
                         if isPopular {
-                            Text("人気")
+                            Text(NSLocalizedString("popular", comment: ""))
                                 .font(.system(size: 12, weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 8)
@@ -249,7 +249,7 @@ struct StoreKitProductCard: View {
                         .foregroundColor(.gray)
                     
                     if let pricePerPoint = calculatePricePerPoint() {
-                        Text("1ポイント = \(pricePerPoint)")
+                        Text(String(format: NSLocalizedString("price_per_point", comment: ""), pricePerPoint))
                             .font(.system(size: 12))
                             .foregroundColor(.gray)
                     }

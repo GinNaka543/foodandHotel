@@ -479,3 +479,16 @@
 "euros" = "ユーロ";
 "yen" = "円";
 "create" = "作成";
+
+/* Points Purchase Modal */
+"purchase_points" = "ポイント購入";
+"loading_products" = "商品を読み込み中...";
+"failed_to_load_products" = "商品の読み込みに失敗しました";
+"reload" = "再読み込み";
+"select_points_package" = "ポイントパッケージを選択";
+"points_usage_description" = "ポイントはプランの公開と購入に使用できます。";
+"total" = "合計:";
+"points_purchased_success" = "%dポイントを購入しました！";
+"points_format" = "%dポイント";
+"popular" = "人気";
+"price_per_point" = "1ポイント = %@";

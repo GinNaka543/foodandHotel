@@ -831,3 +831,16 @@ Gute Arbeit";
 "euros" = "Euro";
 "yen" = "Yen";
 "create" = "Erstellen";
+
+/* Points Purchase Modal */
+"purchase_points" = "Punkte kaufen";
+"loading_products" = "Produkte werden geladen...";
+"failed_to_load_products" = "Produkte konnten nicht geladen werden";
+"reload" = "Neu laden";
+"select_points_package" = "Punktepaket auswählen";
+"points_usage_description" = "Punkte können zum Veröffentlichen und Kaufen von Plänen verwendet werden.";
+"total" = "Gesamt:";
+"points_purchased_success" = "%d Punkte erfolgreich gekauft!";
+"points_format" = "%d Punkte";
+"popular" = "Beliebt";
+"price_per_point" = "1 Punkt = %@";

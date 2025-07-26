@@ -762,3 +762,16 @@
 "euros" = "Euros";
 "yen" = "Yen";
 "create" = "Create";
+
+/* Points Purchase Modal */
+"purchase_points" = "Purchase Points";
+"loading_products" = "Loading products...";
+"failed_to_load_products" = "Failed to load products";
+"reload" = "Reload";
+"select_points_package" = "Select Points Package";
+"points_usage_description" = "Points can be used to publish and purchase plans.";
+"total" = "Total:";
+"points_purchased_success" = "%d points purchased successfully!";
+"points_format" = "%d Points";
+"popular" = "Popular";
+"price_per_point" = "1 point = %@";

@@ -745,3 +745,16 @@
 "watch_anime" = "Guarda anime";
 "tap_to_watch" = "Tocca per guardare";
 "create" = "Crea";
+
+/* Points Purchase Modal */
+"purchase_points" = "Acquista punti";
+"loading_products" = "Caricamento prodotti...";
+"failed_to_load_products" = "Caricamento prodotti fallito";
+"reload" = "Ricarica";
+"select_points_package" = "Seleziona pacchetto punti";
+"points_usage_description" = "I punti possono essere utilizzati per pubblicare e acquistare piani.";
+"total" = "Totale:";
+"points_purchased_success" = "%d punti acquistati con successo!";
+"points_format" = "%d punti";
+"popular" = "Popolare";
+"price_per_point" = "1 punto = %@";

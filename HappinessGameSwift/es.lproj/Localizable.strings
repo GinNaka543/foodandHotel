@@ -796,3 +796,16 @@
 "tap_to_watch" = "Toca para ver";
 "create" = "Crear";
 
+/* Points Purchase Modal */
+"purchase_points" = "Comprar puntos";
+"loading_products" = "Cargando productos...";
+"failed_to_load_products" = "Error al cargar productos";
+"reload" = "Recargar";
+"select_points_package" = "Seleccionar paquete de puntos";
+"points_usage_description" = "Los puntos se pueden usar para publicar y comprar planes.";
+"total" = "Total:";
+"points_purchased_success" = "¡%d puntos comprados con éxito!";
+"points_format" = "%d puntos";
+"popular" = "Popular";
+"price_per_point" = "1 punto = %@";
+

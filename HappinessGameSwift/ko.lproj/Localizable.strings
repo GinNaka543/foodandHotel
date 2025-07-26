@@ -745,3 +745,16 @@
 "watch_anime" = "애니메이션 보기";
 "tap_to_watch" = "탭하여 시청";
 "create" = "생성";
+
+/* Points Purchase Modal */
+"purchase_points" = "포인트 구매";
+"loading_products" = "상품 로딩 중...";
+"failed_to_load_products" = "상품 로딩 실패";
+"reload" = "다시 로드";
+"select_points_package" = "포인트 패키지 선택";
+"points_usage_description" = "포인트는 플랜 게시와 구매에 사용할 수 있습니다.";
+"total" = "합계:";
+"points_purchased_success" = "%d 포인트를 성공적으로 구매했습니다!";
+"points_format" = "%d 포인트";
+"popular" = "인기";
+"price_per_point" = "1 포인트 = %@";

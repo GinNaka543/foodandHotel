@@ -136,6 +136,9 @@ class AuthenticationManager: ObservableObject {
         requiresPayment = false
         UserDefaults.standard.set(true, forKey: "hasPaidSubscription")
         
+        // PaymentGatekeeperを更新
+        PaymentGatekeeper.shared.markAsPremium()
+        
         // Save payment status to keychain with device ID
         savePaymentStatusToKeychain(deviceId: deviceId, hasPaid: true)
         
@@ -272,6 +275,7 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var animeManager = AnimeManager()
     @StateObject private var productManager = ProductManager()
     @StateObject private var authManager = AuthenticationManager()
+    @StateObject private var paymentGatekeeper = PaymentGatekeeper.shared
     @State private var showSplash = true
     @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
     @State private var hasRequestedTracking = UserDefaults.standard.bool(forKey: "hasRequestedTracking")
@@ -425,12 +429,18 @@ struct HappinessGameSwiftApp: App {
                     // トラッキング許可画面
                     TrackingPermissionView(hasRequestedTracking: $hasRequestedTracking)
                 } else if authManager.isLoggedIn {
-                    MainContainerView()
-                        .environmentObject(mainTab)
-                        .environmentObject(characterManager)
-                        .environmentObject(animeManager)
-                        .environmentObject(productManager)
-                        .environmentObject(authManager)
+                    if paymentGatekeeper.isAppLocked {
+                        PaymentBlockerView()
+                            .environmentObject(paymentGatekeeper)
+                    } else {
+                        MainContainerView()
+                            .environmentObject(mainTab)
+                            .environmentObject(characterManager)
+                            .environmentObject(animeManager)
+                            .environmentObject(productManager)
+                            .environmentObject(authManager)
+                            .environmentObject(paymentGatekeeper)
+                    }
                     .onAppear {
                         // 開発用: サンプル画像を自動生成
                         createSampleImagesIfNeeded()

@@ -136,6 +136,8 @@ struct PremiumUpgradeView: View {
                 
                 switch result {
                 case .success:
+                    // PaymentGatekeeperを更新
+                    PaymentGatekeeper.shared.markAsPremium()
                     isPremiumUser = true
                     showPaymentRequired = false
                 case .failure(let error):

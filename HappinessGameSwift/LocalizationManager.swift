@@ -83,6 +83,8 @@ class LocalizationManager: ObservableObject {
 }
 
 // Bundle拡張で言語切り替えを実装
+private var bundleKey: UInt8 = 0
+
 extension Bundle {
     private static var bundle: Bundle!
     
@@ -93,18 +95,14 @@ extension Bundle {
         
         objc_setAssociatedObject(
             Bundle.main,
-            &kBundleKey,
+            &bundleKey,
             language,
             .OBJC_ASSOCIATION_RETAIN_NONATOMIC
         )
     }
-    
-    private struct kBundleKey {
-        // Intentionally left blank
-    }
 }
 
-class AliasBundle: Bundle {
+class AliasBundle: Bundle, @unchecked Sendable {
     override func localizedString(forKey key: String, value: String?, table tableName: String?) -> String {
         guard let path = Bundle.main.path(
             forResource: currentLanguage,
@@ -121,10 +119,6 @@ class AliasBundle: Bundle {
     }
     
     private var currentLanguage: String {
-        return objc_getAssociatedObject(self, &kBundleKey) as? String ?? "en"
-    }
-    
-    private struct kBundleKey {
-        // Intentionally left blank
+        return objc_getAssociatedObject(self, &bundleKey) as? String ?? "en"
     }
 }

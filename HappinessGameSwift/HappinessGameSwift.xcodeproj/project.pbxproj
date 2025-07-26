@@ -102,6 +102,8 @@
 		CC9BB0682E33E5030088E501 /* MemoryPressureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */; };
 		CC9BB06A2E33E8370088E501 /* ImageOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB0692E33E8370088E501 /* ImageOptimizer.swift */; };
 		CC9BB07C2E3414670088E501 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB07B2E3414670088E501 /* StoreKitManager.swift */; };
+		CCF665E92E34C99400D86A20 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = CCF665E72E34C99400D86A20 /* Localizable.strings */; };
+		CCF665F32E34CC5D00D86A20 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665F22E34CC5D00D86A20 /* LocalizationManager.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -217,6 +219,16 @@
 		CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryPressureManager.swift; sourceTree = "<group>"; };
 		CC9BB0692E33E8370088E501 /* ImageOptimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageOptimizer.swift; sourceTree = "<group>"; };
 		CC9BB07B2E3414670088E501 /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
+		CCF665E82E34C99400D86A20 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665EA2E34C9A000D86A20 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665EB2E34C9A900D86A20 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665EC2E34C9B800D86A20 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665ED2E34C9C500D86A20 /* it */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = it; path = it.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665EE2E34C9CF00D86A20 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665EF2E34C9DC00D86A20 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665F02E34CA0700D86A20 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
+		CCF665F12E34CA2D00D86A20 /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Localizable.strings; sourceTree = "<group>"; };
+		CCF665F22E34CC5D00D86A20 /* LocalizationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationManager.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -281,6 +293,8 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCF665F22E34CC5D00D86A20 /* LocalizationManager.swift */,
+				CCF665E72E34C99400D86A20 /* Localizable.strings */,
 				CC9BB07B2E3414670088E501 /* StoreKitManager.swift */,
 				CC9BB0692E33E8370088E501 /* ImageOptimizer.swift */,
 				CC9BB0672E33E5020088E501 /* MemoryPressureManager.swift */,
@@ -443,8 +457,8 @@
 				ko,
 				"zh-Hans",
 				it,
-				"pt-PT",
 				es,
+				pt,
 			);
 			mainGroup = 8F7DBBC39F2D4E379E0D6B9A;
 			minimizedProjectReferenceProxies = 1;
@@ -463,6 +477,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2480D714018A706C8BA4A325 /* Assets.xcassets in Resources */,
+				CCF665E92E34C99400D86A20 /* Localizable.strings in Resources */,
 				33E5EDB3B81EC36DBB4E8A33 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -558,6 +573,7 @@
 				CC1BB3922E3106A8006EE695 /* SoundtrackEditView.swift in Sources */,
 				CC1BB3962E310B00006EE695 /* SoundtrackManager.swift in Sources */,
 				CC20AAE22E26E6B0005F4C2A /* PlanPublicationChoiceView.swift in Sources */,
+				CCF665F32E34CC5D00D86A20 /* LocalizationManager.swift in Sources */,
 				CC20AAE32E26E6B0005F4C2A /* PlanPurchaseConfirmationView.swift in Sources */,
 				CC20AAE42E26E6B0005F4C2A /* PixivThumbnailView.swift in Sources */,
 				CC20AAE52E26E6B0005F4C2A /* PlanPaymentFinalConfirmationView.swift in Sources */,
@@ -617,6 +633,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		CCF665E72E34C99400D86A20 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CCF665EA2E34C9A000D86A20 /* en */,
+				CCF665E82E34C99400D86A20 /* de */,
+				CCF665EB2E34C9A900D86A20 /* es */,
+				CCF665EC2E34C9B800D86A20 /* fr */,
+				CCF665ED2E34C9C500D86A20 /* it */,
+				CCF665EE2E34C9CF00D86A20 /* ko */,
+				CCF665EF2E34C9DC00D86A20 /* ja */,
+				CCF665F02E34CA0700D86A20 /* zh-Hans */,
+				CCF665F12E34CA2D00D86A20 /* pt */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		09747F0C741F2BFDA4EA350A /* Debug */ = {

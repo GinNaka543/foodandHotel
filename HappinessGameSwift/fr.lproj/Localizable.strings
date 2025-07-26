@@ -758,3 +758,8 @@
 "points_format" = "%d points";
 "popular" = "Populaire";
 "price_per_point" = "1 point = %@";
+
+/* Page Names */
+"home_page" = "Page d'accueil";
+"character_page" = "Page de personnages";
+"product_page" = "Page de produits";

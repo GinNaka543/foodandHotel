@@ -807,7 +807,7 @@ struct CategorySelectionView: View {
                                             Text(category.name)
                                                 .font(.system(size: 16, weight: .semibold))
                                                 .foregroundColor(.black)
-                                            Text("\(category.type.rawValue) ・ " + String(format: NSLocalizedString("product_count_format", comment: ""), itemCount))
+                                            Text("\(category.type.displayName) ・ " + String(format: NSLocalizedString("product_count_format", comment: ""), itemCount))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(.gray)
                                         }
@@ -1069,7 +1069,7 @@ struct ProductAdminPanel: View {
                             VStack(alignment: .leading) {
                                 Text(category.name)
                                     .font(.headline)
-                                Text(category.type.rawValue)
+                                Text(category.type.displayName)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -1441,7 +1441,7 @@ struct AddEditProductView: View {
                     Picker(NSLocalizedString("character_anime_label", comment: ""), selection: $selectedCategoryId) {
                         Text(NSLocalizedString("none_option", comment: "")).tag(nil as UUID?)
                         ForEach(productManager.characterCategories) { category in
-                            Text("\(category.name) (\(category.type.rawValue))")
+                            Text("\(category.name) (\(category.type.displayName))")
                                 .tag(category.id as UUID?)
                         }
                     }
@@ -1458,7 +1458,7 @@ struct AddEditProductView: View {
                             HStack {
                                 Image(systemName: selectedPlacements.contains(placement) ? "checkmark.square.fill" : "square")
                                     .foregroundColor(selectedPlacements.contains(placement) ? .blue : .gray)
-                                Text(placement.rawValue)
+                                Text(placement.displayName)
                                 Spacer()
                             }
                             .contentShape(Rectangle())
@@ -1573,7 +1573,7 @@ struct SimpleCategoryCreationView: View {
                     
                     Picker(NSLocalizedString("type_label", comment: ""), selection: $selectedType) {
                         ForEach(CharacterType.allCases, id: \.self) { type in
-                            Text(type.rawValue).tag(type)
+                            Text(type.displayName).tag(type)
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
@@ -1615,7 +1615,7 @@ struct SimpleCategoryCreationView: View {
                     }
                 }
             }
-            .navigationTitle(String(format: NSLocalizedString("new_character_format", comment: ""), selectedType.rawValue))
+            .navigationTitle(String(format: NSLocalizedString("new_character_format", comment: ""), selectedType.displayName))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
                 leading: Button(NSLocalizedString("cancel", comment: "")) {
@@ -1691,7 +1691,7 @@ struct NewCategoryCreationView: View {
                     TextField(NSLocalizedString("name_label", comment: ""), text: $name)
                     Picker(NSLocalizedString("type_label", comment: ""), selection: $selectedType) {
                         ForEach(CharacterType.allCases, id: \.self) { type in
-                            Text(type.rawValue).tag(type)
+                            Text(type.displayName).tag(type)
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
@@ -1712,7 +1712,7 @@ struct NewCategoryCreationView: View {
                     }
                 }
             }
-            .navigationTitle(String(format: NSLocalizedString("new_character_format", comment: ""), selectedType.rawValue))
+            .navigationTitle(String(format: NSLocalizedString("new_character_format", comment: ""), selectedType.displayName))
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
                 leading: Button(NSLocalizedString("cancel", comment: "")) {
@@ -2002,7 +2002,7 @@ struct AddEditCategoryView: View {
                     TextField(NSLocalizedString("name_label", comment: ""), text: $name)
                     Picker(NSLocalizedString("type_label", comment: ""), selection: $selectedType) {
                         ForEach(CharacterType.allCases, id: \.self) { type in
-                            Text(type.rawValue).tag(type)
+                            Text(type.displayName).tag(type)
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())

@@ -492,3 +492,8 @@
 "points_format" = "%dポイント";
 "popular" = "人気";
 "price_per_point" = "1ポイント = %@";
+
+/* Page Names */
+"home_page" = "ホームページ";
+"character_page" = "キャラページ";
+"product_page" = "プロダクトページ";

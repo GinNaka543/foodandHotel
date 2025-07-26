@@ -758,3 +758,8 @@
 "points_format" = "%d 포인트";
 "popular" = "인기";
 "price_per_point" = "1 포인트 = %@";
+
+/* Page Names */
+"home_page" = "홈페이지";
+"character_page" = "캐릭터 페이지";
+"product_page" = "제품 페이지";

@@ -809,3 +809,8 @@
 "popular" = "Popular";
 "price_per_point" = "1 punto = %@";
 
+/* Page Names */
+"home_page" = "Página principal";
+"character_page" = "Página de personajes";
+"product_page" = "Página de productos";
+

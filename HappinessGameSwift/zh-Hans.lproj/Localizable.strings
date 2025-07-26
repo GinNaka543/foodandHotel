@@ -758,3 +758,8 @@
 "points_format" = "%d积分";
 "popular" = "热门";
 "price_per_point" = "1积分 = %@";
+
+/* Page Names */
+"home_page" = "主页";
+"character_page" = "角色页面";
+"product_page" = "产品页面";

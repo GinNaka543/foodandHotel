@@ -1,14 +1,34 @@
 import Foundation
 
 enum AdPlacement: String, Codable, CaseIterable {
-    case home = "ホームページ"
-    case character = "キャラページ"
-    case product = "プロダクトページ"
+    case home = "home"
+    case character = "character"
+    case product = "product"
+    
+    var displayName: String {
+        switch self {
+        case .home:
+            return NSLocalizedString("home_page", comment: "Home page")
+        case .character:
+            return NSLocalizedString("character_page", comment: "Character page")
+        case .product:
+            return NSLocalizedString("product_page", comment: "Product page")
+        }
+    }
 }
 
 enum CharacterType: String, Codable, CaseIterable {
-    case anime = "アニメ"
-    case character = "キャラクター"
+    case anime = "anime"
+    case character = "character"
+    
+    var displayName: String {
+        switch self {
+        case .anime:
+            return NSLocalizedString("anime", comment: "Anime")
+        case .character:
+            return NSLocalizedString("character", comment: "Character")
+        }
+    }
 }
 
 struct CharacterCategory: Identifiable, Codable {

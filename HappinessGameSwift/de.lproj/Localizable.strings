@@ -844,3 +844,8 @@ Gute Arbeit";
 "points_format" = "%d Punkte";
 "popular" = "Beliebt";
 "price_per_point" = "1 Punkt = %@";
+
+/* Page Names */
+"home_page" = "Startseite";
+"character_page" = "Charakterseite";
+"product_page" = "Produktseite";

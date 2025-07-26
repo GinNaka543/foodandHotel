@@ -122,6 +122,7 @@ struct PurchaseReceipt: Codable, Identifiable {
         case pointPurchase = "ポイント購入"
         case planPurchase = "プラン購入"
         case subscription = "月額課金"
+        case premiumUpgrade = "プレミアムアップグレード"
         
         var displayName: String {
             return self.rawValue

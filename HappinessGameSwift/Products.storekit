@@ -1,0 +1,95 @@
+{
+  "identifier" : "A3D8F214",
+  "nonRenewableSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "100",
+      "familyShareable" : false,
+      "internalID" : "6749167457",
+      "localizations" : [
+        {
+          "description" : "100ポイントを購入",
+          "displayName" : "アプリ内ポイント(100ポイント)",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.nakajima.HappinessGameSwift.points.100.v2",
+      "referenceName" : "100ポイント",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "500",
+      "familyShareable" : false,
+      "internalID" : "6749167458",
+      "localizations" : [
+        {
+          "description" : "500ポイントを購入",
+          "displayName" : "アプリ内ポイント(500ポイント)",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.nakajima.HappinessGameSwift.points.500.v2",
+      "referenceName" : "500ポイント",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1000",
+      "familyShareable" : false,
+      "internalID" : "6749167459",
+      "localizations" : [
+        {
+          "description" : "1000ポイントを購入",
+          "displayName" : "アプリ内ポイント(1000ポイント)",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.nakajima.HappinessGameSwift.points.1000.v2",
+      "referenceName" : "1000ポイント",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "2000",
+      "familyShareable" : false,
+      "internalID" : "6749167460",
+      "localizations" : [
+        {
+          "description" : "2000ポイントを購入",
+          "displayName" : "アプリ内ポイント(2000ポイント)",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.nakajima.HappinessGameSwift.points.2000.v2",
+      "referenceName" : "2000ポイント",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "600",
+      "familyShareable" : false,
+      "internalID" : "6749167461",
+      "localizations" : [
+        {
+          "description" : "プレミアムプランですべての機能を永続的に利用",
+          "displayName" : "プレミアムアップグレード",
+          "locale" : "ja"
+        }
+      ],
+      "productID" : "com.nakajima.HappinessGameSwift.premium.2months",
+      "referenceName" : "プレミアムライセンス",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6749167457",
+    "_developerTeamID" : "Y5N3K3N5QD",
+    "_lastSynchronizedDate" : 739906897.66951001
+  },
+  "subscriptions" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

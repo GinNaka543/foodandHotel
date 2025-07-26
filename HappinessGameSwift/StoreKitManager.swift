@@ -18,7 +18,8 @@ class StoreKitManager: NSObject, ObservableObject {
         "com.nakajima.HappinessGameSwift.points.100.v2",
         "com.nakajima.HappinessGameSwift.points.500.v2",
         "com.nakajima.HappinessGameSwift.points.1000.v2",
-        "com.nakajima.HappinessGameSwift.points.2000.v2"
+        "com.nakajima.HappinessGameSwift.points.2000.v2",
+        "com.nakajima.HappinessGameSwift.premium.2months" // 2ヶ月プレミアム
     ])
     
     override init() {
@@ -87,6 +88,12 @@ class StoreKitManager: NSObject, ObservableObject {
     
     // MARK: - 購入成功時の処理
     private func handleSuccessfulPurchase(productId: String) {
+        // プレミアム購入の場合
+        if productId == "com.nakajima.HappinessGameSwift.premium.2months" {
+            handlePremiumPurchase()
+            return
+        }
+        
         // Product IDからポイント数を抽出
         let points = extractPoints(from: productId)
         
@@ -145,6 +152,30 @@ class StoreKitManager: NSObject, ObservableObject {
                 }
             }
         }
+    }
+    
+    // MARK: - プレミアム購入処理
+    private func handlePremiumPurchase() {
+        // プレミアムユーザーフラグを設定
+        UserDefaults.standard.set(true, forKey: "isPremiumUser")
+        UserDefaults.standard.set(Date(), forKey: "premiumPurchaseDate")
+        
+        // 購入明細書を保存
+        let receipt = PurchaseReceipt(
+            transactionType: .premiumUpgrade,
+            amount: 600,
+            points: 0,
+            paymentMethod: .applePay,
+            description: "プレミアムアップグレード（永続ライセンス）"
+        )
+        PurchaseReceiptManager.shared.addReceipt(receipt)
+        
+        self.purchaseCompletionHandler?(.success("com.nakajima.HappinessGameSwift.premium.2months"))
+        self.purchaseCompletionHandler = nil
+        
+        #if DEBUG
+        print("Premium purchase successful")
+        #endif
     }
 }
 

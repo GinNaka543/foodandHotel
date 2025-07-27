@@ -308,6 +308,7 @@
 "plan_info" = "プラン情報";
 "title" = "タイトル";
 "hashtag" = "ハッシュタグ";
+"comma_separator" = "、";
 "plan_description" = "プランの説明";
 "plan_description_placeholder" = "このプランの魅力を説明してください";
 "sales_price" = "販売価格";

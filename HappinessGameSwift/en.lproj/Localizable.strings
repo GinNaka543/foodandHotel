@@ -89,6 +89,10 @@
 "genre_name" = "Genre name";
 "create" = "Create";
 "custom_genres" = "Custom Genres";
+"anime_list" = "Anime List";
+"character_list" = "Character List";
+"birthday_list" = "Birthday List";
+"date_format_month_day" = "MMM d";
 "edit_item_selection" = "Select Edit Item";
 "edit_profile" = "Edit Profile";
 "edit_description" = "Edit Description";

@@ -369,6 +369,10 @@
 "change_profile_image" = "Profilbild ändern";
 "enter_name" = "Namen eingeben";
 "birthday" = "Geburtstag";
+"anime_list" = "Anime-Liste";
+"character_list" = "Charakterliste";
+"birthday_list" = "Geburtstagsliste";
+"date_format_month_day" = "d. MMM";
 "enter_anime_quote" = "Anime-Zitat eingeben";
 "complete" = "Fertig";
 "add_watch_schedule" = "Wiedergabeplan hinzufügen";

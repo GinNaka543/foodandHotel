@@ -343,6 +343,10 @@
 "change_profile_image" = "프로필 이미지 변경";
 "enter_name" = "이름을 입력하세요";
 "birthday" = "생일";
+"anime_list" = "애니메 목록";
+"character_list" = "캐릭터 목록";
+"birthday_list" = "생일 목록";
+"date_format_month_day" = "M월 d일";
 "enter_anime_quote" = "애니메이션 대사를 입력하세요";
 "complete" = "완료";
 "add_watch_schedule" = "시청 일정 추가";

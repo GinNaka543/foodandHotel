@@ -343,6 +343,10 @@
 "change_profile_image" = "更改个人资料图片";
 "enter_name" = "输入姓名";
 "birthday" = "生日";
+"anime_list" = "动画列表";
+"character_list" = "角色列表";
+"birthday_list" = "生日列表";
+"date_format_month_day" = "M月d日";
 "enter_anime_quote" = "输入动画台词";
 "complete" = "完成";
 "add_watch_schedule" = "添加观看计划";

@@ -21,9 +21,9 @@ struct CharacterListScreen: View {
                             .foregroundColor(.black)
                     }
                     Spacer()
-                    Text("キャラクターリスト")
+                    Text(NSLocalizedString("character_list", comment: "Character List"))
                         .font(.system(size: 20, weight: .bold))
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, alignment: .center)
                         .multilineTextAlignment(.center)
                     Spacer()
                     Color.clear.frame(width: 32)

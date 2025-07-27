@@ -1389,10 +1389,9 @@ extension DateFormatter {
         return formatter
     }()
     
-    static let monthDayJapanese: DateFormatter = {
+    static let monthDayLocalized: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = "M月d日"
+        formatter.dateFormat = NSLocalizedString("date_format_month_day", comment: "Month and day format")
         return formatter
     }()
 }
@@ -1560,7 +1559,7 @@ struct AboutView: View {
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("tag", comment: ""), value: "#\(character?.tag ?? "")")
                                 Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("birthday", comment: ""), value: DateFormatter.monthDayJapanese.string(from: character?.birthday ?? Date()))
+                                profileRow(label: NSLocalizedString("birthday", comment: ""), value: DateFormatter.monthDayLocalized.string(from: character?.birthday ?? Date()))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("age", comment: ""), value: character?.age ?? NSLocalizedString("not_set", comment: ""))
                                 Divider().padding(.leading, 20)

@@ -15,166 +15,18 @@ public struct ListPageScreen: View {
 
     var headerTitle: String {
         switch selectedTab {
-        case .chara: return "キャラクターリスト"
-        case .anime: return "アニメリスト"
-        case .birthday: return "バースデーリスト"
-        }
-    }
-
-    var headerTitlePadding: CGFloat {
-        switch selectedTab {
-        case .chara:
-            return 81 // 88 - 7
-        case .anime:
-            return 103 // 88 + 15
-        case .birthday:
-            return 88
+        case .chara: return NSLocalizedString("character_list", comment: "Character List")
+        case .anime: return NSLocalizedString("anime_list", comment: "Anime List")
+        case .birthday: return NSLocalizedString("birthday_list", comment: "Birthday List")
         }
     }
 
     public var body: some View {
         VStack(spacing: 0) {
-            // ヘッダー
-            HStack {
-                Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundColor(.black)
-                }
-                Text(headerTitle)
-                    .font(.system(size: 20, weight: .bold))
-                    .padding(.leading, headerTitlePadding)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 19)
-            .padding(.bottom, 8)
-            .offset(y: -10)
-            // サーチバー
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.gray)
-                TextField("Search", text: $searchText)
-                    .font(.system(size: 16))
-                    .padding(.vertical, 5.5)
-            }
-            .padding(.horizontal, 16)
-            .frame(maxWidth: UIScreen.main.bounds.width - 35)
-            .background(Color(.systemGray6))
-            .cornerRadius(12)
-            .padding(.bottom, 8)
-            .offset(y: -5)
-            // タブ
-            HStack(spacing: 0) {
-                tabButton(title: "Characters", tab: .chara)
-                tabButton(title: "Animes", tab: .anime)
-                tabButton(title: "Birthdays", tab: .birthday)
-            }
-            .background(Color.white)
-            .offset(y: -5)
-            // リスト切り替え
-            if selectedTab == .chara {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(filteredCharacters, id: \ .id) { character in
-                            Button(action: { selectedCharacter = character }) {
-                                HStack(spacing: 16) {
-                                    if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 48, height: 48)
-                                            .clipShape(Circle())
-                                    } else {
-                                        Circle()
-                                            .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 48, height: 48)
-                                            .overlay(
-                                                Image(systemName: "person")
-                                                    .font(.system(size: 24))
-                                                    .foregroundColor(.gray)
-                                            )
-                                    }
-                                    Text(character.name)
-                                        .font(.system(size: 18, weight: .regular))
-                                    Spacer()
-                                }
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 16)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                }
-            } else if selectedTab == .anime {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(filteredAnimes, id: \ .id) { anime in
-                            Button(action: { selectedAnime = anime }) {
-                                HStack(spacing: 16) {
-                                    if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                        Image(uiImage: image)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 48, height: 48)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                    } else {
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 48, height: 48)
-                                            .overlay(
-                                                Image(systemName: "film")
-                                                    .font(.system(size: 24))
-                                                    .foregroundColor(.gray)
-                                            )
-                                    }
-                                    Text(anime.title)
-                                        .font(.system(size: 18, weight: .regular))
-                                    Spacer()
-                                }
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 16)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                }
-            } else {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(filteredBirthdays, id: \ .id) { character in
-                            HStack(spacing: 16) {
-                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 48, height: 48)
-                                        .clipShape(Circle())
-                                } else {
-                                    Circle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 48, height: 48)
-                                        .overlay(
-                                            Image(systemName: "person")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(.gray)
-                                        )
-                                }
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(character.name)
-                                        .font(.system(size: 18, weight: .regular))
-                                    Text("誕生日: \(DateFormatter.monthDayJapanese.string(from: character.birthday))")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
-                                }
-                                Spacer()
-                            }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 16)
-                        }
-                    }
-                }
-            }
+            headerView
+            searchBarView
+            tabBarView
+            contentView
         }
         .onAppear {
         }
@@ -192,6 +44,180 @@ public struct ListPageScreen: View {
             ), animes: .constant(animeManager.animes))
             .environmentObject(animeManager)
         }
+    }
+    
+    private var headerView: some View {
+        ZStack {
+            HStack {
+                Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(.black)
+                }
+                Spacer()
+            }
+            
+            Text(headerTitle)
+                .font(.system(size: 20, weight: .bold))
+                .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 19)
+        .padding(.bottom, 8)
+        .offset(y: -10)
+    }
+    
+    private var searchBarView: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.gray)
+            TextField("Search", text: $searchText)
+                .font(.system(size: 16))
+                .padding(.vertical, 5.5)
+        }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: UIScreen.main.bounds.width - 35)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+        .padding(.bottom, 8)
+        .offset(y: -5)
+    }
+    
+    private var tabBarView: some View {
+        HStack(spacing: 0) {
+            tabButton(title: "Characters", tab: .chara)
+            tabButton(title: "Animes", tab: .anime)
+            tabButton(title: "Birthdays", tab: .birthday)
+        }
+        .background(Color.white)
+        .offset(y: -5)
+    }
+    
+    @ViewBuilder
+    private var contentView: some View {
+        if selectedTab == .chara {
+            characterListView
+        } else if selectedTab == .anime {
+            animeListView
+        } else {
+            birthdayListView
+        }
+    }
+    
+    private var characterListView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(Array(filteredCharacters.enumerated()), id: \.offset) { index, character in
+                    characterRow(character: character)
+                }
+            }
+        }
+    }
+    
+    private func characterRow(character: Character) -> some View {
+        Button(action: { selectedCharacter = character }) {
+            HStack(spacing: 16) {
+                characterImage(character: character)
+                Text(character.name)
+                    .font(.system(size: 18, weight: .regular))
+                Spacer()
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 16)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func characterImage(character: Character) -> some View {
+        Group {
+            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 48, height: 48)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: "person")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray)
+                    )
+            }
+        }
+    }
+    
+    private var animeListView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(Array(filteredAnimes.enumerated()), id: \.offset) { index, anime in
+                    animeRow(anime: anime)
+                }
+            }
+        }
+    }
+    
+    private func animeRow(anime: Anime) -> some View {
+        Button(action: { selectedAnime = anime }) {
+            HStack(spacing: 16) {
+                animeImage(anime: anime)
+                Text(anime.title)
+                    .font(.system(size: 18, weight: .regular))
+                Spacer()
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 16)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func animeImage(anime: Anime) -> some View {
+        Group {
+            if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 48, height: 48)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            } else {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        Image(systemName: "film")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray)
+                    )
+            }
+        }
+    }
+    
+    private var birthdayListView: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                ForEach(Array(filteredBirthdays.enumerated()), id: \.offset) { index, character in
+                    birthdayRow(character: character)
+                }
+            }
+        }
+    }
+    
+    private func birthdayRow(character: Character) -> some View {
+        HStack(spacing: 16) {
+            characterImage(character: character)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(character.name)
+                    .font(.system(size: 18, weight: .regular))
+                Text("誕生日: \(DateFormatter.monthDayLocalized.string(from: character.birthday))")
+                    .font(.system(size: 14))
+                    .foregroundColor(.gray)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 16)
     }
 
     // タブボタンのカスタムView

@@ -20,9 +20,9 @@ struct AnimeListScreen: View {
                         .foregroundColor(.black)
                 }
                 Spacer()
-                Text("アニメリスト")
+                Text(NSLocalizedString("anime_list", comment: "Anime List"))
                     .font(.system(size: 20, weight: .bold))
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .center)
                     .multilineTextAlignment(.center)
                 Spacer()
                 Color.clear.frame(width: 32)

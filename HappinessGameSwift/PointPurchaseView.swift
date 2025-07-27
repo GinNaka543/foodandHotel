@@ -200,7 +200,16 @@ struct StoreKitProductCard: View {
     let isSelected: Bool
     let onSelect: () -> Void
     
+    private var isPremiumProduct: Bool {
+        product.productIdentifier.contains("premium")
+    }
+    
     private var points: Int {
+        // プレミアム商品の場合は0を返す（特別表示のため）
+        if isPremiumProduct {
+            return 0
+        }
+        
         // "com.nakajima.HappinessGameSwift.points.1000.v2" -> 1000
         let components = product.productIdentifier.split(separator: ".")
         // points.1000.v2 の場合、インデックス4が数値
@@ -227,9 +236,15 @@ struct StoreKitProductCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text(String(format: NSLocalizedString("points_format", comment: ""), points))
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.primary)
+                        if isPremiumProduct {
+                            Text(NSLocalizedString("premium_upgrade_lifetime", comment: "Premium Upgrade (Lifetime License)"))
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.primary)
+                        } else {
+                            Text(String(format: NSLocalizedString("points_format", comment: ""), points))
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
                         
                         if isPopular {
                             Text(NSLocalizedString("popular", comment: ""))
@@ -248,7 +263,7 @@ struct StoreKitProductCard: View {
                         .font(.system(size: 16))
                         .foregroundColor(.gray)
                     
-                    if let pricePerPoint = calculatePricePerPoint() {
+                    if !isPremiumProduct, let pricePerPoint = calculatePricePerPoint() {
                         Text(String(format: NSLocalizedString("price_per_point", comment: ""), pricePerPoint))
                             .font(.system(size: 12))
                             .foregroundColor(.gray)
@@ -278,7 +293,7 @@ struct StoreKitProductCard: View {
     }
     
     private func calculatePricePerPoint() -> String? {
-        guard points > 0 else { return nil }
+        guard !isPremiumProduct && points > 0 else { return nil }
         
         let pricePerPoint = product.price.doubleValue / Double(points)
         

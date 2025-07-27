@@ -3979,7 +3979,16 @@ struct AnimeAboutView: View {
                         activeSheet: $activeSheet
                     )
                 case .iconAdjustment:
-                    IconAdjustmentView(anime: $anime, animes: $animes)
+                    IconAdjustmentView(anime: Binding(
+                        get: { currentAnime },
+                        set: { updatedAnime in
+                            anime = updatedAnime
+                            if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
+                                animes[idx] = updatedAnime
+                            }
+                            animeManager.updateAnime(updatedAnime)
+                        }
+                    ), animes: $animes)
                 case .characterSelection:
                     CharacterSelectionSheet(selectedCharacterIds: $selectedCharacterIds)
                         .environmentObject(characterManager)
@@ -4296,8 +4305,9 @@ struct AnimeAboutView: View {
                 try? FileManager.default.removeItem(atPath: oldPath)
             }
             
-            // 新しいアイコンパスを設定
+            // 新しいアイコンパスを設定（backgroundImagePathを保持）
             updatedAnime.imageIdentifier = savedPath
+            updatedAnime.backgroundImagePath = animes[idx].backgroundImagePath
             
             animes[idx] = updatedAnime
             animeManager.updateAnime(updatedAnime)
@@ -5303,9 +5313,11 @@ struct AnimeDetailView: View {
                                     let fileName = "icon_\(UUID().uuidString).png"
                                     let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
                                     
-                                    // 新しいAnimeオブジェクトを作成して更新
+                                    // 新しいAnimeオブジェクトを作成して更新（backgroundImagePathを保持）
                                     var updatedAnime = anime
                                     updatedAnime.imageIdentifier = imagePath
+                                    // backgroundImagePathを明示的に保持
+                                    updatedAnime.backgroundImagePath = anime.backgroundImagePath
                                     
                                     // Bindingを通じて更新（これがsetterを呼び出す）
                                     anime = updatedAnime

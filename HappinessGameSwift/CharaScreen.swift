@@ -1091,31 +1091,32 @@ struct CharacterDetailView: View {
                 VStack {
                     Spacer().frame(height: 180)
                     // アイコン
-                    ZStack {
-                        if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 120, height: 120)
-                                .clipShape(Circle())
-                                .shadow(radius: 8)
-                        } else {
-                            ZStack {
-                                Circle()
-                                    .fill(Color(.systemGray5))
+                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                        ZStack {
+                            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
                                     .frame(width: 120, height: 120)
+                                    .clipShape(Circle())
                                     .shadow(radius: 8)
-                                    .overlay(
-                                        Circle().stroke(Color.white, lineWidth: 2)
-                                    )
-                                Image(systemName: "person")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray)
+                            } else {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(.systemGray5))
+                                        .frame(width: 120, height: 120)
+                                        .shadow(radius: 8)
+                                        .overlay(
+                                            Circle().stroke(Color.white, lineWidth: 2)
+                                        )
+                                    Image(systemName: "person")
+                                        .font(.system(size: 50))
+                                        .foregroundColor(.gray)
+                                }
                             }
                         }
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture { showIconAdjustment = true }
                     // 名前
                     Text(currentCharacter.name)
                         .font(.system(size: 24, weight: .bold))
@@ -1346,6 +1347,25 @@ struct CharacterDetailView: View {
                     .padding(.bottom, 70)
             }
         )
+        .onChange(of: iconPickerItem) { newValue in
+            Task {
+                if let newValue = newValue {
+                    if let data = try? await newValue.loadTransferable(type: Data.self) {
+                        if let uiImage = UIImage(data: data) {
+                            // 画像を保存
+                            let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
+                            if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                // キャラクターを更新
+                                var updatedCharacter = character
+                                updatedCharacter.imageIdentifier = savedPath
+                                characterManager.updateCharacter(updatedCharacter)
+                                character = updatedCharacter
+                            }
+                        }
+                    }
+                }
+            }
+        }
         .onDisappear {
             // ビューが消える時に音楽を停止
             SoundtrackManager.shared.stopPlayback()
@@ -1415,110 +1435,84 @@ struct AboutView: View {
     private var character: Character? {
         characterIndex.flatMap { characters[$0] }
     }
+    
+    @ViewBuilder
+    private var bannerView: some View {
+        if let character = character {
+            VStack(spacing: 0) {
+                PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                    if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .scaleEffect(CGFloat(character.iconScale))
+                            .offset(x: CGFloat(character.iconOffsetX), y: CGFloat(character.iconOffsetY))
+                            .clipped()
+                            .overlay(Color.black.opacity(0.4))
+                            .overlay(bannerOverlay)
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .overlay(
+                                VStack(spacing: 4) {
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                    Text(NSLocalizedString("tap_to_add", comment: ""))
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                }
+                            )
+                            .overlay(Color.black.opacity(0.4))
+                            .overlay(bannerOverlay)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.top, 20)
+            .padding(.bottom, 10)
+        }
+    }
+    
+    @ViewBuilder
+    private var bannerOverlay: some View {
+        VStack {
+            Spacer()
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(isEditingProfile ? editedName : character?.name ?? "")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    let tagText = isEditingProfile ? editedTag : (character?.tag ?? "")
+                    if !tagText.isEmpty {
+                        Text(tagText)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                    
+                    let voiceActorText = isEditingProfile ? editedVoiceActor : (character?.voiceActor ?? "")
+                    if !voiceActorText.isEmpty {
+                        Text(voiceActorText)
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+    }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
                     // キャラクターバナー画像
-                    if let character = character {
-                        VStack(spacing: 0) {
-                            Button(action: {
-                                showIconAdjustment = true
-                            }) {
-                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .scaleEffect(CGFloat(character.iconScale))
-                                        .offset(x: CGFloat(character.iconOffsetX), y: CGFloat(character.iconOffsetY))
-                                        .clipped()
-                                        .overlay(
-                                            Color.black.opacity(0.4)
-                                        )
-                                        .overlay(
-                                            VStack {
-                                                Spacer()
-                                                HStack {
-                                                    VStack(alignment: .leading, spacing: 4) {
-                                                        Text(isEditingProfile ? editedName : character.name)
-                                                            .font(.system(size: 24, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                        
-                                                        let tagText = isEditingProfile ? editedTag : character.tag
-                                                        if !tagText.isEmpty {
-                                                            Text(tagText)
-                                                                .font(.system(size: 16, weight: .medium))
-                                                                .foregroundColor(.white)
-                                                        }
-                                                        
-                                                        let voiceActorText = isEditingProfile ? editedVoiceActor : character.voiceActor
-                                                        if !voiceActorText.isEmpty {
-                                                            Text(voiceActorText)
-                                                                .font(.system(size: 14, weight: .regular))
-                                                                .foregroundColor(.white.opacity(0.8))
-                                                        }
-                                                    }
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 16)
-                                                .padding(.bottom, 16)
-                                            }
-                                        )
-                                } else {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .overlay(
-                                            VStack(spacing: 4) {
-                                                Image(systemName: "person.fill")
-                                                    .font(.system(size: 40))
-                                                    .foregroundColor(.gray)
-                                                Text(NSLocalizedString("tap_to_add", comment: ""))
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.gray)
-                                            }
-                                        )
-                                        .overlay(
-                                            Color.black.opacity(0.4)
-                                        )
-                                        .overlay(
-                                            VStack {
-                                                Spacer()
-                                                HStack {
-                                                    VStack(alignment: .leading, spacing: 4) {
-                                                        Text(isEditingProfile ? editedName : character.name)
-                                                            .font(.system(size: 24, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                        
-                                                        let tagText = isEditingProfile ? editedTag : character.tag
-                                                        if !tagText.isEmpty {
-                                                            Text(tagText)
-                                                                .font(.system(size: 16, weight: .medium))
-                                                                .foregroundColor(.white)
-                                                        }
-                                                        
-                                                        let voiceActorText = isEditingProfile ? editedVoiceActor : character.voiceActor
-                                                        if !voiceActorText.isEmpty {
-                                                            Text(voiceActorText)
-                                                                .font(.system(size: 14, weight: .regular))
-                                                                .foregroundColor(.white.opacity(0.8))
-                                                        }
-                                                    }
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 16)
-                                                .padding(.bottom, 16)
-                                            }
-                                        )
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        .padding(.top, 20)
-                        .padding(.bottom, 10)
-                    }
+                    bannerView
                     
                     // プロフィールセクション
                     VStack(alignment: .leading, spacing: 0) {
@@ -1839,7 +1833,13 @@ struct AboutView: View {
                             Task {
                                 if let data = try? await newValue.loadTransferable(type: Data.self),
                                    let image = UIImage(data: data) {
-                                    newIconImage = image
+                                    // 画像を保存
+                                    let fileName = "character_\(characters[characterIndex ?? 0].id)_\(Date().timeIntervalSince1970).jpg"
+                                    if let savedPath = saveImageToDocuments(image, fileName: fileName),
+                                       let idx = characterIndex {
+                                        characters[idx].imageIdentifier = savedPath
+                                        characterManager.updateCharacter(characters[idx])
+                                    }
                                 }
                             }
                         }

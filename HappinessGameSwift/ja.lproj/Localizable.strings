@@ -59,6 +59,17 @@
 /* Anime Page */
 "watch_anime" = "アニメを見る";
 "anime_title" = "アニメタイトル";
+"no_artworks_anime" = "まだアートワークがありません";
+"no_albums_anime" = "まだアルバムがありません";
+"create_album_same_tag" = "同じタグでアルバムを作成できます";
+"create_album_anime" = "アルバムを作成";
+"add_image_anime" = "画像を追加";
+"create_video_album" = "アルバムを作成";
+"add_video_anime" = "動画を追加";
+"artwork_count" = "%d枚の画像、%d個のアルバム";
+"artwork_count_format" = "%d個のアートワーク";
+"video_count_albums" = "%d本の動画、%d個のアルバム";
+"album_video_count" = "%d本の動画";
 "edit_tags" = "タグを編集";
 "enter_tag_to_display" = "表示したいタグを入力";
 "tag_name_placeholder" = "#タグ名";
@@ -100,6 +111,11 @@
 "icon_horizontal_position" = "横位置";
 "icon_vertical_position" = "縦位置";
 "reset" = "リセット";
+
+/* Anime Screen */
+"register_favorite_anime" = "お気に入りのアニメを登録";
+"manage_viewing_status" = "視聴状況を管理して見逃しを防ぐ";
+"add_anime_button" = "アニメ追加";
 
 /* Anime Status */
 "watching_status" = "視聴中";
@@ -598,12 +614,22 @@
 /* Product Modal UI */
 "add_new_character_anime" = "新しいキャラクター・アニメを追加";
 "specify_product_owner" = "この商品の所有者を指定してください";
+"product_count_format" = "%d個の商品";
+"add_site_name" = "サイト名を追加";
+"delivery_tomorrow" = "明日配送可能";
+"tap_to_add_memo" = "タップしてメモを追加";
+"view_product" = "商品を見る";
 "or_text" = "または";
 "select_existing_character_anime" = "既存のキャラクター・アニメを選択";
 "select_banner_image" = "バナー画像を選択";
 "change_banner_image" = "バナー画像を変更";
 "first_product_required" = "最初の商品（必須）";
 "link_optional" = "リンク（任意）";
+"memo_label" = "メモ:";
+"enter_memo" = "メモを入力";
+"product_image" = "商品画像";
+"basic_info_section" = "基本情報";
+"purchase_link" = "購入リンク";
 
 /* Character and Category */
 "new_character_format" = "新規%@";

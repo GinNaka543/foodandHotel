@@ -290,7 +290,7 @@ struct ArtworkScreen: View {
                 HStack {
                     HStack(spacing: 12) {
                         Button(action: { showAlbum = false }) {
-                            Text("ArtWork")
+                            Text(NSLocalizedString("artwork", comment: "Artwork"))
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(!showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
@@ -302,7 +302,7 @@ struct ArtworkScreen: View {
                         }
                         
                         Button(action: { showAlbum = true }) {
-                            Text("Album")
+                            Text(NSLocalizedString("album", comment: "Album"))
                                 .font(.system(size: 16, weight: .regular))
                                 .foregroundColor(showAlbum ? .white : .black)
                                 .padding(.horizontal, 18)
@@ -654,7 +654,7 @@ struct ArtworkScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "photo")
                                 .font(.system(size: 24))
-                            Text("Artwork")
+                            Text(NSLocalizedString("artwork", comment: "Artwork"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(!showAlbum ? .black : .gray)
@@ -669,7 +669,7 @@ struct ArtworkScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "rectangle.grid.2x2")
                                 .font(.system(size: 24))
-                            Text("Album")
+                            Text(NSLocalizedString("album", comment: "Album"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(showAlbum ? .black : .gray)
@@ -692,7 +692,7 @@ struct ArtworkScreen: View {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 24))
                             }
-                            Text("About")
+                            Text(NSLocalizedString("about", comment: "About"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.black)

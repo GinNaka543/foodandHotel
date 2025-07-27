@@ -161,7 +161,7 @@ struct VideoGalleryScreen: View {
         HStack {
             HStack(spacing: 12) {
                 Button(action: { showAlbum = false }) {
-                    Text("Video")
+                    Text(NSLocalizedString("video", comment: "Video"))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(!showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
@@ -173,7 +173,7 @@ struct VideoGalleryScreen: View {
                 }
                 
                 Button(action: { showAlbum = true }) {
-                    Text("Album")
+                    Text(NSLocalizedString("album", comment: "Album"))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
@@ -688,7 +688,7 @@ struct VideoGalleryScreen: View {
                     VStack(spacing: 4) {
                         Image(systemName: "video")
                             .font(.system(size: 24))
-                        Text("Video")
+                        Text(NSLocalizedString("video", comment: "Video"))
                             .font(.system(size: 10))
                     }
                     .foregroundColor(!showAlbum ? .black : .gray)
@@ -702,7 +702,7 @@ struct VideoGalleryScreen: View {
                     VStack(spacing: 4) {
                         Image(systemName: "rectangle.grid.2x2")
                             .font(.system(size: 24))
-                        Text("Album")
+                        Text(NSLocalizedString("album", comment: "Album"))
                             .font(.system(size: 10))
                     }
                     .foregroundColor(showAlbum ? .black : .gray)
@@ -725,7 +725,7 @@ struct VideoGalleryScreen: View {
                             Image(systemName: "person.circle")
                                 .font(.system(size: 24))
                         }
-                        Text("About")
+                        Text(NSLocalizedString("about", comment: "About"))
                             .font(.system(size: 10))
                     }
                     .foregroundColor(.black)

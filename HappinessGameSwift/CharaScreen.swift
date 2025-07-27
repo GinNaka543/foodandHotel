@@ -1248,16 +1248,16 @@ struct CharacterDetailView: View {
                                             try? FileManager.default.removeItem(atPath: oldPath)
                                         }
                                         
-                                        // 新しいCharacterオブジェクトを作成して更新
-                                        var updatedCharacter = character
-                                        updatedCharacter.imageIdentifier = imagePath
-                                        
-                                        // Bindingを通じて更新（これがsetterを呼び出す）
-                                        character = updatedCharacter
-                                        
-                                        // CharacterManagerも更新してUI全体を更新
-                                        characterManager.updateCharacter(updatedCharacter)
-                                        characterManager.refreshUI()
+                                        // 最新のデータを取得
+                                        if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                                            var updatedCharacter = latestCharacter
+                                            updatedCharacter.imageIdentifier = imagePath
+                                            // backgroundImagePathは最新のデータから保持される
+                                            
+                                            // Bindingを通じて更新（これがsetterを呼び出す）
+                                            character = updatedCharacter
+                                            
+                                        }
                                         
                                         // モーダルを自動的に閉じる
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -1364,11 +1364,14 @@ struct CharacterDetailView: View {
                             // 画像を保存
                             let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
                             if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
-                                // キャラクターを更新
-                                var updatedCharacter = character
-                                updatedCharacter.imageIdentifier = savedPath
-                                characterManager.updateCharacter(updatedCharacter)
-                                character = updatedCharacter
+                                // 最新のデータを取得
+                                if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                                    var updatedCharacter = latestCharacter
+                                    updatedCharacter.imageIdentifier = savedPath
+                                    // backgroundImagePathは最新のデータから保持される
+                                    characterManager.updateCharacter(updatedCharacter)
+                                    character = updatedCharacter
+                                }
                             }
                         }
                     }

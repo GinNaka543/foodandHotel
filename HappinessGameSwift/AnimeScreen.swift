@@ -139,8 +139,6 @@ struct AnimeCustomField: Hashable, Codable {
 enum WatchStatus: String, Codable, CaseIterable {
     case none = "none"
     case watching = "watching"
-    case completed = "completed"
-    case dropped = "dropped"
     case willWatch = "willWatch"
     case watchAgain = "watchAgain"
     case thisTerm = "thisTerm"
@@ -151,10 +149,6 @@ enum WatchStatus: String, Codable, CaseIterable {
             return NSLocalizedString("none", comment: "None")
         case .watching:
             return NSLocalizedString("watching_status", comment: "Watching")
-        case .completed:
-            return NSLocalizedString("completed_status", comment: "Completed")
-        case .dropped:
-            return NSLocalizedString("dropped_status", comment: "Dropped")
         case .willWatch:
             return NSLocalizedString("will_watch_status", comment: "Will Watch")
         case .watchAgain:
@@ -251,11 +245,27 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
         backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([AnimeCustomField].self, forKey: .customFields)
-        watchStatus = (try? container.decode(WatchStatus.self, forKey: .watchStatus)) ?? .none
+        // watchStatusの読み込みと移行
+        if let statusString = try? container.decode(String.self, forKey: .watchStatus) {
+            // completedやdroppedの場合はnoneに変換
+            if statusString == "completed" || statusString == "dropped" {
+                watchStatus = .none
+            } else {
+                watchStatus = WatchStatus(rawValue: statusString) ?? .none
+            }
+        } else {
+            watchStatus = .none
+        }
         
         // watchStatusesを読み込む。古いデータの場合は、watchStatusから移行
-        if let statuses = try? container.decode([WatchStatus].self, forKey: .watchStatuses) {
-            watchStatuses = statuses
+        if let statusStrings = try? container.decode([String].self, forKey: .watchStatuses) {
+            // completedやdroppedを除外して変換
+            watchStatuses = statusStrings.compactMap { statusString in
+                if statusString == "completed" || statusString == "dropped" {
+                    return nil
+                }
+                return WatchStatus(rawValue: statusString)
+            }
         } else if watchStatus != .none {
             // 後方互換性: 古いデータの場合、watchStatusから配列を作成
             watchStatuses = [watchStatus]
@@ -4701,12 +4711,13 @@ struct AnimeDetailView: View {
                     
                     // キャラクターアイコン
                     if !anime.characterIds.isEmpty {
-                        Button(action: {
-                            showMemberList = true
-                        }) {
-                            HStack(spacing: -8) {
-                                ForEach(Array(anime.characterIds.prefix(5)), id: \.self) { characterId in
-                                    if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                        HStack(spacing: -8) {
+                            // 最初の4つのキャラクターアイコン
+                            ForEach(Array(anime.characterIds.prefix(4)), id: \.self) { characterId in
+                                if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                    Button(action: {
+                                        showMemberList = true
+                                    }) {
                                         if let imageIdentifier = character.imageIdentifier {
                                             OptimizedFileImage(
                                                 path: imageIdentifier,
@@ -4732,15 +4743,27 @@ struct AnimeDetailView: View {
                                                 .shadow(radius: 2)
                                         }
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                if anime.characterIds.count > 5 {
+                            }
+                            
+                            // 4つ以上のキャラクターがいる場合は総数ボタンを表示
+                            if anime.characterIds.count >= 4 {
+                                Button(action: {
+                                    showMemberList = true
+                                }) {
                                     ZStack {
                                         Circle()
-                                            .fill(Color.black.opacity(0.6))
+                                            .fill(Color(red: 0.7, green: 0.85, blue: 0.85))
                                             .frame(width: 36, height: 36)
-                                        Text("+\(anime.characterIds.count - 5)")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.white)
+                                        HStack(spacing: 2) {
+                                            Text("\(anime.characterIds.count)")
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(.white)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.white)
+                                        }
                                     }
                                     .overlay(
                                         Circle()
@@ -4748,10 +4771,10 @@ struct AnimeDetailView: View {
                                     )
                                     .shadow(radius: 2)
                                 }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .padding(.top, 12)
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .padding(.top, 12)
                     }
                     
                     // ナビゲーションバー（下部メニュー）

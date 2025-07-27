@@ -394,6 +394,13 @@ struct OptimizedFileImage: View {
         .task {
             await loadOptimizedImage()
         }
+        .onChange(of: path) { _ in
+            // Path changed, reload image
+            image = nil
+            Task {
+                await loadOptimizedImage()
+            }
+        }
         .onDisappear {
             // Release image when view disappears
             image = nil

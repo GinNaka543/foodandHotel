@@ -777,6 +777,7 @@ struct CharacterRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
             if let imageIdentifier = currentCharacter.imageIdentifier {
+                // 画像パスをIDとして使用して、パスが変わったときに確実に再描画されるようにする
                 OptimizedFileImage(
                     path: imageIdentifier,
                     targetSize: CGSize(width: 48, height: 48)
@@ -784,6 +785,7 @@ struct CharacterRow: View {
                 .aspectRatio(contentMode: .fill)
                 .frame(width: 48, height: 48)
                 .clipShape(Circle())
+                .id(imageIdentifier) // パスが変わったときに強制的に再作成
             } else {
                 Circle()
                     .fill(Color.gray.opacity(0.3))
@@ -1241,6 +1243,8 @@ struct CharacterDetailView: View {
                                         
                                         // 古い画像ファイルを削除
                                         if let oldPath = currentCharacter.imageIdentifier {
+                                            // キャッシュをクリア
+                                            ImageCache.shared.removeImage(for: oldPath)
                                             try? FileManager.default.removeItem(atPath: oldPath)
                                         }
                                         

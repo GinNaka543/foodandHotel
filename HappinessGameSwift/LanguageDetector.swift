@@ -92,18 +92,19 @@ class LanguageDetector {
     
     /// 現在のアプリの言語設定を取得
     func getCurrentAppLanguage() -> DetectedLanguage {
-        let currentLanguage = Locale.current.languageCode ?? "en"
+        // LocalizationManagerから実際のアプリ言語を取得
+        let currentLanguage = LocalizationManager.shared.currentLanguage
         
         switch currentLanguage {
-        case "ja":
+        case .japanese:
             return .japanese
-        case "ko":
+        case .korean:
             return .korean
-        case "zh", "zh-Hans", "zh-Hant":
+        case .simplifiedChinese:
             return .chinese
-        case "en":
+        case .english:
             return .english
-        default:
+        case .french, .german, .italian, .spanish, .portuguese:
             return .other
         }
     }
@@ -136,11 +137,20 @@ class LanguageDetector {
         let detected = detectLanguage(from: title)
         let current = getCurrentAppLanguage()
         let shouldShow = isTitleMatchingCurrentLanguage(title)
+        let localizationLang = LocalizationManager.shared.currentLanguage.rawValue
+        let localeLang: String
+        if #available(iOS 16, *) {
+            localeLang = Locale.current.language.languageCode?.identifier ?? "unknown"
+        } else {
+            localeLang = Locale.current.languageCode ?? "unknown"
+        }
         
         print("🔍 Language Detection Debug:")
         print("  Title: \"\(title)\"")
         print("  Detected: \(detected)")
         print("  Current App Language: \(current)")
+        print("  LocalizationManager Language: \(localizationLang)")
+        print("  Locale Language: \(localeLang)")
         print("  Should Show: \(shouldShow)")
         print("---")
     }

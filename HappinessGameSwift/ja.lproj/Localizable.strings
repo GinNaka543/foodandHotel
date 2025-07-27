@@ -550,6 +550,10 @@
 "register_wishlist_items" = "欲しい商品を登録";
 "register_favorite_character_anime_products" = "好きなキャラクターやアニメの\n商品を登録・管理";
 "add_product_button" = "商品を追加";
+"add_product" = "商品を追加";
+"add_first_product" = "最初の商品を追加";
+"add_new_product" = "新規商品を追加";
+"add_products_instruction" = "右上の「商品を追加」ボタンから追加";
 
 /* Product Modal UI */
 "add_new_character_anime" = "新しいキャラクター・アニメを追加";

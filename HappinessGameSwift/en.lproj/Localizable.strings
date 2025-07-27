@@ -565,6 +565,7 @@
 /* Product Screen */
 "wishlist_items" = "Wishlist";
 "add_product" = "Add Product";
+"add_first_product" = "Add the first product";
 "search_by_anime_or_character" = "Search by anime or character";
 "register_wishlist_items" = "Register wishlist items";
 "register_favorite_character_anime_products" = "Register and manage products\nof your favorite characters and anime";

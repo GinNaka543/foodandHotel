@@ -346,6 +346,41 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     }
 }
 
+// AnimeTab enum moved outside of struct for global access
+enum AnimeTab: String, CaseIterable {
+    case all = "all"
+    case watching = "watching"
+    case thisTerm = "thisTerm"
+    case willWatch = "willWatch"
+    case watchAgain = "watchAgain"
+    // ジャンル
+    case serious = "serious"
+    case romcom = "romcom"
+    case sports = "sports"
+    case comedy = "comedy"
+    case isekai = "isekai"
+    case sf = "sf"
+    case art = "art"
+    case brain = "brain"
+    case healing = "healing"
+    case action = "action"
+    case adventure = "adventure"
+    case drama = "drama"
+    case fantasy = "fantasy"
+    case horror = "horror"
+    case mystery = "mystery"
+    case psychological = "psychological"
+    case romance = "romance"
+    case slice_of_life = "slice_of_life"
+    case supernatural = "supernatural"
+    case thriller = "thriller"
+    case mecha = "mecha"
+    case music = "music"
+    case school = "school"
+    case military = "military"
+    case historical = "historical"
+}
+
 struct AnimeScreen: View {
     @EnvironmentObject var animeManager: AnimeManager
     @EnvironmentObject var mainTab: MainTabSelection
@@ -362,40 +397,6 @@ struct AnimeScreen: View {
     @State private var bannerTimer: Timer? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
-    
-    enum AnimeTab: String, CaseIterable {
-        case all = "all"
-        case watching = "watching"
-        case thisTerm = "thisTerm"
-        case willWatch = "willWatch"
-        case watchAgain = "watchAgain"
-        // ジャンル
-        case serious = "serious"
-        case romcom = "romcom"
-        case sports = "sports"
-        case comedy = "comedy"
-        case isekai = "isekai"
-        case sf = "sf"
-        case art = "art"
-        case brain = "brain"
-        case healing = "healing"
-        case action = "action"
-        case adventure = "adventure"
-        case drama = "drama"
-        case fantasy = "fantasy"
-        case horror = "horror"
-        case mystery = "mystery"
-        case psychological = "psychological"
-        case romance = "romance"
-        case slice_of_life = "slice_of_life"
-        case supernatural = "supernatural"
-        case thriller = "thriller"
-        case mecha = "mecha"
-        case music = "music"
-        case school = "school"
-        case military = "military"
-        case historical = "historical"
-    }
     
     var filteredAnimes: [Anime] {
         // Filter out animes without titles first

@@ -101,6 +101,10 @@
 "genre" = "ジャンル";
 "select_status" = "ステータスを選択（複数選択可）";
 "select_genre" = "ジャンルを選択（複数選択可）";
+"create_custom_genre" = "カスタムジャンルを作成";
+"genre_name" = "ジャンル名";
+"create" = "作成";
+"custom_genres" = "カスタムジャンル";
 "edit_item_selection" = "編集項目選択";
 "select_edit_item_title" = "編集項目を選択";
 "edit_profile" = "プロフィールを編集";

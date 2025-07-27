@@ -128,7 +128,9 @@ class AnimeManager: ObservableObject {
 
 
 
-// Temporary definitions to fix compilation
+
+
+// Restored type definitions 
 struct AnimeCustomField: Hashable, Codable {
     var name: String
     var value: String
@@ -164,84 +166,24 @@ enum WatchStatus: String, Codable, CaseIterable {
 }
 
 enum AnimeGenre: String, Codable, CaseIterable {
-    case serious = "serious"
     case romcom = "romcom"
-    case sports = "sports"
-    case comedy = "comedy"
     case isekai = "isekai"
     case sf = "sf"
-    case art = "art"
-    case brain = "brain"
+    case sports = "sports"
     case healing = "healing"
-    case action = "action"
-    case adventure = "adventure"
-    case drama = "drama"
-    case fantasy = "fantasy"
-    case horror = "horror"
-    case mystery = "mystery"
-    case psychological = "psychological"
-    case romance = "romance"
-    case slice_of_life = "slice_of_life"
-    case supernatural = "supernatural"
-    case thriller = "thriller"
-    case mecha = "mecha"
-    case music = "music"
-    case school = "school"
-    case military = "military"
-    case historical = "historical"
     
     var displayName: String {
         switch self {
-        case .serious:
-            return NSLocalizedString("serious", comment: "Serious")
         case .romcom:
             return NSLocalizedString("romcom", comment: "Romance/Comedy")
-        case .sports:
-            return NSLocalizedString("sports", comment: "Sports")
-        case .comedy:
-            return NSLocalizedString("comedy", comment: "Comedy")
         case .isekai:
             return NSLocalizedString("isekai", comment: "Isekai")
         case .sf:
             return NSLocalizedString("sf", comment: "Science Fiction")
-        case .art:
-            return NSLocalizedString("art", comment: "Art")
-        case .brain:
-            return NSLocalizedString("brain", comment: "Brain")
+        case .sports:
+            return NSLocalizedString("sports", comment: "Sports")
         case .healing:
             return NSLocalizedString("healing", comment: "Healing")
-        case .action:
-            return NSLocalizedString("action", comment: "Action")
-        case .adventure:
-            return NSLocalizedString("adventure", comment: "Adventure")
-        case .drama:
-            return NSLocalizedString("drama", comment: "Drama")
-        case .fantasy:
-            return NSLocalizedString("fantasy", comment: "Fantasy")
-        case .horror:
-            return NSLocalizedString("horror", comment: "Horror")
-        case .mystery:
-            return NSLocalizedString("mystery", comment: "Mystery")
-        case .psychological:
-            return NSLocalizedString("psychological", comment: "Psychological")
-        case .romance:
-            return NSLocalizedString("romance", comment: "Romance")
-        case .slice_of_life:
-            return NSLocalizedString("slice_of_life", comment: "Slice of Life")
-        case .supernatural:
-            return NSLocalizedString("supernatural", comment: "Supernatural")
-        case .thriller:
-            return NSLocalizedString("thriller", comment: "Thriller")
-        case .mecha:
-            return NSLocalizedString("mecha", comment: "Mecha")
-        case .music:
-            return NSLocalizedString("music", comment: "Music")
-        case .school:
-            return NSLocalizedString("school", comment: "School")
-        case .military:
-            return NSLocalizedString("military", comment: "Military")
-        case .historical:
-            return NSLocalizedString("historical", comment: "Historical")
         }
     }
 }
@@ -262,6 +204,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var characters: [String] = []  // 出演キャラクターリスト
     var watchLink: String = ""  // アニメ視聴リンク
     var genres: [AnimeGenre] = []  // ジャンルリスト
+    var customGenres: [String] = []  // カスタムジャンルリスト
     
     // アイコン表示設定
     var iconScale: Double = 1.0  // アイコンの拡大率（0.5〜2.0）
@@ -273,7 +216,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres, iconScale, iconOffsetX, iconOffsetY
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres, customGenres, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -292,6 +235,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(characters, forKey: .characters)
         try container.encode(watchLink, forKey: .watchLink)
         try container.encode(genres, forKey: .genres)
+        try container.encode(customGenres, forKey: .customGenres)
         try container.encode(iconScale, forKey: .iconScale)
         try container.encode(iconOffsetX, forKey: .iconOffsetX)
         try container.encode(iconOffsetY, forKey: .iconOffsetY)
@@ -326,13 +270,14 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         characters = (try? container.decode([String].self, forKey: .characters)) ?? []
         watchLink = (try? container.decode(String.self, forKey: .watchLink)) ?? ""
         genres = (try? container.decode([AnimeGenre].self, forKey: .genres)) ?? []
+        customGenres = (try? container.decode([String].self, forKey: .customGenres)) ?? []
         
         // アイコン表示設定を読み込む。古いデータの場合はデフォルト値を使用
         iconScale = (try? container.decode(Double.self, forKey: .iconScale)) ?? 1.0
         iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
         iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = [], customGenres: [String] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -348,6 +293,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.characters = characters
         self.watchLink = watchLink
         self.genres = genres
+        self.customGenres = customGenres
         self.iconScale = iconScale
         self.iconOffsetX = iconOffsetX
         self.iconOffsetY = iconOffsetY
@@ -362,38 +308,75 @@ enum AnimeTab: String, CaseIterable {
     case willWatch = "willWatch"
     case watchAgain = "watchAgain"
     // ジャンル
-    case serious = "serious"
     case romcom = "romcom"
-    case sports = "sports"
-    case comedy = "comedy"
     case isekai = "isekai"
     case sf = "sf"
-    case art = "art"
-    case brain = "brain"
+    case sports = "sports"
     case healing = "healing"
-    case action = "action"
-    case adventure = "adventure"
-    case drama = "drama"
-    case fantasy = "fantasy"
-    case horror = "horror"
-    case mystery = "mystery"
-    case psychological = "psychological"
-    case romance = "romance"
-    case slice_of_life = "slice_of_life"
-    case supernatural = "supernatural"
-    case thriller = "thriller"
-    case mecha = "mecha"
-    case music = "music"
-    case school = "school"
-    case military = "military"
-    case historical = "historical"
+}
+
+// カスタムタブのタイプを表す構造体
+struct CustomTab: Identifiable, Hashable {
+    let id = UUID()
+    let type: TabType
+    let value: String
+    
+    enum TabType {
+        case defaultTab(AnimeTab)
+        case customGenre(String)
+    }
+    
+    var displayName: String {
+        switch type {
+        case .defaultTab(let animeTab):
+            switch animeTab {
+            case .all:
+                return NSLocalizedString("all", comment: "")
+            case .watching:
+                return NSLocalizedString("watching_status", comment: "")
+            case .thisTerm:
+                return NSLocalizedString("this_term_status", comment: "")
+            case .willWatch:
+                return NSLocalizedString("will_watch_status", comment: "")
+            case .watchAgain:
+                return NSLocalizedString("watch_again_status", comment: "")
+            case .romcom:
+                return NSLocalizedString("romcom", comment: "")
+            case .isekai:
+                return NSLocalizedString("isekai", comment: "")
+            case .sf:
+                return "SF"
+            case .sports:
+                return NSLocalizedString("sports", comment: "")
+            case .healing:
+                return NSLocalizedString("healing", comment: "")
+            }
+        case .customGenre(let genreName):
+            return genreName
+        }
+    }
+    
+    static func == (lhs: CustomTab, rhs: CustomTab) -> Bool {
+        switch (lhs.type, rhs.type) {
+        case (.defaultTab(let lTab), .defaultTab(let rTab)):
+            return lTab == rTab
+        case (.customGenre(let lGenre), .customGenre(let rGenre)):
+            return lGenre == rGenre
+        default:
+            return false
+        }
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(value)
+    }
 }
 
 struct AnimeScreen: View {
     @EnvironmentObject var animeManager: AnimeManager
     @EnvironmentObject var mainTab: MainTabSelection
     @State private var showAddSheet = false
-    @State private var selectedTab: AnimeTab = .all
+    @State private var selectedTab: CustomTab = CustomTab(type: .defaultTab(.all), value: "all")
     @State private var selectedAnime: Anime? = nil
     @State private var showNavigationMenu = false
     @State private var showPrivacyPolicy = false
@@ -406,73 +389,84 @@ struct AnimeScreen: View {
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
     
+    // 利用可能なタブを動的に生成
+    var availableTabs: [CustomTab] {
+        var tabs: [CustomTab] = []
+        
+        // デフォルトタブを追加
+        for animeTab in AnimeTab.allCases {
+            tabs.append(CustomTab(type: .defaultTab(animeTab), value: animeTab.rawValue))
+        }
+        
+        // すべてのカスタムジャンルを取得
+        let allCustomGenres = Set(animeManager.animes.flatMap { $0.customGenres })
+        
+        // カスタムジャンルタブを追加
+        for customGenre in allCustomGenres.sorted() {
+            tabs.append(CustomTab(type: .customGenre(customGenre), value: customGenre))
+        }
+        
+        return tabs
+    }
+    
+    // localizedTabName関数を定義
+    func localizedTabName(for tab: AnimeTab) -> String {
+        switch tab {
+        case .all:
+            return NSLocalizedString("all", comment: "")
+        case .watching:
+            return NSLocalizedString("watching_status", comment: "")
+        case .thisTerm:
+            return NSLocalizedString("this_term_status", comment: "")
+        case .willWatch:
+            return NSLocalizedString("will_watch_status", comment: "")
+        case .watchAgain:
+            return NSLocalizedString("watch_again_status", comment: "")
+        case .romcom:
+            return NSLocalizedString("romcom", comment: "")
+        case .isekai:
+            return NSLocalizedString("isekai", comment: "")
+        case .sf:
+            return "SF"
+        case .sports:
+            return NSLocalizedString("sports", comment: "")
+        case .healing:
+            return NSLocalizedString("healing", comment: "")
+        }
+    }
+    
     var filteredAnimes: [Anime] {
         // Filter out animes without titles first
         let animesWithTitles = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         
         let result: [Anime]
-        switch selectedTab {
-        case .all:
-            result = animesWithTitles
-        case .watching:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
-        case .willWatch:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
-        case .watchAgain:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
-        case .thisTerm:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
-        // ジャンルフィルタ
-        case .serious:
-            result = animesWithTitles.filter { $0.genres.contains(.serious) }
-        case .romcom:
-            result = animesWithTitles.filter { $0.genres.contains(.romcom) }
-        case .sports:
-            result = animesWithTitles.filter { $0.genres.contains(.sports) }
-        case .comedy:
-            result = animesWithTitles.filter { $0.genres.contains(.comedy) }
-        case .isekai:
-            result = animesWithTitles.filter { $0.genres.contains(.isekai) }
-        case .sf:
-            result = animesWithTitles.filter { $0.genres.contains(.sf) }
-        case .art:
-            result = animesWithTitles.filter { $0.genres.contains(.art) }
-        case .brain:
-            result = animesWithTitles.filter { $0.genres.contains(.brain) }
-        case .healing:
-            result = animesWithTitles.filter { $0.genres.contains(.healing) }
-        case .action:
-            result = animesWithTitles.filter { $0.genres.contains(.action) }
-        case .adventure:
-            result = animesWithTitles.filter { $0.genres.contains(.adventure) }
-        case .drama:
-            result = animesWithTitles.filter { $0.genres.contains(.drama) }
-        case .fantasy:
-            result = animesWithTitles.filter { $0.genres.contains(.fantasy) }
-        case .horror:
-            result = animesWithTitles.filter { $0.genres.contains(.horror) }
-        case .mystery:
-            result = animesWithTitles.filter { $0.genres.contains(.mystery) }
-        case .psychological:
-            result = animesWithTitles.filter { $0.genres.contains(.psychological) }
-        case .romance:
-            result = animesWithTitles.filter { $0.genres.contains(.romance) }
-        case .slice_of_life:
-            result = animesWithTitles.filter { $0.genres.contains(.slice_of_life) }
-        case .supernatural:
-            result = animesWithTitles.filter { $0.genres.contains(.supernatural) }
-        case .thriller:
-            result = animesWithTitles.filter { $0.genres.contains(.thriller) }
-        case .mecha:
-            result = animesWithTitles.filter { $0.genres.contains(.mecha) }
-        case .music:
-            result = animesWithTitles.filter { $0.genres.contains(.music) }
-        case .school:
-            result = animesWithTitles.filter { $0.genres.contains(.school) }
-        case .military:
-            result = animesWithTitles.filter { $0.genres.contains(.military) }
-        case .historical:
-            result = animesWithTitles.filter { $0.genres.contains(.historical) }
+        switch selectedTab.type {
+        case .defaultTab(let animeTab):
+            switch animeTab {
+            case .all:
+                result = animesWithTitles
+            case .watching:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
+            case .willWatch:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
+            case .watchAgain:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
+            case .thisTerm:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
+            // ジャンルフィルタ
+            case .romcom:
+                result = animesWithTitles.filter { $0.genres.contains(.romcom) }
+            case .isekai:
+                result = animesWithTitles.filter { $0.genres.contains(.isekai) }
+            case .sf:
+                result = animesWithTitles.filter { $0.genres.contains(.sf) }
+            case .sports:
+                result = animesWithTitles.filter { $0.genres.contains(.sports) }
+            case .healing:
+                result = animesWithTitles.filter { $0.genres.contains(.healing) }
+            }
+        case .customGenre(let customGenreName):
+            result = animesWithTitles.filter { $0.customGenres.contains(customGenreName) }
         }
         
         // Sort by order
@@ -645,77 +639,11 @@ struct AnimeScreen: View {
         }
     }
     
-    // タブの表示名を取得するヘルパー関数
-    private func localizedTabName(for tab: AnimeTab) -> String {
-        switch tab {
-        case .all:
-            return NSLocalizedString("all", comment: "")
-        case .watching:
-            return NSLocalizedString("watching_status", comment: "")
-        case .thisTerm:
-            return NSLocalizedString("this_term_status", comment: "")
-        case .willWatch:
-            return NSLocalizedString("will_watch_status", comment: "")
-        case .watchAgain:
-            return NSLocalizedString("watch_again_status", comment: "")
-        case .serious:
-            return NSLocalizedString("serious", comment: "")
-        case .romcom:
-            return NSLocalizedString("romcom", comment: "")
-        case .sports:
-            return NSLocalizedString("sports", comment: "")
-        case .comedy:
-            return NSLocalizedString("comedy", comment: "")
-        case .isekai:
-            return NSLocalizedString("isekai", comment: "")
-        case .sf:
-            return "SF"
-        case .art:
-            return NSLocalizedString("art", comment: "")
-        case .brain:
-            return NSLocalizedString("brain", comment: "")
-        case .healing:
-            return NSLocalizedString("healing", comment: "")
-        case .action:
-            return NSLocalizedString("action", comment: "")
-        case .adventure:
-            return NSLocalizedString("adventure", comment: "")
-        case .drama:
-            return NSLocalizedString("drama", comment: "")
-        case .fantasy:
-            return NSLocalizedString("fantasy", comment: "")
-        case .horror:
-            return NSLocalizedString("horror", comment: "")
-        case .mystery:
-            return NSLocalizedString("mystery", comment: "")
-        case .psychological:
-            return NSLocalizedString("psychological", comment: "")
-        case .romance:
-            return NSLocalizedString("romance", comment: "")
-        case .slice_of_life:
-            return NSLocalizedString("slice_of_life", comment: "")
-        case .supernatural:
-            return NSLocalizedString("supernatural", comment: "")
-        case .thriller:
-            return NSLocalizedString("thriller", comment: "")
-        case .mecha:
-            return NSLocalizedString("mecha", comment: "")
-        case .music:
-            return NSLocalizedString("music", comment: "")
-        case .school:
-            return NSLocalizedString("school", comment: "")
-        case .military:
-            return NSLocalizedString("military", comment: "")
-        case .historical:
-            return NSLocalizedString("historical", comment: "")
-        }
-    }
-    
     // タブビュー部分
     private var tabView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                ForEach(AnimeTab.allCases, id: \.self) { tab in
+                ForEach(availableTabs, id: \.id) { tab in
                     Button(action: { 
                         selectedTab = tab
                         // Reload YouTube videos for the new tab
@@ -724,7 +652,7 @@ struct AnimeScreen: View {
                         displayedVideoIds.removeAll()
                         selectRandomYouTubeVideo()
                     }) {
-                        Text(localizedTabName(for: tab))
+                        Text(tab.displayName)
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(selectedTab == tab ? .white : .black)
                             .padding(.horizontal, 18)
@@ -4443,8 +4371,22 @@ struct AnimeDetailView: View {
     @State private var tempIconImage: UIImage? = nil
     @State private var showEditWatchStatusModal = false
     @State private var editWatchStatuses: Set<WatchStatus> = []
-    @State private var showEditGenresModal = false
     @State private var editGenres: Set<AnimeGenre> = []
+    @State private var editCustomGenres: Set<String> = []
+    @State private var customGenreName = ""
+    @State private var genreModalType: GenreModalType? = nil
+    
+    enum GenreModalType: Identifiable {
+        case editGenres
+        case createCustom
+        
+        var id: String {
+            switch self {
+            case .editGenres: return "editGenres"
+            case .createCustom: return "createCustom"
+            }
+        }
+    }
     @State private var showAddGenreField = false
     @State private var newGenreName = ""
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
@@ -4623,20 +4565,39 @@ struct AnimeDetailView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
-                        if currentAnime.genres.isEmpty {
+                        if currentAnime.genres.isEmpty && currentAnime.customGenres.isEmpty {
                             Text(NSLocalizedString("not_set", comment: "Not set"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.gray)
                         } else {
-                            HStack(spacing: 8) {
-                                ForEach(currentAnime.genres, id: \.self) { genre in
-                                    Text(genre.displayName)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.purple)
-                                        .cornerRadius(12)
+                            VStack(spacing: 8) {
+                                // デフォルトジャンル
+                                if !currentAnime.genres.isEmpty {
+                                    HStack(spacing: 8) {
+                                        ForEach(currentAnime.genres, id: \.self) { genre in
+                                            Text(genre.displayName)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.purple)
+                                                .cornerRadius(12)
+                                        }
+                                    }
+                                }
+                                // カスタムジャンル
+                                if !currentAnime.customGenres.isEmpty {
+                                    HStack(spacing: 8) {
+                                        ForEach(currentAnime.customGenres, id: \.self) { customGenre in
+                                            Text(customGenre)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.orange)
+                                                .cornerRadius(12)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -4645,7 +4606,8 @@ struct AnimeDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .onTapGesture {
                         editGenres = Set(currentAnime.genres)
-                        showEditGenresModal = true
+                        editCustomGenres = Set(currentAnime.customGenres)
+                        genreModalType = .editGenres
                     }
                     
                     Spacer()
@@ -4875,66 +4837,161 @@ struct AnimeDetailView: View {
             .cornerRadius(16)
             .padding(40)
         }
-        // ジャンル編集モーダル
-        .sheet(isPresented: $showEditGenresModal) {
-            VStack(spacing: 20) {
-                Text(NSLocalizedString("select_genre", comment: "Select genre"))
-                    .font(.headline)
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(AnimeGenre.allCases, id: \.self) { genre in
-                            Button(action: {
-                                if editGenres.contains(genre) {
-                                    editGenres.remove(genre)
-                                } else {
-                                    editGenres.insert(genre)
-                                }
-                            }) {
-                                HStack {
-                                    Text(genre.displayName)
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.black)
-                                    Spacer()
+        // 統一されたジャンルモーダル
+        .sheet(item: $genreModalType) { modalType in
+            switch modalType {
+            case .editGenres:
+                VStack(spacing: 20) {
+                    Text(NSLocalizedString("select_genre", comment: "Select genre"))
+                        .font(.headline)
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(AnimeGenre.allCases, id: \.self) { genre in
+                                Button(action: {
                                     if editGenres.contains(genre) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.purple)
+                                        editGenres.remove(genre)
                                     } else {
-                                        Image(systemName: "circle")
-                                            .foregroundColor(.gray)
+                                        editGenres.insert(genre)
                                     }
+                                }) {
+                                    HStack {
+                                        Text(genre.displayName)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.black)
+                                        Spacer()
+                                        if editGenres.contains(genre) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.purple)
+                                        } else {
+                                            Image(systemName: "circle")
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .padding()
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(editGenres.contains(genre) ? Color.purple.opacity(0.1) : Color(.systemGray6))
+                                    )
                                 }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(editGenres.contains(genre) ? Color.purple.opacity(0.1) : Color(.systemGray6))
-                                )
                             }
                         }
                     }
-                }
-                .frame(maxHeight: 400)
-                
-                HStack(spacing: 20) {
-                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
-                        showEditGenresModal = false
-                    }
-                    .foregroundColor(.red)
+                    .frame(maxHeight: 400)
                     
-                    Button(NSLocalizedString("save", comment: "Save")) {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        updatedAnime.genres = Array(editGenres)
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditGenresModal = false
+                    // 既存のカスタムジャンル表示
+                    if !editCustomGenres.isEmpty {
+                        VStack(spacing: 8) {
+                            Text(NSLocalizedString("custom_genres", comment: "Custom genres"))
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.gray)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            VStack(spacing: 12) {
+                                ForEach(Array(editCustomGenres), id: \.self) { customGenre in
+                                    Button(action: {
+                                        editCustomGenres.remove(customGenre)
+                                    }) {
+                                        HStack {
+                                            Text(customGenre)
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(.black)
+                                            Spacer()
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.purple)
+                                        }
+                                        .padding()
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.purple.opacity(0.1))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .foregroundColor(.blue)
+                    
+                    // カスタムジャンル作成ボタン
+                    Button(action: {
+                        genreModalType = .createCustom
+                    }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purple)
+                            Text(NSLocalizedString("create_custom_genre", comment: "Create custom genre"))
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.purple)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.purple.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.purple, lineWidth: 1)
+                                )
+                        )
+                    }
+                    .padding(.horizontal)
+                    
+                    HStack(spacing: 20) {
+                        Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                            genreModalType = nil
+                        }
+                        .foregroundColor(.red)
+                        
+                        Button(NSLocalizedString("save", comment: "Save")) {
+                            guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                            var updatedAnime = animes[idx]
+                            updatedAnime.genres = Array(editGenres)
+                            updatedAnime.customGenres = Array(editCustomGenres)
+                            animes[idx] = updatedAnime
+                            animeManager.updateAnime(updatedAnime)
+                            genreModalType = nil
+                        }
+                        .foregroundColor(.blue)
+                    }
                 }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .padding(40)
+                
+            case .createCustom:
+                VStack(spacing: 20) {
+                    Text(NSLocalizedString("create_custom_genre", comment: "Create custom genre"))
+                        .font(.headline)
+                    
+                    TextField(NSLocalizedString("genre_name", comment: "Genre name"), text: $customGenreName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 20) {
+                        Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                            customGenreName = ""
+                            genreModalType = nil
+                        }
+                        .foregroundColor(.red)
+                        
+                        Button(NSLocalizedString("create", comment: "Create")) {
+                            let trimmedName = customGenreName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmedName.isEmpty {
+                                // カスタムジャンルを現在のアニメに追加
+                                editCustomGenres.insert(trimmedName)
+                                customGenreName = ""
+                                genreModalType = .editGenres // ジャンル編集モーダルに戻る
+                            }
+                        }
+                        .foregroundColor(.blue)
+                        .disabled(customGenreName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .padding(40)
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
         }
         // アイコン編集モーダル
         .sheet(isPresented: $showEditIconModal) {

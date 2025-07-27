@@ -85,6 +85,10 @@
 "genre" = "Genre";
 "select_status" = "Select status (multiple selection)";
 "select_genre" = "Select genre (multiple selection)";
+"create_custom_genre" = "Create custom genre";
+"genre_name" = "Genre name";
+"create" = "Create";
+"custom_genres" = "Custom Genres";
 "edit_item_selection" = "Select Edit Item";
 "edit_profile" = "Edit Profile";
 "edit_description" = "Edit Description";

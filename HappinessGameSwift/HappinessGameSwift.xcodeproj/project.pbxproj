@@ -112,7 +112,6 @@
 		CCF665FF2E35364600D86A20 /* CurrencyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665FE2E35364600D86A20 /* CurrencyManager.swift */; };
 		CCF666012E3537FB00D86A20 /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666002E3537FB00D86A20 /* NetworkManager.swift */; };
 		CCF666032E36788700D86A20 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666022E36788700D86A20 /* LanguageDetector.swift */; };
-		163131D44B524729B5B955AD /* AnimeModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BDA762F499A4E0A9758B9DD /* AnimeModel.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -246,7 +245,6 @@
 		CCF665FE2E35364600D86A20 /* CurrencyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyManager.swift; sourceTree = "<group>"; };
 		CCF666002E3537FB00D86A20 /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		CCF666022E36788700D86A20 /* LanguageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetector.swift; sourceTree = "<group>"; };
-		6BDA762F499A4E0A9758B9DD /* AnimeModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimeModel.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -312,7 +310,6 @@
 			isa = PBXGroup;
 			children = (
 				CCF666022E36788700D86A20 /* LanguageDetector.swift */,
-				6BDA762F499A4E0A9758B9DD /* AnimeModel.swift */,
 				CCF666002E3537FB00D86A20 /* NetworkManager.swift */,
 				CCF665FE2E35364600D86A20 /* CurrencyManager.swift */,
 				CCF665FC2E34CDF700D86A20 /* PremiumUpgradeView.swift */,
@@ -646,7 +643,6 @@
 				CC9BB05F2E33E04B0088E501 /* EmergencyCleanup.swift in Sources */,
 				CC20AACC2E26E6A0005F4C2A /* ImageUtils.swift in Sources */,
 				CCF666032E36788700D86A20 /* LanguageDetector.swift in Sources */,
-				163131D44B524729B5B955AD /* AnimeModel.swift in Sources */,
 				CCF665FF2E35364600D86A20 /* CurrencyManager.swift in Sources */,
 				CC20AAAD2E26E682005F4C2A /* AnimeScreen.swift in Sources */,
 				CCF665F52E34CD8800D86A20 /* LanguageButton.swift in Sources */,

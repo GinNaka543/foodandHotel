@@ -77,6 +77,22 @@
 "edit_description" = "编辑描述";
 "add_soundtrack" = "添加原声带";
 
+/* Anime Status */
+"watching_status" = "观看中";
+"this_term_status" = "本季";
+"will_watch_status" = "待看";
+"watch_again_status" = "重看";
+
+/* Anime Genres */
+"serious" = "严肃";
+"romcom" = "恋爱";
+"sports" = "体育";
+"comedy" = "喜剧";
+"isekai" = "异世界";
+"art" = "艺术";
+"brain" = "头脑";
+"healing" = "治愈";
+
 /* Soundtrack Modal */
 "music_file" = "音乐文件";
 "artist_optional" = "艺术家（可选）";

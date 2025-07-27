@@ -89,6 +89,23 @@
 "edit_profile" = "Edit Profile";
 "edit_description" = "Edit Description";
 "add_soundtrack" = "Add Soundtrack";
+
+/* Anime Status */
+"watching_status" = "Watching";
+"this_term_status" = "This Season";
+"will_watch_status" = "Watch Later";
+"watch_again_status" = "Watch Again";
+
+/* Anime Genres */
+"serious" = "Serious";
+"romcom" = "Romance";
+"sports" = "Sports";
+"comedy" = "Comedy";
+"isekai" = "Isekai";
+"art" = "Art";
+"brain" = "Brain";
+"healing" = "Healing";
+
 "views_ago" = "%@ views · %@";
 "years_ago" = "%d years ago";
 "months_ago" = "%d months ago";

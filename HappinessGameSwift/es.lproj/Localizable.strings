@@ -77,6 +77,22 @@
 "edit_description" = "Editar descripción";
 "add_soundtrack" = "Agregar banda sonora";
 
+/* Anime Status */
+"watching_status" = "Viendo";
+"this_term_status" = "Esta temporada";
+"will_watch_status" = "Ver después";
+"watch_again_status" = "Ver de nuevo";
+
+/* Anime Genres */
+"serious" = "Serio";
+"romcom" = "Romance";
+"sports" = "Deportes";
+"comedy" = "Comedia";
+"isekai" = "Isekai";
+"art" = "Arte";
+"brain" = "Cerebro";
+"healing" = "Sanación";
+
 /* Soundtrack Modal */
 "music_file" = "Archivo de música";
 "artist_optional" = "Artista (opcional)";

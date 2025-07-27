@@ -109,6 +109,7 @@
 "character_list" = "キャラクターリスト";
 "birthday_list" = "バースデーリスト";
 "date_format_month_day" = "M月d日";
+"member_list" = "メンバーリスト";
 "edit_item_selection" = "編集項目選択";
 "select_edit_item_title" = "編集項目を選択";
 "edit_profile" = "プロフィールを編集";

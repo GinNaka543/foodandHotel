@@ -4566,6 +4566,7 @@ struct AnimeDetailView: View {
     @State private var editCustomGenres: Set<String> = []
     @State private var customGenreName = ""
     @State private var genreModalType: GenreModalType? = nil
+    @State private var showMemberList = false
     
     enum GenreModalType: Identifiable {
         case editGenres
@@ -4680,6 +4681,61 @@ struct AnimeDetailView: View {
                             editHashtag = currentAnime.hashtag
                             showEditTitleModal = true
                         }
+                    
+                    // キャラクターアイコン
+                    if !anime.characterIds.isEmpty {
+                        Button(action: {
+                            showMemberList = true
+                        }) {
+                            HStack(spacing: -8) {
+                                ForEach(Array(anime.characterIds.prefix(5)), id: \.self) { characterId in
+                                    if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                        if let imageIdentifier = character.imageIdentifier {
+                                            OptimizedFileImage(
+                                                path: imageIdentifier,
+                                                targetSize: CGSize(width: 36, height: 36)
+                                            )
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 36, height: 36)
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: 2)
+                                            )
+                                            .shadow(radius: 2)
+                                            .id(imageIdentifier)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.5))
+                                                .frame(width: 36, height: 36)
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(Color.white, lineWidth: 2)
+                                                )
+                                                .shadow(radius: 2)
+                                        }
+                                    }
+                                }
+                                if anime.characterIds.count > 5 {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.black.opacity(0.6))
+                                            .frame(width: 36, height: 36)
+                                        Text("+\(anime.characterIds.count - 5)")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(.white)
+                                    }
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 2)
+                                    )
+                                    .shadow(radius: 2)
+                                }
+                            }
+                            .padding(.top, 12)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                     
                     // ナビゲーションバー（下部メニュー）
                     HStack {
@@ -4811,6 +4867,10 @@ struct AnimeDetailView: View {
                     .fullScreenCover(isPresented: $showAbout) {
                         AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                             .environmentObject(animeManager)
+                    }
+                    .fullScreenCover(isPresented: $showMemberList) {
+                        AnimeMemberListView(anime: anime, onClose: { showMemberList = false })
+                            .environmentObject(characterManager)
                     }
                 }
                 .zIndex(1)
@@ -5399,16 +5459,19 @@ struct IconAdjustmentView: View {
             VStack(spacing: 20) {
                 // プレビュー
                 ZStack {
-                    if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: UIScreen.main.bounds.width, height: 200)
-                            .scaleEffect(CGFloat(tempScale))
-                            .offset(x: CGFloat(tempOffsetX), y: CGFloat(tempOffsetY))
-                            .frame(maxWidth: .infinity, maxHeight: 200)
-                            .clipped()
-                            .background(Color.gray.opacity(0.2))
+                    if let imageIdentifier = anime.imageIdentifier {
+                        OptimizedFileImage(
+                            path: imageIdentifier,
+                            targetSize: CGSize(width: UIScreen.main.bounds.width, height: 200)
+                        )
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: UIScreen.main.bounds.width, height: 200)
+                        .scaleEffect(CGFloat(tempScale))
+                        .offset(x: CGFloat(tempOffsetX), y: CGFloat(tempOffsetY))
+                        .frame(maxWidth: .infinity, maxHeight: 200)
+                        .clipped()
+                        .background(Color.gray.opacity(0.2))
+                        .id(imageIdentifier) // Force reload when image changes
                     }
                 }
                 .frame(height: 200)
@@ -5742,6 +5805,131 @@ struct CharacterSelectionSheet: View {
                     }
                     .fontWeight(.bold)
                 }
+            }
+        }
+    }
+}
+
+// アニメメンバーリストビュー
+struct AnimeMemberListView: View {
+    let anime: Anime
+    let onClose: () -> Void
+    @EnvironmentObject var characterManager: CharacterManager
+    @Environment(\.dismiss) var dismiss
+    @State private var selectedCharacter: Character?
+    @State private var showCharacterDetail = false
+    
+    var animeCharacters: [Character] {
+        anime.characterIds.compactMap { characterId in
+            characterManager.characters.first(where: { $0.id == characterId })
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // バナービュー
+                if let imageIdentifier = anime.imageIdentifier {
+                    OptimizedFileImage(
+                        path: imageIdentifier,
+                        targetSize: CGSize(width: UIScreen.main.bounds.width, height: 200)
+                    )
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 200)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.5)]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(
+                        VStack {
+                            Spacer()
+                            Text(anime.title)
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.white)
+                                .shadow(radius: 5)
+                                .padding(.bottom, 20)
+                        }
+                    )
+                }
+                
+                // キャラクターリスト
+                ScrollView {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 16) {
+                        ForEach(animeCharacters, id: \.id) { character in
+                            VStack(spacing: 8) {
+                                if let imageIdentifier = character.imageIdentifier {
+                                    OptimizedFileImage(
+                                        path: imageIdentifier,
+                                        targetSize: CGSize(width: 100, height: 100)
+                                    )
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 100, height: 100)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .id(imageIdentifier)
+                                } else {
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 100, height: 100)
+                                        .overlay(
+                                            Image(systemName: "person.fill")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.gray.opacity(0.5))
+                                        )
+                                }
+                                
+                                Text(character.name)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.primary)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+                                    .frame(width: 100)
+                            }
+                            .onTapGesture {
+                                selectedCharacter = character
+                                showCharacterDetail = true
+                            }
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .navigationTitle(NSLocalizedString("member_list", comment: "Member List"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                    }
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showCharacterDetail) {
+            if let character = selectedCharacter {
+                CharacterDetailView(
+                    character: Binding(
+                        get: { character },
+                        set: { updatedCharacter in
+                            if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                characterManager.characters[index] = updatedCharacter
+                                characterManager.saveCharacters()
+                            }
+                        }
+                    ),
+                    characters: $characterManager.characters
+                )
+                .environmentObject(characterManager)
             }
         }
     }

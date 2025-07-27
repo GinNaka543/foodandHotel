@@ -472,11 +472,11 @@
 "edit_tags_artwork" = "Edit Tags";
 "edit_title_artwork" = "Edit Title";
 "edit_title_name" = "Edit Title Name";
-"enter_characters" = "Enter character information";
+"enter_characters" = "Insira informações do personagem";
 "enter_description" = "Enter description...";
 "enter_display_tag" = "Enter tag to display";
 "enter_memo" = "Enter memo";
-"enter_voice_actors" = "Enter voice actor information";
+"enter_voice_actors" = "Insira informações do dublador";
 "episode_example" = "e.g. 12";
 "episode_format" = "Episode %d";
 "episode_number" = "Episode Number";
@@ -549,7 +549,7 @@
 "r18_images_deleted" = "Unloadable images deleted";
 "r18_images_deleted_message" = "The following images could not be loaded and were deleted:\n%@\n\nR18 artwork thumbnails cannot be displayed and are automatically deleted.";
 "rank_format" = "Rank %d";
-"rating" = "Rating";
+"rating" = "Avaliação";
 "really_delete" = "Really delete?";
 "register_anime_video" = "Register a video";
 "register_favorite_anime" = "Register your favorite anime";
@@ -579,6 +579,11 @@
 "select_edit_item" = "Select item to edit";
 "select_edit_item_artwork" = "Select item to edit";
 "select_edit_item_title" = "Selecionar item para editar";
+"adjust_icon_position" = "Ajustar posição do ícone";
+"icon_scale" = "Tamanho";
+"icon_horizontal_position" = "Posição horizontal";
+"icon_vertical_position" = "Posição vertical";
+"reset" = "Redefinir";
 "select_existing_character_anime" = "Selecionar personagem/anime existente";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";

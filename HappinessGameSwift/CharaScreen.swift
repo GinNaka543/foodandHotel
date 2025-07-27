@@ -204,13 +204,16 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     var height: String // 身長
     var customFields: [CustomField]? // カスタムフィールド
     var order: Int = 0 // 表示順序用フィールド
+    var iconScale: Double = 1.0 // アイコンの拡大率
+    var iconOffsetX: Double = 0.0 // アイコンの横方向オフセット
+    var iconOffsetY: Double = 0.0 // アイコンの縦方向オフセット
 
     static func == (lhs: Character, rhs: Character) -> Bool {
         lhs.id == rhs.id
     }
     // Codable対応
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields, order
+        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields, order, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -228,6 +231,9 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         try container.encodeIfPresent(backgroundImagePath, forKey: .backgroundImagePath)
         try container.encodeIfPresent(customFields, forKey: .customFields)
         try container.encode(order, forKey: .order)
+        try container.encode(iconScale, forKey: .iconScale)
+        try container.encode(iconOffsetX, forKey: .iconOffsetX)
+        try container.encode(iconOffsetY, forKey: .iconOffsetY)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -245,8 +251,11 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([CustomField].self, forKey: .customFields)
         order = (try? container.decode(Int.self, forKey: .order)) ?? 0
+        iconScale = (try? container.decode(Double.self, forKey: .iconScale)) ?? 1.0
+        iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
+        iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0, iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -261,6 +270,9 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         self.height = height
         self.customFields = customFields
         self.order = order
+        self.iconScale = iconScale
+        self.iconOffsetX = iconOffsetX
+        self.iconOffsetY = iconOffsetY
     }
 }
 
@@ -271,7 +283,6 @@ struct CharaScreen: View {
     @State private var selectedCharacter: Character? = nil
     @State private var showRankingAdmin = false
     @State private var showNavigationMenu = false
-    @State private var showCharacterOrderModal = false
     @State private var showPrivacyPolicy = false
     @State private var bannerTimer: Timer? = nil
     @State private var bannerVideo: MemoryVideo? = nil
@@ -402,7 +413,7 @@ struct CharaScreen: View {
         .sheet(isPresented: $showRankingAdmin) {
             CharacterRankingAdminView()
         }
-        .sheet(isPresented: $showCharacterOrderModal, onDismiss: {
+        .sheet(isPresented: $mainTab.showCharacterOrderModal, onDismiss: {
             // モーダルを閉じたときにデータを再読み込み
             characterManager.loadCharacters()
         }) {
@@ -452,9 +463,7 @@ struct CharaScreen: View {
             if showNavigationMenu {
                 NavigationMenuView(
                     isPresented: $showNavigationMenu,
-                    onShowCharacterOrder: {
-                        showCharacterOrderModal = true
-                    },
+                    onShowCharacterOrder: nil,
                     onShowAnimeOrder: nil,
                     onShowPrivacyPolicy: {
                         showPrivacyPolicy = true
@@ -1021,6 +1030,7 @@ struct CharacterDetailView: View {
     @State private var showEditBackgroundModal = false
     @State private var showEditIconModal = false // ← 追加
     @State private var showEditTitleTagModal = false
+    @State private var showIconAdjustment = false // アイコン位置調整モーダル
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
     @State private var tempIconImage: UIImage? = nil
@@ -1105,7 +1115,7 @@ struct CharacterDetailView: View {
                         }
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture { showEditIconModal = true }
+                    .onTapGesture { showIconAdjustment = true }
                     // 名前
                     Text(currentCharacter.name)
                         .font(.system(size: 24, weight: .bold))
@@ -1303,6 +1313,10 @@ struct CharacterDetailView: View {
                     characterManager: characterManager
                 )
             }
+            // アイコン位置調整モーダル
+            .sheet(isPresented: $showIconAdjustment) {
+                CharacterIconAdjustmentView(character: $character, characterManager: characterManager)
+            }
         }
         .navigationBarHidden(true)
         .onAppear {
@@ -1374,6 +1388,7 @@ struct AboutView: View {
     @State private var isEditingDescription: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
+    @State private var showIconAdjustment: Bool = false
     
     // シート管理用のenum
     enum ActiveSheet: Identifiable {
@@ -1409,13 +1424,15 @@ struct AboutView: View {
                     if let character = character {
                         VStack(spacing: 0) {
                             Button(action: {
-                                activeSheet = .iconPicker
+                                showIconAdjustment = true
                             }) {
                                 if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                     Image(uiImage: image)
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
                                         .frame(maxWidth: .infinity, maxHeight: 200)
+                                        .scaleEffect(CGFloat(character.iconScale))
+                                        .offset(x: CGFloat(character.iconOffsetX), y: CGFloat(character.iconOffsetY))
                                         .clipped()
                                         .overlay(
                                             Color.black.opacity(0.4)
@@ -1832,6 +1849,23 @@ struct AboutView: View {
                         isEditingProfile: $isEditingProfile,
                         isEditingDescription: $isEditingDescription,
                         activeSheet: $activeSheet
+                    )
+                }
+            }
+            // アイコン位置調整モーダル
+            .sheet(isPresented: $showIconAdjustment) {
+                if let character = character {
+                    CharacterIconAdjustmentView(
+                        character: Binding(
+                            get: { character },
+                            set: { newCharacter in
+                                if let idx = characterIndex {
+                                    characters[idx] = newCharacter
+                                    characterManager.updateCharacter(newCharacter)
+                                }
+                            }
+                        ),
+                        characterManager: characterManager
                     )
                 }
             }
@@ -2690,10 +2724,6 @@ struct CharaEditSelectionSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text(NSLocalizedString("select_edit_item", comment: ""))
-                    .font(.headline)
-                    .padding()
-                
                 VStack(spacing: 15) {
                     Button(action: {
                         isEditingProfile = true
@@ -2998,5 +3028,98 @@ struct EditTitleTagBackgroundView: View {
         
         print("❌ [ERROR] No video ID found in URL: \(url)")
         return ""
+    }
+}
+
+
+// アイコン位置調整ビュー（キャラクター用）
+struct CharacterIconAdjustmentView: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var character: Character
+    @ObservedObject var characterManager: CharacterManager
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // プレビュー
+                ZStack {
+                    if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                            .scaleEffect(CGFloat(character.iconScale))
+                            .offset(x: CGFloat(character.iconOffsetX), y: CGFloat(character.iconOffsetY))
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .clipped()
+                            .background(Color.gray.opacity(0.2))
+                    }
+                }
+                .frame(height: 200)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                
+                // 調整スライダー
+                VStack(spacing: 15) {
+                    // 大きさ
+                    VStack(alignment: .leading) {
+                        Text(NSLocalizedString("icon_scale", comment: "Size"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Slider(value: $character.iconScale, in: 0.5...2.0)
+                    }
+                    
+                    // 横位置
+                    VStack(alignment: .leading) {
+                        Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Slider(value: $character.iconOffsetX, in: -100...100)
+                    }
+                    
+                    // 縦位置
+                    VStack(alignment: .leading) {
+                        Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Slider(value: $character.iconOffsetY, in: -100...100)
+                    }
+                }
+                .padding(.horizontal)
+                
+                // リセットボタン
+                Button(action: {
+                    character.iconScale = 1.0
+                    character.iconOffsetX = 0.0
+                    character.iconOffsetY = 0.0
+                }) {
+                    Text(NSLocalizedString("reset", comment: "Reset"))
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 10)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                }
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("adjust_icon_position", comment: "Adjust icon position"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("done", comment: "Done")) {
+                        // 変更を保存
+                        characterManager.updateCharacter(character)
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }

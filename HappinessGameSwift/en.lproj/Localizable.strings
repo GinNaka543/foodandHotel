@@ -474,6 +474,11 @@
 "select_another_file" = "Select Another File";
 
 "select_edit_item_title" = "Select Edit Item";
+"adjust_icon_position" = "Adjust Icon Position";
+"icon_scale" = "Size";
+"icon_horizontal_position" = "Horizontal Position";
+"icon_vertical_position" = "Vertical Position";
+"reset" = "Reset";
 "tap_to_select_background" = "Tap to select background";
 "delete_background" = "Delete Background";
 "delete_background_confirm" = "Delete Background";

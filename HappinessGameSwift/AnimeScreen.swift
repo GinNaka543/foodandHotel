@@ -206,12 +206,18 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var characters: [String] = []  // 出演キャラクターリスト
     var watchLink: String = ""  // アニメ視聴リンク
     var genres: [AnimeGenre] = []  // ジャンルリスト
+    
+    // アイコン表示設定
+    var iconScale: Double = 1.0  // アイコンの拡大率（0.5〜2.0）
+    var iconOffsetX: Double = 0.0  // アイコンの横方向オフセット（-100〜100）
+    var iconOffsetY: Double = 0.0  // アイコンの縦方向オフセット（-100〜100）
+    
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -230,6 +236,9 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(characters, forKey: .characters)
         try container.encode(watchLink, forKey: .watchLink)
         try container.encode(genres, forKey: .genres)
+        try container.encode(iconScale, forKey: .iconScale)
+        try container.encode(iconOffsetX, forKey: .iconOffsetX)
+        try container.encode(iconOffsetY, forKey: .iconOffsetY)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -261,8 +270,13 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         characters = (try? container.decode([String].self, forKey: .characters)) ?? []
         watchLink = (try? container.decode(String.self, forKey: .watchLink)) ?? ""
         genres = (try? container.decode([AnimeGenre].self, forKey: .genres)) ?? []
+        
+        // アイコン表示設定を読み込む。古いデータの場合はデフォルト値を使用
+        iconScale = (try? container.decode(Double.self, forKey: .iconScale)) ?? 1.0
+        iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
+        iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = []) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -278,6 +292,9 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.characters = characters
         self.watchLink = watchLink
         self.genres = genres
+        self.iconScale = iconScale
+        self.iconOffsetX = iconOffsetX
+        self.iconOffsetY = iconOffsetY
     }
 }
 
@@ -288,7 +305,6 @@ struct AnimeScreen: View {
     @State private var selectedTab: AnimeTab = .all
     @State private var selectedAnime: Anime? = nil
     @State private var showNavigationMenu = false
-    @State private var showAnimeOrderModal = false
     @State private var showPrivacyPolicy = false
     @State private var bannerAnime: Anime? = nil
     @State private var bannerVideo: MemoryVideo? = nil
@@ -655,9 +671,7 @@ struct AnimeScreen: View {
                 NavigationMenuView(
                     isPresented: $showNavigationMenu,
                     onShowCharacterOrder: nil,
-                    onShowAnimeOrder: {
-                        showAnimeOrderModal = true
-                    },
+                    onShowAnimeOrder: nil,
                     onShowPrivacyPolicy: {
                         showPrivacyPolicy = true
                     }
@@ -693,7 +707,7 @@ struct AnimeScreen: View {
             AddAnimeSheet(animes: $animeManager.animes)
                 .environmentObject(animeManager)
         }
-        .sheet(isPresented: $showAnimeOrderModal, onDismiss: {
+        .sheet(isPresented: $mainTab.showAnimeOrderModal, onDismiss: {
             // モーダルを閉じたときにデータを再読み込み
             animeManager.loadAnimes()
         }) {
@@ -3446,12 +3460,14 @@ struct AnimeAboutView: View {
         case soundtrackEdit
         case iconPicker
         case editSelection
+        case iconAdjustment
         
         var id: Int {
             switch self {
             case .soundtrackEdit: return 0
             case .iconPicker: return 1
             case .editSelection: return 2
+            case .iconAdjustment: return 3
             }
         }
     }
@@ -3472,12 +3488,15 @@ struct AnimeAboutView: View {
                     // アニメバナー画像
                     VStack(spacing: 0) {
                         Button(action: {
-                            activeSheet = .iconPicker
+                            activeSheet = .iconAdjustment
                         }) {
                             if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
+                                    .frame(width: UIScreen.main.bounds.width, height: 200)
+                                    .scaleEffect(CGFloat(currentAnime.iconScale))
+                                    .offset(x: CGFloat(currentAnime.iconOffsetX), y: CGFloat(currentAnime.iconOffsetY))
                                     .frame(maxWidth: .infinity, maxHeight: 200)
                                     .clipped()
                                     .overlay(
@@ -3818,6 +3837,8 @@ struct AnimeAboutView: View {
                         isEditingDescription: $isEditingDescription,
                         activeSheet: $activeSheet
                     )
+                case .iconAdjustment:
+                    IconAdjustmentView(anime: $anime, animes: $animes)
                 }
             }
         }
@@ -4965,6 +4986,143 @@ struct AnimeNavigationButtonStyle: ButtonStyle {
 }
 
 // 編集選択シート
+struct IconAdjustmentView: View {
+    @Binding var anime: Anime
+    @Binding var animes: [Anime]
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var animeManager: AnimeManager
+    @State private var tempScale: Double = 1.0
+    @State private var tempOffsetX: Double = 0.0
+    @State private var tempOffsetY: Double = 0.0
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // プレビュー
+                ZStack {
+                    if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                            .scaleEffect(CGFloat(tempScale))
+                            .offset(x: CGFloat(tempOffsetX), y: CGFloat(tempOffsetY))
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .clipped()
+                            .background(Color.gray.opacity(0.2))
+                    }
+                }
+                .frame(height: 200)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                
+                // 調整コントロール
+                VStack(spacing: 20) {
+                    // 大きさ
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("icon_scale", comment: "Size"))
+                            .font(.headline)
+                        HStack {
+                            Text("0.5")
+                                .font(.caption)
+                            Slider(value: $tempScale, in: 0.5...2.0)
+                            Text("2.0")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.1fx", tempScale))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    // 横位置
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
+                            .font(.headline)
+                        HStack {
+                            Text("-100")
+                                .font(.caption)
+                            Slider(value: $tempOffsetX, in: -100...100)
+                            Text("100")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.0f", tempOffsetX))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    // 縦位置
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
+                            .font(.headline)
+                        HStack {
+                            Text("-100")
+                                .font(.caption)
+                            Slider(value: $tempOffsetY, in: -100...100)
+                            Text("100")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.0f", tempOffsetY))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    // リセットボタン
+                    Button(action: {
+                        tempScale = 1.0
+                        tempOffsetX = 0.0
+                        tempOffsetY = 0.0
+                    }) {
+                        Text(NSLocalizedString("reset", comment: "Reset"))
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("adjust_icon_position", comment: "Adjust Icon Position"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("save", comment: "Save")) {
+                        saveIconAdjustments()
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            tempScale = anime.iconScale
+            tempOffsetX = anime.iconOffsetX
+            tempOffsetY = anime.iconOffsetY
+        }
+    }
+    
+    private func saveIconAdjustments() {
+        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+        animes[idx].iconScale = tempScale
+        animes[idx].iconOffsetX = tempOffsetX
+        animes[idx].iconOffsetY = tempOffsetY
+        anime = animes[idx]
+        animeManager.updateAnime(animes[idx])
+    }
+    
+    private func loadImageFromPath(_ path: String) -> UIImage? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let imagePath = documentsPath.appendingPathComponent(path)
+        return UIImage(contentsOfFile: imagePath.path)
+    }
+}
+
 struct EditSelectionSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var isEditingProfile: Bool
@@ -4974,10 +5132,6 @@ struct EditSelectionSheet: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text(NSLocalizedString("edit_item_selection", comment: "Select item to edit"))
-                    .font(.headline)
-                    .padding()
-                
                 VStack(spacing: 15) {
                     Button(action: {
                         isEditingProfile = true
@@ -5028,6 +5182,24 @@ struct EditSelectionSheet: View {
                         .background(Color.gray.opacity(0.1))
                         .cornerRadius(10)
                     }
+                    
+                    Button(action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            activeSheet = .iconAdjustment
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "photo.badge.arrow.down.fill")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("adjust_icon_position", comment: "Adjust icon position"))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
                 }
                 .padding()
                 
@@ -5045,4 +5217,5 @@ struct EditSelectionSheet: View {
         }
     }
 }
+
 

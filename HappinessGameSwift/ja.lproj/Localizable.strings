@@ -67,7 +67,9 @@
 "tap_to_add" = "タップで追加";
 "profile" = "プロフィール";
 "voice_actors" = "声優";
+"enter_voice_actors" = "声優情報を入力";
 "characters" = "出演キャラ";
+"enter_characters" = "キャラクター情報を入力";
 "watch_link" = "視聴リンク";
 "not_set" = "未設定";
 "description" = "概要";
@@ -93,6 +95,11 @@
 "edit_profile" = "プロフィールを編集";
 "edit_description" = "概要を編集";
 "add_soundtrack" = "サントラ追加";
+"adjust_icon_position" = "アイコン位置調整";
+"icon_scale" = "大きさ";
+"icon_horizontal_position" = "横位置";
+"icon_vertical_position" = "縦位置";
+"reset" = "リセット";
 
 /* Anime Status */
 "watching_status" = "視聴中";
@@ -282,6 +289,7 @@
 "payment_method" = "支払い方法";
 "amount" = "金額";
 "status" = "ステータス";
+"rating" = "評価";
 "date" = "日付";
 "receipt_number" = "明細書番号";
 

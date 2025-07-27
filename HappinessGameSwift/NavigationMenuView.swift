@@ -100,7 +100,7 @@ struct NavigationMenuView: View {
                         ) {
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                onShowCharacterOrder?()
+                                mainTab.showCharacterOrderModal = true
                             }
                         }
                         
@@ -110,7 +110,7 @@ struct NavigationMenuView: View {
                         ) {
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                onShowAnimeOrder?()
+                                mainTab.showAnimeOrderModal = true
                             }
                         }
                     }

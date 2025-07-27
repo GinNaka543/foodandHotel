@@ -20,6 +20,8 @@ class MainTabSelection: ObservableObject {
         didSet {
         }
     }
+    @Published var showCharacterOrderModal = false
+    @Published var showAnimeOrderModal = false
 }
 
 class AuthenticationManager: ObservableObject {
@@ -621,6 +623,14 @@ struct MainContainerView: View {
             if newValue {
                 showingPaymentPopup = true
             }
+        }
+        .sheet(isPresented: $mainTab.showCharacterOrderModal) {
+            CharacterOrderModal()
+                .environmentObject(characterManager)
+        }
+        .sheet(isPresented: $mainTab.showAnimeOrderModal) {
+            AnimeOrderModal()
+                .environmentObject(animeManager)
         }
     }
 }

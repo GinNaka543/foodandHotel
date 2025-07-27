@@ -5816,8 +5816,7 @@ struct AnimeMemberListView: View {
     let onClose: () -> Void
     @EnvironmentObject var characterManager: CharacterManager
     @Environment(\.dismiss) var dismiss
-    @State private var selectedCharacter: Character?
-    @State private var showCharacterDetail = false
+    @State private var navigateToCharacter: Character?
     
     var animeCharacters: [Character] {
         anime.characterIds.compactMap { characterId in
@@ -5864,42 +5863,66 @@ struct AnimeMemberListView: View {
                         GridItem(.flexible())
                     ], spacing: 16) {
                         ForEach(animeCharacters, id: \.id) { character in
-                            VStack(spacing: 8) {
-                                if let imageIdentifier = character.imageIdentifier {
-                                    OptimizedFileImage(
-                                        path: imageIdentifier,
-                                        targetSize: CGSize(width: 100, height: 100)
-                                    )
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 100, height: 100)
-                                    .clipShape(Circle())
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    )
-                                    .id(imageIdentifier)
-                                } else {
-                                    Circle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 100, height: 100)
-                                        .overlay(
-                                            Image(systemName: "person.fill")
-                                                .font(.system(size: 40))
-                                                .foregroundColor(.gray.opacity(0.5))
+                            Button(action: {
+                                navigateToCharacter = character
+                            }) {
+                                VStack(spacing: 8) {
+                                    if let imageIdentifier = character.imageIdentifier {
+                                        OptimizedFileImage(
+                                            path: imageIdentifier,
+                                            targetSize: CGSize(width: 100, height: 100)
                                         )
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 100, height: 100)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                        .id(imageIdentifier)
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 100, height: 100)
+                                            .overlay(
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 40))
+                                                    .foregroundColor(.gray.opacity(0.5))
+                                            )
+                                    }
+                                    
+                                    Text(character.name)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.primary)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .frame(width: 100)
                                 }
-                                
-                                Text(character.name)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.primary)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.center)
-                                    .frame(width: 100)
                             }
-                            .onTapGesture {
-                                selectedCharacter = character
-                                showCharacterDetail = true
-                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .background(
+                                NavigationLink(
+                                    destination: CharacterDetailView(
+                                        character: Binding(
+                                            get: { character },
+                                            set: { updatedCharacter in
+                                                if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                                    characterManager.characters[index] = updatedCharacter
+                                                    characterManager.saveCharacters()
+                                                }
+                                            }
+                                        ),
+                                        characters: $characterManager.characters
+                                    )
+                                    .environmentObject(characterManager),
+                                    isActive: Binding(
+                                        get: { navigateToCharacter?.id == character.id },
+                                        set: { _ in }
+                                    )
+                                ) {
+                                    EmptyView()
+                                }
+                            )
                         }
                     }
                     .padding(16)
@@ -5913,23 +5936,6 @@ struct AnimeMemberListView: View {
                         Image(systemName: "xmark")
                     }
                 }
-            }
-        }
-        .fullScreenCover(isPresented: $showCharacterDetail) {
-            if let character = selectedCharacter {
-                CharacterDetailView(
-                    character: Binding(
-                        get: { character },
-                        set: { updatedCharacter in
-                            if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
-                                characterManager.characters[index] = updatedCharacter
-                                characterManager.saveCharacters()
-                            }
-                        }
-                    ),
-                    characters: $characterManager.characters
-                )
-                .environmentObject(characterManager)
             }
         }
     }

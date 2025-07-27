@@ -201,7 +201,8 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var order: Int = 0  // 表示順序用フィールド
     var rating: Double = 0.0  // レーティング（0.0〜5.0）
     var voiceActors: [String] = []  // 声優リスト
-    var characters: [String] = []  // 出演キャラクターリスト
+    var characters: [String] = []  // 出演キャラクターリスト（後方互換性のため残す）
+    var characterIds: [UUID] = []  // 登録済みキャラクターのIDリスト
     var watchLink: String = ""  // アニメ視聴リンク
     var genres: [AnimeGenre] = []  // ジャンルリスト
     var customGenres: [String] = []  // カスタムジャンルリスト
@@ -216,7 +217,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres, customGenres, iconScale, iconOffsetX, iconOffsetY
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, characterIds, watchLink, genres, customGenres, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -233,6 +234,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(rating, forKey: .rating)
         try container.encode(voiceActors, forKey: .voiceActors)
         try container.encode(characters, forKey: .characters)
+        try container.encode(characterIds, forKey: .characterIds)
         try container.encode(watchLink, forKey: .watchLink)
         try container.encode(genres, forKey: .genres)
         try container.encode(customGenres, forKey: .customGenres)
@@ -268,6 +270,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         rating = (try? container.decode(Double.self, forKey: .rating)) ?? 0.0
         voiceActors = (try? container.decode([String].self, forKey: .voiceActors)) ?? []
         characters = (try? container.decode([String].self, forKey: .characters)) ?? []
+        characterIds = (try? container.decode([UUID].self, forKey: .characterIds)) ?? []
         watchLink = (try? container.decode(String.self, forKey: .watchLink)) ?? ""
         genres = (try? container.decode([AnimeGenre].self, forKey: .genres)) ?? []
         customGenres = (try? container.decode([String].self, forKey: .customGenres)) ?? []
@@ -277,7 +280,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
         iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = [], customGenres: [String] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], characterIds: [UUID] = [], watchLink: String = "", genres: [AnimeGenre] = [], customGenres: [String] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -291,6 +294,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.rating = rating
         self.voiceActors = voiceActors
         self.characters = characters
+        self.characterIds = characterIds
         self.watchLink = watchLink
         self.genres = genres
         self.customGenres = customGenres
@@ -1013,7 +1017,48 @@ struct AnimeRow: View {
                     Text(NSLocalizedString("characters", comment: ""))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.gray)
-                    if !anime.characters.isEmpty {
+                    if !anime.characterIds.isEmpty {
+                        HStack(spacing: -4) {
+                            ForEach(Array(anime.characterIds.prefix(4)), id: \.self) { characterId in
+                                if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                    if let imageIdentifier = character.imageIdentifier {
+                                        OptimizedFileImage(
+                                            path: imageIdentifier,
+                                            targetSize: CGSize(width: 24, height: 24)
+                                        )
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 24, height: 24)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white, lineWidth: 1)
+                                        )
+                                        .id(imageIdentifier)
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 24, height: 24)
+                                            .overlay(
+                                                Image(systemName: "person")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            )
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                    }
+                                }
+                            }
+                            if anime.characterIds.count > 4 {
+                                Text("+\(anime.characterIds.count - 4)")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.gray)
+                                    .padding(.leading, 4)
+                            }
+                        }
+                    } else if !anime.characters.isEmpty {
+                        // 後方互換性: 古いデータの場合はテキストで表示
                         Text(anime.characters.prefix(3).joined(separator: ", "))
                             .font(.system(size: 12))
                             .foregroundColor(.black)
@@ -1744,6 +1789,7 @@ struct AnimeArtworkScreen: View {
         .fullScreenCover(isPresented: $showAbout) {
             AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                 .environmentObject(animeManager)
+                .environmentObject(characterManager)
         }
         .sheet(isPresented: $showPixivRedirect) {
             PixivRedirectView(
@@ -2766,6 +2812,7 @@ struct AnimeVideoScreen: View {
         .fullScreenCover(isPresented: $showAbout) {
             AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                 .environmentObject(animeManager)
+                .environmentObject(characterManager)
         }
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData, onSave: {
@@ -3531,6 +3578,9 @@ struct AnimeAboutView: View {
     @State private var newIconImage: UIImage?
     @State private var currentDisplayedIcon: UIImage? = nil
     @State private var showSoundtrackEdit: Bool = false
+    @State private var selectedCharacterIds: Set<UUID> = []
+    @State private var showCharacterSelection = false
+    @EnvironmentObject private var characterManager: CharacterManager
     
     // シート管理用のenum
     enum ActiveSheet: Identifiable {
@@ -3538,6 +3588,7 @@ struct AnimeAboutView: View {
         case iconPicker
         case editSelection
         case iconAdjustment
+        case characterSelection
         
         var id: Int {
             switch self {
@@ -3545,6 +3596,7 @@ struct AnimeAboutView: View {
             case .iconPicker: return 1
             case .editSelection: return 2
             case .iconAdjustment: return 3
+            case .characterSelection: return 4
             }
         }
     }
@@ -3667,7 +3719,7 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("voice_actors", comment: "Voice Actors"), text: $editedVoiceActors, placeholder: NSLocalizedString("max_5_people", comment: "Max 5 people (comma separated)"))
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: NSLocalizedString("characters", comment: "Characters"), text: $editedCharacters, placeholder: NSLocalizedString("max_5_characters", comment: "Max 5 characters (comma separated)"))
+                                characterSelectionRow(label: NSLocalizedString("characters", comment: "Characters"))
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("watch_link", comment: "Watch Link"), text: $editedWatchLink)
                             } else {
@@ -3682,7 +3734,7 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("voice_actors", comment: "Voice Actors"), value: currentAnime.voiceActors.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.voiceActors.joined(separator: ", "))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("characters", comment: "Characters"), value: currentAnime.characters.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.characters.joined(separator: ", "))
+                                characterSelectionRow(label: NSLocalizedString("characters", comment: "Characters"))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("watch_link", comment: "Watch Link"), value: currentAnime.watchLink.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.watchLink)
                             }
@@ -3822,6 +3874,7 @@ struct AnimeAboutView: View {
             editedRating = latestAnime.rating
             editedVoiceActors = latestAnime.voiceActors.joined(separator: ", ")
             editedCharacters = latestAnime.characters.joined(separator: ", ")
+            selectedCharacterIds = Set(latestAnime.characterIds)
             editedWatchLink = latestAnime.watchLink
             
         }
@@ -3916,6 +3969,9 @@ struct AnimeAboutView: View {
                     )
                 case .iconAdjustment:
                     IconAdjustmentView(anime: $anime, animes: $animes)
+                case .characterSelection:
+                    CharacterSelectionSheet(selectedCharacterIds: $selectedCharacterIds)
+                        .environmentObject(characterManager)
                 }
             }
         }
@@ -3946,6 +4002,126 @@ struct AnimeAboutView: View {
                 .font(.system(size: 16))
                 .foregroundColor(.primary)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+    
+    private func characterSelectionRow(label: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
+            
+            if isEditingProfile {
+                // 編集モード: キャラクター選択ボタン
+                Button(action: {
+                    activeSheet = .characterSelection
+                }) {
+                    HStack {
+                        if selectedCharacterIds.isEmpty {
+                            Text(NSLocalizedString("select_characters", comment: "Select characters"))
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        } else {
+                            // 選択されたキャラクターのアイコンを表示
+                            HStack(spacing: -8) {
+                                ForEach(Array(selectedCharacterIds.prefix(5)), id: \.self) { characterId in
+                                    if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                        if let imageIdentifier = character.imageIdentifier {
+                                            OptimizedFileImage(
+                                                path: imageIdentifier,
+                                                targetSize: CGSize(width: 32, height: 32)
+                                            )
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 32, height: 32)
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: 2)
+                                            )
+                                            .id(imageIdentifier)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.3))
+                                                .frame(width: 32, height: 32)
+                                                .overlay(
+                                                    Image(systemName: "person")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(.gray)
+                                                )
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(Color.white, lineWidth: 2)
+                                                )
+                                        }
+                                    }
+                                }
+                            }
+                            if selectedCharacterIds.count > 5 {
+                                Text("+\(selectedCharacterIds.count - 5)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                    .padding(.leading, 4)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                }
+            } else {
+                // 表示モード: キャラクターのアイコンと名前を表示
+                if currentAnime.characterIds.isEmpty {
+                    Text(NSLocalizedString("not_set", comment: "Not set"))
+                        .font(.system(size: 16))
+                        .foregroundColor(.primary)
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(currentAnime.characterIds, id: \.self) { characterId in
+                                if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                    HStack(spacing: 4) {
+                                        if let imageIdentifier = character.imageIdentifier {
+                                            OptimizedFileImage(
+                                                path: imageIdentifier,
+                                                targetSize: CGSize(width: 24, height: 24)
+                                            )
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 24, height: 24)
+                                            .clipShape(Circle())
+                                            .id(imageIdentifier)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.3))
+                                                .frame(width: 24, height: 24)
+                                                .overlay(
+                                                    Image(systemName: "person")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(.gray)
+                                                )
+                                        }
+                                        Text(character.name)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.primary)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -4068,6 +4244,9 @@ struct AnimeAboutView: View {
             .filter { !$0.isEmpty }
             .prefix(5)
         updatedAnime.characters = Array(charactersList)
+        
+        // 選択されたキャラクターIDを保存
+        updatedAnime.characterIds = Array(selectedCharacterIds)
         
         // 視聴リンクを保存
         updatedAnime.watchLink = editedWatchLink
@@ -5427,3 +5606,131 @@ struct EditSelectionSheet: View {
 }
 
 
+
+
+// キャラクター選択シート
+struct CharacterSelectionSheet: View {
+    @Binding var selectedCharacterIds: Set<UUID>
+    @EnvironmentObject var characterManager: CharacterManager
+    @Environment(\.dismiss) var dismiss
+    @State private var searchText = ""
+    
+    var filteredCharacters: [Character] {
+        let charactersWithNames = characterManager.characters.filter { \!$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
+        if searchText.isEmpty {
+            return charactersWithNames
+        }
+        return charactersWithNames.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // 検索バー
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    TextField(NSLocalizedString("search", comment: "Search"), text: $searchText)
+                        .font(.system(size: 16))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                
+                // キャラクターリスト
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(filteredCharacters, id: \.id) { character in
+                            HStack(spacing: 12) {
+                                // チェックボックス
+                                Image(systemName: selectedCharacterIds.contains(character.id) ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(selectedCharacterIds.contains(character.id) ? .blue : .gray)
+                                
+                                // キャラクターアイコン
+                                if let imageIdentifier = character.imageIdentifier {
+                                    OptimizedFileImage(
+                                        path: imageIdentifier,
+                                        targetSize: CGSize(width: 48, height: 48)
+                                    )
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 48, height: 48)
+                                    .clipShape(Circle())
+                                    .id(imageIdentifier)
+                                } else {
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 48, height: 48)
+                                        .overlay(
+                                            Image(systemName: "person")
+                                                .font(.system(size: 24))
+                                                .foregroundColor(.gray)
+                                        )
+                                }
+                                
+                                // キャラクター名
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(character.name)
+                                        .font(.system(size: 17, weight: .medium))
+                                        .foregroundColor(.primary)
+                                    Text("#\(character.tag)")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if selectedCharacterIds.contains(character.id) {
+                                    selectedCharacterIds.remove(character.id)
+                                } else {
+                                    if selectedCharacterIds.count < 10 { // 最大10キャラクターまで
+                                        selectedCharacterIds.insert(character.id)
+                                    }
+                                }
+                            }
+                            
+                            Divider()
+                                .padding(.leading, 16)
+                        }
+                    }
+                }
+                
+                // 選択数表示
+                if \!selectedCharacterIds.isEmpty {
+                    HStack {
+                        Text("\(selectedCharacterIds.count) \(NSLocalizedString("characters_selected", comment: "characters selected"))")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray6))
+                }
+            }
+            .navigationTitle(NSLocalizedString("select_characters", comment: "Select characters"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("done", comment: "Done")) {
+                        dismiss()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+        }
+    }
+}

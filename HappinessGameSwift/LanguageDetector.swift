@@ -142,7 +142,11 @@ class LanguageDetector {
         if #available(iOS 16, *) {
             localeLang = Locale.current.language.languageCode?.identifier ?? "unknown"
         } else {
+            #if compiler(>=5.5)
             localeLang = Locale.current.languageCode ?? "unknown"
+            #else
+            localeLang = Locale.current.languageCode ?? "unknown"
+            #endif
         }
         
         print("🔍 Language Detection Debug:")

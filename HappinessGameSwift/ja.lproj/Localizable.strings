@@ -89,6 +89,7 @@
 "select_status" = "ステータスを選択（複数選択可）";
 "select_genre" = "ジャンルを選択（複数選択可）";
 "edit_item_selection" = "編集項目選択";
+"select_edit_item_title" = "編集項目を選択";
 "edit_profile" = "プロフィールを編集";
 "edit_description" = "概要を編集";
 "add_soundtrack" = "サントラ追加";
@@ -309,7 +310,7 @@
 "title" = "タイトル";
 "hashtag" = "ハッシュタグ";
 "comma_separator" = "、";
-"same_tag_albums" = "同じハッシュタグでシリーズごとにアルバムを分けることができます";
+"same_tag_albums" = "同じ#でシリーズごとに分けることができます";
 "plan_description" = "プランの説明";
 "plan_description_placeholder" = "このプランの魅力を説明してください";
 "sales_price" = "販売価格";

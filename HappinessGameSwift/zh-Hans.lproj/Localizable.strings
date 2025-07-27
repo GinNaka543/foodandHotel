@@ -559,7 +559,7 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "注册愿望清单项目";
 "registered_products" = "Registered Products";
-"same_tag_albums" = "可以使用相同的标签为每个系列创建单独的专辑";
+"same_tag_albums" = "可以使用相同的#为每个系列分开";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";
@@ -579,7 +579,7 @@
 "select_delivery_days" = "Select delivery days";
 "select_edit_item" = "Select item to edit";
 "select_edit_item_artwork" = "Select item to edit";
-"select_edit_item_title" = "Select Edit Item";
+"select_edit_item_title" = "选择编辑项目";
 "select_existing_character_anime" = "选择现有角色/动漫";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";

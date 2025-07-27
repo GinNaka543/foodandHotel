@@ -583,7 +583,7 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "Wunschlistenartikel registrieren";
 "registered_products" = "Registered Products";
-"same_tag_albums" = "Sie können separate Alben für jede Serie mit demselben Hashtag erstellen";
+"same_tag_albums" = "Sie können Serien mit demselben # trennen";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";
@@ -603,7 +603,7 @@
 "select_delivery_days" = "Select delivery days";
 "select_edit_item" = "Select item to edit";
 "select_edit_item_artwork" = "Select item to edit";
-"select_edit_item_title" = "Select Edit Item";
+"select_edit_item_title" = "Bearbeitungselement auswählen";
 "select_existing_character_anime" = "Vorhandenen Charakter/Anime auswählen";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";

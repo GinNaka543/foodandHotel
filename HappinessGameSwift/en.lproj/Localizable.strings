@@ -565,7 +565,7 @@
 "just_now" = "Just now";
 "anime_title" = "Anime Title";
 "hashtag" = "Hashtag";
-"same_tag_albums" = "You can create separate albums for each series with the same hashtag";
+"same_tag_albums" = "You can separate series with the same hashtag";
 "status" = "Status";
 "genre" = "Genre";
 "unset_genre" = "Not Set";

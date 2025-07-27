@@ -383,7 +383,7 @@
 "ad_placement" = "Ad Placement";
 "add" = "Add";
 "add_anime_button" = "애니메이션 추가";
-"add_artwork" = "Add Artwork";
+"add_artwork" = "아트워크 추가";
 "add_artwork_instruction" = "You can add artworks from the add button in the top right";
 /* Character Screen */
 "add_character" = "캐릭터 추가";
@@ -399,7 +399,7 @@
 "add_product_button" = "제품 추가";
 "add_products_instruction" = "오른쪽 상단의 \"상품 추가\" 버튼에서 추가";
 "add_site_name" = "Add site name";
-"add_soundtrack" = "Add Soundtrack";
+"add_soundtrack" = "사운드트랙 추가";
 "add_video_anime" = "Add Video";
 "add_viewing_schedule" = "Add Viewing Schedule";
 "age" = "나이";
@@ -409,7 +409,7 @@
 "anime_title" = "Anime Title";
 "artwork_count" = "%d images, %d albums";
 "artwork_count_format" = "%d artworks";
-"background_image" = "Background Image";
+"background_image" = "배경 이미지";
 "background_image_anime" = "Background Image";
 "basic_info_section" = "Basic Information";
 "cancel_button" = "Cancel";
@@ -422,7 +422,7 @@
 "change_banner_image" = "배너 이미지 변경";
 "change_image" = "Change Image";
 "character_anime_label" = "Character/Anime";
-"character_name" = "Character Name";
+"character_name" = "캐릭터 이름";
 "character_ranking_management" = "Character Ranking Management";
 "ranking_selection" = "랭킹 선택";
 "characters" = "Characters";
@@ -488,7 +488,7 @@
 "free" = "Free";
 "from_youtube" = "From YouTube";
 "go_back" = "Back";
-"hashtag" = "Hashtag";
+"hashtag" = "해시태그";
 "hidden_label" = "Hidden";
 "hours_ago" = "%d hours ago";
 "id_not_found" = "ID not found";
@@ -583,7 +583,7 @@
 "select_existing_character_anime" = "기존 캐릭터/애니메이션 선택";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";
-"select_icon_image" = "Select Icon Image";
+"select_icon_image" = "아이콘 이미지 선택";
 "select_image" = "Select Image";
 "select_rank_character" = "Select character for rank %d";
 "select_watch_status" = "Select Watch Status (Multiple)";

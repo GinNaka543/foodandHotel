@@ -448,7 +448,7 @@
 "change_banner_image" = "Bannerbild ändern";
 "change_image" = "Change Image";
 "character_anime_label" = "Character/Anime";
-"character_name" = "Character Name";
+"character_name" = "Charaktername";
 "character_ranking_management" = "Character Ranking Management";
 "ranking_selection" = "Ranking-Auswahl";
 "characters" = "Characters";
@@ -607,7 +607,7 @@
 "select_existing_character_anime" = "Vorhandenen Charakter/Anime auswählen";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";
-"select_icon_image" = "Select Icon Image";
+"select_icon_image" = "Icon-Bild auswählen";
 "select_image" = "Select Image";
 "select_rank_character" = "Select character for rank %d";
 "select_watch_status" = "Select Watch Status (Multiple)";

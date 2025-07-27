@@ -420,7 +420,7 @@
 "change_banner_image" = "Cambiar imagen de banner";
 "change_image" = "Change Image";
 "character_anime_label" = "Character/Anime";
-"character_name" = "Character Name";
+"character_name" = "Nombre del personaje";
 "character_ranking_management" = "Character Ranking Management";
 "ranking_selection" = "Selección de ranking";
 "characters" = "Characters";
@@ -486,7 +486,7 @@
 "free" = "Free";
 "from_youtube" = "From YouTube";
 "go_back" = "Back";
-"hashtag" = "Hashtag";
+"hashtag" = "Etiqueta";
 "hidden_label" = "Hidden";
 "hours_ago" = "%d hours ago";
 "id_not_found" = "ID not found";
@@ -581,7 +581,7 @@
 "select_existing_character_anime" = "Seleccionar personaje/anime existente";
 "select_genre" = "Select genre (multiple selection)";
 "select_icon" = "Select Icon";
-"select_icon_image" = "Select Icon Image";
+"select_icon_image" = "Seleccionar imagen de icono";
 "select_image" = "Select Image";
 "select_rank_character" = "Select character for rank %d";
 "select_watch_status" = "Select Watch Status (Multiple)";

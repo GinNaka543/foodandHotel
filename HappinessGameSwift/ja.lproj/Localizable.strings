@@ -77,6 +77,8 @@
 "soundtrack_not_set" = "サントラが未設定です";
 "select_icon" = "アイコンを選択";
 "select_image" = "画像を選択";
+"character_name" = "キャラクター名";
+"select_icon_image" = "アイコン画像を選択";
 "add_anime" = "アニメ追加";
 "anime_info_edit" = "アニメ情報を編集";
 "background_image" = "背景画像";
@@ -305,6 +307,7 @@
 "points_insufficient" = "ポイントが不足しています。あと%dポイント必要です。";
 "plan_info" = "プラン情報";
 "title" = "タイトル";
+"hashtag" = "ハッシュタグ";
 "plan_description" = "プランの説明";
 "plan_description_placeholder" = "このプランの魅力を説明してください";
 "sales_price" = "販売価格";

@@ -104,6 +104,7 @@ struct ArtworkScreen: View {
     @State private var showEditMenuInFullscreen = false
     @State private var isLoadingImage = false
     @State private var preloadedImage: UIImage? = nil
+    @State private var showIconAdjustment = false
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -153,22 +154,24 @@ struct ArtworkScreen: View {
     
     // バナービュー
     var bannerView: some View {
-        Button(action: { activeSheet = .addPhoto }) {
+        Group {
             if let imageIdentifier = currentCharacter.imageIdentifier {
                 OptimizedFileImage(
                     path: imageIdentifier,
                     targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
                 )
                 .aspectRatio(contentMode: .fill)
+                .frame(width: UIScreen.main.bounds.width - 32, height: 60)
+                .scaleEffect(CGFloat(currentCharacter.iconScale))
+                .offset(x: CGFloat(currentCharacter.iconOffsetX), y: CGFloat(currentCharacter.iconOffsetY))
                 .frame(maxWidth: .infinity, maxHeight: 60)
-                    .clipped()
+                .clipped()
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
                     .frame(maxWidth: .infinity, maxHeight: 60)
             }
         }
-        .buttonStyle(PlainButtonStyle())
         .cornerRadius(12)
         .padding(.horizontal, 16)
     }
@@ -179,8 +182,10 @@ struct ArtworkScreen: View {
                 VStack(spacing: 0) {
                     // バナー (no header)
                     bannerView
-                        .allowsHitTesting(false)
-                        .zIndex(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showIconAdjustment = true
+                        }
                 
                 // Profile section
                 HStack(spacing: 12) {
@@ -211,7 +216,7 @@ struct ArtworkScreen: View {
                         Text("@\(currentCharacter.name)")
                             .font(.system(size: 12.7))
                             .foregroundColor(.black)
-                        Text("\(artworks.count)枚の画像・アルバム数\(albums.count)")
+                        Text(String(format: NSLocalizedString("artwork_count", comment: ""), artworks.count, albums.count))
                             .font(.system(size: 15.4))
                             .foregroundColor(.gray)
                     }
@@ -223,7 +228,7 @@ struct ArtworkScreen: View {
                 
                 // Description section
                 if let customFields = currentCharacter.customFields,
-                   let descriptionField = customFields.first(where: { $0.name == "概要" }),
+                   let descriptionField = customFields.first(where: { $0.name == NSLocalizedString("description", comment: "Description") }),
                    !descriptionField.value.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         if descriptionField.value.count > 13 && !isShowingFullDescription {
@@ -231,7 +236,7 @@ struct ArtworkScreen: View {
                                 Text(String(descriptionField.value.prefix(13)) + "... ")
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
-                                Text("さらに表示")
+                                Text(NSLocalizedString("show_more", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
                                     .underline()
@@ -247,7 +252,7 @@ struct ArtworkScreen: View {
                                 .fixedSize(horizontal: false, vertical: true)
                             
                             if descriptionField.value.count > 13 {
-                                Text(" 折りたたむ")
+                                Text(NSLocalizedString("collapse", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
                                     .underline()
@@ -1208,6 +1213,20 @@ struct ArtworkScreen: View {
             }
             .preferredColorScheme(.dark)
             .ignoresSafeArea()
+        }
+        .sheet(isPresented: $showIconAdjustment) {
+            CharacterIconAdjustmentView(
+                character: Binding(
+                    get: { currentCharacter },
+                    set: { updatedCharacter in
+                        if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                            characterManager.characters[index] = updatedCharacter
+                            characterManager.updateCharacter(updatedCharacter)
+                        }
+                    }
+                ),
+                characterManager: characterManager
+            )
         }
     }
     

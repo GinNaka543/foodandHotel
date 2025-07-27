@@ -1861,7 +1861,7 @@ struct LogoutConfirmationView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.orange)
                     
-                    Text("重要：ログアウト前に確認")
+                    Text(NSLocalizedString("important_confirm_before_logout", comment: "Important: Confirm Before Logout"))
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.primary)
                 }
@@ -1870,11 +1870,11 @@ struct LogoutConfirmationView: View {
                 
                 // 警告メッセージ
                 VStack(spacing: 16) {
-                    Text("以下の情報を必ず保存してください")
+                    Text(NSLocalizedString("save_following_info", comment: "Please save the following information"))
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.red)
                     
-                    Text("これらの情報がないと、アカウントの復元ができません")
+                    Text(NSLocalizedString("cannot_restore_without_info", comment: "Without this information, you cannot restore your account"))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                         .multilineTextAlignment(.center)
@@ -1886,7 +1886,7 @@ struct LogoutConfirmationView: View {
                 VStack(spacing: 16) {
                     // ユーザーID
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("ユーザーID")
+                        Text(NSLocalizedString("user_id_label", comment: "User ID"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
@@ -1909,7 +1909,7 @@ struct LogoutConfirmationView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: copiedUserId ? "checkmark" : "doc.on.doc")
                                         .font(.system(size: 14))
-                                    Text(copiedUserId ? "コピー済み" : "コピー")
+                                    Text(copiedUserId ? NSLocalizedString("copied", comment: "Copied") : NSLocalizedString("copy", comment: "Copy"))
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(copiedUserId ? .green : .blue)
@@ -1943,7 +1943,7 @@ struct LogoutConfirmationView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: copiedUsername ? "checkmark" : "doc.on.doc")
                                         .font(.system(size: 14))
-                                    Text(copiedUsername ? "コピー済み" : "コピー")
+                                    Text(copiedUsername ? NSLocalizedString("copied", comment: "Copied") : NSLocalizedString("copy", comment: "Copy"))
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(copiedUsername ? .green : .blue)
@@ -1962,12 +1962,12 @@ struct LogoutConfirmationView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "info.circle.fill")
                             .foregroundColor(.orange)
-                        Text("スクリーンショットを撮るか、メモに保存してください")
+                        Text(NSLocalizedString("take_screenshot_or_save", comment: "Please take a screenshot or save to memo"))
                             .font(.system(size: 14))
                             .foregroundColor(.primary)
                     }
                     
-                    Text("ログアウト後はこれらの情報がないとアカウントにアクセスできません")
+                    Text(NSLocalizedString("cannot_access_after_logout", comment: "You cannot access your account without this information after logout"))
                         .font(.system(size: 12))
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)

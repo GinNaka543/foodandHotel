@@ -1165,6 +1165,7 @@ struct AnimeArtworkScreen: View {
     @State private var showR18Alert = false
     @State private var r18ArtworkTitles: [String] = []
     @State private var isShowingFullDescription = false
+    @State private var showIconAdjustment = false
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -1216,6 +1217,9 @@ struct AnimeArtworkScreen: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 60)
+                    .scaleEffect(CGFloat(currentAnime.iconScale))
+                    .offset(x: CGFloat(currentAnime.iconOffsetX), y: CGFloat(currentAnime.iconOffsetY))
                     .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
             } else {
@@ -1599,8 +1603,10 @@ struct AnimeArtworkScreen: View {
                 VStack(spacing: 0) {
                     // Banner (no header)
                     bannerView
-                        .allowsHitTesting(false) // バナーのタップを無効化
-                        .zIndex(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showIconAdjustment = true
+                        }
                     
                     // Profile section
                     HStack(spacing: 12) {
@@ -2272,6 +2278,18 @@ struct AnimeArtworkScreen: View {
             }
             }
         }
+        .sheet(isPresented: $showIconAdjustment) {
+            IconAdjustmentView(anime: Binding(
+                get: { currentAnime },
+                set: { updatedAnime in
+                    anime = updatedAnime
+                    if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
+                        animes[idx] = updatedAnime
+                    }
+                    animeManager.updateAnime(updatedAnime)
+                }
+            ), animes: $animes)
+        }
     }
     
     private func saveArtwork() {
@@ -2533,6 +2551,7 @@ struct AnimeVideoScreen: View {
     @State private var showThumbnailPicker = false
     @State private var editingVideo: MemoryVideo? = nil
     @State private var isShowingFullDescription = false
+    @State private var showIconAdjustment = false
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -2572,6 +2591,9 @@ struct AnimeVideoScreen: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 60)
+                    .scaleEffect(CGFloat(currentAnime.iconScale))
+                    .offset(x: CGFloat(currentAnime.iconOffsetX), y: CGFloat(currentAnime.iconOffsetY))
                     .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
             } else {
@@ -2606,8 +2628,10 @@ struct AnimeVideoScreen: View {
                 VStack(spacing: 0) {
                     // Banner (no header)
                     bannerView
-                        .allowsHitTesting(false) // バナーのタップを無効化
-                        .zIndex(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showIconAdjustment = true
+                        }
                     
                     // Profile section
                     HStack(spacing: 12) {
@@ -3070,6 +3094,18 @@ struct AnimeVideoScreen: View {
         .onAppear {
             loadVideos()
             loadVideoAlbumsFromUserDefaults()
+        }
+        .sheet(isPresented: $showIconAdjustment) {
+            IconAdjustmentView(anime: Binding(
+                get: { currentAnime },
+                set: { updatedAnime in
+                    anime = updatedAnime
+                    if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
+                        animes[idx] = updatedAnime
+                    }
+                    animeManager.updateAnime(updatedAnime)
+                }
+            ), animes: $animes)
         }
     }
     
@@ -5547,10 +5583,10 @@ struct IconAdjustmentView: View {
                         Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
                             .font(.headline)
                         HStack {
-                            Text("-100")
+                            Text("-200")
                                 .font(.caption)
-                            Slider(value: $tempOffsetX, in: -100...100)
-                            Text("100")
+                            Slider(value: $tempOffsetX, in: -200...200)
+                            Text("200")
                                 .font(.caption)
                         }
                         Text(String(format: "%.0f", tempOffsetX))
@@ -5564,10 +5600,10 @@ struct IconAdjustmentView: View {
                         Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
                             .font(.headline)
                         HStack {
-                            Text("-100")
+                            Text("-200")
                                 .font(.caption)
-                            Slider(value: $tempOffsetY, in: -100...100)
-                            Text("100")
+                            Slider(value: $tempOffsetY, in: -200...200)
+                            Text("200")
                                 .font(.caption)
                         }
                         Text(String(format: "%.0f", tempOffsetY))

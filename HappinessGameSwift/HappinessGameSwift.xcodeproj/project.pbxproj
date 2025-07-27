@@ -112,6 +112,7 @@
 		CCF665FF2E35364600D86A20 /* CurrencyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665FE2E35364600D86A20 /* CurrencyManager.swift */; };
 		CCF666012E3537FB00D86A20 /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666002E3537FB00D86A20 /* NetworkManager.swift */; };
 		CCF666032E36788700D86A20 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666022E36788700D86A20 /* LanguageDetector.swift */; };
+		CCF666072E36BE8F00D86A20 /* LocalizationTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -245,6 +246,7 @@
 		CCF665FE2E35364600D86A20 /* CurrencyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyManager.swift; sourceTree = "<group>"; };
 		CCF666002E3537FB00D86A20 /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		CCF666022E36788700D86A20 /* LanguageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetector.swift; sourceTree = "<group>"; };
+		CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTest.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -309,6 +311,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */,
 				CCF666022E36788700D86A20 /* LanguageDetector.swift */,
 				CCF666002E3537FB00D86A20 /* NetworkManager.swift */,
 				CCF665FE2E35364600D86A20 /* CurrencyManager.swift */,
@@ -539,9 +542,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -654,6 +661,7 @@
 				CC20AAC22E26E697005F4C2A /* FirebaseAdView.swift in Sources */,
 				CC20AAC32E26E697005F4C2A /* FixExistingAds.swift in Sources */,
 				CC20AAC42E26E697005F4C2A /* FirebaseManager.swift in Sources */,
+				CCF666072E36BE8F00D86A20 /* LocalizationTest.swift in Sources */,
 				CC1BB38A2E2A47BA006EE695 /* MultipleFirebaseAdView.swift in Sources */,
 				CC20AAC52E26E697005F4C2A /* GitHubRepoModel.swift in Sources */,
 				CC9BB0552E33DBC20088E501 /* VisitPlanStorage.swift in Sources */,

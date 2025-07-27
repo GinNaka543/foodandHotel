@@ -62,6 +62,7 @@ struct VideoGalleryScreen: View {
     @State private var isSelectingThumbnail = false
     @State private var activeAlert: ActiveAlert? = nil
     @State private var activeSheet: ActiveSheet? = nil
+    @State private var showIconAdjustment = false
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -144,8 +145,11 @@ struct VideoGalleryScreen: View {
                     targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
                 )
                 .aspectRatio(contentMode: .fill)
+                .frame(width: UIScreen.main.bounds.width - 32, height: 60)
+                .scaleEffect(CGFloat(currentCharacter.iconScale))
+                .offset(x: CGFloat(currentCharacter.iconOffsetX), y: CGFloat(currentCharacter.iconOffsetY))
                 .frame(maxWidth: .infinity, maxHeight: 60)
-                    .clipped()
+                .clipped()
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
@@ -749,8 +753,10 @@ struct VideoGalleryScreen: View {
                 VStack(spacing: 0) {
                     // Banner (no header)
                     bannerView
-                        .allowsHitTesting(false) // バナーのタップを無効化
-                        .zIndex(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showIconAdjustment = true
+                        }
                     
                     // Profile section
                     profileSection
@@ -875,7 +881,7 @@ struct VideoGalleryScreen: View {
                     primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                         deleteAlbum(album)
                     },
-                    secondaryButton: .cancel(Text("キャンセル"))
+                    secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
                 )
             case .youtubeError(let message):
                 return Alert(
@@ -884,6 +890,20 @@ struct VideoGalleryScreen: View {
                     dismissButton: .default(Text("OK"))
                 )
             }
+        }
+        .sheet(isPresented: $showIconAdjustment) {
+            CharacterIconAdjustmentView(
+                character: Binding(
+                    get: { currentCharacter },
+                    set: { updatedCharacter in
+                        if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                            characterManager.characters[index] = updatedCharacter
+                            characterManager.updateCharacter(updatedCharacter)
+                        }
+                    }
+                ),
+                characterManager: characterManager
+            )
         }
     }
     
@@ -937,7 +957,7 @@ struct VideoGalleryScreen: View {
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タイトル", text: $editText)
+            TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)
@@ -990,7 +1010,7 @@ struct VideoGalleryScreen: View {
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タグ（カンマ区切り）", text: $editText)
+            TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)
@@ -1168,7 +1188,7 @@ struct VideoGalleryScreen: View {
     func videoInfoView(video: MemoryVideo) -> some View {
         VStack(spacing: 16) {
             HStack(spacing: 8) {
-                Text("タイトル: \(video.title)")
+                Text(String(format: NSLocalizedString("title_label", comment: ""), video.title))
                     .font(.headline)
                 Button(action: {
                     editText = video.title
@@ -1179,7 +1199,7 @@ struct VideoGalleryScreen: View {
                 }
             }
             HStack(spacing: 8) {
-                Text("タグ: \(video.tags.joined(separator: ", "))")
+                Text(String(format: NSLocalizedString("tags_label", comment: ""), video.tags.joined(separator: ", ")))
                     .font(.subheadline)
                 Button(action: {
                     editText = video.tags.joined(separator: ",")
@@ -1257,7 +1277,7 @@ struct VideoGalleryScreen: View {
                 Text("タイトル名を編集")
                     .font(.headline)
                     .padding(.top, 12)
-                TextField("タイトル", text: $editText)
+                TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .font(.system(size: 18))
                     .padding(.horizontal, 16)
@@ -1308,7 +1328,7 @@ struct VideoGalleryScreen: View {
                 Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                     .font(.headline)
                     .padding(.top, 12)
-                TextField("タグ（カンマ区切り）", text: $editText)
+                TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .font(.system(size: 18))
                     .padding(.horizontal, 16)
@@ -2116,7 +2136,7 @@ struct AlbumVideoListScreen: View {
                             }
                         }
                     },
-                    secondaryButton: .cancel(Text("キャンセル"))
+                    secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
                 )
             case .youtubeError(let message):
                 return Alert(
@@ -2152,7 +2172,7 @@ struct AlbumVideoListScreen: View {
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タイトル", text: $editText)
+            TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)
@@ -2204,7 +2224,7 @@ struct AlbumVideoListScreen: View {
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タグ（カンマ区切り）", text: $editText)
+            TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)

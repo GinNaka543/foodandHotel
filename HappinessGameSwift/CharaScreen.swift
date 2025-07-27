@@ -3120,7 +3120,7 @@ struct CharacterIconAdjustmentView: View {
                         Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Slider(value: $character.iconOffsetX, in: -100...100)
+                        Slider(value: $character.iconOffsetX, in: -200...200)
                     }
                     
                     // 縦位置
@@ -3128,7 +3128,7 @@ struct CharacterIconAdjustmentView: View {
                         Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Slider(value: $character.iconOffsetY, in: -100...100)
+                        Slider(value: $character.iconOffsetY, in: -200...200)
                     }
                 }
                 .padding(.horizontal)

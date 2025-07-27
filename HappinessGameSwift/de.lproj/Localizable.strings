@@ -443,8 +443,7 @@
 "background_image_anime" = "Background Image";
 "basic_info_section" = "Basic Information";
 "cancel_button" = "Cancel";
-"cannot_access_after_logout" = "You cannot access your account without this information after logout";
-"cannot_restore_without_info" = "Without this information, you cannot restore your account";
+"cannot_restore_without_info" = "Ohne diese Informationen können Sie Ihr Konto nicht wiederherstellen";
 "category_info_section" = "Kategorieinformationen";
 "category_list" = "Category List";
 "category_management" = "Category Management";
@@ -524,7 +523,7 @@
 "id_not_found" = "ID not found";
 "image_auto_change_notice" = "Background will be automatically changed when you select an image";
 "image_data_not_found" = "No image data";
-"important_confirm_before_logout" = "Important: Confirm Before Logout";
+"important_confirm_before_logout" = "Wichtig: Vor dem Abmelden bestätigen";
 "just_now" = "Just now";
 "link_optional" = "Link (optional)";
 "loading_draft_plans" = "Loading draft plans...";
@@ -589,7 +588,7 @@
 "registered_products" = "Registered Products";
 "same_tag_albums" = "Sie können Serien mit demselben # trennen";
 "save_button" = "Save";
-"save_following_info" = "Please save the following information";
+"save_following_info" = "Bitte speichern Sie die folgenden Informationen";
 "search_anime" = "Search Anime";
 "search_by_anime_or_character" = "Nach Anime oder Charakter suchen";
 "search_by_title_or_anime" = "Search by title or anime";
@@ -631,7 +630,7 @@
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";
-"take_screenshot_or_save" = "Take a screenshot or save to notes";
+"take_screenshot_or_save" = "Machen Sie einen Screenshot oder speichern Sie in Notizen";
 "tap_to_add" = "Tap to add";
 "tap_to_add_memo" = "Tippen, um Notiz hinzuzufügen";
 "tap_to_change_image" = "Tap image to change";
@@ -897,3 +896,4 @@ Gute Arbeit";
 "anime_order_title" = "Anime-Reihenfolge ändern";
 
 "member_list" = "Mitgliederliste";
+"cancel" = "Abbrechen";

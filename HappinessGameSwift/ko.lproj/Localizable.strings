@@ -417,8 +417,7 @@
 "background_image_anime" = "Background Image";
 "basic_info_section" = "Basic Information";
 "cancel_button" = "Cancel";
-"cannot_access_after_logout" = "You cannot access your account without this information after logout";
-"cannot_restore_without_info" = "Without this information, you cannot restore your account";
+"cannot_restore_without_info" = "이 정보가 없으면 계정을 복원할 수 없습니다";
 "category_info_section" = "카테고리 정보";
 "category_list" = "Category List";
 "category_management" = "Category Management";
@@ -498,7 +497,7 @@
 "id_not_found" = "ID not found";
 "image_auto_change_notice" = "Background will be automatically changed when you select an image";
 "image_data_not_found" = "No image data";
-"important_confirm_before_logout" = "Important: Confirm Before Logout";
+"important_confirm_before_logout" = "중요: 로그아웃 전 확인";
 "just_now" = "Just now";
 "link_optional" = "링크 (선택사항)";
 "loading_draft_plans" = "Loading draft plans...";
@@ -565,7 +564,7 @@
 "registered_products" = "Registered Products";
 "same_tag_albums" = "동일한 #으로 시리즈별로 나눌 수 있습니다";
 "save_button" = "Save";
-"save_following_info" = "Please save the following information";
+"save_following_info" = "다음 정보를 저장하세요";
 "search_anime" = "Search Anime";
 "search_by_anime_or_character" = "애니메이션 또는 캐릭터로 검색";
 "search_by_title_or_anime" = "Search by title or anime";
@@ -606,7 +605,7 @@
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";
-"take_screenshot_or_save" = "Take a screenshot or save to notes";
+"take_screenshot_or_save" = "스크린샷을 찍거나 메모에 저장하세요";
 "tap_to_add" = "Tap to add";
 "tap_to_add_memo" = "탭하여 메모 추가";
 "tap_to_change_image" = "Tap image to change";
@@ -811,3 +810,4 @@
 "anime_order_title" = "애니메이션 순서 변경";
 
 "member_list" = "멤버 리스트";
+"cancel" = "취소";

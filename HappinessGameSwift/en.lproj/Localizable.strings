@@ -389,7 +389,6 @@
 "cannot_restore_without_info" = "Without this information, you cannot restore your account";
 "copy" = "Copy";
 "take_screenshot_or_save" = "Take a screenshot or save to notes";
-"cannot_access_after_logout" = "Without this information, you cannot access your account after logout";
 
 /* Visit */
 "loading_plans" = "Loading plans...";
@@ -837,3 +836,4 @@
 "product_page" = "Product Page";
 
 "member_list" = "Member List";
+"cancel" = "Cancel";

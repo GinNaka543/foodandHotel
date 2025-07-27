@@ -481,7 +481,6 @@
 "cannot_restore_without_info" = "これらの情報がないと、アカウントの復元ができません";
 "copy" = "コピー";
 "take_screenshot_or_save" = "スクリーンショットを撮るか、メモに保存してください";
-"cannot_access_after_logout" = "ログアウト後はこれらの情報がないとアカウントにアクセスできません";
 
 /* Visit */
 "loading_plans" = "プランを読み込み中...";
@@ -656,3 +655,4 @@
 "anime_order_menu" = "アニメ順序変更";
 "character_order_title" = "キャラクター順序変更";
 "anime_order_title" = "アニメ順序変更";
+"cancel" = "キャンセル";

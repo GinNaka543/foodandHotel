@@ -408,13 +408,11 @@
 "all" = "All";
 "anime" = "Anime";
 "anime_title" = "Anime Title";
-"art" = "Art";
 "artwork_count" = "%d images, %d albums";
 "artwork_count_format" = "%d artworks";
 "background_image" = "Background Image";
 "background_image_anime" = "Background Image";
 "basic_info_section" = "Basic Information";
-"brain" = "Brain";
 "cancel_button" = "Cancel";
 "cannot_access_after_logout" = "You cannot access your account without this information after logout";
 "cannot_restore_without_info" = "Without this information, you cannot restore your account";
@@ -430,7 +428,6 @@
 "ranking_selection" = "Seleção de ranking";
 "characters" = "Characters";
 "collapse" = "Collapse";
-"comedy" = "Comedy";
 "complete_button" = "Complete";
 "copy" = "Copy";
 "create_album_anime" = "Create Album";
@@ -495,14 +492,12 @@
 "genre" = "Genre";
 "go_back" = "Back";
 "hashtag" = "Hashtag";
-"healing" = "Healing";
 "hidden_label" = "Hidden";
 "hours_ago" = "%d hours ago";
 "id_not_found" = "ID not found";
 "image_auto_change_notice" = "Background will be automatically changed when you select an image";
 "image_data_not_found" = "No image data";
 "important_confirm_before_logout" = "Important: Confirm Before Logout";
-"isekai" = "Isekai";
 "just_now" = "Just now";
 "link_optional" = "Link (opcional)";
 "loading_draft_plans" = "Loading draft plans...";
@@ -569,7 +564,6 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "Registrar itens da lista de desejos";
 "registered_products" = "Registered Products";
-"romcom" = "Romance Comedy";
 "same_tag_albums" = "Albums can be created with the same tag";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
@@ -598,14 +592,12 @@
 "select_image" = "Select Image";
 "select_rank_character" = "Select character for rank %d";
 "select_watch_status" = "Select Watch Status (Multiple)";
-"serious" = "Serious";
 "set_birthday" = "Set Birthday";
 "show_more" = "Show more";
 "site_name" = "Site Name";
 "soundtrack" = "Soundtrack";
 "soundtrack_not_set" = "Soundtrack not set";
 "specify_product_owner" = "Especifique o proprietário deste produto";
-"sports" = "Sports";
 "spots_count" = "%d spots";
 "status" = "Status";
 "tag" = "Tag";
@@ -619,7 +611,6 @@
 "tap_to_select_background" = "Tap to select background";
 "ten_thousand" = "%.1fK";
 "this_term" = "This Season";
-"this_term_status" = "This Season";
 "title_label" = "Title: %@";
 "type_label" = "Type";
 "unset_genre" = "Not Set";
@@ -636,10 +627,8 @@
 "voice_actor" = "Dublador";
 "voice_actors" = "Voice Actors";
 "watch_again" = "Watch Again";
-"watch_again_status" = "Watch Again";
 "watch_anime" = "Watch Anime";
 "watching" = "Watching";
-"watching_status" = "Watching";
 "weekday_fri" = "Fri";
 "weekday_mon" = "Mon";
 "weekday_sat" = "Sat";
@@ -648,7 +637,6 @@
 "weekday_tue" = "Tue";
 "weekday_wed" = "Wed";
 "will_watch" = "Watch Later";
-"will_watch_status" = "Watch Later";
 "wishlist_items" = "Wishlist";
 "years_ago" = "%d years ago";
 

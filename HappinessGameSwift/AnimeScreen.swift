@@ -378,6 +378,7 @@ struct CustomTab: Identifiable, Hashable {
 
 struct AnimeScreen: View {
     @EnvironmentObject var animeManager: AnimeManager
+    @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var mainTab: MainTabSelection
     @State private var showAddSheet = false
     @State private var selectedTab: CustomTab = CustomTab(type: .defaultTab(.all), value: "all")
@@ -951,10 +952,10 @@ struct AnimeScreen: View {
 struct AnimeRow: View {
     let anime: Anime
     @ObservedObject var animeManager: AnimeManager
+    @EnvironmentObject var characterManager: CharacterManager
     
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // 左側：サムネイルのみ
+    private var thumbnailView: some View {
+        Group {
             if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
@@ -967,6 +968,13 @@ struct AnimeRow: View {
                     .fill(Color.gray.opacity(0.3))
                     .frame(width: 183, height: 229)
             }
+        }
+    }
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            // 左側：サムネイルのみ
+            thumbnailView
             
             // 右側：アニメ情報
             VStack(alignment: .leading, spacing: 8) {
@@ -1117,6 +1125,7 @@ struct AnimeArtworkScreen: View {
     let onClose: () -> Void
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var animeManager: AnimeManager
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var artworks: [Artwork] = []
     @State private var showAddSheet = false
     @State private var selectedImage: UIImage? = nil
@@ -2460,6 +2469,7 @@ struct AnimeVideoScreen: View {
     let onClose: () -> Void
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var animeManager: AnimeManager
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var videos: [MemoryVideo] = []
     @State private var showAddSheet = false
     @State private var selectedVideoURL: URL? = nil
@@ -2563,6 +2573,22 @@ struct AnimeVideoScreen: View {
         .cornerRadius(12)
         .padding(.horizontal, 16)
     }
+    
+    private var profileImageView: some View {
+        Group {
+            if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 80, height: 80)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 80, height: 80)
+            }
+        }
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -2575,38 +2601,23 @@ struct AnimeVideoScreen: View {
                     
                     // Profile section
                     HStack(spacing: 12) {
-                    // Anime icon
-                    if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 67, height: 67)
-                            .clipShape(Circle())
-                    } else {
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 67, height: 67)
-                            .overlay(
-                                Image(systemName: "tv")
-                                    .font(.system(size: 33))
-                                    .foregroundColor(.gray)
-                            )
+                        // Anime icon
+                        profileImageView
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(currentAnime.title)
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.black)
+                            Text("@\(currentAnime.title)")
+                                .font(.system(size: 12.7))
+                                .foregroundColor(.black)
+                            Text(String(format: NSLocalizedString("video_count_albums", comment: ""), videos.count, albums.count))
+                                .font(.system(size: 15.4))
+                                .foregroundColor(.gray)
+                        }
+                        
+                        Spacer()
                     }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(currentAnime.title)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.black)
-                        Text("@\(currentAnime.title)")
-                            .font(.system(size: 12.7))
-                            .foregroundColor(.black)
-                        Text(String(format: NSLocalizedString("video_count_albums", comment: ""), videos.count, albums.count))
-                            .font(.system(size: 15.4))
-                            .foregroundColor(.gray)
-                    }
-                    
-                    Spacer()
-                }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 
@@ -4534,6 +4545,7 @@ struct AnimeDetailView: View {
     var onDismiss: (() -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
+    @EnvironmentObject private var characterManager: CharacterManager
     
     @State private var showArtwork = false
     @State private var showVideo = false
@@ -5616,7 +5628,7 @@ struct CharacterSelectionSheet: View {
     @State private var searchText = ""
     
     var filteredCharacters: [Character] {
-        let charactersWithNames = characterManager.characters.filter { \!$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let charactersWithNames = characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         
         if searchText.isEmpty {
             return charactersWithNames
@@ -5704,7 +5716,7 @@ struct CharacterSelectionSheet: View {
                 }
                 
                 // 選択数表示
-                if \!selectedCharacterIds.isEmpty {
+                if !selectedCharacterIds.isEmpty {
                     HStack {
                         Text("\(selectedCharacterIds.count) \(NSLocalizedString("characters_selected", comment: "characters selected"))")
                             .font(.system(size: 14))

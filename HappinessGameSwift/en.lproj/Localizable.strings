@@ -462,6 +462,7 @@
 "delete_background_confirm" = "Delete Background";
 "delete_background_message" = "Delete background image?";
 "character_ranking_management" = "Character Ranking Management";
+"ranking_selection" = "Ranking Selection";
 "select_character_message" = "Please select a character";
 "select_rank_character" = "Select character for rank %d";
 "search_character" = "Search character";

@@ -177,7 +177,7 @@ struct RankingSelectionView: View {
         VStack(spacing: 0) {
             // ヘッダー
             ZStack {
-                Text("ランキング選択")
+                Text(NSLocalizedString("ranking_selection", comment: "Ranking Selection"))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
                 

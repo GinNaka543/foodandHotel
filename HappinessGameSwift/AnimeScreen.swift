@@ -4292,22 +4292,24 @@ struct AnimeAboutView: View {
     
     // アイコン保存機能
     private func saveNewIcon() {
-        guard let iconImage = newIconImage,
+        guard let iconImage = newIconImage else { return }
+        
+        // 最新のデータを取得
+        guard let latestAnime = animeManager.animes.first(where: { $0.id == anime.id }),
               let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
         
         // 画像をDocumentsディレクトリに保存
         let fileName = "anime_icon_\(UUID().uuidString).png"
         if let savedPath = saveImageToDocuments(iconImage, fileName: fileName) {
-            var updatedAnime = animes[idx]
+            var updatedAnime = latestAnime
             
             // 古いアイコンを削除
             if let oldPath = updatedAnime.imageIdentifier {
                 try? FileManager.default.removeItem(atPath: oldPath)
             }
             
-            // 新しいアイコンパスを設定（backgroundImagePathを保持）
+            // 新しいアイコンパスを設定（backgroundImagePathは最新データから自動的に保持される）
             updatedAnime.imageIdentifier = savedPath
-            updatedAnime.backgroundImagePath = animes[idx].backgroundImagePath
             
             animes[idx] = updatedAnime
             animeManager.updateAnime(updatedAnime)
@@ -4594,6 +4596,11 @@ struct AnimeDetailView: View {
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
     @State private var currentDisplayedIcon: UIImage? = nil
+    
+    // 最新のアニメ情報を取得
+    private var currentAnime: Anime {
+        animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+    }
 
     var body: some View {
         ZStack {
@@ -5314,22 +5321,24 @@ struct AnimeDetailView: View {
                                     let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
                                     
                                     // 新しいAnimeオブジェクトを作成して更新（backgroundImagePathを保持）
-                                    var updatedAnime = anime
-                                    updatedAnime.imageIdentifier = imagePath
-                                    // backgroundImagePathを明示的に保持
-                                    updatedAnime.backgroundImagePath = anime.backgroundImagePath
-                                    
-                                    // Bindingを通じて更新（これがsetterを呼び出す）
-                                    anime = updatedAnime
-                                    
-                                    // animesリストも更新
-                                    if let idx = animes.firstIndex(where: { $0.id == anime.id }) {
-                                        animes[idx] = updatedAnime
+                                    // 最新のデータから取得
+                                    if let latestAnime = animeManager.animes.first(where: { $0.id == anime.id }) {
+                                        var updatedAnime = latestAnime
+                                        updatedAnime.imageIdentifier = imagePath
+                                        // backgroundImagePathは最新のデータから保持される
+                                        
+                                        // Bindingを通じて更新（これがsetterを呼び出す）
+                                        anime = updatedAnime
+                                        
+                                        // animesリストも更新
+                                        if let idx = animes.firstIndex(where: { $0.id == anime.id }) {
+                                            animes[idx] = updatedAnime
+                                        }
+                                        
+                                        // AnimeManagerも更新してUI全体を更新
+                                        animeManager.updateAnime(updatedAnime)
+                                        animeManager.refreshUI()
                                     }
-                                    
-                                    // AnimeManagerも更新してUI全体を更新
-                                    animeManager.updateAnime(updatedAnime)
-                                    animeManager.refreshUI()
                                     
                                     // アイコン選択完了後にモーダルを閉じる
                                     showEditIconModal = false

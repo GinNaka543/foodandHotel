@@ -179,6 +179,7 @@
 "thank_you" = "ありがとうございました";
 "purchase_date" = "購入日時";
 "product_name" = "商品名";
+"price_label" = "価格";
 "earned_points" = "獲得ポイント";
 "electronic_receipt_note" = "この明細書は電子レシートです";
 "receipt" = "明細書";
@@ -252,6 +253,7 @@
 "thank_you" = "ありがとうございました";
 "purchase_date" = "購入日時";
 "product_name" = "商品名";
+"price_label" = "価格";
 "earned_points" = "獲得ポイント";
 "electronic_receipt_note" = "この明細書は電子レシートです";
 "receipt" = "明細書";

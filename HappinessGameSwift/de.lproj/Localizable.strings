@@ -551,7 +551,7 @@
 "original" = "Original";
 "other_category" = "Other";
 "price_format" = "¥%d";
-"price_label" = "Price";
+"price_label" = "Preis";
 "product_count_format" = "%d products";
 "product_description" = "Product Description";
 "product_details" = "Product Details";

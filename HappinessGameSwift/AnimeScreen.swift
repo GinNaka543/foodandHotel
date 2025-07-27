@@ -211,7 +211,8 @@ enum AnimeGenre: String, Codable, CaseIterable {
     }
 }
 
-struct Anime: Identifiable, Hashable, Equatable, Codable {
+// Anime struct moved to AnimeModel.swift
+// struct Anime: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var imageIdentifier: String?
     var backgroundImagePath: String?

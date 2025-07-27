@@ -631,7 +631,15 @@ public struct VisitScreen: View {
         let basePlans: [VisitPlanModel]
         switch selectedTab {
         case .all:
-            basePlans = publicPlans
+            // オールタブでは言語フィルタリングを適用
+            basePlans = publicPlans.filter { plan in
+                let shouldShow = LanguageDetector.shared.isTitleMatchingCurrentLanguage(plan.title)
+                // デバッグ用ログ出力（最初の5つまで）
+                if publicPlans.firstIndex(where: { $0.id == plan.id }) ?? 0 < 5 {
+                    LanguageDetector.shared.debugLanguageDetection(title: plan.title)
+                }
+                return shouldShow
+            }
         case .original:
             basePlans = userOriginalPlans
         case .purchased:

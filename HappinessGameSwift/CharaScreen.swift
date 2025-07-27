@@ -769,9 +769,14 @@ struct CharacterRow: View {
     let character: Character
     @ObservedObject var characterManager: CharacterManager
     
+    // 最新のキャラクター情報を取得
+    private var currentCharacter: Character {
+        characterManager.characters.first(where: { $0.id == character.id }) ?? character
+    }
+    
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            if let imageIdentifier = character.imageIdentifier {
+            if let imageIdentifier = currentCharacter.imageIdentifier {
                 OptimizedFileImage(
                     path: imageIdentifier,
                     targetSize: CGSize(width: 48, height: 48)
@@ -790,16 +795,16 @@ struct CharacterRow: View {
                     )
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(character.name)
+                Text(currentCharacter.name)
                     .font(.system(size: 17, weight: .semibold))
-                Text("#" + character.tag)
+                Text("#" + currentCharacter.tag)
                     .font(.system(size: 14))
                     .foregroundColor(.gray)
                     .lineLimit(1)
                     .frame(maxWidth: 200, alignment: .leading)
             }
             Spacer()
-            Text(DateFormatter.monthDayEnglish.string(from: character.birthday))
+            Text(DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday))
                 .font(.system(size: 14))
                 .foregroundColor(.gray)
                 .padding(.top, 4)
@@ -1440,7 +1445,9 @@ struct AboutView: View {
     private var bannerView: some View {
         if let character = character {
             VStack(spacing: 0) {
-                PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                Button(action: {
+                    showIconAdjustment = true
+                }) {
                     if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                         Image(uiImage: image)
                             .resizable()
@@ -3037,6 +3044,7 @@ struct CharacterIconAdjustmentView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var character: Character
     @ObservedObject var characterManager: CharacterManager
+    @State private var iconPickerItem: PhotosPickerItem? = nil
     
     var body: some View {
         NavigationView {
@@ -3053,12 +3061,43 @@ struct CharacterIconAdjustmentView: View {
                             .frame(maxWidth: .infinity, maxHeight: 200)
                             .clipped()
                             .background(Color.gray.opacity(0.2))
+                    } else {
+                        PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: UIScreen.main.bounds.width, height: 200)
+                                .overlay(
+                                    VStack(spacing: 4) {
+                                        Image(systemName: "photo.badge.plus")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.gray)
+                                        Text(NSLocalizedString("tap_to_add", comment: ""))
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                    }
+                                )
+                        }
                     }
                 }
                 .frame(height: 200)
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(10)
                 .padding(.horizontal)
+                
+                // 画像変更ボタン（画像が存在する場合）
+                if character.imageIdentifier != nil {
+                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                        HStack {
+                            Image(systemName: "photo")
+                            Text(NSLocalizedString("change_image", comment: "Change Image"))
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
+                }
                 
                 // 調整スライダー
                 VStack(spacing: 15) {
@@ -3117,6 +3156,26 @@ struct CharacterIconAdjustmentView: View {
                         // 変更を保存
                         characterManager.updateCharacter(character)
                         dismiss()
+                    }
+                }
+            }
+            .onChange(of: iconPickerItem) { _, newValue in
+                if let newValue = newValue {
+                    Task {
+                        if let data = try? await newValue.loadTransferable(type: Data.self),
+                           let uiImage = UIImage(data: data) {
+                            let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
+                            if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                // 古い画像ファイルを削除
+                                if let oldPath = character.imageIdentifier {
+                                    try? FileManager.default.removeItem(atPath: oldPath)
+                                }
+                                
+                                // キャラクターを更新
+                                character.imageIdentifier = savedPath
+                                characterManager.updateCharacter(character)
+                            }
+                        }
                     }
                 }
             }

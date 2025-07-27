@@ -165,6 +165,22 @@ enum AnimeGenre: String, Codable, CaseIterable {
     case art = "art"
     case brain = "brain"
     case healing = "healing"
+    case action = "action"
+    case adventure = "adventure"
+    case drama = "drama"
+    case fantasy = "fantasy"
+    case horror = "horror"
+    case mystery = "mystery"
+    case psychological = "psychological"
+    case romance = "romance"
+    case slice_of_life = "slice_of_life"
+    case supernatural = "supernatural"
+    case thriller = "thriller"
+    case mecha = "mecha"
+    case music = "music"
+    case school = "school"
+    case military = "military"
+    case historical = "historical"
     
     var displayName: String {
         switch self {
@@ -186,6 +202,38 @@ enum AnimeGenre: String, Codable, CaseIterable {
             return NSLocalizedString("brain", comment: "Brain")
         case .healing:
             return NSLocalizedString("healing", comment: "Healing")
+        case .action:
+            return NSLocalizedString("action", comment: "Action")
+        case .adventure:
+            return NSLocalizedString("adventure", comment: "Adventure")
+        case .drama:
+            return NSLocalizedString("drama", comment: "Drama")
+        case .fantasy:
+            return NSLocalizedString("fantasy", comment: "Fantasy")
+        case .horror:
+            return NSLocalizedString("horror", comment: "Horror")
+        case .mystery:
+            return NSLocalizedString("mystery", comment: "Mystery")
+        case .psychological:
+            return NSLocalizedString("psychological", comment: "Psychological")
+        case .romance:
+            return NSLocalizedString("romance", comment: "Romance")
+        case .slice_of_life:
+            return NSLocalizedString("slice_of_life", comment: "Slice of Life")
+        case .supernatural:
+            return NSLocalizedString("supernatural", comment: "Supernatural")
+        case .thriller:
+            return NSLocalizedString("thriller", comment: "Thriller")
+        case .mecha:
+            return NSLocalizedString("mecha", comment: "Mecha")
+        case .music:
+            return NSLocalizedString("music", comment: "Music")
+        case .school:
+            return NSLocalizedString("school", comment: "School")
+        case .military:
+            return NSLocalizedString("military", comment: "Military")
+        case .historical:
+            return NSLocalizedString("historical", comment: "Historical")
         }
     }
 }
@@ -331,6 +379,22 @@ struct AnimeScreen: View {
         case art = "art"
         case brain = "brain"
         case healing = "healing"
+        case action = "action"
+        case adventure = "adventure"
+        case drama = "drama"
+        case fantasy = "fantasy"
+        case horror = "horror"
+        case mystery = "mystery"
+        case psychological = "psychological"
+        case romance = "romance"
+        case slice_of_life = "slice_of_life"
+        case supernatural = "supernatural"
+        case thriller = "thriller"
+        case mecha = "mecha"
+        case music = "music"
+        case school = "school"
+        case military = "military"
+        case historical = "historical"
     }
     
     var filteredAnimes: [Anime] {
@@ -368,6 +432,38 @@ struct AnimeScreen: View {
             result = animesWithTitles.filter { $0.genres.contains(.brain) }
         case .healing:
             result = animesWithTitles.filter { $0.genres.contains(.healing) }
+        case .action:
+            result = animesWithTitles.filter { $0.genres.contains(.action) }
+        case .adventure:
+            result = animesWithTitles.filter { $0.genres.contains(.adventure) }
+        case .drama:
+            result = animesWithTitles.filter { $0.genres.contains(.drama) }
+        case .fantasy:
+            result = animesWithTitles.filter { $0.genres.contains(.fantasy) }
+        case .horror:
+            result = animesWithTitles.filter { $0.genres.contains(.horror) }
+        case .mystery:
+            result = animesWithTitles.filter { $0.genres.contains(.mystery) }
+        case .psychological:
+            result = animesWithTitles.filter { $0.genres.contains(.psychological) }
+        case .romance:
+            result = animesWithTitles.filter { $0.genres.contains(.romance) }
+        case .slice_of_life:
+            result = animesWithTitles.filter { $0.genres.contains(.slice_of_life) }
+        case .supernatural:
+            result = animesWithTitles.filter { $0.genres.contains(.supernatural) }
+        case .thriller:
+            result = animesWithTitles.filter { $0.genres.contains(.thriller) }
+        case .mecha:
+            result = animesWithTitles.filter { $0.genres.contains(.mecha) }
+        case .music:
+            result = animesWithTitles.filter { $0.genres.contains(.music) }
+        case .school:
+            result = animesWithTitles.filter { $0.genres.contains(.school) }
+        case .military:
+            result = animesWithTitles.filter { $0.genres.contains(.military) }
+        case .historical:
+            result = animesWithTitles.filter { $0.genres.contains(.historical) }
         }
         
         // Sort by order
@@ -579,7 +675,14 @@ struct AnimeScreen: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 ForEach(AnimeTab.allCases, id: \.self) { tab in
-                    Button(action: { selectedTab = tab }) {
+                    Button(action: { 
+                        selectedTab = tab
+                        // Reload YouTube videos for the new tab
+                        loadYouTubeVideos()
+                        // Reset displayed video IDs so we can show videos from the new tab
+                        displayedVideoIds.removeAll()
+                        selectRandomYouTubeVideo()
+                    }) {
                         Text(localizedTabName(for: tab))
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(selectedTab == tab ? .white : .black)
@@ -777,10 +880,15 @@ struct AnimeScreen: View {
     
     // YouTube動画を収集
     private func loadYouTubeVideos() {
-        print("🔍 [AnimeScreen] Loading YouTube videos...")
+        print("🔍 [AnimeScreen] Loading YouTube videos for tab: \(selectedTab)")
         print("🔍 [AnimeScreen] Total animes available: \(animeManager.animes.count)")
         allYouTubeVideos = []
-        for anime in animeManager.animes {
+        
+        // 現在のタブに基づいてアニメをフィルタリング
+        let filteredAnimes = filteredAnimeList
+        print("🔍 [AnimeScreen] Filtered animes count: \(filteredAnimes.count)")
+        
+        for anime in filteredAnimes {
             // VideoStorage.swiftを使用して動画を取得  
             let videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
             print("🔍 [AnimeScreen] VideoStorage returned \(videos.count) videos for anime: \(anime.title)")
@@ -808,7 +916,7 @@ struct AnimeScreen: View {
                 print("❌ [AnimeScreen] No video data found for anime: \(anime.title)")
             }
         }
-        print("🔍 [AnimeScreen] Total YouTube videos found: \(allYouTubeVideos.count)")
+        print("🔍 [AnimeScreen] Total YouTube videos found for current tab: \(allYouTubeVideos.count)")
     }
     
     // ランダムなYouTube動画を選択
@@ -4296,6 +4404,8 @@ struct AnimeDetailView: View {
     @State private var editWatchStatuses: Set<WatchStatus> = []
     @State private var showEditGenresModal = false
     @State private var editGenres: Set<AnimeGenre> = []
+    @State private var showAddGenreField = false
+    @State private var newGenreName = ""
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
     @State private var currentDisplayedIcon: UIImage? = nil

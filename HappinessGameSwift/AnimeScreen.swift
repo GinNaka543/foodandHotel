@@ -5961,7 +5961,11 @@ struct AnimeMemberListView: View {
                                     .environmentObject(characterManager),
                                     isActive: Binding(
                                         get: { navigateToCharacter?.id == character.id },
-                                        set: { _ in }
+                                        set: { isActive in
+                                            if !isActive {
+                                                navigateToCharacter = nil
+                                            }
+                                        }
                                     )
                                 ) {
                                     EmptyView()

@@ -126,34 +126,7 @@ class AnimeManager: ObservableObject {
     
 }
 
-// カスタムフィールド用構造体
-struct AnimeCustomField: Hashable, Codable {
-    var name: String
-    var value: String
-}
 
-enum WatchStatus: String, Codable, CaseIterable {
-    case none = "none"
-    case watching = "watching"
-    case willWatch = "willWatch"
-    case watchAgain = "watchAgain"
-    case thisTerm = "thisTerm"
-    
-    var displayName: String {
-        switch self {
-        case .none:
-            return NSLocalizedString("none", comment: "None")
-        case .watching:
-            return NSLocalizedString("watching_status", comment: "Watching")
-        case .willWatch:
-            return NSLocalizedString("will_watch_status", comment: "Will Watch")
-        case .watchAgain:
-            return NSLocalizedString("watch_again_status", comment: "Watch Again")
-        case .thisTerm:
-            return NSLocalizedString("this_term_status", comment: "This Term")
-        }
-    }
-}
 
 enum AnimeGenre: String, Codable, CaseIterable {
     case serious = "serious"
@@ -668,6 +641,38 @@ struct AnimeScreen: View {
             return NSLocalizedString("brain", comment: "")
         case .healing:
             return NSLocalizedString("healing", comment: "")
+        case .action:
+            return NSLocalizedString("action", comment: "")
+        case .adventure:
+            return NSLocalizedString("adventure", comment: "")
+        case .drama:
+            return NSLocalizedString("drama", comment: "")
+        case .fantasy:
+            return NSLocalizedString("fantasy", comment: "")
+        case .horror:
+            return NSLocalizedString("horror", comment: "")
+        case .mystery:
+            return NSLocalizedString("mystery", comment: "")
+        case .psychological:
+            return NSLocalizedString("psychological", comment: "")
+        case .romance:
+            return NSLocalizedString("romance", comment: "")
+        case .slice_of_life:
+            return NSLocalizedString("slice_of_life", comment: "")
+        case .supernatural:
+            return NSLocalizedString("supernatural", comment: "")
+        case .thriller:
+            return NSLocalizedString("thriller", comment: "")
+        case .mecha:
+            return NSLocalizedString("mecha", comment: "")
+        case .music:
+            return NSLocalizedString("music", comment: "")
+        case .school:
+            return NSLocalizedString("school", comment: "")
+        case .military:
+            return NSLocalizedString("military", comment: "")
+        case .historical:
+            return NSLocalizedString("historical", comment: "")
         }
     }
     
@@ -886,10 +891,10 @@ struct AnimeScreen: View {
         allYouTubeVideos = []
         
         // 現在のタブに基づいてアニメをフィルタリング
-        let filteredAnimes = filteredAnimeList
-        print("🔍 [AnimeScreen] Filtered animes count: \(filteredAnimes.count)")
+        let filteredAnimesForVideos = filteredAnimes
+        print("🔍 [AnimeScreen] Filtered animes count: \(filteredAnimesForVideos.count)")
         
-        for anime in filteredAnimes {
+        for anime in filteredAnimesForVideos {
             // VideoStorage.swiftを使用して動画を取得  
             let videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
             print("🔍 [AnimeScreen] VideoStorage returned \(videos.count) videos for anime: \(anime.title)")

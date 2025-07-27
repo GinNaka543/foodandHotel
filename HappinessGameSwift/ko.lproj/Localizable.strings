@@ -691,6 +691,7 @@
 "start_time" = "시작 시간";
 "trip_days" = "여행 일수";
 "days_format" = "%d일간";
+"day_range_instruction" = "1~30일 사이로 설정할 수 있습니다";
 "timeline" = "타임라인";
 "day_format" = "%d일째";
 "add_spots_to_create_itinerary" = "장소를 추가하여 여행 일정을 만드세요";

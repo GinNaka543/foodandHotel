@@ -699,6 +699,7 @@
 "start_time" = "Start time";
 "trip_days" = "Number of days";
 "days_format" = "%d days";
+"day_range_instruction" = "Can be set from 1 to 30 days";
 "timeline" = "Timeline";
 "day_format" = "Day %d";
 "add_spots_to_create_itinerary" = "Add spots to create itinerary";

@@ -1010,7 +1010,7 @@ struct CustomDaysPickerView: View {
                         .font(.system(size: 16))
                 }
                 
-                Text("1〜30日間で設定できます")
+                Text(NSLocalizedString("day_range_instruction", comment: "Can be set from 1 to 30 days"))
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
                 

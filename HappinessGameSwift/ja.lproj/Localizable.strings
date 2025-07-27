@@ -452,6 +452,9 @@
 "days_unit" = "日間";
 "start_time" = "開始時刻";
 "trip_days" = "旅行日数";
+"days_format" = "%d日";
+"day_range_instruction" = "1〜30日間で設定できます";
+"delivery_days_format" = "%d日で配達";
 "plan_title" = "プラン名";
 "plan_title_placeholder" = "例：京都聖地巡礼";
 "anime_name" = "アニメ名";

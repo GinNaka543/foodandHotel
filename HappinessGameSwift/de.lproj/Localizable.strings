@@ -716,6 +716,7 @@
 "start_time" = "Startzeit";
 "trip_days" = "Anzahl der Tage";
 "days_format" = "%d Tage";
+"day_range_instruction" = "Kann von 1 bis 30 Tagen eingestellt werden";
 "timeline" = "Zeitplan";
 "day_format" = "Tag %d";
 "add_spots_to_create_itinerary" = "Orte hinzufügen, um Reiseroute zu erstellen";

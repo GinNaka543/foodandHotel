@@ -691,6 +691,7 @@
 "start_time" = "开始时间";
 "trip_days" = "旅行天数";
 "days_format" = "%d天";
+"day_range_instruction" = "可设置1至30天";
 "timeline" = "时间线";
 "day_format" = "第%d天";
 "add_spots_to_create_itinerary" = "添加地点以创建行程";

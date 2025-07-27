@@ -559,7 +559,7 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "위시리스트 아이템 등록";
 "registered_products" = "Registered Products";
-"same_tag_albums" = "같은 태그로 앨범을 생성할 수 있습니다";
+"same_tag_albums" = "동일한 해시태그로 시리즈별로 앨범을 나눌 수 있습니다";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";

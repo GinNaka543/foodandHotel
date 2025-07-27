@@ -309,6 +309,7 @@
 "title" = "タイトル";
 "hashtag" = "ハッシュタグ";
 "comma_separator" = "、";
+"same_tag_albums" = "同じハッシュタグでシリーズごとにアルバムを分けることができます";
 "plan_description" = "プランの説明";
 "plan_description_placeholder" = "このプランの魅力を説明してください";
 "sales_price" = "販売価格";

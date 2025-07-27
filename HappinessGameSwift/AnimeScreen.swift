@@ -138,6 +138,21 @@ enum WatchStatus: String, Codable, CaseIterable {
     case willWatch = "willWatch"
     case watchAgain = "watchAgain"
     case thisTerm = "thisTerm"
+    
+    var displayName: String {
+        switch self {
+        case .none:
+            return NSLocalizedString("none", comment: "None")
+        case .watching:
+            return NSLocalizedString("watching_status", comment: "Watching")
+        case .willWatch:
+            return NSLocalizedString("will_watch_status", comment: "Will Watch")
+        case .watchAgain:
+            return NSLocalizedString("watch_again_status", comment: "Watch Again")
+        case .thisTerm:
+            return NSLocalizedString("this_term_status", comment: "This Term")
+        }
+    }
 }
 
 enum AnimeGenre: String, Codable, CaseIterable {
@@ -150,6 +165,29 @@ enum AnimeGenre: String, Codable, CaseIterable {
     case art = "art"
     case brain = "brain"
     case healing = "healing"
+    
+    var displayName: String {
+        switch self {
+        case .serious:
+            return NSLocalizedString("serious", comment: "Serious")
+        case .romcom:
+            return NSLocalizedString("romcom", comment: "Romance/Comedy")
+        case .sports:
+            return NSLocalizedString("sports", comment: "Sports")
+        case .comedy:
+            return NSLocalizedString("comedy", comment: "Comedy")
+        case .isekai:
+            return NSLocalizedString("isekai", comment: "Isekai")
+        case .sf:
+            return NSLocalizedString("sf", comment: "Science Fiction")
+        case .art:
+            return NSLocalizedString("art", comment: "Art")
+        case .brain:
+            return NSLocalizedString("brain", comment: "Brain")
+        case .healing:
+            return NSLocalizedString("healing", comment: "Healing")
+        }
+    }
 }
 
 struct Anime: Identifiable, Hashable, Equatable, Codable {
@@ -3541,7 +3579,7 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("hashtag", comment: "Hashtag"), value: currentAnime.hashtag.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.hashtag)
                                 Divider().padding(.leading, 20)
-                                let statusText = currentAnime.watchStatuses.filter { $0 != .none }.map { $0.rawValue }.joined(separator: NSLocalizedString("comma_separator", comment: ", "))
+                                let statusText = currentAnime.watchStatuses.filter { $0 != .none }.map { $0.displayName }.joined(separator: NSLocalizedString("comma_separator", comment: ", "))
                                 profileRow(label: NSLocalizedString("status", comment: "Status"), value: statusText.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : statusText)
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("rating", comment: "Rating"), value: currentAnime.rating > 0 ? String(format: "%.1f / 5.0", currentAnime.rating) : NSLocalizedString("not_set", comment: "Not set"))
@@ -3847,7 +3885,7 @@ struct AnimeAboutView: View {
                             statuses.wrappedValue.insert(status)
                         }
                     }) {
-                        Text(status.rawValue)
+                        Text(status.displayName)
                             .font(.system(size: 14))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -4168,7 +4206,7 @@ struct AddAnimeSheet: View {
                             VStack(spacing: 0) {
                                 ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
                                     HStack {
-                                        Text(status.rawValue)
+                                        Text(status.displayName)
                                             .font(.system(size: 15))
                                         Spacer()
                                         if selectedWatchStatuses.contains(status) {
@@ -4389,7 +4427,7 @@ struct AnimeDetailView: View {
                         } else {
                             HStack(spacing: 8) {
                                 ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
-                                    Text(status.rawValue)
+                                    Text(status.displayName)
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 8)
@@ -4420,7 +4458,7 @@ struct AnimeDetailView: View {
                         } else {
                             HStack(spacing: 8) {
                                 ForEach(currentAnime.genres, id: \.self) { genre in
-                                    Text(genre.rawValue)
+                                    Text(genre.displayName)
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 8)
@@ -4623,7 +4661,7 @@ struct AnimeDetailView: View {
                             }
                         }) {
                             HStack {
-                                Text(status.rawValue)
+                                Text(status.displayName)
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.black)
                                 Spacer()
@@ -4681,7 +4719,7 @@ struct AnimeDetailView: View {
                                 }
                             }) {
                                 HStack {
-                                    Text(genre.rawValue)
+                                    Text(genre.displayName)
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.black)
                                     Spacer()

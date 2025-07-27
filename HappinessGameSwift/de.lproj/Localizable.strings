@@ -409,7 +409,6 @@
 "active_toggle" = "Active";
 "ad_placement" = "Ad Placement";
 "add" = "Add";
-"add_anime" = "Add Anime";
 "add_anime_button" = "Anime hinzufügen";
 "add_artwork" = "Add Artwork";
 "add_artwork_instruction" = "You can add artworks from the add button in the top right";
@@ -491,7 +490,6 @@
 "delivery_tomorrow" = "Tomorrow delivery available";
 "description" = "Description";
 "description_label" = "Description";
-"description_not_set" = "Description not set";
 "details_optional" = "Details (Optional)";
 "display_settings_section" = "Display Settings";
 "draft" = "Draft";
@@ -557,8 +555,6 @@
 "no_videos_found" = "No videos found";
 "none_option" = "None";
 "none_status" = "None";
-"not_set" = "Not set";
-"not_set" = "Not set";
 "or_text" = "oder";
 "original" = "Original";
 "other_category" = "Other";
@@ -621,7 +617,6 @@
 "show_more" = "Show more";
 "site_name" = "Site Name";
 "soundtrack" = "Soundtrack";
-"soundtrack_not_set" = "Soundtrack not set";
 "specify_product_owner" = "Geben Sie den Besitzer dieses Produkts an";
 "spots_count" = "%d spots";
 "status" = "Status";
@@ -638,7 +633,7 @@
 "this_term" = "This Season";
 "title_label" = "Title: %@";
 "type_label" = "Type";
-"unset_genre" = "Not Set";
+"unset_genre" = "Nicht gesetzt";
 "user_id_label" = "User ID:";
 "video" = "Video";
 "video_count_albums" = "%d videos, %d albums";

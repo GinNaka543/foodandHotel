@@ -453,6 +453,10 @@
 "start_time" = "開始時刻";
 "trip_days" = "旅行日数";
 "plan_title" = "プラン名";
+"plan_title_placeholder" = "例：京都聖地巡礼";
+"anime_name" = "アニメ名";
+"anime_name_placeholder" = "例：響け！ユーフォニアム";
+"required" = "必須";
 "timeline" = "タイムライン";
 "day_format" = "第%d日目";
 "add_spots_to_create_itinerary" = "スポットを追加して旅程を作成";

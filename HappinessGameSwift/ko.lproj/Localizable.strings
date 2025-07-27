@@ -692,7 +692,7 @@
 "trip_days" = "여행 일수";
 "days_format" = "%d일간";
 "timeline" = "타임라인";
-"day_format" = "Day %d";
+"day_format" = "%d일째";
 "add_spots_to_create_itinerary" = "장소를 추가하여 여행 일정을 만드세요";
 "overview" = "개요";
 "review_itinerary" = "여행 일정 확인";

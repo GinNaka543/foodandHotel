@@ -219,7 +219,7 @@
 "points_purchased" = "%dポイントを購入しました！";
 "purchase" = "購入する";
 "points_purchase_description" = "%@購入";
-"premium_upgrade_lifetime" = "プレミアムアップグレード（永続ライセンス）";
+"premium_upgrade_lifetime" = "プレミアムアップグレード（2ヶ月目以降に継続したい方向け）";
 "anireco_point_purchase" = "ANICOLLEポイント購入";
 
 /* Profile */

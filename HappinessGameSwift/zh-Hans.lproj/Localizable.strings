@@ -487,7 +487,6 @@
 "first_product_required" = "第一个产品（必填）";
 "free" = "Free";
 "from_youtube" = "From YouTube";
-"genre" = "Genre";
 "go_back" = "Back";
 "hashtag" = "Hashtag";
 "hidden_label" = "Hidden";
@@ -560,7 +559,7 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "注册愿望清单项目";
 "registered_products" = "Registered Products";
-"same_tag_albums" = "Albums can be created with the same tag";
+"same_tag_albums" = "可以创建具有相同标签的专辑";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";
@@ -594,7 +593,6 @@
 "soundtrack" = "Soundtrack";
 "specify_product_owner" = "请指定此产品的所有者";
 "spots_count" = "%d spots";
-"status" = "Status";
 "tag" = "标签";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";

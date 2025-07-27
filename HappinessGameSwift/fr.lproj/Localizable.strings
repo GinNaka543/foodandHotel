@@ -560,7 +560,7 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "Enregistrer des articles de liste de souhaits";
 "registered_products" = "Registered Products";
-"same_tag_albums" = "Albums can be created with the same tag";
+"same_tag_albums" = "Des albums peuvent être créés avec le même tag";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";
@@ -594,7 +594,6 @@
 "soundtrack" = "Soundtrack";
 "specify_product_owner" = "Spécifiez le propriétaire de ce produit";
 "spots_count" = "%d spots";
-"status" = "Status";
 "tag" = "Tag";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";

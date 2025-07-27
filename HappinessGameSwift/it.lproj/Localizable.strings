@@ -487,7 +487,6 @@
 "first_product_required" = "Primo prodotto (richiesto)";
 "free" = "Free";
 "from_youtube" = "From YouTube";
-"genre" = "Genre";
 "go_back" = "Back";
 "hashtag" = "Hashtag";
 "hidden_label" = "Hidden";
@@ -560,7 +559,7 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "Registra articoli lista desideri";
 "registered_products" = "Registered Products";
-"same_tag_albums" = "Albums can be created with the same tag";
+"same_tag_albums" = "Gli album possono essere creati con lo stesso tag";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";
@@ -594,7 +593,6 @@
 "soundtrack" = "Soundtrack";
 "specify_product_owner" = "Specifica il proprietario di questo prodotto";
 "spots_count" = "%d spots";
-"status" = "Status";
 "tag" = "Tag";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";

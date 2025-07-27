@@ -69,7 +69,6 @@
 "delete_background_image" = "Hintergrundbild löschen";
 "select_background_image" = "Hintergrundbild auswählen";
 "watch_status" = "Ansehstatus";
-"genre" = "Genre";
 "select_status" = "Status auswählen (Mehrfachauswahl)";
 "select_genre" = "Genre auswählen (Mehrfachauswahl)";
 "edit_item_selection" = "Bearbeitungselement auswählen";
@@ -514,7 +513,6 @@
 "first_product_required" = "Erstes Produkt (erforderlich)";
 "free" = "Free";
 "from_youtube" = "From YouTube";
-"genre" = "Genre";
 "go_back" = "Back";
 "hashtag" = "Hashtag";
 "hidden_label" = "Hidden";
@@ -585,7 +583,7 @@
 "register_video" = "Register a video";
 "register_wishlist_items" = "Wunschlistenartikel registrieren";
 "registered_products" = "Registered Products";
-"same_tag_albums" = "Albums can be created with the same tag";
+"same_tag_albums" = "Alben können mit demselben Tag erstellt werden";
 "save_button" = "Save";
 "save_following_info" = "Please save the following information";
 "search_anime" = "Search Anime";

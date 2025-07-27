@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct AnimeListScreen: View {
-    let animes: [Anime]
+    let animes: [HappinessGameSwift.Anime]
     let onClose: () -> Void
     @State private var searchText = ""
     
-    var filteredAnimes: [Anime] {
+    var filteredAnimes: [HappinessGameSwift.Anime] {
         if searchText.isEmpty { return animes }
         return animes.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }

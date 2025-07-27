@@ -128,6 +128,41 @@ class AnimeManager: ObservableObject {
 
 
 
+// Temporary definitions to fix compilation
+struct AnimeCustomField: Hashable, Codable {
+    var name: String
+    var value: String
+}
+
+enum WatchStatus: String, Codable, CaseIterable {
+    case none = "none"
+    case watching = "watching"
+    case completed = "completed"
+    case dropped = "dropped"
+    case willWatch = "willWatch"
+    case watchAgain = "watchAgain"
+    case thisTerm = "thisTerm"
+    
+    var displayName: String {
+        switch self {
+        case .none:
+            return NSLocalizedString("none", comment: "None")
+        case .watching:
+            return NSLocalizedString("watching_status", comment: "Watching")
+        case .completed:
+            return NSLocalizedString("completed_status", comment: "Completed")
+        case .dropped:
+            return NSLocalizedString("dropped_status", comment: "Dropped")
+        case .willWatch:
+            return NSLocalizedString("will_watch_status", comment: "Will Watch")
+        case .watchAgain:
+            return NSLocalizedString("watch_again_status", comment: "Watch Again")
+        case .thisTerm:
+            return NSLocalizedString("this_term_status", comment: "This Term")
+        }
+    }
+}
+
 enum AnimeGenre: String, Codable, CaseIterable {
     case serious = "serious"
     case romcom = "romcom"
@@ -211,8 +246,7 @@ enum AnimeGenre: String, Codable, CaseIterable {
     }
 }
 
-// Anime struct moved to AnimeModel.swift
-// struct Anime: Identifiable, Hashable, Equatable, Codable {
+struct Anime: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     var imageIdentifier: String?
     var backgroundImagePath: String?

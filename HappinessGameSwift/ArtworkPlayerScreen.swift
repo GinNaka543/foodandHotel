@@ -12,6 +12,7 @@ struct ArtworkPlayerScreen: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var searchText = ""
     @State private var filteredArtworks: [Artwork] = []
+    @State private var showSearchBar = false
     @State private var characterVideos: [Any] = []
     
     init(artwork: Artwork, character: Character? = nil, anime: Anime? = nil, allArtworks: [Artwork] = [], onDelete: (() -> Void)? = nil, onEdit: ((String, [String]) -> Void)? = nil, onArtworkChange: ((Artwork) -> Void)? = nil) {
@@ -100,7 +101,7 @@ struct ArtworkPlayerScreen: View {
     
     // Increment view count for an artwork
     private func incrementViewCount(for artwork: Artwork) {
-        if let index = allArtworks.firstIndex(where: { $0.id == artwork.id }) {
+        if allArtworks.contains(where: { $0.id == artwork.id }) {
             // This is a local copy, in production you'd sync with parent
         }
     }
@@ -141,9 +142,45 @@ struct ArtworkPlayerScreen: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
                     // ヘッダー
-                    PlayerHeaderView(searchText: $searchText, onSearch: {
-                        filterArtworks()
-                    })
+                    HStack(spacing: 12) {
+                        // ログインロゴ（左端に配置）
+                        if let logoImage = UIImage(named: "ログインロゴ") {
+                            Image(uiImage: logoImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 50)
+                        }
+                        
+                        Spacer()
+                        
+                        // 検索バー（表示時）
+                        if showSearchBar {
+                            TextField("検索", text: $searchText, onCommit: {
+                                filterArtworks()
+                            })
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                            .frame(maxWidth: 200)
+                        }
+                        
+                        // 虫眼鏡アイコン
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showSearchBar.toggle()
+                                if !showSearchBar {
+                                    searchText = ""
+                                    filterArtworks()
+                                }
+                            }
+                        }) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.white)
+                                .font(.system(size: 20))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.black)
                     
                     ScrollView {
                         VStack(spacing: 0) {
@@ -197,9 +234,6 @@ struct ArtworkPlayerScreen: View {
                             }
                             .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                             .onTapGesture {
-                                print("[DEBUG] ArtworkPlayerScreen: Pixiv画像タップ")
-                                print("[DEBUG] artwork: \(artwork.title)")
-                                print("[DEBUG] pixivURL: \(artwork.pixivURL ?? "nil")")
                                 showPixivRedirect = true
                             }
                         } else {
@@ -246,7 +280,7 @@ struct ArtworkPlayerScreen: View {
                                                         Image(uiImage: uiImage)
                                                             .resizable()
                                                             .scaledToFill()
-                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                             .clipped()
                                                     } else if let pixivURL = relatedArtwork.pixivURL {
                                                         if let customThumbnailData = relatedArtwork.customThumbnailData,
@@ -254,31 +288,31 @@ struct ArtworkPlayerScreen: View {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .scaledToFill()
-                                                                .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                                .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                                 .clipped()
                                                         } else {
                                                             PixivThumbnailView(pixivURL: pixivURL)
-                                                                .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                                .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                                 .clipped()
                                                         }
                                                     } else {
                                                         Rectangle()
                                                             .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                     }
                                                     
                                                     // アイコンとタイトル・タグ
                                                     HStack(alignment: .top, spacing: 12) {
                                                         // Character or Anime icon
                                                         if let character = character, let imageIdentifier = character.imageIdentifier,
-                                                           let uiImage = loadImageFromPath(imageIdentifier) {
+                                                           let uiImage = loadImageFromDocuments(imageIdentifier) {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .scaledToFill()
                                                                 .frame(width: 43, height: 43)
                                                                 .clipShape(Circle())
                                                         } else if let anime = anime, let imageIdentifier = anime.imageIdentifier,
-                                                                  let uiImage = loadImageFromPath(imageIdentifier) {
+                                                                  let uiImage = loadImageFromDocuments(imageIdentifier) {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .scaledToFill()
@@ -392,13 +426,8 @@ struct ArtworkPlayerScreen: View {
             }
         }
         .onAppear {
-            print("[DEBUG] ArtworkPlayerScreen onAppear")
-            print("[DEBUG] artwork.title = \(artwork.title)")
-            print("[DEBUG] artwork.tags = \(artwork.tags)")
             editTitle = artwork.title
             editTags = artwork.tags.joined(separator: ",")
-            print("[DEBUG] editTitle設定後 = \(editTitle)")
-            print("[DEBUG] editTags設定後 = \(editTags)")
         }
         .onChange(of: selectedArtwork) { newArtwork in
             if let newArtwork = newArtwork {
@@ -416,32 +445,41 @@ struct ArtworkPlayerScreen: View {
                     .font(.headline)
                     .onAppear {
                         // シートが表示されるときに最新の値を設定
-                        print("[DEBUG] ArtworkPlayerScreen sheet onAppear")
-                        print("[DEBUG] 現在の artwork.title = \(artwork.title)")
-                        print("[DEBUG] 現在の artwork.tags = \(artwork.tags)")
                         editTitle = artwork.title
                         editTags = artwork.tags.joined(separator: ",")
-                        print("[DEBUG] 設定後の editTitle = \(editTitle)")
-                        print("[DEBUG] 設定後の editTags = \(editTags)")
                     }
-                TextField("タイトル", text: $editTitle)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                TextField("タグ（カンマ区切り）", text: $editTags)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                Button("タイトル・タグを保存") {
-                    print("[DEBUG] ArtworkPlayerScreen: 保存ボタンが押されました")
-                    print("[DEBUG] ArtworkPlayerScreen: editTitle = \(editTitle)")
-                    print("[DEBUG] ArtworkPlayerScreen: editTags = \(editTags)")
+                // タイトル（編集不可）
+                HStack {
+                    Text("タイトル:")
+                        .foregroundColor(.gray)
+                    Text(editTitle)
+                        .font(.system(size: 16, weight: .medium))
+                    Spacer()
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+                
+                // タグ（編集不可）
+                HStack {
+                    Text("タグ:")
+                        .foregroundColor(.gray)
+                    Text(editTags)
+                        .font(.system(size: 16, weight: .medium))
+                    Spacer()
+                }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+                
+                // 保存ボタンを削除（コメントアウト）
+                /*Button("タイトル・タグを保存") {
                     
                     let tagsArray = editTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                     
-                    print("[DEBUG] ArtworkPlayerScreen: 更新前 artwork.title = \(artwork.title)")
-                    print("[DEBUG] ArtworkPlayerScreen: 更新前 artwork.tags = \(artwork.tags)")
                     
                     // withAnimationを使って確実に更新
                     withAnimation {
-                        print("[DEBUG] withAnimation内: editTitle = \(editTitle)")
-                        print("[DEBUG] withAnimation内: tagsArray = \(tagsArray)")
                         
                         // 新しいArtworkインスタンスを作成
                         let updatedArtwork = Artwork(
@@ -457,13 +495,9 @@ struct ArtworkPlayerScreen: View {
                             viewCount: artwork.viewCount
                         )
                         
-                        print("[DEBUG] 新しいArtwork作成後: updatedArtwork.title = \(updatedArtwork.title)")
-                        print("[DEBUG] 新しいArtwork作成後: updatedArtwork.tags = \(updatedArtwork.tags)")
                         
                         artwork = updatedArtwork
                         
-                        print("[DEBUG] ArtworkPlayerScreen: 更新後 artwork.title = \(artwork.title)")
-                        print("[DEBUG] ArtworkPlayerScreen: 更新後 artwork.tags = \(artwork.tags)")
                         
                         // ビューを強制的に再描画
                         refreshID = UUID()
@@ -480,7 +514,7 @@ struct ArtworkPlayerScreen: View {
                 .padding()
                 .background(Color.blue)
                 .foregroundColor(.white)
-                .cornerRadius(10)
+                .cornerRadius(10)*/
                 Button("画像を削除") {
                     showDeleteAlert = true
                 }
@@ -591,8 +625,6 @@ private struct ArtworkInfoView: View {
                     .lineLimit(2)
                 
                 HStack(spacing: 4) {
-                    Text("\(formatViewCount(artwork.viewCount ?? 0))回視聴")
-                    Text("・")
                     Text("\(timeAgo(from: artwork.createdAt))")
                     Text("...もっと見る")
                         .foregroundColor(.gray)
@@ -606,14 +638,14 @@ private struct ArtworkInfoView: View {
             HStack(spacing: 12) {
                 // Character or Anime icon
                 if let character = character, let imageIdentifier = character.imageIdentifier,
-                   let uiImage = loadImageFromPath(imageIdentifier) {
+                   let uiImage = loadImageFromDocuments(imageIdentifier) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 40, height: 40)
                         .clipShape(Circle())
                 } else if let anime = anime, let imageIdentifier = anime.imageIdentifier,
-                          let uiImage = loadImageFromPath(imageIdentifier) {
+                          let uiImage = loadImageFromDocuments(imageIdentifier) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
@@ -633,15 +665,15 @@ private struct ArtworkInfoView: View {
                     Text(character?.name ?? anime?.title ?? "アニメコレクター")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
-                    
-                    Text("総動画再生数 \(formatViewCount(totalVideoViewCount))回")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                        .onAppear {
+                        }
                 }
                 
                 Spacer()
                 
-                Button(action: showMenuSheet) {
+                Button(action: {
+                    showMenuSheet()
+                }) {
                     Text("編集")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.black)
@@ -650,9 +682,12 @@ private struct ArtworkInfoView: View {
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(20)
                 }
+                .buttonStyle(PlainButtonStyle())
                 
                 // Fullscreen button
-                Button(action: showFullscreen) {
+                Button(action: {
+                    showFullscreen()
+                }) {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 18))
                         .foregroundColor(.black)
@@ -661,6 +696,7 @@ private struct ArtworkInfoView: View {
                         .background(Color.gray.opacity(0.2))
                         .cornerRadius(20)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
             
         }
@@ -669,6 +705,13 @@ private struct ArtworkInfoView: View {
         .onAppear {
             likeCount = Int.random(in: 50...500)
         }
+    }
+    
+    // Helper function for loading images
+    private func loadImageFromDocuments(_ imagePath: String) -> UIImage? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let imageURL = documentsPath.appendingPathComponent(imagePath)
+        return UIImage(contentsOfFile: imageURL.path)
     }
     
     // Helper functions
@@ -706,6 +749,13 @@ private struct ArtworkInfoView: View {
             return "たった今"
         }
     }
+}
+
+// Helper function for loading images from documents
+func loadImageFromDocuments(_ imagePath: String) -> UIImage? {
+    let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    let imageURL = documentsPath.appendingPathComponent(imagePath)
+    return UIImage(contentsOfFile: imageURL.path)
 }
 
 // MARK: - Helper Functions

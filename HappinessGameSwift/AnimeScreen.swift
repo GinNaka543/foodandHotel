@@ -37,11 +37,8 @@ class AnimeManager: ObservableObject {
     func loadAnimes() {
         if let data = UserDefaultsHelper.shared.getData(forKey: "animes"),
            let decoded = try? JSONDecoder().decode([Anime].self, from: data) {
-            print("[DEBUG] loadAnimes: 読み込んだアニメ数=\(decoded.count)")
-            for a in decoded { print("[DEBUG] アニメID=\(a.id), title=\(a.title), customFields=\(String(describing: a.customFields))") }
             animes = decoded
         } else {
-            print("[DEBUG] loadAnimes: データなし or デコード失敗")
             animes = []
         }
     }
@@ -49,29 +46,24 @@ class AnimeManager: ObservableObject {
     func saveAnimes() {
         if let data = try? JSONEncoder().encode(animes) {
             UserDefaultsHelper.shared.setData(data, forKey: "animes")
-            print("[DEBUG] saveAnimes: 保存アニメ数=\(animes.count)")
-            for a in animes { print("[DEBUG] 保存アニメID=\(a.id), title=\(a.title), customFields=\(String(describing: a.customFields))") }
             
             // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
-                print("アニメ変更のFirebase同期開始")
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        print("✅ アニメ変更のFirebase同期成功")
-                    case .failure(let error):
-                        print("❌ アニメ変更のFirebase同期エラー: \(error)")
+                        break
+                    case .failure(_):
+                        break
                     }
                 }
             }
         } else {
-            print("[DEBUG] saveAnimes: エンコード失敗")
         }
     }
     
     func updateAnime(_ updatedAnime: Anime) {
-        print("[DEBUG] updateAnime: 更新アニメID=\(updatedAnime.id), title=\(updatedAnime.title), customFields=\(String(describing: updatedAnime.customFields))")
         if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
             animes[idx] = updatedAnime
             saveAnimes()
@@ -79,13 +71,11 @@ class AnimeManager: ObservableObject {
                 self.objectWillChange.send()
             }
         } else {
-            print("[DEBUG] updateAnime: アニメID見つからず")
         }
     }
     
     func addAnime(_ anime: Anime) {
         let exists = animes.contains { $0.id == anime.id }
-        print("[DEBUG] addAnime: 追加アニメID=\(anime.id), title=\(anime.title), customFields=\(String(describing: anime.customFields)), exists=\(exists)")
         if !exists {
             animes.append(anime)
             saveAnimes()
@@ -143,23 +133,61 @@ struct AnimeCustomField: Hashable, Codable {
 }
 
 enum WatchStatus: String, Codable, CaseIterable {
-    case none = "なし"
-    case watching = "視聴中"
-    case willWatch = "後で見る"
-    case watchAgain = "もう一度見る"
-    case thisTerm = "今期"
+    case none = "none"
+    case watching = "watching"
+    case willWatch = "willWatch"
+    case watchAgain = "watchAgain"
+    case thisTerm = "thisTerm"
+    
+    var displayName: String {
+        switch self {
+        case .none:
+            return NSLocalizedString("none", comment: "None")
+        case .watching:
+            return NSLocalizedString("watching_status", comment: "Watching")
+        case .willWatch:
+            return NSLocalizedString("will_watch_status", comment: "Will Watch")
+        case .watchAgain:
+            return NSLocalizedString("watch_again_status", comment: "Watch Again")
+        case .thisTerm:
+            return NSLocalizedString("this_term_status", comment: "This Term")
+        }
+    }
 }
 
 enum AnimeGenre: String, Codable, CaseIterable {
-    case serious = "シリアス"
-    case romcom = "ラブコメ"
-    case sports = "スポーツ"
-    case comedy = "コメディー"
-    case isekai = "異世界系"
-    case sf = "SF"
-    case art = "芸術系"
-    case brain = "頭脳系"
-    case healing = "癒し系"
+    case serious = "serious"
+    case romcom = "romcom"
+    case sports = "sports"
+    case comedy = "comedy"
+    case isekai = "isekai"
+    case sf = "sf"
+    case art = "art"
+    case brain = "brain"
+    case healing = "healing"
+    
+    var displayName: String {
+        switch self {
+        case .serious:
+            return NSLocalizedString("serious", comment: "Serious")
+        case .romcom:
+            return NSLocalizedString("romcom", comment: "Romance/Comedy")
+        case .sports:
+            return NSLocalizedString("sports", comment: "Sports")
+        case .comedy:
+            return NSLocalizedString("comedy", comment: "Comedy")
+        case .isekai:
+            return NSLocalizedString("isekai", comment: "Isekai")
+        case .sf:
+            return NSLocalizedString("sf", comment: "Science Fiction")
+        case .art:
+            return NSLocalizedString("art", comment: "Art")
+        case .brain:
+            return NSLocalizedString("brain", comment: "Brain")
+        case .healing:
+            return NSLocalizedString("healing", comment: "Healing")
+        }
+    }
 }
 
 struct Anime: Identifiable, Hashable, Equatable, Codable {
@@ -178,12 +206,18 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var characters: [String] = []  // 出演キャラクターリスト
     var watchLink: String = ""  // アニメ視聴リンク
     var genres: [AnimeGenre] = []  // ジャンルリスト
+    
+    // アイコン表示設定
+    var iconScale: Double = 1.0  // アイコンの拡大率（0.5〜2.0）
+    var iconOffsetX: Double = 0.0  // アイコンの横方向オフセット（-100〜100）
+    var iconOffsetY: Double = 0.0  // アイコンの縦方向オフセット（-100〜100）
+    
     // 必要に応じて他の属性も追加可能
     static func == (lhs: Anime, rhs: Anime) -> Bool {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -202,6 +236,9 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(characters, forKey: .characters)
         try container.encode(watchLink, forKey: .watchLink)
         try container.encode(genres, forKey: .genres)
+        try container.encode(iconScale, forKey: .iconScale)
+        try container.encode(iconOffsetX, forKey: .iconOffsetX)
+        try container.encode(iconOffsetY, forKey: .iconOffsetY)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -233,8 +270,13 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         characters = (try? container.decode([String].self, forKey: .characters)) ?? []
         watchLink = (try? container.decode(String.self, forKey: .watchLink)) ?? ""
         genres = (try? container.decode([AnimeGenre].self, forKey: .genres)) ?? []
+        
+        // アイコン表示設定を読み込む。古いデータの場合はデフォルト値を使用
+        iconScale = (try? container.decode(Double.self, forKey: .iconScale)) ?? 1.0
+        iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
+        iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = []) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -250,6 +292,9 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.characters = characters
         self.watchLink = watchLink
         self.genres = genres
+        self.iconScale = iconScale
+        self.iconOffsetX = iconOffsetX
+        self.iconOffsetY = iconOffsetY
     }
 }
 
@@ -260,37 +305,32 @@ struct AnimeScreen: View {
     @State private var selectedTab: AnimeTab = .all
     @State private var selectedAnime: Anime? = nil
     @State private var showNavigationMenu = false
-    @State private var showAnimeOrderModal = false
+    @State private var showPrivacyPolicy = false
     @State private var bannerAnime: Anime? = nil
     @State private var bannerVideo: MemoryVideo? = nil
     @State private var showVideoPlayer = false
     @State private var selectedVideoId: UUID? = nil
     @State private var selectedVideoAnime: Anime? = nil
-    @State private var showFirebaseAd = false
-    @State private var firebaseAdData: [String: Any]? = nil
-    @State private var currentAdDocument: DocumentSnapshot? = nil
     @State private var bannerTimer: Timer? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
-    @State private var availableAds: [DocumentSnapshot] = []
-    @State private var displayedAdIds: Set<String> = []
     @State private var displayedVideoIds: Set<UUID> = []
     
     enum AnimeTab: String, CaseIterable {
-        case all = "すべて"
-        case watching = "視聴中"
-        case thisTerm = "今期"
-        case willWatch = "視聴予定"
-        case watchAgain = "再視聴"
+        case all = "all"
+        case watching = "watching"
+        case thisTerm = "thisTerm"
+        case willWatch = "willWatch"
+        case watchAgain = "watchAgain"
         // ジャンル
-        case serious = "シリアス"
-        case romcom = "ラブコメ"
-        case sports = "スポーツ"
-        case comedy = "コメディー"
-        case isekai = "異世界系"
-        case sf = "SF"
-        case art = "芸術系"
-        case brain = "頭脳系"
-        case healing = "癒し系"
+        case serious = "serious"
+        case romcom = "romcom"
+        case sports = "sports"
+        case comedy = "comedy"
+        case isekai = "isekai"
+        case sf = "sf"
+        case art = "art"
+        case brain = "brain"
+        case healing = "healing"
     }
     
     var filteredAnimes: [Anime] {
@@ -347,8 +387,11 @@ struct AnimeScreen: View {
                     .foregroundColor(.black)
             }
             Spacer()
+            // 言語切り替えボタン
+            LanguageButton()
+                .padding(.trailing, 8)
             Button(action: { showAddSheet = true }) {
-                Text("アニメを追加")
+                Text(NSLocalizedString("add_anime", comment: ""))
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
@@ -368,155 +411,167 @@ struct AnimeScreen: View {
         .padding(.bottom, 7)
     }
     
-    // バナービュー
+    // バナービュー（簡素化版 - デバッグ用）
     private var bannerView: some View {
-        Group {
-            if showFirebaseAd, let adData = firebaseAdData {
-                // Firebase広告を表示
-                firebaseAdBanner(adData: adData)
-            } else if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
-                ZStack(alignment: .bottomLeading) {
-                    // カスタムサムネイルまたはYouTubeサムネイルを表示
-                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                        ZStack {
-                            Image(uiImage: uiImage)
+        let _ = print("🎯 [AnimeScreen] bannerView called. bannerVideo exists: \(bannerVideo != nil)")
+        
+        return Group {
+            if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                let _ = print("🔍 [AnimeScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
+                
+                VStack {
+                    if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
+                        let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
+                        AsyncImage(url: URL(string: thumbnailURL)) { image in
+                            image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                .frame(height: 180)
                                 .clipped()
-                            
-                            // 暗いオーバーレイを追加
-                            Color.black.opacity(0.2)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 180)
+                                .overlay(
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                )
                         }
-                    } else if let customThumbnailURL = video.youtubeThumbnailURL {
-                        ZStack {
-                            AsyncImage(url: URL(string: customThumbnailURL)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                        .clipped()
-                                case .failure(_), .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                @unknown default:
-                                    EmptyView()
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                        .overlay(
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(video.title)
+                                            .foregroundColor(.white)
+                                            .font(.headline)
+                                            .lineLimit(2)
+                                            .shadow(color: .black.opacity(0.7), radius: 2)
+                                        if let viewCount = video.viewCount {
+                                            Text("\(viewCount.formatted()) views")
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .font(.caption)
+                                                .shadow(color: .black.opacity(0.7), radius: 2)
+                                        }
+                                    }
+                                    Spacer()
+                                    Image(systemName: "play.circle.fill")
+                                        .foregroundColor(.white)
+                                        .font(.title)
+                                        .shadow(color: .black.opacity(0.7), radius: 2)
                                 }
+                                .padding()
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
                             }
-                            
-                            // 暗いオーバーレイを追加
-                            Color.black.opacity(0.2)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                        )
+                        .onTapGesture {
+                            if let url = URL(string: youtubeURL) {
+                                UIApplication.shared.open(url)
+                            }
                         }
                     } else {
-                        ZStack {
-                            AsyncImage(url: URL(string: getYouTubeThumbnailURLForBanner(from: youtubeURL))) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                        .clipped()
-                                case .failure(_), .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                @unknown default:
-                                    EmptyView()
+                        let _ = print("⚠️ [AnimeScreen] No thumbnail URL available, using fallback")
+                        Rectangle()
+                            .fill(Color.blue.opacity(0.8))
+                            .frame(height: 180)
+                            .overlay(
+                                VStack {
+                                    Image(systemName: "play.rectangle.fill")
+                                        .foregroundColor(.white)
+                                        .font(.largeTitle)
+                                    Text(video.title)
+                                        .foregroundColor(.white)
+                                        .font(.headline)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal)
+                                }
+                            )
+                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                            .onTapGesture {
+                                if let url = URL(string: youtubeURL) {
+                                    UIApplication.shared.open(url)
                                 }
                             }
-                            
-                            // 暗いオーバーレイを追加
-                            Color.black.opacity(0.2)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        }
-                    }
-                
-                // 動画情報
-                VStack(alignment: .leading, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(video.title)
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(.white)
-                            .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                            .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                        
-                        if !video.tags.isEmpty {
-                            Text("#" + video.tags.joined(separator: " #"))
-                                .font(.system(size: 14))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                                .lineLimit(1)
-                        }
-                    }
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 16))
-                        Text("WATCH")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.black)
-                    .cornerRadius(4)
-                }
-                .padding()
-            }
-            .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-            .cornerRadius(12)
-            .onTapGesture {
-                // 動画を再生
-                print("動画再生ボタンが押されました")
-                print("Video title: \(video.title)")
-                print("YouTube URL: \(video.youtubeURL ?? "nil")")
-                print("Video path: \(video.videoPath)")
-                
-                if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
-                    // YouTubeの場合は直接URLを開く
-                    print("YouTubeのURLを開きます: \(youtubeURL)")
-                    if let url = URL(string: youtubeURL) {
-                        UIApplication.shared.open(url)
-                    }
-                } else {
-                    // アップロード動画の場合はプレイヤーで再生
-                    print("アップロード動画をプレイヤーで再生します")
-                    if let anime = animeManager.animes.first(where: { anime in
-                        let key = "videos_\(anime.id.uuidString)"
-                        if let data = UserDefaults.standard.data(forKey: key),
-                           let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
-                            return videos.contains(where: { $0.id == video.id })
-                        }
-                        return false
-                    }) {
-                        print("対応するアニメが見つかりました: \(anime.title)")
-                        selectedVideoAnime = anime
-                        selectedVideoId = video.id
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            showVideoPlayer = true
-                        }
-                        print("showVideoPlayer: \(showVideoPlayer)")
-                        print("selectedVideoAnime: \(selectedVideoAnime?.title ?? "nil")")
-                        print("selectedVideoId: \(selectedVideoId?.uuidString ?? "nil")")
-                    } else {
-                        print("対応するアニメが見つかりませんでした")
                     }
                 }
-            }
+                .padding(.horizontal, 16)
             } else {
-                EmptyView()
+                // YouTube動画が登録されていない場合の表示
+                ZStack {
+                    AnimatedGradientView()
+                        .frame(width: UIScreen.main.bounds.width - 32, height: 180)
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                    
+                    VStack {
+                        Spacer()
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 4)
+                                    .padding(.bottom, 4)
+                                
+                                Text(NSLocalizedString("register_from_youtube", comment: ""))
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 2)
+                                Text(NSLocalizedString("register_anime_video", comment: ""))
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.95))
+                                    .shadow(radius: 2)
+                            }
+                            .padding(.leading, 24)
+                            .padding(.bottom, 20)
+                            Spacer()
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
             }
         }
-        .frame(height: 200)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+    }
+    
+    // タブの表示名を取得するヘルパー関数
+    private func localizedTabName(for tab: AnimeTab) -> String {
+        switch tab {
+        case .all:
+            return NSLocalizedString("all", comment: "")
+        case .watching:
+            return NSLocalizedString("watching_status", comment: "")
+        case .thisTerm:
+            return NSLocalizedString("this_term_status", comment: "")
+        case .willWatch:
+            return NSLocalizedString("will_watch_status", comment: "")
+        case .watchAgain:
+            return NSLocalizedString("watch_again_status", comment: "")
+        case .serious:
+            return NSLocalizedString("serious", comment: "")
+        case .romcom:
+            return NSLocalizedString("romcom", comment: "")
+        case .sports:
+            return NSLocalizedString("sports", comment: "")
+        case .comedy:
+            return NSLocalizedString("comedy", comment: "")
+        case .isekai:
+            return NSLocalizedString("isekai", comment: "")
+        case .sf:
+            return "SF"
+        case .art:
+            return NSLocalizedString("art", comment: "")
+        case .brain:
+            return NSLocalizedString("brain", comment: "")
+        case .healing:
+            return NSLocalizedString("healing", comment: "")
+        }
     }
     
     // タブビュー部分
@@ -525,7 +580,7 @@ struct AnimeScreen: View {
             HStack(spacing: 12) {
                 ForEach(AnimeTab.allCases, id: \.self) { tab in
                     Button(action: { selectedTab = tab }) {
-                        Text(tab.rawValue)
+                        Text(localizedTabName(for: tab))
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(selectedTab == tab ? .white : .black)
                             .padding(.horizontal, 18)
@@ -550,10 +605,10 @@ struct AnimeScreen: View {
                         Image(systemName: "tv")
                             .font(.system(size: 50))
                             .foregroundColor(.purple)
-                        Text("好きなアニメを登録しよう")
+                        Text(NSLocalizedString("register_favorite_anime", comment: ""))
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.black)
-                        Text("視聴状況を管理して、見逃しを防ぎましょう")
+                        Text(NSLocalizedString("manage_viewing_status", comment: ""))
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
@@ -562,7 +617,7 @@ struct AnimeScreen: View {
                         Button(action: { showAddSheet = true }) {
                             HStack {
                                 Image(systemName: "plus")
-                                Text("アニメを追加")
+                                Text(NSLocalizedString("add_anime_button", comment: ""))
                             }
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -616,8 +671,9 @@ struct AnimeScreen: View {
                 NavigationMenuView(
                     isPresented: $showNavigationMenu,
                     onShowCharacterOrder: nil,
-                    onShowAnimeOrder: {
-                        showAnimeOrderModal = true
+                    onShowAnimeOrder: nil,
+                    onShowPrivacyPolicy: {
+                        showPrivacyPolicy = true
                     }
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -632,9 +688,17 @@ struct AnimeScreen: View {
             // 最初の動画を選択
             selectRandomYouTubeVideo()
             
-            // Firebase広告と動画を交互に表示
-            loadFirebaseAdvertisement()
+            // 動画のローテーションを開始
             startBannerRotation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // アプリがフォアグラウンドに戻った時に動画リストを更新
+            loadYouTubeVideos()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDeleted"))) { _ in
+            // 動画が削除された時に動画リストを更新
+            loadYouTubeVideos()
+            selectRandomYouTubeVideo()
         }
         .onDisappear {
             bannerTimer?.invalidate()
@@ -643,12 +707,15 @@ struct AnimeScreen: View {
             AddAnimeSheet(animes: $animeManager.animes)
                 .environmentObject(animeManager)
         }
-        .sheet(isPresented: $showAnimeOrderModal, onDismiss: {
+        .sheet(isPresented: $mainTab.showAnimeOrderModal, onDismiss: {
             // モーダルを閉じたときにデータを再読み込み
             animeManager.loadAnimes()
         }) {
             AnimeOrderModal()
                 .environmentObject(animeManager)
+        }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            PrivacyPolicyView(hasAgreed: .constant(true), isInitialAgreement: false)
         }
         .fullScreenCover(item: $selectedAnime) { anime in
             AnimeDetailView(anime: Binding(
@@ -677,212 +744,71 @@ struct AnimeScreen: View {
                    let video = videos.first(where: { $0.id == videoId }) {
                     VideoPlayerScreen(video: video, character: nil, anime: anime, allVideos: videos)
                         .onAppear {
-                            print("VideoPlayerScreenが表示されました")
-                            print("Video: \(video.title)")
-                            print("Anime: \(anime.title)")
                         }
                 } else {
                     VStack {
-                        Text("動画が見つかりませんでした")
+                        Text(NSLocalizedString("no_videos_found", comment: ""))
                             .font(.title)
                             .padding()
-                        Button("閉じる") {
+                        Button(NSLocalizedString("close", comment: "")) {
                             showVideoPlayer = false
                         }
                         .padding()
                     }
                     .onAppear {
-                        print("エラー: 動画が見つかりませんでした")
-                        print("selectedVideoAnime: \(anime.title)")
-                        print("selectedVideoId: \(videoId.uuidString)")
-                        print("key: videos_\(anime.id.uuidString)")
                     }
                 }
             } else {
                 VStack {
-                    Text("動画を読み込めませんでした")
+                    Text(NSLocalizedString("video_load_error", comment: ""))
                         .font(.title)
                         .padding()
-                    Button("閉じる") {
+                    Button(NSLocalizedString("close", comment: "")) {
                         showVideoPlayer = false
                     }
                     .padding()
                 }
                 .onAppear {
-                    print("エラー: 必要な情報がありません")
-                    print("showVideoPlayer: \(showVideoPlayer)")
-                    print("selectedVideoAnime: \(selectedVideoAnime?.title ?? "nil")")
-                    print("selectedVideoId: \(selectedVideoId?.uuidString ?? "nil")")
                 }
             }
         }
     }
     
-    // Firebase広告バナー
-    private func firebaseAdBanner(adData: [String: Any]) -> some View {
-        ZStack(alignment: .topTrailing) {
-            ZStack(alignment: .bottomLeading) {
-                // 広告画像
-                if let imageURL = adData["imageURL"] as? String {
-                    AsyncImage(url: URL(string: imageURL)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                .clipped()
-                        case .failure(_), .empty:
-                            Rectangle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
-                }
-                
-                // 暗いオーバーレイを追加
-                Color.black.opacity(0.2)
-                    .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                
-                // 広告情報
-                VStack(alignment: .leading, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let title = adData["title"] as? String {
-                            Text(title)
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                        }
-                        
-                        if let description = adData["description"] as? String {
-                            Text(description)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                                .lineLimit(2)
-                        }
-                    }
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 16))
-                        Text("WATCH")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.black)
-                    .cornerRadius(4)
-                }
-                .padding()
-            }
-            
-            // PR表示
-            Text("PR")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.black.opacity(0.7))
-                .cornerRadius(4)
-                .padding(.top, 8)
-                .padding(.trailing, 8)
-        }
-        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-        .cornerRadius(12)
-        .onTapGesture {
-            if let link = adData["link"] as? String, let url = URL(string: link) {
-                UIApplication.shared.open(url)
-                
-                // clicks カウントを更新
-                if let document = currentAdDocument {
-                    let clicks = (document.data()?["clicks"] as? Int ?? 0) + 1
-                    document.reference.updateData(["clicks": clicks])
-                }
-            }
-        }
-    }
-    
-    // Firebase広告を読み込む（初回のみ全広告を取得）
-    private func loadFirebaseAdvertisement() {
-        // 初回読み込み時は全広告を取得
-        if availableAds.isEmpty {
-            let db = Firestore.firestore()
-            
-            db.collection("advertisements")
-                .whereField("placements", arrayContains: "anime")
-                .whereField("isActive", isEqualTo: true)
-                .getDocuments { snapshot, error in
-                    if let error = error {
-                        print("広告データの取得エラー: \(error)")
-                        return
-                    }
-                    
-                    guard let documents = snapshot?.documents, !documents.isEmpty else {
-                        return
-                    }
-                    
-                    DispatchQueue.main.async {
-                        self.availableAds = documents
-                        self.selectNextAd()
-                    }
-                }
-        } else {
-            // 既に広告がある場合は次の広告を選択
-            selectNextAd()
-        }
-    }
-    
-    // 次の広告を選択
-    private func selectNextAd() {
-        // 表示していない広告のみをフィルタリング
-        let unshownAds = availableAds.filter { !displayedAdIds.contains($0.documentID) }
-        
-        // 全て表示した場合はリセット
-        if unshownAds.isEmpty {
-            displayedAdIds.removeAll()
-            selectNextAd()
-            return
-        }
-        
-        // ランダムに1つ選択
-        guard let randomDocument = unshownAds.randomElement() else { return }
-        guard let data = randomDocument.data() else { return }
-        
-        // 表示済みとしてマーク
-        displayedAdIds.insert(randomDocument.documentID)
-        
-        // Firebaseから取得したデータを設定
-        self.firebaseAdData = [
-            "title": data["title"] as? String ?? "",
-            "description": data["description"] as? String ?? "",
-            "imageURL": data["imageURL"] as? String ?? "",
-            "link": data["linkURL"] as? String ?? ""
-        ]
-        self.currentAdDocument = randomDocument
-        
-        // impressions カウントを更新
-        let impressions = (data["impressions"] as? Int ?? 0) + 1
-        randomDocument.reference.updateData(["impressions": impressions])
-    }
     
     // YouTube動画を収集
     private func loadYouTubeVideos() {
+        print("🔍 [AnimeScreen] Loading YouTube videos...")
+        print("🔍 [AnimeScreen] Total animes available: \(animeManager.animes.count)")
         allYouTubeVideos = []
         for anime in animeManager.animes {
-            let key = "videos_\(anime.id.uuidString)"
-            if let data = UserDefaults.standard.data(forKey: key),
-               let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
+            // VideoStorage.swiftを使用して動画を取得  
+            let videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
+            print("🔍 [AnimeScreen] VideoStorage returned \(videos.count) videos for anime: \(anime.title)")
+            if !videos.isEmpty {
+                print("🔍 [AnimeScreen] Found \(videos.count) total videos for anime: \(anime.title)")
                 // YouTube URLを持つ動画のみをフィルタリング
-                let youtubeVideos = videos.filter { $0.youtubeURL != nil && !$0.youtubeURL!.isEmpty }
+                let youtubeVideos = videos.filter { video in
+                    if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                        return true
+                    }
+                    return false
+                }
                 allYouTubeVideos.append(contentsOf: youtubeVideos)
+                print("🔍 [AnimeScreen] Found \(youtubeVideos.count) YouTube videos for anime: \(anime.title)")
+                
+                // 個別の動画情報も出力
+                for video in videos {
+                    if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                        print("🎥 [AnimeScreen] YouTube video: \(video.title) - URL: \(youtubeURL)")
+                    } else {
+                        print("📱 [AnimeScreen] Local video: \(video.title)")
+                    }
+                }
+            } else {
+                print("❌ [AnimeScreen] No video data found for anime: \(anime.title)")
             }
         }
+        print("🔍 [AnimeScreen] Total YouTube videos found: \(allYouTubeVideos.count)")
     }
     
     // ランダムなYouTube動画を選択
@@ -910,28 +836,12 @@ struct AnimeScreen: View {
     private func startBannerRotation() {
         bannerTimer?.invalidate()
         
-        // YouTube動画がない場合は広告のみを表示
-        if allYouTubeVideos.isEmpty {
-            showFirebaseAd = true
-            bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
-                // 次の広告を読み込む
-                self.loadFirebaseAdvertisement()
-            }
-        } else {
-            // 初期状態を動画表示に設定
-            showFirebaseAd = false
-            
-            bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
-                self.showFirebaseAd.toggle()
-                
-                if self.showFirebaseAd {
-                    // 広告に切り替わった時に新しい広告を読み込む
-                    self.loadFirebaseAdvertisement()
-                } else {
-                    // 動画に切り替わった時に新しい動画を選択
-                    self.selectRandomYouTubeVideo()
-                }
-            }
+        // YouTube動画がある場合のみローテーションを開始
+        guard !allYouTubeVideos.isEmpty else { return }
+        
+        bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
+            // 新しい動画を選択
+            self.selectRandomYouTubeVideo()
         }
     }
     
@@ -1005,7 +915,7 @@ struct AnimeRow: View {
                 
                 // 声優情報（常に表示）
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("声優")
+                    Text(NSLocalizedString("voice_actors", comment: ""))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.gray)
                     if !anime.voiceActors.isEmpty {
@@ -1014,7 +924,7 @@ struct AnimeRow: View {
                             .foregroundColor(.black)
                             .lineLimit(2)
                     } else {
-                        Text("声優情報を入力してください")
+                        Text(NSLocalizedString("enter_voice_actors", comment: ""))
                             .font(.system(size: 12))
                             .foregroundColor(.gray.opacity(0.5))
                             .italic()
@@ -1023,7 +933,7 @@ struct AnimeRow: View {
                 
                 // キャラクター情報（常に表示）
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("キャラクター")
+                    Text(NSLocalizedString("characters", comment: ""))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.gray)
                     if !anime.characters.isEmpty {
@@ -1032,7 +942,7 @@ struct AnimeRow: View {
                             .foregroundColor(.black)
                             .lineLimit(2)
                     } else {
-                        Text("キャラクター情報を入力してください")
+                        Text(NSLocalizedString("enter_characters", comment: ""))
                             .font(.system(size: 12))
                             .foregroundColor(.gray.opacity(0.5))
                             .italic()
@@ -1045,20 +955,20 @@ struct AnimeRow: View {
                         HStack {
                             Image(systemName: "play.circle.fill")
                                 .font(.system(size: 14))
-                            Text("アニメを見る")
+                            Text(NSLocalizedString("watch_anime", comment: ""))
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.blue)
+                        .background(Color.purple)
                         .cornerRadius(6)
                     }
                 } else {
                     HStack {
                         Image(systemName: "play.circle.fill")
                             .font(.system(size: 14))
-                        Text("アニメを見る")
+                        Text(NSLocalizedString("watch_anime", comment: "Watch anime"))
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.white.opacity(0.7))
@@ -1182,7 +1092,7 @@ struct AnimeArtworkScreen: View {
         HStack {
             HStack(spacing: 12) {
                 Button(action: { showAlbum = false }) {
-                    Text("ArtWork")
+                    Text(NSLocalizedString("artwork", comment: "Artwork"))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(!showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
@@ -1194,7 +1104,7 @@ struct AnimeArtworkScreen: View {
                 }
                 
                 Button(action: { showAlbum = true }) {
-                    Text("Album")
+                    Text(NSLocalizedString("album", comment: "Album"))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
@@ -1224,11 +1134,11 @@ struct AnimeArtworkScreen: View {
                                     .font(.system(size: 60))
                                     .foregroundColor(.purple)
                                 
-                                Text("まだアルバムがありません")
+                                Text(NSLocalizedString("no_albums_anime", comment: ""))
                                     .font(.title2)
                                     .fontWeight(.semibold)
                                 
-                                Text("同じタグのアートワークからアルバムを作成できます")
+                                Text(NSLocalizedString("create_album_same_tag", comment: ""))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
@@ -1237,7 +1147,7 @@ struct AnimeArtworkScreen: View {
                                 Button(action: {
                                     showTagInput = true
                                 }) {
-                                    Label("アルバムを作成", systemImage: "plus.circle.fill")
+                                    Label(NSLocalizedString("create_album", comment: ""), systemImage: "plus.circle.fill")
                                         .font(.headline)
                                         .foregroundColor(.white)
                                         .padding()
@@ -1311,7 +1221,7 @@ struct AnimeArtworkScreen: View {
                                                         Text(album.tag)
                                                             .font(.system(size: 20, weight: .bold))
                                                             .foregroundColor(.white)
-                                                        Text("\(album.videos.count)個のアートワーク")
+                                                        Text(String(format: NSLocalizedString("artwork_count_format", comment: ""), album.videos.count))
                                                             .font(.system(size: 14))
                                                             .foregroundColor(.white.opacity(0.8))
                                                     }
@@ -1326,7 +1236,10 @@ struct AnimeArtworkScreen: View {
                                                             .font(.system(size: 18))
                                                             .foregroundColor(.white)
                                                             .rotationEffect(.degrees(90))
+                                                            .frame(width: 44, height: 44)
+                                                            .contentShape(Rectangle())
                                                     }
+                                                    .contentShape(Rectangle())
                                                 }
                                                 .padding(.horizontal, 16)
                                                 .padding(.bottom, 12)
@@ -1350,27 +1263,23 @@ struct AnimeArtworkScreen: View {
                                     // 親画面のartworksリストから削除
                                     if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
                                         artworks.remove(at: idx)
-                                        print("[DEBUG] AnimeArtworkScreen: Albumから画像削除 - ID: \(deletedArtwork.id)")
                                         
                                         // Albumタブの画像リストも更新
                                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
                                         
                                         saveArtworksToUserDefaults()
                                         saveAlbumsToUserDefaults()
-                                        print("[DEBUG] AnimeArtworkScreen: UserDefaultsに保存しました")
                                     }
                                 },
                                 onArtworkEdited: { editedArtwork in
                                     // 親画面のartworksリストを更新
                                     if let idx = artworks.firstIndex(where: { $0.id == editedArtwork.id }) {
                                         artworks[idx] = editedArtwork
-                                        print("[DEBUG] AnimeArtworkScreen: Albumから画像編集 - ID: \(editedArtwork.id)")
                                         
                                         // Albumタブの画像リストも更新
                                         updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
                                         
                                         saveArtworksToUserDefaults()
-                                        print("[DEBUG] AnimeArtworkScreen: UserDefaultsに保存しました")
                                     }
                                 }
                             )
@@ -1386,11 +1295,11 @@ struct AnimeArtworkScreen: View {
                                     .font(.system(size: 60))
                                     .foregroundColor(.purple)
                                 
-                                Text("まだアートワークがありません")
+                                Text(NSLocalizedString("no_artworks_anime", comment: ""))
                                     .font(.title2)
                                     .fontWeight(.semibold)
                                 
-                                Text("右上の追加ボタンからアートワークを追加できます")
+                                Text(NSLocalizedString("add_artwork_instruction", comment: ""))
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
@@ -1399,7 +1308,7 @@ struct AnimeArtworkScreen: View {
                                 Button(action: {
                                     activeSheet = .addPhoto
                                 }) {
-                                    Label("アートワークを追加", systemImage: "plus.circle.fill")
+                                    Label(NSLocalizedString("add_artwork", comment: ""), systemImage: "plus.circle.fill")
                                         .font(.headline)
                                         .foregroundColor(.white)
                                         .padding()
@@ -1430,18 +1339,18 @@ struct AnimeArtworkScreen: View {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .aspectRatio(contentMode: .fill)
-                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                 } else if let pixivURL = artwork.pixivURL {
                                                     PixivThumbnailView(pixivURL: pixivURL)
-                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                         .clipped()
                                                 } else {
                                                     RoundedRectangle(cornerRadius: 0, style: .continuous)
                                                         .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: UIScreen.main.bounds.width, height: 233)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                                 }
                                             }
-                                            .frame(width: UIScreen.main.bounds.width, height: 233)
+                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 466 : 233)
                                             .clipped()
                                             .padding(.bottom, 0)
                                             HStack(alignment: .center, spacing: 12) {
@@ -1579,7 +1488,7 @@ struct AnimeArtworkScreen: View {
                         Text("@\(currentAnime.title)")
                             .font(.system(size: 12.7))
                             .foregroundColor(.black)
-                        Text("\(artworks.count)枚の画像・アルバム数\(albums.count)")
+                        Text(String(format: NSLocalizedString("artwork_count", comment: ""), artworks.count, albums.count))
                             .font(.system(size: 15.4))
                             .foregroundColor(.gray)
                     }
@@ -1591,7 +1500,7 @@ struct AnimeArtworkScreen: View {
                 
                 // Description section
                 if let customFields = currentAnime.customFields,
-                   let descriptionField = customFields.first(where: { $0.name == "概要" }),
+                   let descriptionField = customFields.first(where: { $0.name == NSLocalizedString("description", comment: "Description") }),
                    !descriptionField.value.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         if descriptionField.value.count > 13 && !isShowingFullDescription {
@@ -1599,7 +1508,7 @@ struct AnimeArtworkScreen: View {
                                 Text(String(descriptionField.value.prefix(13)) + "... ")
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
-                                Text("さらに表示")
+                                Text(NSLocalizedString("show_more", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
                                     .underline()
@@ -1618,7 +1527,7 @@ struct AnimeArtworkScreen: View {
                                 Button(action: {
                                     isShowingFullDescription = false
                                 }) {
-                                    Text("折りたたむ")
+                                    Text(NSLocalizedString("collapse", comment: ""))
                                         .font(.system(size: 14))
                                         .foregroundColor(.black)
                                 }
@@ -1639,7 +1548,7 @@ struct AnimeArtworkScreen: View {
                         activeSheet = .addPhoto
                     }
                 }) {
-                    Text(showAlbum ? "アルバムを作る" : "画像を追加する")
+                    Text(showAlbum ? NSLocalizedString("create_album_anime", comment: "") : NSLocalizedString("add_image_anime", comment: ""))
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1654,7 +1563,7 @@ struct AnimeArtworkScreen: View {
                 mainContent
                 }
             }
-            floatingButton
+            // floatingButton removed - no longer showing # button
             
             // Navigation bar at bottom
             VStack {
@@ -1668,7 +1577,7 @@ struct AnimeArtworkScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24))
-                            Text("戻る")
+                            Text(NSLocalizedString("go_back", comment: ""))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.gray)
@@ -1683,11 +1592,13 @@ struct AnimeArtworkScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "photo")
                                 .font(.system(size: 24))
-                            Text("Artwork")
+                            Text(NSLocalizedString("artwork", comment: "Artwork"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(!showAlbum ? .black : .gray)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                     
                     // Album button
@@ -1698,11 +1609,13 @@ struct AnimeArtworkScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "rectangle.grid.2x2")
                                 .font(.system(size: 24))
-                            Text("Album")
+                            Text(NSLocalizedString("album", comment: "Album"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(showAlbum ? .black : .gray)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                     
                     // About button
@@ -1720,11 +1633,13 @@ struct AnimeArtworkScreen: View {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 24))
                             }
-                            Text("About")
+                            Text(NSLocalizedString("about", comment: "About"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                 }
                 .padding(.vertical, 8)
@@ -1737,6 +1652,14 @@ struct AnimeArtworkScreen: View {
                 )
             }
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .onAppear {
             loadArtworks()
             loadAlbumsFromUserDefaults()
@@ -1776,38 +1699,38 @@ struct AnimeArtworkScreen: View {
         }
         .alert(isPresented: $showDeleteArtworkAlbumAlert) {
             Alert(
-                title: Text("アルバムを削除しますか？"),
-                message: Text("このアルバムは完全に削除されます。"),
-                primaryButton: .destructive(Text("削除")) {
+                title: Text(NSLocalizedString("delete_album_confirm_title", comment: "")),
+                message: Text(NSLocalizedString("delete_album_confirm_message", comment: "")),
+                primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                     if let album = deletingArtworkAlbum {
                         deleteArtworkAlbum(album)
                     }
                     deletingArtworkAlbum = nil
                 },
-                secondaryButton: .cancel(Text("キャンセル")) {
+                secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel"))) {
                     deletingArtworkAlbum = nil
                 }
             )
         }
-        .alert("読み込めない画像を削除しました", isPresented: $showR18Alert) {
+        .alert(NSLocalizedString("r18_images_deleted", comment: ""), isPresented: $showR18Alert) {
             Button("OK") {
                 showR18Alert = false
                 r18ArtworkTitles.removeAll()
             }
         } message: {
-            Text("以下の画像は読み込めないため削除されました：\n\(r18ArtworkTitles.joined(separator: "\n"))\n\nR18作品のサムネイルは表示できないため、自動的に削除されます。")
+            Text(NSLocalizedString("r18_images_removed", comment: "R18 images removed message").replacingOccurrences(of: "%@", with: r18ArtworkTitles.joined(separator: "\n")))
         }
         .sheet(isPresented: $showTagInput) {
             VStack(spacing: 24) {
-                Text("表示したいタグを入力")
+                Text(NSLocalizedString("enter_tag_to_display", comment: "Enter tag to display"))
                     .font(.headline)
-                Text("同じタグからアルバムを作れます")
+                Text(NSLocalizedString("create_album_from_tag", comment: ""))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                TextField("#タグ名", text: $newTag)
+                TextField(NSLocalizedString("tag_name_placeholder", comment: "Tag name placeholder"), text: $newTag)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal, 24)
-                Button("保存") {
+                Button(NSLocalizedString("save", comment: "Save")) {
                     let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !tag.isEmpty {
                         let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
@@ -1825,7 +1748,7 @@ struct AnimeArtworkScreen: View {
                 .background(Color.black)
                 .foregroundColor(.white)
                 .cornerRadius(10)
-                Button("キャンセル") {
+                Button(NSLocalizedString("cancel", comment: "Cancel")) {
                     showTagInput = false
                 }
                 .foregroundColor(.red)
@@ -1859,7 +1782,7 @@ struct AnimeArtworkScreen: View {
                             Button(action: {
                                 showEditMenu = true
                             }) {
-                                Text("編集")
+                                Text(NSLocalizedString("edit", comment: "Edit"))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.blue)
                             }
@@ -1899,15 +1822,15 @@ struct AnimeArtworkScreen: View {
                                                 showPixivRedirect = true
                                             }
                                     } else {
-                                        Text("画像データがありません")
+                                        Text(NSLocalizedString("image_data_not_found", comment: ""))
                                             .foregroundColor(.gray)
                                             .padding()
                                     }
                                     
                                     VStack(spacing: 16) {
-                                        Text("タイトル: \(artwork.title)")
+                                        Text(String(format: NSLocalizedString("title_label", comment: ""), artwork.title))
                                             .font(.headline)
-                                        Text("タグ: \(artwork.tags.joined(separator: ", "))")
+                                        Text(String(format: NSLocalizedString("tags_label", comment: ""), artwork.tags.joined(separator: ", ")))
                                             .font(.subheadline)
                                         Text("ID: \(artwork.id.uuidString.prefix(8))")
                                             .font(.caption)
@@ -1930,7 +1853,7 @@ struct AnimeArtworkScreen: View {
                             Button(action: {
                                 showTagInput = false
                             }) {
-                                Text("閉じる")
+                                Text(NSLocalizedString("close", comment: ""))
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 32)
@@ -1952,7 +1875,7 @@ struct AnimeArtworkScreen: View {
                             }
                         
                         VStack(spacing: 20) {
-                            Text("編集する項目を選択")
+                            Text(NSLocalizedString("select_edit_item_artwork", comment: ""))
                                 .font(.headline)
                                 .padding(.top, 20)
                             
@@ -1964,7 +1887,7 @@ struct AnimeArtworkScreen: View {
                                 }) {
                                     HStack {
                                         Image(systemName: "pencil")
-                                        Text("タイトルを編集")
+                                        Text(NSLocalizedString("edit_title_artwork", comment: ""))
                                         Spacer()
                                     }
                                     .padding()
@@ -1980,7 +1903,7 @@ struct AnimeArtworkScreen: View {
                                 }) {
                                     HStack {
                                         Image(systemName: "tag")
-                                        Text("タグを編集")
+                                        Text(NSLocalizedString("edit_tags_artwork", comment: ""))
                                         Spacer()
                                     }
                                     .padding()
@@ -1996,7 +1919,7 @@ struct AnimeArtworkScreen: View {
                                 }) {
                                     HStack {
                                         Image(systemName: "trash")
-                                        Text("画像を削除")
+                                        Text(NSLocalizedString("delete_image", comment: ""))
                                         Spacer()
                                     }
                                     .padding()
@@ -2010,7 +1933,7 @@ struct AnimeArtworkScreen: View {
                             Button(action: {
                                 showEditMenu = false
                             }) {
-                                Text("キャンセル")
+                                Text(NSLocalizedString("cancel", comment: ""))
                                     .foregroundColor(.blue)
                                     .padding(.vertical, 10)
                             }
@@ -2028,17 +1951,17 @@ struct AnimeArtworkScreen: View {
                     Color.black.opacity(0.25)
                         .edgesIgnoringSafeArea(.all)
                     VStack(spacing: 20) {
-                        Text("タイトル名を編集")
+                        Text(NSLocalizedString("edit_title_name", comment: ""))
                             .font(.headline)
                             .padding(.top, 12)
-                        TextField("タイトル", text: $editText)
+                        TextField(NSLocalizedString("title", comment: ""), text: $editText)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .font(.system(size: 18))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
                         HStack(spacing: 24) {
                             Button(action: { showEditTitle = false }) {
-                                Text("キャンセル")
+                                Text(NSLocalizedString("cancel", comment: ""))
                                     .foregroundColor(.blue)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
@@ -2050,7 +1973,7 @@ struct AnimeArtworkScreen: View {
                                 }
                                 showEditTitle = false
                             }) {
-                                Text("保存")
+                                Text(NSLocalizedString("save", comment: ""))
                                     .foregroundColor(.blue)
                                     .fontWeight(.bold)
                                     .frame(maxWidth: .infinity)
@@ -2071,7 +1994,7 @@ struct AnimeArtworkScreen: View {
                     Color.black.opacity(0.25)
                         .edgesIgnoringSafeArea(.all)
                     VStack(spacing: 20) {
-                        Text("本当に削除しますか？")
+                        Text(NSLocalizedString("really_delete", comment: ""))
                             .font(.headline)
                             .padding(.top, 12)
                         HStack(spacing: 24) {
@@ -2079,7 +2002,7 @@ struct AnimeArtworkScreen: View {
                                 showDeleteAlert = false
                                 deletingArtworkID = nil
                             }) {
-                                Text("キャンセル")
+                                Text(NSLocalizedString("cancel", comment: ""))
                                     .foregroundColor(.blue)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 10)
@@ -2096,7 +2019,7 @@ struct AnimeArtworkScreen: View {
                                 deletingArtworkID = nil
                                 showTagInput = false
                             }) {
-                                Text("削除")
+                                Text(NSLocalizedString("delete", comment: ""))
                                     .foregroundColor(.red)
                                     .fontWeight(.bold)
                                     .frame(maxWidth: .infinity)
@@ -2165,17 +2088,17 @@ struct AnimeArtworkScreen: View {
                 Color.black.opacity(0.25)
                     .edgesIgnoringSafeArea(.all)
                 VStack(spacing: 20) {
-                    Text("タグを編集")
+                    Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                         .font(.headline)
                         .padding(.top, 12)
-                    TextField("タグ（カンマ区切り）", text: $editText)
+                    TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .font(.system(size: 18))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                     HStack(spacing: 24) {
                         Button(action: { showEditTags = false }) {
-                            Text("キャンセル")
+                            Text(NSLocalizedString("cancel", comment: "Cancel"))
                                 .foregroundColor(.blue)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
@@ -2188,7 +2111,7 @@ struct AnimeArtworkScreen: View {
                             }
                             showEditTags = false
                         }) {
-                            Text("保存")
+                            Text(NSLocalizedString("save", comment: "Save"))
                                 .foregroundColor(.blue)
                                 .fontWeight(.bold)
                                 .frame(maxWidth: .infinity)
@@ -2225,12 +2148,8 @@ struct AnimeArtworkScreen: View {
     }
     
     private func loadArtworks() {
-        let key = "anime_artworks_\(anime.id.uuidString)"
-        if let data = UserDefaultsHelper.shared.getData(forKey: key),
-           let decodedArtworks = try? JSONDecoder().decode([Artwork].self, from: data) {
-            artworks = decodedArtworks
-            checkPixivArtworks()
-        }
+        artworks = ArtworkStorage.shared.loadAnimeArtworks(for: anime.id.uuidString)
+        checkPixivArtworks()
     }
     
     private func checkPixivArtworks() {
@@ -2286,17 +2205,13 @@ struct AnimeArtworkScreen: View {
     }
     
     private func saveArtworksToUserDefaults() {
-        let key = "anime_artworks_\(anime.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(artworks) {
-            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
-        }
+        ArtworkStorage.shared.saveAnimeArtworks(for: anime.id.uuidString, artworks: artworks)
     }
     
     private func saveAlbumsToUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
             UserDefaultsHelper.shared.setData(encodedData, forKey: key)
-            print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
@@ -2305,7 +2220,6 @@ struct AnimeArtworkScreen: View {
         if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
-            print("[DEBUG] AnimeArtworkScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
         }
     }
     
@@ -2320,7 +2234,6 @@ struct AnimeArtworkScreen: View {
             // 画像が残っている場合は更新されたAlbumを返す
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
-        print("[DEBUG] AnimeArtworkScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
     
     private func updateAlbumsAfterArtworkEdit(editedArtwork: Artwork) {
@@ -2335,19 +2248,16 @@ struct AnimeArtworkScreen: View {
             }
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
         }
-        print("[DEBUG] AnimeArtworkScreen: Album編集更新完了 - 残りAlbum数: \(albums.count)")
     }
     
     private func deleteArtworkAlbum(_ album: ArtworkAlbum) {
         if let index = albums.firstIndex(where: { $0.id == album.id }) {
             albums.remove(at: index)
             saveAlbumsToUserDefaults()
-            print("[DEBUG] AnimeArtworkScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     
     private func savePixivArtwork(pixivURL: String, title: String, imageURL: String?, tags: String) {
-        print("[DEBUG] savePixivArtwork開始 - URL: \(pixivURL), title: \(title), tags: \(tags)")
         let tagsArray = tags.isEmpty ? [] : tags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         
         let newArtwork = Artwork(
@@ -2361,11 +2271,8 @@ struct AnimeArtworkScreen: View {
             twitterURL: nil
         )
         
-        print("[DEBUG] 新しいPixivアートワーク作成 - ID: \(newArtwork.id)")
         artworks.insert(newArtwork, at: 0)
-        print("[DEBUG] artworks配列に追加 - 現在の総数: \(artworks.count)")
         saveArtworksToUserDefaults()
-        print("[DEBUG] UserDefaultsに保存完了")
         
         // フォームをリセット
         photoTitle = ""
@@ -2570,7 +2477,7 @@ struct AnimeVideoScreen: View {
                         Text("@\(currentAnime.title)")
                             .font(.system(size: 12.7))
                             .foregroundColor(.black)
-                        Text("\(videos.count)本の動画・アルバム数\(albums.count)")
+                        Text(String(format: NSLocalizedString("video_count_albums", comment: ""), videos.count, albums.count))
                             .font(.system(size: 15.4))
                             .foregroundColor(.gray)
                     }
@@ -2582,7 +2489,7 @@ struct AnimeVideoScreen: View {
                 
                 // Description section
                 if let customFields = currentAnime.customFields,
-                   let descriptionField = customFields.first(where: { $0.name == "概要" }),
+                   let descriptionField = customFields.first(where: { $0.name == NSLocalizedString("description", comment: "Description") }),
                    !descriptionField.value.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         if descriptionField.value.count > 13 && !isShowingFullDescription {
@@ -2590,7 +2497,7 @@ struct AnimeVideoScreen: View {
                                 Text(String(descriptionField.value.prefix(13)) + "... ")
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
-                                Text("さらに表示")
+                                Text(NSLocalizedString("show_more", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.black)
                                     .underline()
@@ -2609,7 +2516,7 @@ struct AnimeVideoScreen: View {
                                 Button(action: {
                                     isShowingFullDescription = false
                                 }) {
-                                    Text("折りたたむ")
+                                    Text(NSLocalizedString("collapse", comment: ""))
                                         .font(.system(size: 14))
                                         .foregroundColor(.black)
                                 }
@@ -2630,7 +2537,7 @@ struct AnimeVideoScreen: View {
                         showAddSheet = true
                     }
                 }) {
-                    Text(showAlbum ? "アルバムを作る" : "動画を追加する")
+                    Text(showAlbum ? NSLocalizedString("create_video_album", comment: "") : NSLocalizedString("add_video_anime", comment: ""))
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2662,7 +2569,7 @@ struct AnimeVideoScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24))
-                            Text("戻る")
+                            Text(NSLocalizedString("go_back", comment: ""))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.gray)
@@ -2677,7 +2584,7 @@ struct AnimeVideoScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "video")
                                 .font(.system(size: 24))
-                            Text("Video")
+                            Text(NSLocalizedString("video", comment: "Video"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(!showAlbum ? .black : .gray)
@@ -2691,7 +2598,7 @@ struct AnimeVideoScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "rectangle.grid.2x2")
                                 .font(.system(size: 24))
-                            Text("Album")
+                            Text(NSLocalizedString("album", comment: "Album"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(showAlbum ? .black : .gray)
@@ -2713,11 +2620,13 @@ struct AnimeVideoScreen: View {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 24))
                             }
-                            Text("About")
+                            Text(NSLocalizedString("about", comment: "About"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .contentShape(Rectangle())
                     }
                 }
                 .padding(.vertical, 8)
@@ -2732,15 +2641,15 @@ struct AnimeVideoScreen: View {
         }
         .sheet(isPresented: $showTagInput) {
             VStack(spacing: 24) {
-                Text("表示したいタグを入力")
+                Text(NSLocalizedString("enter_tag_to_display", comment: "Enter tag to display"))
                     .font(.headline)
-                Text("同じタグからアルバムを作れます")
+                Text(NSLocalizedString("create_album_from_tag", comment: ""))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                TextField("#タグ名", text: $newTag)
+                TextField(NSLocalizedString("tag_name_placeholder", comment: "Tag name placeholder"), text: $newTag)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal, 24)
-                Button("保存") {
+                Button(NSLocalizedString("save", comment: "Save")) {
                     let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !tag.isEmpty {
                         let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
@@ -2758,13 +2667,21 @@ struct AnimeVideoScreen: View {
                 .background(Color.black)
                 .foregroundColor(.white)
                 .cornerRadius(10)
-                Button("キャンセル") {
+                Button(NSLocalizedString("cancel", comment: "Cancel")) {
                     showTagInput = false
                 }
                 .foregroundColor(.red)
             }
             .padding(32)
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .onAppear {
             loadVideos()
             loadVideoAlbumsFromUserDefaults()
@@ -2786,16 +2703,16 @@ struct AnimeVideoScreen: View {
         }
         .sheet(isPresented: $showEditTitle) {
             VStack(spacing: 24) {
-                Text("タイトルを編集")
+                Text(NSLocalizedString("edit_title", comment: "Edit title"))
                     .font(.headline)
-                TextField("タイトル", text: $editText)
+                TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 HStack(spacing: 24) {
                     Button(action: { 
                         showEditTitle = false
                         editingVideo = nil
                     }) {
-                        Text("キャンセル")
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
                             .foregroundColor(.red)
                     }
                     Button(action: {
@@ -2809,7 +2726,7 @@ struct AnimeVideoScreen: View {
                         showEditTitle = false
                         editingVideo = nil
                     }) {
-                        Text("保存")
+                        Text(NSLocalizedString("save", comment: "Save"))
                             .foregroundColor(.blue)
                             .fontWeight(.bold)
                     }
@@ -2819,16 +2736,16 @@ struct AnimeVideoScreen: View {
         }
         .sheet(isPresented: $showEditTags) {
             VStack(spacing: 24) {
-                Text("タグを編集")
+                Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                     .font(.headline)
-                TextField("タグ（カンマ区切り）", text: $editText)
+                TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                 HStack(spacing: 24) {
                     Button(action: { 
                         showEditTags = false
                         editingVideo = nil
                     }) {
-                        Text("キャンセル")
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
                             .foregroundColor(.red)
                     }
                     Button(action: {
@@ -2842,7 +2759,7 @@ struct AnimeVideoScreen: View {
                         showEditTags = false
                         editingVideo = nil
                     }) {
-                        Text("保存")
+                        Text(NSLocalizedString("save", comment: "Save"))
                             .foregroundColor(.blue)
                             .fontWeight(.bold)
                     }
@@ -2861,9 +2778,12 @@ struct AnimeVideoScreen: View {
                         videos[idx] = updated
                         saveVideosToUserDefaults()
                     }
+                    showThumbnailPicker = false
+                    editingVideo = nil
                 },
                 onCancel: {
                     showThumbnailPicker = false
+                    editingVideo = nil
                 }
             )
         }
@@ -2871,9 +2791,9 @@ struct AnimeVideoScreen: View {
             switch alertType {
             case .deleteVideo(let videoId):
                 return Alert(
-                    title: Text("動画を削除しますか？"),
-                    message: Text("この動画は完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
+                    title: Text(NSLocalizedString("delete_video_confirm_title", comment: "")),
+                    message: Text(NSLocalizedString("delete_video_confirm_message", comment: "")),
+                    primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                         if let idx = videos.firstIndex(where: { $0.id == videoId }) {
                             videos.remove(at: idx)
                             updateAlbumsAfterVideoDeletion(deletedVideoId: videoId)
@@ -2881,16 +2801,16 @@ struct AnimeVideoScreen: View {
                             saveVideoAlbumsToUserDefaults()
                         }
                     },
-                    secondaryButton: .cancel(Text("キャンセル"))
+                    secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
                 )
             case .deleteAlbum(let album):
                 return Alert(
-                    title: Text("アルバムを削除しますか？"),
-                    message: Text("このアルバムは完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
+                    title: Text(NSLocalizedString("delete_album_confirm_title", comment: "")),
+                    message: Text(NSLocalizedString("delete_album_confirm_message", comment: "")),
+                    primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                         deleteVideoAlbum(album)
                     },
-                    secondaryButton: .cancel(Text("キャンセル"))
+                    secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
                 )
             }
         }
@@ -2913,9 +2833,10 @@ struct AnimeVideoScreen: View {
             )
         }
         .sheet(isPresented: $showThumbnailPicker) {
-            ThumbnailPickerView(
-                video: editingVideo ?? videos.first!,
-                onSave: { newThumbnailData in
+            if let video = editingVideo ?? videos.first {
+                ThumbnailPickerView(
+                    video: video,
+                    onSave: { newThumbnailData in
                     if let editingVideo = editingVideo,
                        let idx = videos.firstIndex(where: { $0.id == editingVideo.id }) {
                         var updated = videos[idx]
@@ -2931,6 +2852,7 @@ struct AnimeVideoScreen: View {
                     self.editingVideo = nil
                 }
             )
+            }
         }
         .fullScreenCover(item: $selectedAlbum) { album in
             AlbumVideoListScreen(
@@ -2940,14 +2862,15 @@ struct AnimeVideoScreen: View {
                     // 動画リストから削除
                     if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
                         videos.remove(at: idx)
-                        print("[DEBUG] AnimeScreen: Albumから動画削除 - ID: \(deletedVideo.id)")
                         
                         // Albumタブの動画リストも更新
                         updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
                         
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
-                        print("[DEBUG] AnimeScreen: UserDefaultsに保存しました")
+                        
+                        // 動画が削除されたことを通知
+                        NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
                     }
                 }
             )
@@ -2973,7 +2896,9 @@ struct AnimeVideoScreen: View {
                         updateAlbumsAfterVideoDeletion(deletedVideoId: video.id)
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
-                        print("[DEBUG] AnimeScreen: 動画削除完了 - ID: \(video.id)")
+                        
+                        // 動画が削除されたことを通知
+                        NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
                     }
                     selectedVideo = nil
                 },
@@ -2987,6 +2912,14 @@ struct AnimeVideoScreen: View {
                 }
             )
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .background(Color.white)
         .navigationBarHidden(true)
         .onAppear {
@@ -3018,26 +2951,17 @@ struct AnimeVideoScreen: View {
     }
     
     private func loadVideos() {
-        let key = "videos_\(anime.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decodedVideos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
-            videos = decodedVideos
-        }
+        videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
     }
     
     private func saveVideosToUserDefaults() {
-        let key = "videos_\(anime.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(videos) {
-            UserDefaults.standard.set(encodedData, forKey: key)
-            print("AnimeVideoScreen: UserDefaults保存完了 - 動画数: \(videos.count)")
-        }
+        VideoStorage.shared.saveAnimeVideos(for: anime.id.uuidString, videos: videos)
     }
     
     private func saveVideoAlbumsToUserDefaults() {
         let key = "video_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
             UserDefaults.standard.set(encodedData, forKey: key)
-            print("[DEBUG] AnimeVideoScreen: アルバムをUserDefaultsに保存しました")
         }
     }
     
@@ -3046,7 +2970,6 @@ struct AnimeVideoScreen: View {
         if let data = UserDefaults.standard.data(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
             albums = decodedAlbums
-            print("[DEBUG] AnimeVideoScreen: アルバムをUserDefaultsから読み込みました - 件数: \(albums.count)")
         }
     }
     
@@ -3058,7 +2981,6 @@ struct AnimeVideoScreen: View {
             }
             return Album(tag: album.tag, videos: updatedVideos)
         }
-        print("[DEBUG] AnimeVideoScreen: Album更新完了 - 残りAlbum数: \(albums.count)")
     }
     
     private func deleteVideo(id: UUID) {
@@ -3067,6 +2989,9 @@ struct AnimeVideoScreen: View {
             updateAlbumsAfterVideoDeletion(deletedVideoId: id)
             saveVideosToUserDefaults()
             saveVideoAlbumsToUserDefaults()
+            
+            // 動画が削除されたことを通知
+            NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
         }
     }
     
@@ -3074,7 +2999,6 @@ struct AnimeVideoScreen: View {
         if let index = albums.firstIndex(where: { $0.id == album.id }) {
             albums.remove(at: index)
             saveVideoAlbumsToUserDefaults()
-            print("[DEBUG] AnimeVideoScreen: アルバム削除完了 - 残りAlbum数: \(albums.count)")
         }
     }
     
@@ -3096,7 +3020,6 @@ struct AnimeVideoScreen: View {
                 let uiImage = UIImage(cgImage: cgImage.image)
                 thumbnailData = uiImage.jpegData(compressionQuality: 0.8)
             } catch {
-                print("サムネイル生成に失敗: \(error)")
             }
         }
         
@@ -3130,7 +3053,6 @@ struct AnimeVideoScreen: View {
             try fileManager.copyItem(at: url, to: fileURL)
             return "AnirecoImages/\(fileName)"
         } catch {
-            print("動画保存エラー: \(error)")
             return ""
         }
     }
@@ -3162,7 +3084,7 @@ struct AnimeVideoScreen: View {
         HStack {
             HStack(spacing: 12) {
                 Button(action: { showAlbum = false }) {
-                    Text("Video")
+                    Text(NSLocalizedString("video", comment: "Video"))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(!showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
@@ -3174,7 +3096,7 @@ struct AnimeVideoScreen: View {
                 }
                 
                 Button(action: { showAlbum = true }) {
-                    Text("Album")
+                    Text(NSLocalizedString("album", comment: "Album"))
                         .font(.system(size: 16, weight: .regular))
                         .foregroundColor(showAlbum ? .white : .black)
                         .padding(.horizontal, 18)
@@ -3223,11 +3145,11 @@ struct AnimeVideoScreen: View {
                         .font(.system(size: 60))
                         .foregroundColor(.purple)
                     
-                    Text("まだアルバムがありません")
+                    Text(NSLocalizedString("no_albums_anime", comment: ""))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("同じタグのビデオからアルバムを作成できます")
+                    Text(NSLocalizedString("create_album_from_videos", comment: ""))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -3236,7 +3158,7 @@ struct AnimeVideoScreen: View {
                     Button(action: {
                         showTagInput = true
                     }) {
-                        Label("アルバムを作成", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("create_album", comment: ""), systemImage: "plus.circle.fill")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding(.horizontal, 20)
@@ -3291,11 +3213,11 @@ struct AnimeVideoScreen: View {
                         .font(.system(size: 60))
                         .foregroundColor(.purple)
                     
-                    Text("まだビデオがありません")
+                    Text(NSLocalizedString("no_videos_yet", comment: ""))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("右上の追加ボタンからビデオを追加できます")
+                    Text(NSLocalizedString("add_video_instruction", comment: ""))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -3304,7 +3226,7 @@ struct AnimeVideoScreen: View {
                     Button(action: {
                         showAddSheet = true
                     }) {
-                        Label("ビデオを追加", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("add_video", comment: ""), systemImage: "plus.circle.fill")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding(.horizontal, 20)
@@ -3415,7 +3337,7 @@ struct AnimeVideoScreen: View {
                             .foregroundColor(.gray)
                     }
                     
-                    Text("\(formatViewCount(video.viewCount ?? 0))回・\(timeAgo(from: video.date))")
+                    Text(String(format: NSLocalizedString("views_ago", comment: "View count and time"), formatViewCount(video.viewCount ?? 0), timeAgo(from: video.date)))
                         .font(.system(size: 13.8, weight: .regular))
                         .foregroundColor(.gray)
                         .padding(.vertical, 1)
@@ -3433,37 +3355,38 @@ struct AnimeVideoScreen: View {
                         showEditTitle = true
                         editingVideo = video
                     }) {
-                        Label("タイトルを編集", systemImage: "pencil")
+                        Label(NSLocalizedString("edit_title", comment: "Edit title"), systemImage: "pencil")
                     }
                     Button(action: {
                         editText = video.tags.joined(separator: ", ")
                         showEditTags = true
                         editingVideo = video
                     }) {
-                        Label("タグを編集", systemImage: "tag")
+                        Label(NSLocalizedString("edit_tags", comment: "Edit tags"), systemImage: "tag")
                     }
                     Button(action: {
                         showThumbnailPicker = true
                         editingVideo = video
                     }) {
-                        Label("サムネイルを変更", systemImage: "photo")
+                        Label(NSLocalizedString("change_thumbnail", comment: "Change thumbnail"), systemImage: "photo")
                     }
                     Divider()
                     Button(role: .destructive, action: {
-                        print("[DEBUG] 削除ボタンが押されました - Video ID: \(video.id)")
                         activeAlert = .deleteVideo(video.id)
-                        print("[DEBUG] activeAlert set to deleteVideo")
                     }) {
-                        Label("削除", systemImage: "trash")
+                        Label(NSLocalizedString("delete", comment: "Delete"), systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 18))
                         .foregroundColor(.gray)
                         .rotationEffect(.degrees(90))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-                .frame(height: 50)
-                .padding(.trailing, 16)
+                .frame(width: 60, height: 60)
+                .contentShape(Rectangle())
+                .padding(.trailing, 8)
             }
             .padding(.leading, 8)
         }
@@ -3527,11 +3450,29 @@ struct AnimeAboutView: View {
     @State private var editedWatchLink: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
-    @State private var showEditSelection: Bool = false
-    @State private var showIconPicker: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
     @State private var currentDisplayedIcon: UIImage? = nil
+    @State private var showSoundtrackEdit: Bool = false
+    
+    // シート管理用のenum
+    enum ActiveSheet: Identifiable {
+        case soundtrackEdit
+        case iconPicker
+        case editSelection
+        case iconAdjustment
+        
+        var id: Int {
+            switch self {
+            case .soundtrackEdit: return 0
+            case .iconPicker: return 1
+            case .editSelection: return 2
+            case .iconAdjustment: return 3
+            }
+        }
+    }
+    @State private var activeSheet: ActiveSheet?
+    
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
     
@@ -3547,12 +3488,15 @@ struct AnimeAboutView: View {
                     // アニメバナー画像
                     VStack(spacing: 0) {
                         Button(action: {
-                            showIconPicker = true
+                            activeSheet = .iconAdjustment
                         }) {
                             if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                                 Image(uiImage: image)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
+                                    .frame(width: UIScreen.main.bounds.width, height: 200)
+                                    .scaleEffect(CGFloat(currentAnime.iconScale))
+                                    .offset(x: CGFloat(currentAnime.iconOffsetX), y: CGFloat(currentAnime.iconOffsetY))
                                     .frame(maxWidth: .infinity, maxHeight: 200)
                                     .clipped()
                                     .overlay(
@@ -3588,7 +3532,7 @@ struct AnimeAboutView: View {
                                             Image(systemName: "film.fill")
                                                 .font(.system(size: 40))
                                                 .foregroundColor(.gray)
-                                            Text("タップで追加")
+                                            Text(NSLocalizedString("tap_to_add", comment: "Tap to add"))
                                                 .font(.system(size: 12))
                                                 .foregroundColor(.gray)
                                         }
@@ -3625,7 +3569,7 @@ struct AnimeAboutView: View {
                     // プロフィールセクション
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("プロフィール")
+                            Text(NSLocalizedString("profile", comment: "Profile"))
                                 .font(.system(size: 20, weight: .bold))
                             Spacer()
                         }
@@ -3636,34 +3580,34 @@ struct AnimeAboutView: View {
                         // プロフィール項目
                         VStack(spacing: 0) {
                             if isEditingProfile {
-                                editableProfileRow(label: "タイトル", text: $editedTitle)
+                                editableProfileRow(label: NSLocalizedString("title", comment: "Title"), text: $editedTitle)
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "ハッシュタグ", text: $editedHashtag)
+                                editableProfileRow(label: NSLocalizedString("hashtag", comment: "Hashtag"), text: $editedHashtag)
                                 Divider().padding(.leading, 20)
-                                statusSelectionRow(label: "ステータス", statuses: $editedWatchStatuses)
+                                statusSelectionRow(label: NSLocalizedString("status", comment: "Status"), statuses: $editedWatchStatuses)
                                 Divider().padding(.leading, 20)
-                                ratingSelectionRow(label: "レート", rating: $editedRating)
+                                ratingSelectionRow(label: NSLocalizedString("rating", comment: "Rating"), rating: $editedRating)
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "声優", text: $editedVoiceActors, placeholder: "最大5人まで（カンマ区切り）")
+                                editableProfileRow(label: NSLocalizedString("voice_actors", comment: "Voice Actors"), text: $editedVoiceActors, placeholder: NSLocalizedString("max_5_people", comment: "Max 5 people (comma separated)"))
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "出演キャラ", text: $editedCharacters, placeholder: "最大5人まで（カンマ区切り）")
+                                editableProfileRow(label: NSLocalizedString("characters", comment: "Characters"), text: $editedCharacters, placeholder: NSLocalizedString("max_5_characters", comment: "Max 5 characters (comma separated)"))
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "視聴リンク", text: $editedWatchLink)
+                                editableProfileRow(label: NSLocalizedString("watch_link", comment: "Watch Link"), text: $editedWatchLink)
                             } else {
-                                profileRow(label: "タイトル", value: currentAnime.title)
+                                profileRow(label: NSLocalizedString("title", comment: "Title"), value: currentAnime.title)
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "ハッシュタグ", value: currentAnime.hashtag.isEmpty ? "未設定" : currentAnime.hashtag)
+                                profileRow(label: NSLocalizedString("hashtag", comment: "Hashtag"), value: currentAnime.hashtag.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.hashtag)
                                 Divider().padding(.leading, 20)
-                                let statusText = currentAnime.watchStatuses.filter { $0 != .none }.map { $0.rawValue }.joined(separator: "、")
-                                profileRow(label: "ステータス", value: statusText.isEmpty ? "未設定" : statusText)
+                                let statusText = currentAnime.watchStatuses.filter { $0 != .none }.map { $0.displayName }.joined(separator: NSLocalizedString("comma_separator", comment: ", "))
+                                profileRow(label: NSLocalizedString("status", comment: "Status"), value: statusText.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : statusText)
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "レート", value: currentAnime.rating > 0 ? String(format: "%.1f / 5.0", currentAnime.rating) : "未設定")
+                                profileRow(label: NSLocalizedString("rating", comment: "Rating"), value: currentAnime.rating > 0 ? String(format: "%.1f / 5.0", currentAnime.rating) : NSLocalizedString("not_set", comment: "Not set"))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "声優", value: currentAnime.voiceActors.isEmpty ? "未設定" : currentAnime.voiceActors.joined(separator: ", "))
+                                profileRow(label: NSLocalizedString("voice_actors", comment: "Voice Actors"), value: currentAnime.voiceActors.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.voiceActors.joined(separator: ", "))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "出演キャラ", value: currentAnime.characters.isEmpty ? "未設定" : currentAnime.characters.joined(separator: ", "))
+                                profileRow(label: NSLocalizedString("characters", comment: "Characters"), value: currentAnime.characters.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.characters.joined(separator: ", "))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "視聴リンク", value: currentAnime.watchLink.isEmpty ? "未設定" : currentAnime.watchLink)
+                                profileRow(label: NSLocalizedString("watch_link", comment: "Watch Link"), value: currentAnime.watchLink.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.watchLink)
                             }
                         }
                         .background(Color.white)
@@ -3672,7 +3616,7 @@ struct AnimeAboutView: View {
                     // 概要セクション
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("概要")
+                            Text(NSLocalizedString("description", comment: "Description"))
                                 .font(.system(size: 20, weight: .bold))
                             Spacer()
                         }
@@ -3684,7 +3628,7 @@ struct AnimeAboutView: View {
                         if isEditingDescription {
                             ZStack(alignment: .topLeading) {
                                 if animeDescription.isEmpty {
-                                    Text("概要を入力してください...")
+                                    Text(NSLocalizedString("enter_description", comment: "Enter description"))
                                         .font(.system(size: 16))
                                         .foregroundColor(.gray)
                                         .padding(.horizontal, 20)
@@ -3708,7 +3652,7 @@ struct AnimeAboutView: View {
                             .padding(.horizontal, 20)
                         } else {
                             if animeDescription.isEmpty {
-                                Text("概要が未設定です")
+                                Text(NSLocalizedString("description_not_set", comment: "Description not set"))
                                     .font(.system(size: 16))
                                     .foregroundColor(.gray)
                                     .padding(.horizontal, 20)
@@ -3723,11 +3667,42 @@ struct AnimeAboutView: View {
                         }
                     }
                     
+                    // サントラセクション
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text(NSLocalizedString("soundtrack", comment: "Soundtrack"))
+                                .font(.system(size: 20, weight: .bold))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 32)
+                        .padding(.bottom, 16)
+                        
+                        // サントラリスト
+                        if currentAnime.soundtracks.isEmpty {
+                            Text(NSLocalizedString("soundtrack_not_set", comment: "Soundtrack not set"))
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                        } else {
+                            VStack(spacing: 12) {
+                                ForEach(currentAnime.soundtracks, id: \.id) { soundtrack in
+                                    SoundtrackRow(soundtrack: soundtrack) {
+                                        // 削除処理
+                                        deleteSoundtrack(soundtrack)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    }
+                    
                     Spacer(minLength: 50)
                 }
             }
             .background(Color.white)
-            .navigationBarTitle("About", displayMode: .inline)
+            .navigationBarTitle(NSLocalizedString("about", comment: "About"), displayMode: .inline)
             .navigationBarItems(
                 leading: Button(action: {
                     saveAnime()
@@ -3745,10 +3720,10 @@ struct AnimeAboutView: View {
                         isEditingDescription = false
                     } else {
                         // 編集選択モーダルを表示
-                        showEditSelection = true
+                        activeSheet = .editSelection
                     }
                 }) {
-                    Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
+                    Text(NSLocalizedString(isEditingProfile || isEditingDescription ? "save" : "edit", comment: "Save/Edit"))
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
@@ -3756,6 +3731,7 @@ struct AnimeAboutView: View {
                         .background(Color.black)
                         .cornerRadius(8)
                 }
+                .contentShape(Rectangle())
             )
         }
         .onAppear {
@@ -3770,78 +3746,102 @@ struct AnimeAboutView: View {
             editedVoiceActors = latestAnime.voiceActors.joined(separator: ", ")
             editedCharacters = latestAnime.characters.joined(separator: ", ")
             editedWatchLink = latestAnime.watchLink
+            
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 20)
+            }
+        )
         .onDisappear {
             saveAnime()
         }
-        .actionSheet(isPresented: $showEditSelection) {
-            ActionSheet(
-                title: Text("編集する項目を選択してください"),
-                buttons: [
-                    .default(Text("プロフィールを編集")) {
-                        isEditingProfile = true
-                    },
-                    .default(Text("概要を編集")) {
-                        isEditingDescription = true
-                    },
-                    .cancel(Text("キャンセル"))
-                ]
-            )
-        }
-        .sheet(isPresented: $showIconPicker) {
-            PhotosPicker(selection: $iconPickerItem, matching: .images) {
-                VStack(spacing: 20) {
-                    Text("アイコンを選択")
-                        .font(.headline)
-                    
-                    if let newIconImage = newIconImage {
-                        Image(uiImage: newIconImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 150, height: 150)
-                            .clipShape(Circle())
+        .sheet(item: $activeSheet) { item in
+                switch item {
+                case .soundtrackEdit:
+                    SoundtrackEditView { soundtrack in
+                        // サントラを保存
+                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                        var updatedAnime = animes[idx]
+                        var soundtracks = updatedAnime.soundtracks
+                        soundtracks.append(soundtrack)
+                        updatedAnime.soundtracks = soundtracks
+                        animes[idx] = updatedAnime
+                        animeManager.updateAnime(updatedAnime)
+                        anime = updatedAnime
+                        
+                        // SoundtrackManagerのリストを更新
+                        SoundtrackManager.shared.collectAllSoundtracks(
+                            characters: CharacterManager().characters,
+                            animes: animeManager.animes
+                        )
                     }
-                    
-                    Button("画像を選択") {
-                        // PhotosPickerが自動で処理
-                    }
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    
-                    if newIconImage != nil {
-                        Button("保存") {
-                            saveNewIcon()
-                            showIconPicker = false
+                case .iconPicker:
+                    NavigationView {
+                        VStack(spacing: 20) {
+                            Text(NSLocalizedString("select_icon", comment: "Select icon"))
+                                .font(.headline)
+                            
+                            if let newIconImage = newIconImage {
+                                Image(uiImage: newIconImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 150, height: 150)
+                                    .clipShape(Circle())
+                            }
+                            
+                            PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                                Text(NSLocalizedString("select_image", comment: "Select image"))
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
+                            
+                            if newIconImage != nil {
+                                Button(NSLocalizedString("save", comment: "Save")) {
+                                    saveNewIcon()
+                                    activeSheet = nil
+                                }
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                            }
+                            
+                            Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                                activeSheet = nil
+                                newIconImage = nil
+                                iconPickerItem = nil
+                            }
+                            .foregroundColor(.red)
                         }
                         .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
                     }
-                    
-                    Button("キャンセル") {
-                        showIconPicker = false
-                        newIconImage = nil
-                        iconPickerItem = nil
-                    }
-                    .foregroundColor(.red)
-                }
-                .padding()
-            }
-            .onChange(of: iconPickerItem) {
-                if let newValue = iconPickerItem {
-                    Task {
-                        if let data = try? await newValue.loadTransferable(type: Data.self),
-                           let image = UIImage(data: data) {
-                            newIconImage = image
+                    .onChange(of: iconPickerItem) { _, _ in
+                        if let newValue = iconPickerItem {
+                            Task {
+                                if let data = try? await newValue.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    newIconImage = image
+                                }
+                            }
                         }
                     }
+                case .editSelection:
+                    EditSelectionSheet(
+                        isEditingProfile: $isEditingProfile,
+                        isEditingDescription: $isEditingDescription,
+                        activeSheet: $activeSheet
+                    )
+                case .iconAdjustment:
+                    IconAdjustmentView(anime: $anime, animes: $animes)
                 }
             }
         }
-    }
     
     // MARK: - Helper Views
     private func profileRow(label: String, value: String) -> some View {
@@ -3859,7 +3859,7 @@ struct AnimeAboutView: View {
         .padding(.vertical, 12)
     }
     
-    private func editableProfileRow(label: String, text: Binding<String>, placeholder: String = "未設定") -> some View {
+    private func editableProfileRow(label: String, text: Binding<String>, placeholder: String = NSLocalizedString("not_set", comment: "Not set")) -> some View {
         HStack {
             Text(label)
                 .font(.system(size: 16))
@@ -3906,7 +3906,7 @@ struct AnimeAboutView: View {
                             statuses.wrappedValue.insert(status)
                         }
                     }) {
-                        Text(status.rawValue)
+                        Text(status.displayName)
                             .font(.system(size: 14))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
@@ -3959,7 +3959,7 @@ struct AnimeAboutView: View {
     private func loadAnimeDescription() {
         // カスタムフィールドから"概要"フィールドを探す
         if let customFields = anime.customFields,
-           let descriptionField = customFields.first(where: { $0.name == "概要" }) {
+           let descriptionField = customFields.first(where: { $0.name == NSLocalizedString("description", comment: "Description") }) {
             animeDescription = descriptionField.value
         }
     }
@@ -4001,10 +4001,10 @@ struct AnimeAboutView: View {
         }
         
         // 既存の"概要"フィールドを更新または新規作成
-        if let index = updatedAnime.customFields?.firstIndex(where: { $0.name == "概要" }) {
+        if let index = updatedAnime.customFields?.firstIndex(where: { $0.name == NSLocalizedString("description", comment: "Description") }) {
             updatedAnime.customFields?[index].value = animeDescription
         } else {
-            updatedAnime.customFields?.append(AnimeCustomField(name: "概要", value: animeDescription))
+            updatedAnime.customFields?.append(AnimeCustomField(name: NSLocalizedString("description", comment: "Description"), value: animeDescription))
         }
         
         animes[idx] = updatedAnime
@@ -4065,11 +4065,23 @@ struct AnimeAboutView: View {
             try data.write(to: fileURL)
             return "AnirecoImages/\(fileName)"
         } catch {
-            print("画像保存エラー: \(error)")
             return nil
         }
     }
+    
+    private func deleteSoundtrack(_ soundtrack: Soundtrack) {
+        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+        var updatedAnime = animes[idx]
+        var soundtracks = updatedAnime.soundtracks
+        soundtracks.removeAll { $0.id == soundtrack.id }
+        updatedAnime.soundtracks = soundtracks
+        animes[idx] = updatedAnime
+        animeManager.updateAnime(updatedAnime)
+        anime = updatedAnime
+    }
 }
+
+
 struct AddAnimeSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var animes: [Anime]
@@ -4088,13 +4100,13 @@ struct AddAnimeSheet: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 ZStack {
-                    Text("アニメ追加")
+                    Text(NSLocalizedString("add_anime", comment: "Add anime"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                     
                     HStack {
                         Button(action: { dismiss() }) {
-                            Text("キャンセル")
+                            Text(NSLocalizedString("cancel", comment: "Cancel"))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 8)
@@ -4115,7 +4127,7 @@ struct AddAnimeSheet: View {
                             animeManager.addAnimeAtTop(newAnime)
                             dismiss()
                         }) {
-                            Text("追加")
+                            Text(NSLocalizedString("add", comment: "Add"))
                                 .foregroundColor(.white)
                                 .fontWeight(.bold)
                                 .padding(.horizontal, 20)
@@ -4140,7 +4152,7 @@ struct AddAnimeSheet: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         // タイトル入力
-                        TextField("アニメタイトル", text: $title)
+                        TextField(NSLocalizedString("anime_title", comment: "Anime title"), text: $title)
                             .textFieldStyle(PlainTextFieldStyle())
                             .multilineTextAlignment(.center)
                             .padding(.vertical, 8)
@@ -4173,7 +4185,7 @@ struct AddAnimeSheet: View {
                                         )
                                 }
                             }
-                            Text("アイコン画像を選択")
+                            Text(NSLocalizedString("select_icon_image", comment: "Select icon image"))
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }
@@ -4192,24 +4204,30 @@ struct AddAnimeSheet: View {
                         }
                         
                         // ハッシュタグ入力
-                        TextField("ハッシュタグ", text: $hashtag)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .padding(.vertical, 8)
-                            .overlay(
-                                VStack {
-                                    Spacer()
-                                    Divider()
-                                        .background(Color.gray.opacity(0.5))
-                                }
-                            )
-                            .padding(.horizontal)
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField(NSLocalizedString("hashtag", comment: "Hashtag"), text: $hashtag)
+                                .textFieldStyle(PlainTextFieldStyle())
+                                .padding(.vertical, 8)
+                                .overlay(
+                                    VStack {
+                                        Spacer()
+                                        Divider()
+                                            .background(Color.gray.opacity(0.5))
+                                    }
+                                )
+                            
+                            Text(NSLocalizedString("same_tag_albums", comment: ""))
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal)
                         
                         // 視聴ステータス
                         VStack(spacing: 8) {
                             VStack(spacing: 0) {
                                 ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
                                     HStack {
-                                        Text(status.rawValue)
+                                        Text(status.displayName)
                                             .font(.system(size: 15))
                                         Spacer()
                                         if selectedWatchStatuses.contains(status) {
@@ -4278,7 +4296,6 @@ struct AnimeDetailView: View {
     @State private var editWatchStatuses: Set<WatchStatus> = []
     @State private var showEditGenresModal = false
     @State private var editGenres: Set<AnimeGenre> = []
-    @State private var showEditBackgroundModal = false
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
     @State private var currentDisplayedIcon: UIImage? = nil
@@ -4301,9 +4318,6 @@ struct AnimeDetailView: View {
                 }
                 .ignoresSafeArea()
                 .overlay(Color.black.opacity(0.3).ignoresSafeArea())
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             } else {
                 LinearGradient(
                     gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
@@ -4311,9 +4325,6 @@ struct AnimeDetailView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             }
             
             // コンテンツ
@@ -4394,7 +4405,7 @@ struct AnimeDetailView: View {
                                 Image(systemName: "photo.on.rectangle")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("ArtWork").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("artwork", comment: "Artwork")).font(.caption2).foregroundColor(.white)
                             }
                             .frame(width: 80, height: 60)
                         }
@@ -4405,7 +4416,7 @@ struct AnimeDetailView: View {
                                 Image(systemName: "video")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("Video").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("video", comment: "Video")).font(.caption2).foregroundColor(.white)
                             }
                             .frame(width: 80, height: 60)
                         }
@@ -4416,7 +4427,7 @@ struct AnimeDetailView: View {
                                 Image(systemName: "info.circle")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("About").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("about", comment: "About")).font(.caption2).foregroundColor(.white)
                             }
                             .frame(width: 80, height: 60)
                         }
@@ -4427,17 +4438,17 @@ struct AnimeDetailView: View {
                     
                     // 視聴ステータス
                     VStack(spacing: 4) {
-                        Text("ステータス")
+                        Text(NSLocalizedString("status", comment: "Status"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                         if currentAnime.watchStatuses.isEmpty {
-                            Text("なし")
+                            Text(NSLocalizedString("none_option", comment: "None"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.gray)
                         } else {
                             HStack(spacing: 8) {
                                 ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
-                                    Text(status.rawValue)
+                                    Text(status.displayName)
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 8)
@@ -4457,18 +4468,18 @@ struct AnimeDetailView: View {
                     
                     // ジャンル
                     VStack(spacing: 8) {
-                        Text("ジャンル")
+                        Text(NSLocalizedString("genre", comment: "Genre"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         if currentAnime.genres.isEmpty {
-                            Text("未設定")
+                            Text(NSLocalizedString("not_set", comment: "Not set"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.gray)
                         } else {
                             HStack(spacing: 8) {
                                 ForEach(currentAnime.genres, id: \.self) { genre in
-                                    Text(genre.rawValue)
+                                    Text(genre.displayName)
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 8)
@@ -4506,46 +4517,160 @@ struct AnimeDetailView: View {
             if currentDisplayedIcon == nil, let imageIdentifier = anime.imageIdentifier {
                 currentDisplayedIcon = loadImageFromPath(imageIdentifier)
             }
+            
+            // アニメのサントラがある場合、ランダムに再生
+            let currentAnime = animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+            if !currentAnime.soundtracks.isEmpty {
+                SoundtrackManager.shared.collectAllSoundtracks(
+                    characters: [],
+                    animes: [currentAnime]
+                )
+                SoundtrackManager.shared.startRandomPlayback()
+            }
         }
+        .onDisappear {
+            // ビューが消える時に音楽を停止
+            SoundtrackManager.shared.stopPlayback()
+        }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
         .navigationBarHidden(true)
         // タイトル編集モーダル
         .sheet(isPresented: $showEditTitleModal) {
-            VStack(spacing: 20) {
-                Text("タイトルとハッシュタグを編集")
-                    .font(.headline)
-                VStack(spacing: 12) {
-                    TextField("タイトル", text: $editTitle)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    TextField("ハッシュタグ", text: $editHashtag)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                }
-                HStack {
-                    Button("キャンセル") {
-                        showEditTitleModal = false
+            NavigationView {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Text(NSLocalizedString("anime_info_edit", comment: "Edit anime info"))
+                            .font(.headline)
+                        
+                        // タイトルとハッシュタグ
+                        VStack(spacing: 12) {
+                            TextField(NSLocalizedString("title", comment: "Title"), text: $editTitle)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                            TextField(NSLocalizedString("hashtag", comment: "Hashtag"), text: $editHashtag)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        }
+                        
+                        // 背景画像
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(NSLocalizedString("background_image", comment: "Background image"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
+                                VStack {
+                                    if let backgroundImage = backgroundImage {
+                                        Image(uiImage: backgroundImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(height: 176)
+                                            .clipped()
+                                            .cornerRadius(12)
+                                    } else if let imagePath = anime.backgroundImagePath,
+                                              let uiImage = loadImageFromPath(imagePath) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(height: 176)
+                                            .clipped()
+                                            .cornerRadius(12)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(height: 176)
+                                            .overlay(
+                                                VStack {
+                                                    Image(systemName: "photo.fill")
+                                                        .font(.system(size: 50))
+                                                        .foregroundColor(.gray)
+                                                    Text(NSLocalizedString("select_background_image", comment: "Select background image"))
+                                                        .foregroundColor(.gray)
+                                                }
+                                            )
+                                    }
+                                }
+                            }
+                            .onChange(of: backgroundPickerItem) { _, newValue in
+                                if let newItem = newValue {
+                                    Task {
+                                        if let data = try? await newItem.loadTransferable(type: Data.self),
+                                           let uiImage = UIImage(data: data) {
+                                            backgroundImage = uiImage
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if backgroundImage != nil || anime.backgroundImagePath != nil {
+                                Button(action: {
+                                    backgroundImage = nil
+                                    backgroundPickerItem = nil
+                                }) {
+                                    Text(NSLocalizedString("delete_background_image", comment: "Delete background image"))
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                            }
+                        }
+                        
+                        HStack {
+                            Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                                showEditTitleModal = false
+                                // Reset temporary states
+                                backgroundImage = nil
+                                backgroundPickerItem = nil
+                            }
+                            Spacer()
+                            Button(NSLocalizedString("save", comment: "Save")) {
+                                guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                                var updatedAnime = animes[idx]
+                                updatedAnime.title = editTitle
+                                updatedAnime.hashtag = editHashtag
+                                
+                                // Save background image if changed
+                                if let newBackgroundImage = backgroundImage {
+                                    let backgroundPath = saveImageToDocuments(newBackgroundImage, fileName: "anime_bg_\(anime.id.uuidString).png")
+                                    updatedAnime.backgroundImagePath = backgroundPath
+                                } else if backgroundImage == nil && backgroundPickerItem == nil && anime.backgroundImagePath != nil {
+                                    // User deleted the background
+                                    if let oldPath = updatedAnime.backgroundImagePath {
+                                        try? FileManager.default.removeItem(atPath: oldPath)
+                                    }
+                                    updatedAnime.backgroundImagePath = nil
+                                }
+                                
+                                animes[idx] = updatedAnime
+                                animeManager.updateAnime(updatedAnime)
+                                showEditTitleModal = false
+                                
+                                // Reset temporary states
+                                backgroundImage = nil
+                                backgroundPickerItem = nil
+                            }
+                            .disabled(editTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
                     }
-                    Spacer()
-                    Button("保存") {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        updatedAnime.title = editTitle
-                        updatedAnime.hashtag = editHashtag
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditTitleModal = false
-                    }
-                    .disabled(editTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .padding()
                 }
+                .navigationBarHidden(true)
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
+            .onAppear {
+                // Reset background image state when modal appears
+                backgroundImage = nil
+                backgroundPickerItem = nil
+            }
         }
         // 公開日編集モーダル（無効化）
         // 視聴ステータス編集モーダル
         .sheet(isPresented: $showEditWatchStatusModal) {
             VStack(spacing: 20) {
-                Text("視聴ステータスを選択（複数選択可）")
+                Text(NSLocalizedString("select_status", comment: "Select status"))
                     .font(.headline)
                 VStack(spacing: 12) {
                     ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
@@ -4557,7 +4682,7 @@ struct AnimeDetailView: View {
                             }
                         }) {
                             HStack {
-                                Text(status.rawValue)
+                                Text(status.displayName)
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.black)
                                 Spacer()
@@ -4578,12 +4703,12 @@ struct AnimeDetailView: View {
                     }
                 }
                 HStack(spacing: 20) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         showEditWatchStatusModal = false
                     }
                     .foregroundColor(.red)
                     
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
                         var updatedAnime = animes[idx]
                         updatedAnime.watchStatuses = Array(editWatchStatuses)
@@ -4602,7 +4727,7 @@ struct AnimeDetailView: View {
         // ジャンル編集モーダル
         .sheet(isPresented: $showEditGenresModal) {
             VStack(spacing: 20) {
-                Text("ジャンルを選択（複数選択可）")
+                Text(NSLocalizedString("select_genre", comment: "Select genre"))
                     .font(.headline)
                 ScrollView {
                     VStack(spacing: 12) {
@@ -4615,7 +4740,7 @@ struct AnimeDetailView: View {
                                 }
                             }) {
                                 HStack {
-                                    Text(genre.rawValue)
+                                    Text(genre.displayName)
                                         .font(.system(size: 16, weight: .medium))
                                         .foregroundColor(.black)
                                     Spacer()
@@ -4639,12 +4764,12 @@ struct AnimeDetailView: View {
                 .frame(maxHeight: 400)
                 
                 HStack(spacing: 20) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         showEditGenresModal = false
                     }
                     .foregroundColor(.red)
                     
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
                         var updatedAnime = animes[idx]
                         updatedAnime.genres = Array(editGenres)
@@ -4659,86 +4784,6 @@ struct AnimeDetailView: View {
             .background(Color(.systemBackground))
             .cornerRadius(16)
             .padding(40)
-        }
-        // 背景画像編集モーダル
-        .sheet(isPresented: $showEditBackgroundModal) {
-            NavigationView {
-                VStack(spacing: 20) {
-                    Text("背景画像を選択")
-                        .font(.headline)
-                    
-                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
-                        VStack {
-                            if let backgroundImage = backgroundImage {
-                                Image(uiImage: backgroundImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 176)
-                                    .clipped()
-                                    .cornerRadius(12)
-                            } else if let imagePath = anime.backgroundImagePath,
-                                      let uiImage = loadImageFromPath(imagePath) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 176)
-                                    .clipped()
-                                    .cornerRadius(12)
-                            } else {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(height: 176)
-                                    .overlay(
-                                        VStack {
-                                            Image(systemName: "photo.fill")
-                                                .font(.system(size: 50))
-                                                .foregroundColor(.gray)
-                                            Text("背景画像を選択")
-                                                .foregroundColor(.gray)
-                                        }
-                                    )
-                            }
-                        }
-                    }
-                    .onChange(of: backgroundPickerItem) { _, newValue in
-                        if let newItem = newValue {
-                            Task {
-                                if let data = try? await newItem.loadTransferable(type: Data.self),
-                                   let uiImage = UIImage(data: data) {
-                                    backgroundImage = uiImage
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding()
-                .navigationBarTitle("背景画像", displayMode: .inline)
-                .navigationBarItems(
-                    leading: Button("キャンセル") {
-                        backgroundImage = nil
-                        showEditBackgroundModal = false
-                    },
-                    trailing: Button("保存") {
-                        if let backgroundImage = backgroundImage {
-                            // 画像をドキュメントディレクトリに保存
-                            let fileName = "anime_bg_\(UUID().uuidString).png"
-                            if let imagePath = saveImageToDocuments(backgroundImage, fileName: fileName) {
-                                // アニメ情報を更新
-                                guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                                var updatedAnime = animes[idx]
-                                updatedAnime.backgroundImagePath = imagePath
-                                animes[idx] = updatedAnime
-                                anime = updatedAnime  // Bindingも更新
-                                animeManager.updateAnime(updatedAnime)
-                            }
-                        }
-                        showEditBackgroundModal = false
-                    }
-                    .disabled(backgroundImage == nil)
-                )
-            }
         }
         // アイコン編集モーダル
         .sheet(isPresented: $showEditIconModal) {
@@ -4759,7 +4804,7 @@ struct AnimeDetailView: View {
                 .padding(.top, 24)
                 
                 VStack(spacing: 24) {
-                    Text("アイコンを選択")
+                    Text(NSLocalizedString("select_icon", comment: "Select icon"))
                         .font(.system(size: 20, weight: .bold))
                         .padding(.top, 16)
                     
@@ -4822,7 +4867,7 @@ struct AnimeDetailView: View {
                         }
                     }
                     
-                    Text("画像をタップして変更")
+                    Text(NSLocalizedString("tap_image_to_change", comment: "Tap image to change"))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                     
@@ -4915,7 +4960,7 @@ struct AlbumRowView: View {
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
-                            Text("\(album.videos.count)個の動画")
+                            Text(String(format: NSLocalizedString("album_video_count", comment: ""), album.videos.count))
                                 .font(.subheadline)
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -4939,3 +4984,238 @@ struct AnimeNavigationButtonStyle: ButtonStyle {
             .foregroundColor(configuration.isPressed ? .black : .gray)
     }
 }
+
+// 編集選択シート
+struct IconAdjustmentView: View {
+    @Binding var anime: Anime
+    @Binding var animes: [Anime]
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var animeManager: AnimeManager
+    @State private var tempScale: Double = 1.0
+    @State private var tempOffsetX: Double = 0.0
+    @State private var tempOffsetY: Double = 0.0
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // プレビュー
+                ZStack {
+                    if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                            .scaleEffect(CGFloat(tempScale))
+                            .offset(x: CGFloat(tempOffsetX), y: CGFloat(tempOffsetY))
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .clipped()
+                            .background(Color.gray.opacity(0.2))
+                    }
+                }
+                .frame(height: 200)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                
+                // 調整コントロール
+                VStack(spacing: 20) {
+                    // 大きさ
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("icon_scale", comment: "Size"))
+                            .font(.headline)
+                        HStack {
+                            Text("0.5")
+                                .font(.caption)
+                            Slider(value: $tempScale, in: 0.5...2.0)
+                            Text("2.0")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.1fx", tempScale))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    // 横位置
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
+                            .font(.headline)
+                        HStack {
+                            Text("-100")
+                                .font(.caption)
+                            Slider(value: $tempOffsetX, in: -100...100)
+                            Text("100")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.0f", tempOffsetX))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    // 縦位置
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
+                            .font(.headline)
+                        HStack {
+                            Text("-100")
+                                .font(.caption)
+                            Slider(value: $tempOffsetY, in: -100...100)
+                            Text("100")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.0f", tempOffsetY))
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    
+                    // リセットボタン
+                    Button(action: {
+                        tempScale = 1.0
+                        tempOffsetX = 0.0
+                        tempOffsetY = 0.0
+                    }) {
+                        Text(NSLocalizedString("reset", comment: "Reset"))
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("adjust_icon_position", comment: "Adjust Icon Position"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("save", comment: "Save")) {
+                        saveIconAdjustments()
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            tempScale = anime.iconScale
+            tempOffsetX = anime.iconOffsetX
+            tempOffsetY = anime.iconOffsetY
+        }
+    }
+    
+    private func saveIconAdjustments() {
+        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+        animes[idx].iconScale = tempScale
+        animes[idx].iconOffsetX = tempOffsetX
+        animes[idx].iconOffsetY = tempOffsetY
+        anime = animes[idx]
+        animeManager.updateAnime(animes[idx])
+    }
+    
+    private func loadImageFromPath(_ path: String) -> UIImage? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let imagePath = documentsPath.appendingPathComponent(path)
+        return UIImage(contentsOfFile: imagePath.path)
+    }
+}
+
+struct EditSelectionSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var isEditingProfile: Bool
+    @Binding var isEditingDescription: Bool
+    @Binding var activeSheet: AnimeAboutView.ActiveSheet?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                VStack(spacing: 15) {
+                    Button(action: {
+                        isEditingProfile = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "person.crop.circle")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("edit_profile", comment: "Edit profile"))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        isEditingDescription = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "text.alignleft")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("edit_description", comment: "Edit description"))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            activeSheet = .soundtrackEdit
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "music.note")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("add_soundtrack", comment: "Add soundtrack"))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            activeSheet = .iconAdjustment
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "photo.badge.arrow.down.fill")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("adjust_icon_position", comment: "Adjust icon position"))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                }
+                .padding()
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("select_edit_item_title", comment: "Select edit item"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+

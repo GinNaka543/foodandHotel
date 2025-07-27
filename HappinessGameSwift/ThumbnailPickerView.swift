@@ -164,7 +164,6 @@ struct ThumbnailPickerView: View {
         guard video.youtubeURL == nil else { return }
         
         guard let url = loadVideoURLFromPath(video.videoPath) else {
-            print("動画ファイルが見つかりません: \(video.videoPath)")
             return
         }
         let asset = AVURLAsset(url: url)
@@ -193,7 +192,6 @@ struct ThumbnailPickerView: View {
                 let uiImage = UIImage(cgImage: cgImage)
                 thumbnailImages.append(uiImage)
             } catch {
-                print("サムネイル生成エラー at \(timePoint)s: \(error)")
             }
         }
         
@@ -230,7 +228,6 @@ struct ThumbnailPickerView: View {
                     selectedThumbnailData = data
                 }
             } catch {
-                print("YouTube サムネイル読み込みエラー: \(error)")
             }
         }
         

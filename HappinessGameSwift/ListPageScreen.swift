@@ -33,9 +33,6 @@ public struct ListPageScreen: View {
     }
 
     public var body: some View {
-        let _ = print("[DEBUG] ListPageScreen - selectedTab: \(selectedTab), animes count: \(animes.count), characters count: \(characters.count)")
-        let _ = print("[DEBUG] ListPageScreen - animeManager.animes count: \(animeManager.animes.count)")
-        let _ = print("[DEBUG] ListPageScreen - characterManager.characters count: \(characterManager.characters.count)")
         VStack(spacing: 0) {
             // ヘッダー
             HStack {
@@ -110,11 +107,9 @@ public struct ListPageScreen: View {
                     }
                 }
             } else if selectedTab == .anime {
-                let _ = print("[DEBUG] Showing anime tab - filteredAnimes count: \(filteredAnimes.count)")
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredAnimes, id: \ .id) { anime in
-                            let _ = print("[DEBUG] Rendering anime: \(anime.title)")
                             Button(action: { selectedAnime = anime }) {
                                 HStack(spacing: 16) {
                                     if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
@@ -182,11 +177,6 @@ public struct ListPageScreen: View {
             }
         }
         .onAppear {
-            print("[DEBUG] ===== ListPageScreen onAppear =====")
-            print("[DEBUG] selectedTab: \(selectedTab)")
-            print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
-            print("[DEBUG] characterManager.characters.count: \(characterManager.characters.count)")
-            print("[DEBUG] ====================================")
         }
         .fullScreenCover(item: $selectedCharacter) { character in
             CharacterDetailView(character: Binding(
@@ -208,8 +198,6 @@ public struct ListPageScreen: View {
     @ViewBuilder
     private func tabButton(title: String, tab: ListTab) -> some View {
         Button(action: { 
-            print("[DEBUG] Tab button tapped: \(tab)")
-            print("[DEBUG] Changing selectedTab from \(selectedTab) to \(tab)")
             selectedTab = tab 
         }) {
             VStack(spacing: 2) {
@@ -233,9 +221,7 @@ public struct ListPageScreen: View {
         return charactersWithNames.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
     private var filteredAnimes: [Anime] {
-        print("[DEBUG] filteredAnimes - animeManager.animes count: \(animeManager.animes.count)")
         let animesWithTitles = animeManager.animes.filter { !$0.title.isEmpty }
-        print("[DEBUG] filteredAnimes - animesWithTitles count: \(animesWithTitles.count)")
         if searchText.isEmpty { return animesWithTitles }
         return animesWithTitles.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }

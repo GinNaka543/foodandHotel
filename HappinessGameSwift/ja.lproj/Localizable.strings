@@ -1,0 +1,649 @@
+/* Japanese - Base */
+
+/* Common */
+"app_name" = "アニコレ！";
+"done" = "完了";
+"cancel" = "キャンセル";
+"save" = "保存";
+"delete" = "削除";
+"edit" = "編集";
+"close" = "閉じる";
+"loading" = "読み込み中...";
+"error" = "エラー";
+"success" = "成功";
+"retry" = "再試行";
+
+/* Language */
+"language_title" = "言語";
+
+/* Tab Bar */
+"home" = "ホーム";
+"memory" = "メモリー";
+"ranking" = "ランキング";
+"ranking_selection" = "ランキング選択";
+"visit" = "聖地旅";
+"character" = "キャラ";
+"anime" = "アニメ";
+"artwork" = "アートワーク";
+"video" = "ビデオ";
+"album" = "アルバム";
+"product" = "プロダクト";
+
+/* Terms and Privacy */
+"terms_of_service" = "利用規約";
+"privacy_policy" = "プライバシーポリシー";
+
+/* Premium */
+"premium_upgrade_title" = "プレミアムプランへのアップグレード";
+"free_trial_ended" = "無料期間が終了しました";
+"premium_features_unlimited" = "無制限のアニメ登録";
+"premium_features_all_access" = "すべての機能へのアクセス";
+"premium_features_updates" = "定期的なアップデート";
+"premium_features_support" = "開発者をサポート";
+"permanent_license" = "永続ライセンス";
+"purchase" = "購入する";
+"later" = "後で";
+
+/* Product Screen */
+"add_first_product" = "最初の商品を追加してください";
+"edit_category" = "カテゴリー編集";
+"delete_category" = "このカテゴリーを削除";
+"delete_category_title" = "カテゴリーを削除";
+"delete_category_confirmation" = "「%@」を削除しますか？\nこのカテゴリーに含まれる商品も全て削除されます。";
+"delete_item_title" = "商品を削除";
+"delete_item_confirmation" = "「%@」を削除しますか？";
+
+/* Points */
+"pt" = "pt";
+
+/* Anime Page */
+"watch_anime" = "アニメを見る";
+"anime_title" = "アニメタイトル";
+"no_artworks_anime" = "まだアートワークがありません";
+"no_albums_anime" = "まだアルバムがありません";
+"create_album_same_tag" = "同じタグでアルバムを作成できます";
+"create_album_anime" = "アルバムを作成";
+"add_image_anime" = "画像を追加";
+"create_video_album" = "アルバムを作成";
+"add_video_anime" = "動画を追加";
+"artwork_count" = "%d枚の画像、%d個のアルバム";
+"artwork_count_format" = "%d個のアートワーク";
+"video_count_albums" = "%d本の動画、%d個のアルバム";
+"album_video_count" = "%d本の動画";
+"edit_tags" = "タグを編集";
+"enter_tag_to_display" = "表示したいタグを入力";
+"tag_name_placeholder" = "#タグ名";
+"edit_title" = "タイトルを編集";
+"change_thumbnail" = "サムネイルを変更";
+"tap_to_add" = "タップで追加";
+"profile" = "プロフィール";
+"voice_actors" = "声優";
+"enter_voice_actors" = "声優情報を入力";
+"characters" = "出演キャラ";
+"enter_characters" = "キャラクター情報を入力";
+"watch_link" = "視聴リンク";
+"not_set" = "未設定";
+"description" = "概要";
+"enter_description" = "概要を入力してください...";
+"description_not_set" = "概要が未設定です";
+"soundtrack" = "サントラ";
+"soundtrack_not_set" = "サントラが未設定です";
+"select_icon" = "アイコンを選択";
+"select_image" = "画像を選択";
+"character_name" = "キャラクター名";
+"select_icon_image" = "アイコン画像を選択";
+"add_anime" = "アニメ追加";
+"anime_info_edit" = "アニメ情報を編集";
+"background_image" = "背景画像";
+"delete_background_image" = "背景画像を削除";
+"select_background_image" = "背景画像を選択";
+"watch_status" = "視聴ステータス";
+"genre" = "ジャンル";
+"select_status" = "ステータスを選択（複数選択可）";
+"select_genre" = "ジャンルを選択（複数選択可）";
+"edit_item_selection" = "編集項目選択";
+"select_edit_item_title" = "編集項目を選択";
+"edit_profile" = "プロフィールを編集";
+"edit_description" = "概要を編集";
+"add_soundtrack" = "サントラ追加";
+"adjust_icon_position" = "アイコン位置調整";
+"icon_scale" = "大きさ";
+"icon_horizontal_position" = "横位置";
+"icon_vertical_position" = "縦位置";
+"reset" = "リセット";
+
+/* Anime Screen */
+"register_favorite_anime" = "お気に入りのアニメを登録";
+"manage_viewing_status" = "視聴状況を管理して見逃しを防ぐ";
+"add_anime_button" = "アニメ追加";
+
+/* Anime Status */
+"watching_status" = "視聴中";
+"this_term_status" = "今期";
+"will_watch_status" = "視聴予定";
+"watch_again_status" = "再視聴";
+
+/* Anime Genres */
+"serious" = "シリアス";
+"romcom" = "ラブコメ";
+"sports" = "スポーツ";
+"comedy" = "コメディ";
+"isekai" = "異世界";
+"art" = "アート";
+"brain" = "頭脳";
+"healing" = "癒し";
+
+/* Soundtrack Modal */
+"music_file" = "音楽ファイル";
+"artist_optional" = "アーティスト (任意)";
+"select_mp3_file" = "MP3ファイルを選択";
+"select_another_file" = "別のファイルを選択";
+"views_ago" = "%@回・%@";
+"years_ago" = "%d年前";
+"months_ago" = "%dヶ月前";
+"days_ago" = "%d日前";
+"hours_ago" = "%d時間前";
+"minutes_ago" = "%d分前";
+"just_now" = "たった今";
+"ten_thousand" = "%.1f万";
+"max_5_people" = "最大5人まで（カンマ区切り）";
+"max_5_characters" = "最大5人まで（カンマ区切り）";
+"tap_image_to_change" = "画像をタップして変更";
+"delete_anime_confirm" = "このアニメを削除してもよろしいですか？";
+"r18_images_removed" = "以下の画像は読み込めないため削除されました：\n%@\n\nR18作品のサムネイルは表示できないため、自動的に削除されます。";
+
+/* Video Page */
+"no_albums_yet" = "まだアルバムがありません";
+"create_album_from_videos" = "同じタグのビデオからアルバムを作成できます";
+"create_album" = "アルバムを作成";
+"create_album_instruction" = "同じタグからアルバムを作れます";"no_videos_yet" = "まだビデオがありません";
+"add_video_instruction" = "右上の追加ボタンからビデオを追加できます";
+"add_video" = "ビデオを追加";
+"video_add_video" = "動画を追加する";"video_add_album" = "アルバムを追加する";"videos_count" = "%d個の動画";
+"video_album_count" = "%d本の動画・アルバム数%d";"videos_individual_count" = "%d個の動画";"videos_count_format" = "%d件の動画";"album_count" = "%d本の動画・アルバム数%d";
+"show_more" = "さらに表示";
+"show_less" = "折りたたむ";
+"back" = "戻る";
+"add_album" = "アルバムを追加する";
+"delete_video_confirm_title" = "動画を削除しますか？";
+"delete_video_confirm_message" = "この動画は完全に削除されます。";
+"delete_album_confirm_title" = "アルバムを削除しますか？";
+"delete_album_confirm_message" = "このアルバムは完全に削除されます。";
+"youtube_download_error" = "YouTubeダウンロードエラー";
+"create_album_from_tags" = "同じタグからアルバムを作れます";
+"downloading_youtube_video" = "YouTube動画をダウンロード中…";
+"open_in_youtube" = "YouTubeで開く";
+"video_title_label" = "タイトル: %@";
+
+/* Video Upload */
+"youtube_url" = "YouTube URL";
+"select_upload_method" = "アップロード方法を選択";
+"add_from_youtube_url" = "YouTube URLから追加";
+"youtube_url_description" = "YouTube動画のURLを入力して\n動画情報を取得します";
+"manual_upload" = "手動でアップロード";
+"manual_upload_description" = "デバイスから動画を選択して\n手動で情報を入力します";
+"youtube_login_note" = "(YouTubeにSafariでログインしてないとサムネイル取得できません)";
+"enter_url_placeholder" = "URLを入力してください";
+"video_title" = "動画タイトル";
+"thumbnail_image" = "サムネイル画像";
+"select_thumbnail" = "サムネイルを選択";
+"change_thumbnail" = "サムネイルを変更";
+"youtube_thumbnail_note" = "※ YouTubeのサムネイルが取得できない場合は、こちらからアップロードしてください";
+"getting_youtube_info" = "YouTube情報を取得中...";
+"select_video" = "動画を選択";
+"enter_title" = "タイトルを入力";
+"enter_tags" = "タグを入力";
+"add_youtube_video" = "YouTube動画を追加";
+"converting_video" = "動画を変換中...";
+"video_resize_failed" = "動画のリサイズ保存に失敗しました";
+
+/* Profile/About Page */
+"user" = "ユーザー";
+"photos" = "写真";
+"videos" = "動画";
+"settings" = "設定";
+"help" = "ヘルプ";
+"contact" = "お問い合わせ";
+"logout" = "ログアウト";
+"notifications" = "通知";
+"push_notifications" = "プッシュ通知";
+"new_alerts" = "新着アラート";
+"data" = "データ";
+"auto_save" = "自動保存";
+"cloud_sync" = "クラウド同期";
+"display" = "表示";
+"dark_mode" = "ダークモード";
+"purchase_info" = "購入情報";
+"app_info" = "アプリ情報";
+"version" = "バージョン";
+"no_purchase_history" = "購入履歴がありません";
+"purchase_history_description" = "ポイントやプランを購入すると\nこちらに履歴が表示されます";
+"purchase_receipt" = "購入明細書";
+"thank_you" = "ありがとうございました";
+"purchase_date" = "購入日時";
+"product_name" = "商品名";
+"price_label" = "価格";
+"earned_points" = "獲得ポイント";
+"electronic_receipt_note" = "この明細書は電子レシートです";
+"receipt" = "明細書";
+"important_logout_notice" = "重要：ログアウト前に確認";
+"save_info_below" = "以下の情報を必ず保存してください";
+"cannot_recover_without_info" = "これらの情報がないと、アカウントの復元ができません";
+"user_id_not_found" = "IDが見つかりません";
+"username_not_set" = "未設定";
+"copied" = "コピー済み";
+"copy" = "コピー";
+"take_screenshot_or_memo" = "スクリーンショットを撮るか、メモに保存してください";
+"cannot_access_after_logout" = "ログアウト後はこれらの情報がないとアカウントにアクセスできません";
+
+/* Points */
+"points" = "ポイント";
+"point_purchase" = "ポイント購入";
+"purchase_points_description" = "ポイントはプランの公開や購入に使用できます。";
+"processing" = "処理中...";
+"purchase_complete" = "購入完了";
+"points_purchased" = "%dポイントを購入しました！";
+"purchase" = "購入する";
+"points_purchase_description" = "%@購入";
+"premium_upgrade_lifetime" = "プレミアムアップグレード（永続ライセンス）";
+"anireco_point_purchase" = "ANICOLLEポイント購入";
+
+/* Profile */
+"about" = "アバウト";
+"profile" = "プロフィール";
+"name" = "名前";
+"tag" = "タグ";
+"age" = "年齢";
+"favorite_food" = "好きな食べ物";
+"voice_actor" = "声優";
+"cup_size" = "カップサイズ";
+"profile_edit" = "プロフィール編集";
+"purchase_history" = "購入履歴";
+"current_points" = "現在のポイント";
+"how_to_use_points" = "ポイントの使い方";
+"plan_creation" = "プラン作成";
+"50_points" = "50ポイント";
+"create_original_travel_plan" = "オリジナルの旅行プランを作成";
+"plan_purchase" = "プラン購入";
+"set_price" = "設定価格";
+"purchase_other_users_plans" = "他のユーザーのプランを購入";
+"transaction_history" = "取引履歴";
+"user_id_not_set" = "ユーザーID: 未設定";
+"user_id_format" = "ユーザーID: %@";
+"login_required" = "ログインが必要です";
+"user_id_not_found" = "ユーザーIDが見つかりません";
+"points_fetch_failed" = "ポイント情報の取得に失敗しました: %@";
+"logout" = "ログアウト";
+"settings" = "設定";
+"help" = "ヘルプ";
+"contact" = "お問い合わせ";
+"photos" = "写真";
+"videos" = "動画";
+"notifications" = "通知";
+"push_notifications" = "プッシュ通知";
+"new_alerts" = "新着アラート";
+"data" = "データ";
+"auto_save" = "自動保存";
+"cloud_sync" = "クラウド同期";
+"display" = "表示";
+"dark_mode" = "ダークモード";
+"purchase_info" = "購入情報";
+"app_info" = "アプリ情報";
+"version" = "バージョン";
+"no_purchase_history" = "購入履歴がありません";
+"purchase_history_description" = "ポイントやプランを購入すると\nこちらに履歴が表示されます";
+"purchase_receipt" = "購入明細書";
+"thank_you" = "ありがとうございました";
+"purchase_date" = "購入日時";
+"product_name" = "商品名";
+"price_label" = "価格";
+"earned_points" = "獲得ポイント";
+"electronic_receipt_note" = "この明細書は電子レシートです";
+"receipt" = "明細書";
+"receipt_details" = "明細書詳細";
+"transaction_type" = "取引種別";
+"payment_method" = "支払い方法";
+"amount" = "金額";
+"status" = "ステータス";
+"rating" = "評価";
+"date" = "日付";
+"receipt_number" = "明細書番号";
+
+/* Errors */
+"error_product_not_found" = "商品が見つかりません";
+"error_purchase_failed" = "購入に失敗しました";
+"error_network" = "ネットワークエラー";
+"error_budget_required" = "予算を入力してください";
+
+/* Schedule */
+"schedule_empty" = "スケジュールが登録されていません";
+"schedule_add" = "スケジュールを追加";
+"schedule_add_title" = "スケジュール追加";
+"anime_select" = "アニメを選択";
+
+/* Plan Publishing */
+"plan_publish" = "プランを公開";
+"plan_publish_fee" = "プラン公開料金";
+"plan_publish_fee_description" = "プランを公開するには5,000ポイントが必要です";
+"publication_fee" = "公開料金:";
+"points_5000" = "5,000ポイント";
+"current_points" = "現在のポイント:";
+"points_format" = "%dポイント";
+"points_insufficient" = "ポイントが不足しています。あと%dポイント必要です。";
+"plan_info" = "プラン情報";
+"title" = "タイトル";
+"hashtag" = "ハッシュタグ";
+"comma_separator" = "、";
+"same_tag_albums" = "同じ#でシリーズごとに分けることができます";
+"plan_description" = "プランの説明";
+"plan_description_placeholder" = "このプランの魅力を説明してください";
+"sales_price" = "販売価格";
+"yen" = "円";
+"free_plan_note" = "※ 0円に設定すると無料プランになります";
+"budget" = "予算";
+"budget_note" = "※ このプランにかかる大体の予算を入力してください（必須）";
+"notes" = "注意事項";
+"note_no_edit_after_publish" = "• 公開後はプランの編集・削除はできません";
+"note_receive_sales_price" = "• 他のユーザーがプランを購入した際、販売価格を受け取ることができます";
+"note_inappropriate_content" = "• 不適切なコンテンツは削除される場合があります";
+"publish_with_5000_points" = "5,000ポイントで公開";
+"purchase_points" = "ポイントを購入";
+
+/* Artwork Page */
+"add_photo" = "写真を追加";
+"no_artworks_yet" = "まだアートワークがありません";
+"add_artwork_instruction" = "右上の追加ボタンからアートワークを追加できます";
+"add_artwork" = "アートワークを追加";
+"no_albums_yet" = "まだアルバムがありません";
+"create_album_from_artworks" = "同じタグのアートワークからアルバムを作成できます";
+"create_album" = "アルバム作成";
+"create_album_instruction" = "同じタグからアルバムを作れます";
+/* Album & Video */
+"no_albums_yet" = "まだアルバムがありません";
+"create_album_from_videos" = "同じタグのビデオからアルバムを作成できます";
+"create_album" = "アルバムを作成";
+"create_album_instruction" = "同じタグからアルバムを作れます";"no_tags" = "タグなし";
+"video_count" = "%d件";
+"no_videos_yet" = "まだビデオがありません";
+"add_video_instruction" = "右上の追加ボタンからビデオを追加できます";
+"add_video" = "ビデオを追加";
+"video_add_video" = "動画を追加する";"video_add_album" = "アルバムを追加する";"edit_title" = "タイトルを編集";
+"edit_tags" = "タグを編集";
+"change_thumbnail" = "サムネイルを変更";
+
+/* Photo Upload */
+"upload_method_select" = "アップロード方法を選択";
+"add_from_pixiv_url" = "Pixiv URLから追加";
+"pixiv_url_description" = "Pixiv作品のURLを入力して\n自動で情報を取得します";
+"manual_upload" = "手動でアップロード";
+"manual_upload_description" = "デバイスから画像を選択して\n手動で情報を入力します";
+"add_photo" = "写真を追加";
+"enter_url" = "URLを入力してください";
+"artwork_title" = "作品タイトル";
+"tags_comma_separated" = "タグ（カンマ区切り）";
+"tags_placeholder" = "タグ1,タグ2,タグ3";
+"select_image" = "画像を選択";
+"enter_title" = "タイトルを入力";
+"enter_tags" = "タグを入力";
+"add_pixiv_artwork" = "Pixiv作品を追加";
+"back" = "戻る";
+
+/* Advertisement */
+"advertisement" = "広告";
+
+/* Pixiv */
+"open_in_pixiv_question" = "Pixivで開きますか？";
+"pixiv_artwork" = "Pixiv作品";
+"open_in_pixiv" = "Pixivで開く";
+
+/* Login */
+"username" = "ユーザー名";
+"enter_username" = "ユーザー名を入力";
+"user_id" = "ユーザーID";
+"enter_user_id" = "ユーザーIDを入力";
+"your_user_id_save" = "あなたのユーザーID（必ず保存してください）";
+"copied" = "コピーしました";
+"user_id_copied" = "ユーザーIDをクリップボードにコピーしました";
+"register" = "登録する";
+"login" = "ログイン";
+"login_with_existing" = "既存のアカウントでログイン";
+"create_new_account" = "新規アカウントを作成";
+"registration_complete" = "登録完了";
+"login_failed" = "ログイン失敗";
+"invalid_credentials" = "ユーザー名またはユーザーIDが正しくありません";
+"registration_bonus" = "新規登録ボーナス";
+"registration_complete_with_bonus" = "ユーザーIDを必ず保存してください：\n\n%@\n\n🎉 新規登録ボーナスとして50ポイントが付与されました！\n\nこのIDは次回ログイン時に必要です。";
+"registration_complete_message" = "ユーザーIDを必ず保存してください：\n\n%@\n\nこのIDは次回ログイン時に必要です。";
+"registration_error" = "登録エラー";
+"username_can_be_changed_later" = "※ユーザー名は後から変更できます";
+"already_have_account" = "すでにアカウントをお持ちの方はこちら";
+
+/* Home Screen */
+"date_format_long" = "yyyy年M月d日";
+"date_format_month" = "M月";
+"date_format_year_month" = "yyyy年M月";
+"date_format_day_weekday" = "M月d日(E)";
+"weekday_sun" = "日";
+"weekday_mon" = "月";
+"weekday_tue" = "火";
+"weekday_wed" = "水";
+"weekday_thu" = "木";
+"weekday_fri" = "金";
+"weekday_sat" = "土";
+"no_characters_registered" = "キャラクターが登録されていません";
+"no_anime_registered" = "アニメが登録されていません";
+"default_username" = "ANICOLLE";
+"set_anime_quote" = "好きなアニメのセリフを設定";
+"set_birthday" = "誕生日を設定";
+"favorite_anime_quote" = "好きなアニメのセリフ";
+"select_birthday" = "誕生日を選択";
+"username" = "ユーザー名";
+"episode_format" = "第%d話";
+"anime" = "アニメ";
+"select_anime" = "アニメを選択";
+"details_optional" = "詳細（任意）";
+"episode_number" = "話数";
+"episode_example" = "例: 12";
+"memo" = "メモ";
+"add_viewing_schedule" = "視聴予定を追加";
+"add" = "追加";
+"search_anime" = "アニメを検索";
+"select_anime_title" = "アニメを選択";
+"viewing_date" = "視聴予定日";
+"episode_number_optional" = "エピソード番号（オプション）";
+"memo_optional" = "メモ（オプション）";
+"memo_example" = "例: 友達と一緒に見る";
+"add_watch_schedule" = "視聴予定を追加";
+"watch_schedule_date" = "視聴予定日";
+"example_12" = "例: 12";
+"example_watch_with_friends" = "例: 友達と一緒に見る";
+"change_profile_image" = "プロフィール画像を変更";
+"enter_name" = "名前を入力";
+"birthday" = "誕生日";
+"set_birthday" = "誕生日を設定";
+"favorite_anime_quote" = "好きなアニメのセリフ";
+"enter_anime_quote" = "アニメのセリフを入力";
+"user_id_label" = "ユーザーID:";
+"select_birthday" = "誕生日を選択";
+"id_not_found" = "IDが見つかりません";
+"not_set" = "未設定";
+"important_confirm_before_logout" = "重要：ログアウト前に確認";
+"save_following_info" = "以下の情報を必ず保存してください";
+"cannot_restore_without_info" = "これらの情報がないと、アカウントの復元ができません";
+"copy" = "コピー";
+"take_screenshot_or_save" = "スクリーンショットを撮るか、メモに保存してください";
+"cannot_access_after_logout" = "ログアウト後はこれらの情報がないとアカウントにアクセスできません";
+
+/* Visit */
+"loading_plans" = "プランを読み込み中...";
+"visit_tab_all" = "オール";
+"visit_tab_original" = "オリジナル";
+"visit_tab_purchased" = "購入済み";
+"delete_plan_confirm_title" = "プランを削除しますか？";
+"delete_plan_confirm_message" = "「%@」を削除します。この操作は取り消せません。";
+"draft" = "下書き";
+"purchased" = "購入済み";
+"original" = "オリジナル";
+"free" = "無料";
+"spots_count" = "%dスポット";
+"no_purchased_plans" = "購入したプランがありません";
+"create_original_plan" = "オリジナルの旅行プランを作ろう";
+"no_plans_yet" = "まだプランがありません";
+"create_anime_pilgrimage_plan" = "アニメの聖地を巡る、あなただけの旅行プランを作成しましょう";
+"add_original_plan" = "オリジナルプランを追加";
+"purchase_favorite_plan_message" = "お気に入りのプランを購入して\nアニメの世界を体験しよう";
+"purchase_plan" = "プランを購入する";
+"search_by_title_or_anime" = "タイトルもしくはアニメから検索";
+"loading_draft_plans" = "下書きプランを読み込み中...";
+"customize" = "カスタマイズ";
+"days_unit" = "日間";
+"start_time" = "開始時刻";
+"trip_days" = "旅行日数";
+"days_format" = "%d日";
+"day_range_instruction" = "1〜30日間で設定できます";
+"delivery_days_format" = "%d日で配達";
+"plan_title" = "プラン名";
+"plan_title_placeholder" = "例：京都聖地巡礼";
+"anime_name" = "アニメ名";
+"anime_name_placeholder" = "例：響け！ユーフォニアム";
+"required" = "必須";
+"timeline" = "タイムライン";
+"day_format" = "第%d日目";
+"add_spots_to_create_itinerary" = "スポットを追加して旅程を作成";
+"overview" = "概要";
+"review_itinerary" = "旅程を確認";
+"save_draft" = "下書き保存";
+"finalize_plan" = "プランを確定";
+"how_long_does_it_take" = "所要時間はどのくらいですか？";
+"minutes" = "分";
+"which_route_optional" = "どのルートを使いますか？（任意）";
+"stay_duration_format" = "滞在時間: %d分";
+"spot_name" = "スポット名";
+"stay_time_period" = "滞在時間帯";
+"time_separator" = "〜";
+"spot_spending" = "このスポットでいくら使いますか？";
+"tap_to_select_thumbnail" = "タップしてサムネイルを選択";
+"spot_images" = "スポット画像";
+"detail_images_main" = "詳細画像（メイン画像）";
+
+/* Visit Game Screen */
+"start_time_format" = "開始時刻: %@";
+"day_spots_completed" = "Day %dのスポットを\nすべて巡りました！";
+"all_schedule_completed" = "すべての日程が完了しました\nお疲れ様でした";
+"days_count" = "%d日間";
+"spots_count_game" = "%dスポット";
+"all_completed" = "すべて完了しました！";
+"great_job" = "お疲れ様でした";
+"save_trip" = "旅をセーブ";
+"minutes_format" = "%d分";
+"train" = "電車";
+"bus" = "バス";
+"walking" = "徒歩";
+"taxi" = "タクシー";
+"car" = "車";
+"bicycle" = "自転車";
+"add_transportation" = "交通手段を追加";
+"stay_duration" = "滞在時間帯";
+"what_to_do_here" = "ここで何をするのか";
+"stay_time" = "滞在時間";
+"address" = "住所";
+"cost" = "費用";
+"memo" = "メモ";
+"detail_images" = "詳細画像";
+"open_in_map" = "地図で開く";
+"image_load_failed" = "画像を読み込めませんでした";
+"image" = "画像";
+"basic_info" = "基本情報";
+"activity" = "アクティビティ";
+"details" = "詳細";
+"stay_duration_stepper" = "滞在時間: %d分";
+"cost_label" = "費用";
+"yen" = "円";
+"images" = "画像";
+"select_image" = "画像を選択";
+"add_spot" = "スポットを追加";
+"transportation_method" = "交通手段";
+"movement_method" = "移動方法";
+"travel_time_stepper" = "移動時間: %d分";
+"transportation_cost" = "交通費";
+"route_info_placeholder" = "経路情報（例：JR山手線→東西線）";
+"transportation" = "交通手段";
+"congratulations" = "🎉 お疲れ様でした！";
+"anime_label" = "アニメ：%@";
+"complete" = "完了";
+"streaming_not_configured" = "ストリーミングサービスが設定されていません";
+"admin_setup_required" = "管理者による設定が必要です";
+"watch_anime" = "アニメを観る";
+"tap_to_watch" = "タップして視聴";
+
+/* Currency */
+"pounds" = "ポンド";
+"dollars" = "ドル";
+"euros" = "ユーロ";
+"yen" = "円";
+"create" = "作成";
+
+/* Points Purchase Modal */
+"purchase_points" = "ポイント購入";
+"loading_products" = "商品を読み込み中...";
+"failed_to_load_products" = "商品の読み込みに失敗しました";
+"reload" = "再読み込み";
+"select_points_package" = "ポイントパッケージを選択";
+"points_usage_description" = "ポイントはプランの公開と購入に使用できます。";
+"total" = "合計:";
+"points_purchased_success" = "%dポイントを購入しました！";
+"points_format" = "%dポイント";
+"popular" = "人気";
+"price_per_point" = "1ポイント = %@";
+
+/* Page Names */
+"home_page" = "ホームページ";
+"character_page" = "キャラページ";
+"product_page" = "プロダクトページ";
+
+/* Product Search and Management */
+"search_by_anime_or_character" = "アニメやキャラクターで検索";
+"register_wishlist_items" = "欲しい商品を登録";
+"register_favorite_character_anime_products" = "好きなキャラクターやアニメの\n商品を登録・管理";
+"add_product_button" = "商品を追加";
+"add_product" = "商品を追加";
+"add_first_product" = "最初の商品を追加";
+"add_new_product" = "新規商品を追加";
+"add_products_instruction" = "右上の「商品を追加」ボタンから追加";
+
+/* Product Modal UI */
+"add_new_character_anime" = "新しいキャラクター・アニメを追加";
+"specify_product_owner" = "この商品の所有者を指定してください";
+"product_count_format" = "%d個の商品";
+"add_site_name" = "サイト名を追加";
+"delivery_tomorrow" = "明日配送可能";
+"tap_to_add_memo" = "タップしてメモを追加";
+"view_product" = "商品を見る";
+"or_text" = "または";
+"select_existing_character_anime" = "既存のキャラクター・アニメを選択";
+"select_banner_image" = "バナー画像を選択";
+"change_banner_image" = "バナー画像を変更";
+"first_product_required" = "最初の商品（必須）";
+"link_optional" = "リンク（任意）";
+"memo_label" = "メモ:";
+"enter_memo" = "メモを入力";
+"product_image" = "商品画像";
+"basic_info_section" = "基本情報";
+"purchase_link" = "購入リンク";
+
+/* Character and Category */
+"new_character_format" = "新規%@";
+"category_info_section" = "カテゴリー情報";
+"name_label" = "名前";
+
+/* Character Screen */
+"add_character" = "キャラ追加";
+"add_favorite_character" = "お気に入りのキャラクターを追加";
+"manage_character_info" = "お気に入りのキャラクター情報を管理していつでも確認";
+"add_character_button" = "キャラ追加";
+
+/* Order Menu */
+"character_order_menu" = "キャラクター順序変更";
+"anime_order_menu" = "アニメ順序変更";
+"character_order_title" = "キャラクター順序変更";
+"anime_order_title" = "アニメ順序変更";

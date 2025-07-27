@@ -14,6 +14,7 @@ struct VideoPlayerScreen: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var searchText = ""
     @State private var filteredVideos: [MemoryVideo] = []
+    @State private var showSearchBar = false
     
     init(video: MemoryVideo, character: Character?, anime: Anime?, allVideos: [MemoryVideo], onSave: ((String, [String]) -> Void)? = nil, onDelete: (() -> Void)? = nil, onThumbnailUpdate: ((Data?) -> Void)? = nil) {
         self._video = State(initialValue: video)
@@ -78,8 +79,6 @@ struct VideoPlayerScreen: View {
         .navigationBarHidden(true)
         .onAppear {
             filteredVideos = allVideos
-            print("VideoPlayerScreen onAppear - video path: \(video.videoPath)")
-            print("VideoPlayerScreen onAppear - youtube URL: \(video.youtubeURL ?? "nil")")
             setupPlayer()
             editTitle = video.title
             editTags = video.tags.joined(separator: ",")
@@ -87,13 +86,9 @@ struct VideoPlayerScreen: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let player = self.player {
                     player.play()
-                    print("動画を再生開始しました - rate: \(player.rate)")
-                    print("プレイヤーステータス: \(player.status.rawValue)")
                     if let currentItem = player.currentItem {
-                        print("現在のアイテムステータス: \(currentItem.status.rawValue)")
                     }
                 } else {
-                    print("プレイヤーがnilのため再生できません")
                 }
             }
             isPlaying = true
@@ -159,9 +154,45 @@ struct VideoPlayerScreen: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
                     // ヘッダー
-                    PlayerHeaderView(searchText: $searchText, onSearch: {
-                        filterVideos()
-                    })
+                    HStack(spacing: 12) {
+                        // ログインロゴ（左端に配置）
+                        if let logoImage = UIImage(named: "ログインロゴ") {
+                            Image(uiImage: logoImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 50)
+                        }
+                        
+                        Spacer()
+                        
+                        // 検索バー（表示時）
+                        if showSearchBar {
+                            TextField(NSLocalizedString("search", comment: "Search"), text: $searchText, onCommit: {
+                                filterVideos()
+                            })
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
+                            .frame(maxWidth: 200)
+                        }
+                        
+                        // 虫眼鏡アイコン
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showSearchBar.toggle()
+                                if !showSearchBar {
+                                    searchText = ""
+                                    filterVideos()
+                                }
+                            }
+                        }) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.white)
+                                .font(.system(size: 20))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.black)
                     
                     ScrollView {
                         VStack(spacing: 0) {
@@ -171,18 +202,13 @@ struct VideoPlayerScreen: View {
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                                 .background(Color.black)
                                 .onAppear {
-                                    print("VideoPlayer表示されました")
-                                    print("Player: \(player)")
-                                    print("CurrentItem: \(String(describing: player.currentItem))")
-                                    print("Rate: \(player.rate)")
-                                    print("Status: \(player.status.rawValue)")
                                 }
                         } else {
                             Rectangle()
                                 .fill(Color.black)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                                 .overlay(
-                                    Text("プレイヤーを初期化中...")
+                                    Text(NSLocalizedString("initializing_player", comment: "Initializing player..."))
                                         .foregroundColor(.white)
                                 )
                         }
@@ -201,7 +227,7 @@ struct VideoPlayerScreen: View {
                             
                             // 関連動画
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("関連動画")
+                                Text(NSLocalizedString("related_videos", comment: "Related videos"))
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 16)
@@ -220,25 +246,25 @@ struct VideoPlayerScreen: View {
                                                     Image(uiImage: uiImage)
                                                         .resizable()
                                                         .scaledToFill()
-                                                        .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                         .clipped()
                                                 } else if let youtubeThumbnailURL = relatedVideo.youtubeThumbnailURL {
                                                     AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
                                                         image
                                                             .resizable()
                                                             .scaledToFill()
-                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                             .clipped()
                                                     } placeholder: {
                                                         Rectangle()
                                                             .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                             .overlay(ProgressView())
                                                     }
                                                 } else {
                                                     Rectangle()
                                                         .fill(Color.gray.opacity(0.3))
-                                                        .frame(width: UIScreen.main.bounds.width, height: 200)
+                                                        .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                 }
                                                 
                                                 // アイコンとタイトル・タグ
@@ -270,11 +296,11 @@ struct VideoPlayerScreen: View {
                                                             .foregroundColor(.black)
                                                             .lineLimit(2)
                                                         
-                                                        Text(character?.name ?? anime?.title ?? "アニメコレクター")
+                                                        Text(character?.name ?? anime?.title ?? NSLocalizedString("app_name", comment: "ANICOLLE"))
                                                             .font(.system(size: 12))
                                                             .foregroundColor(.gray)
                                                         
-                                                        Text("\(formatViewCount(relatedVideo.viewCount ?? 0))回・\(timeAgo(from: relatedVideo.date))")
+                                                        Text(String(format: NSLocalizedString("view_count_time_ago", comment: "%@ views • %@"), formatViewCount(relatedVideo.viewCount ?? 0), timeAgo(from: relatedVideo.date)))
                                                             .font(.system(size: 12))
                                                             .foregroundColor(.gray)
                                                     }
@@ -302,7 +328,7 @@ struct VideoPlayerScreen: View {
                         Button(action: {
                             presentationMode.wrappedValue.dismiss()
                         }) {
-                            Text("戻る")
+                            Text(NSLocalizedString("back", comment: "Back"))
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
@@ -325,13 +351,13 @@ struct VideoPlayerScreen: View {
     @ViewBuilder
     private var menuSheet: some View {
         VStack(spacing: 24) {
-            Text("動画の編集")
+            Text(NSLocalizedString("edit_video", comment: "Edit video"))
                 .font(.headline)
-            TextField("タイトル", text: $editTitle)
+            TextField(NSLocalizedString("title", comment: "Title"), text: $editTitle)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-            TextField("タグ（カンマ区切り）", text: $editTags)
+            TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editTags)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-            Button("タイトル・タグを保存") {
+            Button(NSLocalizedString("save_title_tags", comment: "Save title and tags")) {
                 let tagsArray = editTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
                 // ローカルのvideoも更新
                 video.title = editTitle
@@ -344,7 +370,7 @@ struct VideoPlayerScreen: View {
             .background(Color.blue)
             .foregroundColor(.white)
             .cornerRadius(10)
-            Button("サムネイルを変更") {
+            Button(NSLocalizedString("change_thumbnail", comment: "Change thumbnail")) {
                 showMenuSheet = false
                 // 少し遅延させてからサムネイルピッカーを表示
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -356,31 +382,25 @@ struct VideoPlayerScreen: View {
             .background(Color.green)
             .foregroundColor(.white)
             .cornerRadius(10)
-            Button("動画を削除") {
-                print("[DEBUG] 動画を削除ボタンが押されました")
+            Button(NSLocalizedString("delete_video", comment: "Delete video")) {
                 showDeleteAlert = true
             }
             .foregroundColor(.red)
-            Button("キャンセル") {
+            Button(NSLocalizedString("cancel", comment: "Cancel")) {
                 showMenuSheet = false
             }
         }
         .padding(32)
         .alert(isPresented: $showDeleteAlert) {
             Alert(
-                title: Text("本当に削除しますか？"),
-                message: Text("この動画は完全に削除されます。"),
-                primaryButton: .destructive(Text("削除")) {
-                    print("[DEBUG] VideoPlayerScreen: Alertの削除ボタンが押されました")
-                    print("[DEBUG] VideoPlayerScreen: onDeleteクロージャを呼び出します")
+                title: Text(NSLocalizedString("really_delete", comment: "Really delete?")),
+                message: Text(NSLocalizedString("delete_video_confirm_message", comment: "This video will be permanently deleted.")),
+                primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                     onDelete?()
-                    print("[DEBUG] VideoPlayerScreen: onDeleteクロージャ呼び出し完了")
                     showMenuSheet = false
-                    print("[DEBUG] VideoPlayerScreen: showMenuSheet = \(showMenuSheet)")
                     presentationMode.wrappedValue.dismiss()
-                    print("[DEBUG] VideoPlayerScreen: presentationModeで画面を閉じました")
                 },
-                secondaryButton: .cancel(Text("キャンセル"))
+                secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
             )
         }
     }
@@ -405,48 +425,40 @@ extension VideoPlayerScreen {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: "%d years ago"), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: "%d months ago"), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: "%d days ago"), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: "%d hours ago"), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: "%d minutes ago"), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "Just now")
         }
     }
     
     func setupPlayer() {
         // YouTube動画の場合はプレイヤーを設定しない
-        if video.youtubeURL != nil && !video.youtubeURL!.isEmpty {
+        if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
             return
         }
         
         guard let videoURL = loadVideoURLFromPath(video.videoPath) else {
-            print("動画ファイルが見つかりません: \(video.videoPath)")
             return
         }
         
-        print("動画URLを生成しました: \(videoURL)")
-        print("動画パス: \(videoURL.path)")
-        print("動画URLの存在確認: \(FileManager.default.fileExists(atPath: videoURL.path))")
         
         // ファイルが存在しない場合、追加のチェック
         if !FileManager.default.fileExists(atPath: videoURL.path) {
-            print("警告: ファイルが存在しません。パスを確認してください。")
             // ドキュメントディレクトリの内容を確認
             if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
                 do {
                     let contents = try FileManager.default.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
-                    print("ドキュメントディレクトリの内容:")
                     for url in contents {
-                        print("  - \(url.lastPathComponent)")
                     }
                 } catch {
-                    print("ディレクトリ内容の取得エラー: \(error)")
                 }
             }
         }
@@ -455,9 +467,7 @@ extension VideoPlayerScreen {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
             try AVAudioSession.sharedInstance().setActive(true)
-            print("AVAudioSessionを設定しました")
         } catch {
-            print("AVAudioSessionの設定に失敗: \(error)")
         }
         
         // AVPlayerItemを作成
@@ -465,17 +475,13 @@ extension VideoPlayerScreen {
         
         // 新しいプレイヤーを作成
         let newPlayer = AVPlayer(playerItem: playerItem)
-        print("AVPlayerを作成しました")
         
         // メインスレッドでプレイヤーを設定
         DispatchQueue.main.async {
             self.player = newPlayer
-            print("プレイヤーを設定しました")
             
             // プレイヤーの準備状態を確認
-            print("現在のアイテムステータス: \(playerItem.status.rawValue)")
             if let error = playerItem.error {
-                print("プレイヤーアイテムエラー: \(error)")
             }
             
             // アセットのプロパティをロード
@@ -483,9 +489,7 @@ extension VideoPlayerScreen {
             Task {
                 do {
                     let isPlayable = try await asset.load(.isPlayable)
-                    print("動画は再生可能か: \(isPlayable)")
                 } catch {
-                    print("再生可能性の確認エラー: \(error)")
                 }
             }
         }
@@ -502,7 +506,6 @@ extension VideoPlayerScreen {
                     }
                 }
             } catch {
-                print("Failed to load video duration: \(error)")
             }
         }
         
@@ -513,14 +516,10 @@ extension VideoPlayerScreen {
     }
     
     func openYouTubeVideo(url: String) {
-        print("YouTube動画を開こうとしています: \(url)")
         if let youtubeURL = URL(string: url) {
-            print("URL変換成功: \(youtubeURL)")
             UIApplication.shared.open(youtubeURL) { success in
-                print("YouTube動画を開く結果: \(success)")
             }
         } else {
-            print("URL変換失敗: \(url)")
         }
     }
 
@@ -536,15 +535,12 @@ extension VideoPlayerScreen {
     }
     
     func handleVideoSelection(_ newVideo: MemoryVideo) {
-        print("動画が選択されました: \(newVideo.title)")
         
         // YouTubeの動画の場合は確認ページに移動
         if let youtubeURL = newVideo.youtubeURL, !youtubeURL.isEmpty {
-            print("YouTube動画です: \(youtubeURL)")
             // YouTube動画の確認ページを表示
             showYouTubeConfirmation(for: youtubeURL, title: newVideo.title)
         } else {
-            print("自分でアップロードした動画です: \(newVideo.videoPath)")
             // 自分でアップロードした動画の場合は動画プレイヤーを切り替え
             switchToVideo(newVideo)
         }
@@ -554,7 +550,6 @@ extension VideoPlayerScreen {
     }
     
     func showYouTubeConfirmation(for url: String, title: String) {
-        print("YouTube確認ダイアログを表示します: \(title)")
         if let youtubeVideo = allVideos.first(where: { $0.youtubeURL == url }) {
             activeSheet = .youtubeConfirmation(youtubeVideo)
         }
@@ -580,7 +575,6 @@ extension VideoPlayerScreen {
                         self.currentTime = 0
                     }
                 } catch {
-                    print("動画の長さの取得に失敗しました: \(error)")
                 }
             }
             
@@ -592,9 +586,7 @@ extension VideoPlayerScreen {
             editTitle = newVideo.title
             editTags = newVideo.tags.joined(separator: ",")
             
-            print("動画を切り替えました: \(newVideo.title)")
         } else {
-            print("動画ファイルの読み込みに失敗しました: \(newVideo.videoPath)")
         }
     }
     
@@ -646,7 +638,7 @@ extension VideoPlayerScreen {
                     HStack {
                         Image(systemName: "play.circle.fill")
                             .font(.title)
-                        Text("YouTubeで開く")
+                        Text(NSLocalizedString("open_in_youtube", comment: "Open in YouTube"))
                             .font(.headline)
                     }
                     .foregroundColor(.white)
@@ -660,7 +652,7 @@ extension VideoPlayerScreen {
                 Button(action: {
                     activeSheet = nil
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .foregroundColor(.gray)
                         .padding()
                 }
@@ -675,11 +667,11 @@ extension VideoPlayerScreen {
     @ViewBuilder
     func editTitleSheet() -> some View {
         VStack(spacing: 24) {
-            Text("タイトルを編集")
+            Text(NSLocalizedString("edit_title", comment: "Edit title"))
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タイトル", text: $editText)
+            TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)
@@ -703,7 +695,7 @@ extension VideoPlayerScreen {
                     onSave?(editText, tags)
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -727,11 +719,11 @@ extension VideoPlayerScreen {
     @ViewBuilder
     func editTagsSheet() -> some View {
         VStack(spacing: 24) {
-            Text("タグを編集")
+            Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                 .font(.headline)
                 .padding(.top, 24)
             
-            TextField("タグ（カンマ区切り）", text: $editText)
+            TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 24)
@@ -756,7 +748,7 @@ extension VideoPlayerScreen {
                     onSave?(title, tags)
                     activeSheet = nil
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.white)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -784,9 +776,10 @@ extension VideoPlayerScreen {
             return URL(fileURLWithPath: path)
         } else {
             // 相対パスの場合、ドキュメントディレクトリからの相対パスと仮定
-            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                return nil
+            }
             let fullURL = documentsDirectory.appendingPathComponent(path)
-            print("相対パスを絶対パスに変換: \(path) → \(fullURL.path)")
             return fullURL
         }
     }
@@ -838,10 +831,10 @@ private struct VideoInfoView: View {
                     .lineLimit(2)
                 
                 HStack(spacing: 4) {
-                    Text("\(formatViewCount(video.viewCount ?? 0))回視聴")
+                    Text(String(format: NSLocalizedString("views_count", comment: "%@ views"), formatViewCount(video.viewCount ?? 0)))
                     Text("・")
                     Text("\(timeAgo(from: video.date))")
-                    Text("...もっと見る")
+                    Text(NSLocalizedString("show_more", comment: "Show more"))
                         .foregroundColor(.gray)
                     Spacer()
                 }
@@ -881,7 +874,7 @@ private struct VideoInfoView: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
                     
-                    Text("総動画再生数 \(formatViewCount(totalViewCount))回")
+                    Text(String(format: NSLocalizedString("total_video_views", comment: "Total video views %@ times"), formatViewCount(totalViewCount)))
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                 }
@@ -889,14 +882,16 @@ private struct VideoInfoView: View {
                 Spacer()
                 
                 Button(action: showMenuSheet) {
-                    Text("編集")
+                    Text(NSLocalizedString("edit", comment: "Edit"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.black)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
                         .background(Color.gray.opacity(0.2))
-                        .cornerRadius(20)
+                        .cornerRadius(22)
                 }
+                .contentShape(Rectangle())
+                .buttonStyle(PlainButtonStyle())
                 
                 // Fullscreen button
                 Button(action: showFullscreen) {
@@ -914,7 +909,7 @@ private struct VideoInfoView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .onAppear {
-            likeCount = video.likeCount ?? Int.random(in: 50...500)
+            likeCount = Int.random(in: 50...500)
         }
     }
     
@@ -934,17 +929,17 @@ private struct VideoInfoView: View {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: "%d years ago"), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: "%d months ago"), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: "%d days ago"), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: "%d hours ago"), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: "%d minutes ago"), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "Just now")
         }
     }
     
@@ -982,7 +977,7 @@ private struct YouTubeVideoView: View {
                     HStack {
                         Image(systemName: "play.circle.fill")
                             .font(.title)
-                        Text("YouTubeで開く")
+                        Text(NSLocalizedString("open_in_youtube", comment: "Open in YouTube"))
                             .font(.headline)
                     }
                     .foregroundColor(.white)
@@ -994,7 +989,7 @@ private struct YouTubeVideoView: View {
                 }
                 
                 Button(action: dismiss) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .foregroundColor(.gray)
                         .padding()
                 }

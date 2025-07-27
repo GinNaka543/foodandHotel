@@ -16,7 +16,7 @@ struct PointsView: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 ZStack {
-                    Text("ポイント")
+                    Text(NSLocalizedString("points", comment: "Points"))
                         .font(.system(size: 24, weight: .bold))
                     
                     HStack {
@@ -32,7 +32,7 @@ struct PointsView: View {
                         Button(action: { showingPurchaseSheet = true }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "plus.circle.fill")
-                                Text("購入")
+                                Text(NSLocalizedString("purchase", comment: "Purchase"))
                             }
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
@@ -48,7 +48,7 @@ struct PointsView: View {
                 
                 if isLoading {
                     Spacer()
-                    ProgressView("読み込み中...")
+                    ProgressView(NSLocalizedString("loading", comment: "Loading"))
                     Spacer()
                 } else {
                     ScrollView {
@@ -59,7 +59,7 @@ struct PointsView: View {
                                     Image(systemName: "star.fill")
                                         .foregroundColor(.yellow)
                                         .font(.system(size: 24))
-                                    Text("現在のポイント")
+                                    Text(NSLocalizedString("current_points", comment: "Current points"))
                                         .font(.system(size: 18, weight: .semibold))
                                     Spacer()
                                 }
@@ -68,7 +68,7 @@ struct PointsView: View {
                                     Text("\(userPoints?.points ?? 0)")
                                         .font(.system(size: 36, weight: .bold))
                                         .foregroundColor(.purple)
-                                    Text("ポイント")
+                                    Text(NSLocalizedString("points", comment: "Points"))
                                         .font(.system(size: 18))
                                         .foregroundColor(.gray)
                                     Spacer()
@@ -90,12 +90,12 @@ struct PointsView: View {
                             
                             // ポイント使用ガイド
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("ポイントの使い方")
+                                Text(NSLocalizedString("how_to_use_points", comment: "How to use points"))
                                     .font(.system(size: 18, weight: .semibold))
                                 
                                 VStack(spacing: 8) {
-                                    PointUsageRow(icon: "map", title: "プラン作成", points: "50ポイント", description: "オリジナルの旅行プランを作成")
-                                    PointUsageRow(icon: "doc.text", title: "プラン購入", points: "設定価格", description: "他のユーザーのプランを購入")
+                                    PointUsageRow(icon: "map", title: NSLocalizedString("plan_creation", comment: "Plan creation"), points: NSLocalizedString("50_points", comment: "50 points"), description: NSLocalizedString("create_original_travel_plan", comment: "Create original travel plan"))
+                                    PointUsageRow(icon: "doc.text", title: NSLocalizedString("plan_purchase", comment: "Plan purchase"), points: NSLocalizedString("set_price", comment: "Set price"), description: NSLocalizedString("purchase_other_users_plans", comment: "Purchase other users' plans"))
                                 }
                             }
                             .padding(20)
@@ -105,7 +105,7 @@ struct PointsView: View {
                             // 取引履歴
                             if !pointTransactions.isEmpty {
                                 VStack(alignment: .leading, spacing: 16) {
-                                    Text("取引履歴")
+                                    Text(NSLocalizedString("transaction_history", comment: "Transaction history"))
                                         .font(.system(size: 18, weight: .semibold))
                                     
                                     LazyVStack(spacing: 8) {
@@ -134,11 +134,11 @@ struct PointsView: View {
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                         if userId.isEmpty {
-                            Text("ユーザーID: 未設定")
+                            Text(NSLocalizedString("user_id_not_set", comment: "User ID: Not set"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.red)
                         } else {
-                            Text("ユーザーID: \(userId)")
+                            Text(String(format: NSLocalizedString("user_id_format", comment: "User ID: %@"), userId))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -154,10 +154,9 @@ struct PointsView: View {
             // UserDefaultsからユーザーIDを取得
             if let storedUserId = UserDefaults.standard.string(forKey: "userId"), !storedUserId.isEmpty {
                 userId = storedUserId
-                print("✅ ポイントビュー: userId=\(userId)")
                 loadUserPoints()
             } else {
-                errorMessage = "ログインが必要です"
+                errorMessage = NSLocalizedString("login_required", comment: "Login required")
                 isLoading = false
             }
         }
@@ -172,7 +171,7 @@ struct PointsView: View {
     
     private func loadUserPoints() {
         guard !userId.isEmpty else {
-            errorMessage = "ユーザーIDが見つかりません"
+            errorMessage = NSLocalizedString("user_id_not_found", comment: "User ID not found")
             isLoading = false
             return
         }
@@ -185,7 +184,7 @@ struct PointsView: View {
             case .success(let points):
                 userPoints = points
             case .failure(let error):
-                errorMessage = "ポイント情報の取得に失敗しました: \(error.localizedDescription)"
+                errorMessage = String(format: NSLocalizedString("points_fetch_failed", comment: "Failed to fetch points: %@"), error.localizedDescription)
             }
         }
         
@@ -194,8 +193,8 @@ struct PointsView: View {
             switch result {
             case .success(let transactions):
                 pointTransactions = transactions.sorted { $0.createdAt > $1.createdAt }
-            case .failure(let error):
-                print("取引履歴の取得に失敗: \(error)")
+            case .failure(_):
+                break
             }
             isLoading = false
         }
@@ -252,7 +251,7 @@ struct TransactionRow: View {
                 Text(transaction.amount > 0 ? "+\(transaction.amount)" : "\(transaction.amount)")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(transaction.amount > 0 ? .green : .red)
-                Text("pt")
+                Text(NSLocalizedString("pt", comment: ""))
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
             }

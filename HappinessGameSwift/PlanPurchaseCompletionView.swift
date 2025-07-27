@@ -10,7 +10,7 @@ struct PlanPurchaseCompletionView: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Text("購入完了")
+                    Text(NSLocalizedString("purchase_complete", comment: "Purchase complete"))
                         .font(.system(size: 20, weight: .bold))
                     Spacer()
                     Button(action: onClose) {
@@ -33,10 +33,10 @@ struct PlanPurchaseCompletionView: View {
                     
                     // メッセージ
                     VStack(spacing: 16) {
-                        Text("購入完了！")
+                        Text(NSLocalizedString("purchase_complete_exclamation", comment: "Purchase complete!"))
                             .font(.system(size: 24, weight: .bold))
                         
-                        Text("プランを正常に購入しました")
+                        Text(NSLocalizedString("plan_purchased_successfully", comment: "Plan purchased successfully"))
                             .font(.system(size: 16))
                             .foregroundColor(.gray)
                         
@@ -67,7 +67,7 @@ struct PlanPurchaseCompletionView: View {
                                 .font(.system(size: 18, weight: .semibold))
                                 .foregroundColor(.blue)
                             
-                            Text("オリジナルタブに保存されました")
+                            Text(NSLocalizedString("saved_to_original_tab", comment: "Saved to Original tab"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -80,7 +80,7 @@ struct PlanPurchaseCompletionView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.green)
                                 .font(.system(size: 14))
-                            Text("\(plan.price)ポイントを消費しました")
+                            Text(String(format: NSLocalizedString("points_consumed", comment: "%d points consumed"), plan.price))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -89,7 +89,7 @@ struct PlanPurchaseCompletionView: View {
                             Image(systemName: "folder.fill")
                                 .foregroundColor(.blue)
                                 .font(.system(size: 14))
-                            Text("プランはオリジナルタブから確認できます")
+                            Text(NSLocalizedString("plan_available_in_original_tab", comment: "You can check the plan from the Original tab"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -98,7 +98,7 @@ struct PlanPurchaseCompletionView: View {
                             Image(systemName: "map.fill")
                                 .foregroundColor(.purple)
                                 .font(.system(size: 14))
-                            Text("購入したプランは何度でも利用できます")
+                            Text(NSLocalizedString("plan_can_use_multiple_times", comment: "Purchased plans can be used multiple times"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                         }
@@ -112,7 +112,7 @@ struct PlanPurchaseCompletionView: View {
                         Button(action: onViewPlan) {
                             HStack {
                                 Image(systemName: "map.fill")
-                                Text("プランを見る")
+                                Text(NSLocalizedString("view_plan", comment: "View plan"))
                             }
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
@@ -125,7 +125,7 @@ struct PlanPurchaseCompletionView: View {
                         }
                         
                         Button(action: onClose) {
-                            Text("閉じる")
+                            Text(NSLocalizedString("close", comment: "Close"))
                                 .font(.system(size: 17, weight: .medium))
                                 .foregroundColor(.gray)
                                 .frame(maxWidth: .infinity)

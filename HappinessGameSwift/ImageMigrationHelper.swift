@@ -24,10 +24,8 @@ class ImageMigrationHelper {
         
         // ファイルを新しい場所に移動
         if migrateImageFile(from: oldPath, fileName: fileName) {
-            print("画像移行成功: \(oldPath) → \(relativePath)")
             return relativePath
         } else {
-            print("画像移行失敗: \(oldPath)")
             // 移行失敗時は元のパスを返す（互換性のため）
             return oldPath
         }
@@ -76,7 +74,6 @@ class ImageMigrationHelper {
             }
             
         } catch {
-            print("ファイル移動エラー: \(error)")
         }
         
         return false
@@ -116,7 +113,6 @@ class ImageMigrationHelper {
         if needsUpdate {
             if let encodedData = try? JSONEncoder().encode(migratedCharacters) {
                 UserDefaults.standard.set(encodedData, forKey: "characters")
-                print("キャラクターデータの画像パスを移行しました")
             }
         }
     }
@@ -155,7 +151,6 @@ class ImageMigrationHelper {
         if needsUpdate {
             if let encodedData = try? JSONEncoder().encode(migratedAnimes) {
                 UserDefaults.standard.set(encodedData, forKey: "animes")
-                print("アニメデータの画像パスを移行しました")
             }
         }
     }
@@ -278,7 +273,6 @@ class ImageMigrationHelper {
             if needsUpdate {
                 if let encodedData = try? JSONEncoder().encode(migratedVideos) {
                     UserDefaults.standard.set(encodedData, forKey: key)
-                    print("キャラクター \(character.name) の動画パスを移行しました")
                 }
             }
         }
@@ -320,7 +314,6 @@ class ImageMigrationHelper {
             if needsUpdate {
                 if let encodedData = try? JSONEncoder().encode(migratedVideos) {
                     UserDefaults.standard.set(encodedData, forKey: key)
-                    print("アニメ \(anime.title) の動画パスを移行しました")
                 }
             }
         }
@@ -328,11 +321,9 @@ class ImageMigrationHelper {
     
     // すべての画像パスを移行
     func migrateAllImagePaths() {
-        print("画像パスの移行を開始します...")
         migrateCharacterImagePaths()
         migrateAnimeImagePaths()
         migrateArtworkImagePaths()
         migrateVideoPathsForAllItems()
-        print("画像パスの移行が完了しました")
     }
 }

@@ -322,7 +322,6 @@ struct AdvertisementEditView: View {
                                 // GitHub URLをraw URLに変換
                                 if let githubRawURL = ImageExtractor.shared.convertGitHubURLToRaw(imageURL) {
                                     imageURL = githubRawURL
-                                    print("✅ [AdvertisementEditView] GitHub URLをraw URLに変換: \(imageURL)")
                                 }
                             }) {
                                 Text("GitHub URL修正")
@@ -464,7 +463,6 @@ struct AdvertisementEditView: View {
         var finalImageURL = imageURL
         if let githubRawURL = ImageExtractor.shared.convertGitHubURLToRaw(imageURL) {
             finalImageURL = githubRawURL
-            print("💾 [AdvertisementEditView] GitHub URLをraw URLに変換して保存: \(finalImageURL)")
         }
         
         let newAd = Advertisement(
@@ -507,7 +505,6 @@ struct AdvertisementEditView: View {
     private func fetchImageFromURL() {
         guard !linkURL.isEmpty else { return }
         
-        print("🔍 [AdvertisementEditView] 画像取得開始: \(linkURL)")
         isLoadingImage = true
         imageLoadError = nil
         
@@ -516,11 +513,9 @@ struct AdvertisementEditView: View {
             
             switch result {
             case .success(let extractedImageURL):
-                print("✅ [AdvertisementEditView] 画像URL取得成功: \(extractedImageURL)")
                 imageURL = extractedImageURL
                 imageLoadError = nil
             case .failure(let error):
-                print("❌ [AdvertisementEditView] 画像URL取得失敗: \(error)")
                 imageLoadError = "画像を取得できませんでした"
             }
         }

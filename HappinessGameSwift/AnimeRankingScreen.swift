@@ -136,18 +136,15 @@ struct AnimeRankingScreen: View {
         firebaseManager.fetchAds(for: "anime") { result in
             switch result {
             case .success(let ads):
-                print("✅ [AnimeRankingScreen] アニメ広告取得成功: \(ads.count)件")
                 self.advertisements = ads
                 self.isLoading = false
             case .failure(let error):
-                print("❌ [AnimeRankingScreen] アニメ広告取得エラー: \(error)")
                 self.isLoading = false
             }
         }
     }
     
     private func handleAdClick(_ ad: Advertisement) {
-        print("🖱️ [AnimeRankingScreen] 広告クリック: \(ad.title) - \(ad.linkURL)")
         
         // クリックを記録
         if let adId = ad.id {

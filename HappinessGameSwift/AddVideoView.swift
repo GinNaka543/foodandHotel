@@ -47,7 +47,7 @@ struct AddVideoView: View {
     
     var uploadMethodSelectionView: some View {
         VStack(spacing: 30) {
-            Text("アップロード方法を選択")
+            Text(NSLocalizedString("select_upload_method", comment: "Select upload method"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top, 50)
@@ -63,11 +63,11 @@ struct AddVideoView: View {
                             .font(.system(size: 50))
                             .foregroundColor(.red)
                         
-                        Text("YouTube URLから追加")
+                        Text(NSLocalizedString("add_from_youtube_url", comment: "Add from YouTube URL"))
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Text("YouTube動画のURLを入力して\n動画情報を取得します")
+                        Text(NSLocalizedString("youtube_url_description", comment: "Enter YouTube video URL to get video info"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -92,11 +92,11 @@ struct AddVideoView: View {
                             .font(.system(size: 50))
                             .foregroundColor(.blue)
                         
-                        Text("手動でアップロード")
+                        Text(NSLocalizedString("manual_upload", comment: "Manual upload"))
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Text("デバイスから動画を選択して\n手動で情報を入力します")
+                        Text(NSLocalizedString("manual_upload_description", comment: "Select video from device and manually enter info"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -113,13 +113,14 @@ struct AddVideoView: View {
             }
             .padding(.horizontal, 20)
             
+            
             Spacer()
         }
-        .navigationTitle("動画を追加")
+        .navigationTitle(NSLocalizedString("add_video", comment: "Add video"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("キャンセル") {
+                Button(NSLocalizedString("cancel", comment: "Cancel")) {
                     dismiss()
                 }
             }
@@ -130,9 +131,14 @@ struct AddVideoView: View {
     private var youtubeUploadContent: some View {
         VStack(spacing: 20) {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("YouTube URL")
-                                .font(.headline)
-                            TextField("URLを入力してください", text: $youtubeURL)
+                            HStack {
+                                Text(NSLocalizedString("youtube_url", comment: "YouTube URL"))
+                                    .font(.headline)
+                                Text(NSLocalizedString("youtube_login_note", comment: "YouTube login note"))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            TextField(NSLocalizedString("enter_url_placeholder", comment: "Enter URL"), text: $youtubeURL)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .autocapitalization(.none)
                                 .disableAutocorrection(true)
@@ -140,22 +146,22 @@ struct AddVideoView: View {
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("タイトル")
+                            Text(NSLocalizedString("title", comment: "Title"))
                                 .font(.headline)
-                            TextField("動画タイトル", text: $youtubeTitle)
+                            TextField(NSLocalizedString("video_title", comment: "Video title"), text: $youtubeTitle)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                         }
                         
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("タグ（カンマ区切り）")
+                            Text(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"))
                                 .font(.headline)
-                            TextField("タグ1,タグ2,タグ3", text: $videoTags)
+                            TextField(NSLocalizedString("tags_placeholder", comment: "tag1,tag2,tag3"), text: $videoTags)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                         }
                         
                         // サムネイルアップロードセクション
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("サムネイル画像")
+                            Text(NSLocalizedString("thumbnail_image", comment: "Thumbnail image"))
                                 .font(.headline)
                             
                             if let thumbnail = customYouTubeThumbnail {
@@ -169,7 +175,7 @@ struct AddVideoView: View {
                             PhotosPicker(selection: $thumbnailPickerItem, matching: .images) {
                                 HStack {
                                     Image(systemName: "photo")
-                                    Text(customYouTubeThumbnail == nil ? "サムネイルを選択" : "サムネイルを変更")
+                                    Text(NSLocalizedString(customYouTubeThumbnail == nil ? "select_thumbnail" : "change_thumbnail", comment: "Select/Change thumbnail"))
                                 }
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -178,7 +184,7 @@ struct AddVideoView: View {
                                 .cornerRadius(8)
                             }
                             
-                            Text("※ YouTubeのサムネイルが取得できない場合は、こちらからアップロードしてください")
+                            Text(NSLocalizedString("youtube_thumbnail_note", comment: "YouTube thumbnail note"))
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }
@@ -186,7 +192,7 @@ struct AddVideoView: View {
                         if isLoadingYouTube {
                             HStack {
                                 ProgressView()
-                                Text("YouTube情報を取得中...")
+                                Text(NSLocalizedString("getting_youtube_info", comment: "Getting YouTube info"))
                                     .foregroundColor(.gray)
                             }
                             .frame(maxWidth: .infinity)
@@ -212,7 +218,7 @@ struct AddVideoView: View {
                             Image(systemName: "video")
                                 .font(.largeTitle)
                                 .foregroundColor(.gray)
-                            Text("動画を選択")
+                            Text(NSLocalizedString("select_video", comment: "Select video"))
                                 .foregroundColor(.gray)
                         }
                     )
@@ -222,7 +228,7 @@ struct AddVideoView: View {
             PhotosPicker(selection: $selectedItem, matching: .videos) {
                 HStack {
                     Image(systemName: "video.on.rectangle")
-                    Text("動画を選択")
+                    Text(NSLocalizedString("select_video", comment: "Select video"))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -234,7 +240,7 @@ struct AddVideoView: View {
             // サムネイル選択セクション
             if !thumbnailImages.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("サムネイルを選択")
+                    Text(NSLocalizedString("select_thumbnail", comment: "Select thumbnail"))
                         .font(.headline)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -263,19 +269,19 @@ struct AddVideoView: View {
             
             // タイトル入力
             VStack(alignment: .leading, spacing: 8) {
-                Text("タイトル")
+                Text(NSLocalizedString("title", comment: "Title"))
                     .font(.headline)
                 
-                TextField("タイトルを入力", text: $videoTitle)
+                TextField(NSLocalizedString("enter_title", comment: "Enter title"), text: $videoTitle)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
             }
             
             // タグ入力
             VStack(alignment: .leading, spacing: 8) {
-                Text("タグ（カンマ区切り）")
+                Text(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"))
                     .font(.headline)
                 
-                TextField("タグを入力", text: $videoTags)
+                TextField(NSLocalizedString("enter_tags", comment: "Enter tags"), text: $videoTags)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
             }
         }
@@ -294,11 +300,11 @@ struct AddVideoView: View {
             }
             .padding()
         }
-        .navigationTitle(selectedUploadMethod == .youtube ? "YouTube動画を追加" : "動画を追加")
+        .navigationTitle(NSLocalizedString(selectedUploadMethod == .youtube ? "add_youtube_video" : "add_video", comment: "Add YouTube video/Add video"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("戻る") {
+                    Button(NSLocalizedString("back", comment: "Back")) {
                         if selectedUploadMethod != nil {
                             selectedUploadMethod = nil
                             showUploadMethodSelection = true
@@ -309,7 +315,7 @@ struct AddVideoView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         if selectedUploadMethod == .youtube {
                             // YouTube動画の保存処理
                             Task {
@@ -326,7 +332,7 @@ struct AddVideoView: View {
                                             selectedVideoURL = exportedURL
                                             onSave()
                                         } else {
-                                            exportError = "動画のリサイズ保存に失敗しました"
+                                            exportError = NSLocalizedString("video_resize_failed", comment: "Video resize failed")
                                         }
                                     }
                                 }
@@ -338,7 +344,7 @@ struct AddVideoView: View {
                              (selectedVideoURL == nil || isExporting))
                 }
             }
-        .alert("エラー", isPresented: Binding<Bool>(
+        .alert(NSLocalizedString("error", comment: "Error"), isPresented: Binding<Bool>(
                 get: { exportError != nil },
                 set: { _ in exportError = nil }
             )) {
@@ -353,7 +359,7 @@ struct AddVideoView: View {
                     if isExporting {
                         ZStack {
                             Color.black.opacity(0.3).ignoresSafeArea()
-                            ProgressView("動画を変換中...")
+                            ProgressView(NSLocalizedString("converting_video", comment: "Converting video"))
                                 .padding()
                                 .background(Color.white)
                                 .cornerRadius(12)
@@ -381,7 +387,6 @@ struct AddVideoView: View {
                             
                             await generateThumbnails(from: tempURL)
                         } catch {
-                            print("動画の保存に失敗しました")
                         }
                     }
                 }
@@ -408,7 +413,6 @@ struct AddVideoView: View {
                 let uiImage = UIImage(cgImage: cgImage.image)
                 thumbnailImages.append(uiImage)
             } catch {
-                print("サムネイル生成に失敗: \(error)")
             }
         }
         

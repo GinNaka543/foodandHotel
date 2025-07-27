@@ -95,7 +95,6 @@ struct FixExistingAdsView: View {
                         .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
                         .replacingOccurrences(of: "/blob/", with: "/")
                     
-                    print("🔄 URLを変換: \(imageURL) -> \(rawURL)")
                     
                     // Firestoreを更新
                     db.collection("advertisements").document(document.documentID).updateData([

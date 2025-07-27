@@ -21,7 +21,7 @@ struct PublishPlanDialog: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Text("プランを公開")
+                    Text(NSLocalizedString("plan_publish", comment: "Publish Plan"))
                         .font(.system(size: 20, weight: .bold))
                     Spacer()
                     Button(action: onCancel) {
@@ -37,20 +37,20 @@ struct PublishPlanDialog: View {
                     VStack(alignment: .leading, spacing: 24) {
                         // 公開料金の説明
                         VStack(alignment: .leading, spacing: 12) {
-                            Label("プラン公開料金", systemImage: "yensign.circle.fill")
+                            Label(NSLocalizedString("plan_publish_fee", comment: "Plan Publication Fee"), systemImage: "yensign.circle.fill")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.purple)
                             
-                            Text("プランを公開するには5,000ポイントが必要です")
+                            Text(NSLocalizedString("plan_publish_fee_description", comment: "5,000 points required to publish plan"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             
                             VStack(spacing: 12) {
                                 HStack {
-                                    Text("公開料金:")
+                                    Text(NSLocalizedString("publication_fee", comment: "Publication fee:"))
                                         .font(.system(size: 14))
                                     Spacer()
-                                    Text("5,000ポイント")
+                                    Text(NSLocalizedString("points_5000", comment: "5,000 points"))
                                         .font(.system(size: 18, weight: .bold))
                                         .foregroundColor(.purple)
                                 }
@@ -60,21 +60,21 @@ struct PublishPlanDialog: View {
                                 
                                 // 現在のポイント表示
                                 HStack {
-                                    Text("現在のポイント:")
+                                    Text(NSLocalizedString("current_points", comment: "Current points:"))
                                         .font(.system(size: 14))
                                     Spacer()
                                     if isLoadingPoints {
                                         ProgressView()
                                             .scaleEffect(0.8)
                                     } else {
-                                        Text("\(userPoints)ポイント")
+                                        Text(String(format: NSLocalizedString("points_format", comment: "%d points"), userPoints))
                                             .font(.system(size: 16, weight: .medium))
                                             .foregroundColor(userPoints >= publicationCost ? .green : .red)
                                     }
                                 }
                                 
                                 if !isLoadingPoints && userPoints < publicationCost {
-                                    Text("ポイントが不足しています。あと\(publicationCost - userPoints)ポイント必要です。")
+                                    Text(String(format: NSLocalizedString("points_insufficient", comment: "Points insufficient. %d more points needed."), publicationCost - userPoints))
                                         .font(.system(size: 12))
                                         .foregroundColor(.red)
                                         .padding(.top, 4)
@@ -86,11 +86,11 @@ struct PublishPlanDialog: View {
                         
                         // プラン情報
                         VStack(alignment: .leading, spacing: 16) {
-                            Text("プラン情報")
+                            Text(NSLocalizedString("plan_info", comment: "Plan Information"))
                                 .font(.system(size: 18, weight: .semibold))
                             
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("タイトル")
+                                Text(NSLocalizedString("title", comment: "Title"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                 Text(planTitle)
@@ -98,16 +98,16 @@ struct PublishPlanDialog: View {
                             }
                             
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("プランの説明")
+                                Text(NSLocalizedString("plan_description", comment: "Plan Description"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
-                                TextField("このプランの魅力を説明してください", text: $planDescription, axis: .vertical)
+                                TextField(NSLocalizedString("plan_description_placeholder", comment: "Describe the appeal of this plan"), text: $planDescription, axis: .vertical)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .lineLimit(3...6)
                             }
                             
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("販売価格")
+                                Text(NSLocalizedString("sales_price", comment: "Sales Price"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                 HStack {
@@ -115,17 +115,17 @@ struct PublishPlanDialog: View {
                                         .textFieldStyle(RoundedBorderTextFieldStyle())
                                         .frame(width: 120)
                                         .keyboardType(.numberPad)
-                                    Text("円")
+                                    Text(CurrencyManager.shared.getLocalizedCurrencyName())
                                         .font(.system(size: 16))
                                     Spacer()
                                 }
-                                Text("※ 0円に設定すると無料プランになります")
+                                Text(NSLocalizedString("free_plan_note", comment: "* Setting to 0 yen makes it a free plan"))
                                     .font(.system(size: 12))
                                     .foregroundColor(.gray)
                             }
                             
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("予算")
+                                Text(NSLocalizedString("budget", comment: "Budget"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                 HStack {
@@ -133,11 +133,11 @@ struct PublishPlanDialog: View {
                                         .textFieldStyle(RoundedBorderTextFieldStyle())
                                         .frame(width: 120)
                                         .keyboardType(.numberPad)
-                                    Text("円")
+                                    Text(CurrencyManager.shared.getLocalizedCurrencyName())
                                         .font(.system(size: 16))
                                     Spacer()
                                 }
-                                Text("※ このプランにかかる大体の予算を入力してください（必須）")
+                                Text(NSLocalizedString("budget_note", comment: "* Please enter the approximate budget for this plan (required)"))
                                     .font(.system(size: 12))
                                     .foregroundColor(.red)
                             }
@@ -147,14 +147,14 @@ struct PublishPlanDialog: View {
                         
                         // 注意事項
                         VStack(alignment: .leading, spacing: 12) {
-                            Label("注意事項", systemImage: "exclamationmark.triangle.fill")
+                            Label(NSLocalizedString("notes", comment: "Notes"), systemImage: "exclamationmark.triangle.fill")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.orange)
                             
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("• 公開後はプランの編集・削除はできません")
-                                Text("• 他のユーザーがプランを購入した際、販売価格を受け取ることができます")
-                                Text("• 不適切なコンテンツは削除される場合があります")
+                                Text(NSLocalizedString("note_no_edit_after_publish", comment: "• Cannot edit or delete plan after publication"))
+                                Text(NSLocalizedString("note_receive_sales_price", comment: "• You can receive sales price when other users purchase the plan"))
+                                Text(NSLocalizedString("note_inappropriate_content", comment: "• Inappropriate content may be deleted"))
                             }
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
@@ -170,14 +170,14 @@ struct PublishPlanDialog: View {
                         // ポイントが足りている場合
                         Button(action: {
                             if planBudget <= 0 {
-                                errorMessage = "予算を入力してください"
+                                errorMessage = NSLocalizedString("error_budget_required", comment: "Please enter budget")
                                 return
                             }
                             onPublish()
                         }) {
                             HStack {
                                 Image(systemName: "checkmark.circle")
-                                Text("5,000ポイントで公開")
+                                Text(NSLocalizedString("publish_with_5000_points", comment: "Publish with 5,000 points"))
                             }
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
@@ -196,7 +196,7 @@ struct PublishPlanDialog: View {
                         }) {
                             HStack {
                                 Image(systemName: "plus.circle")
-                                Text("ポイントを購入")
+                                Text(NSLocalizedString("purchase_points", comment: "Purchase Points"))
                             }
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
@@ -244,7 +244,6 @@ struct PublishPlanDialog: View {
                 case .success(let pointsModel):
                     userPoints = pointsModel.points
                 case .failure(let error):
-                    print("ポイント取得エラー: \(error)")
                     userPoints = 0
                 }
             }

@@ -6,7 +6,6 @@ class ImageLoader: ObservableObject {
     @Published var isLoading = false
     
     func loadImage(from url: URL) {
-        print("🔄 [DEBUG] ImageLoader: 画像読み込み開始 - \(url)")
         isLoading = true
         
         URLSession.shared.dataTask(with: url) { data, response, error in
@@ -14,15 +13,12 @@ class ImageLoader: ObservableObject {
                 self.isLoading = false
                 
                 if let error = error {
-                    print("❌ [DEBUG] ImageLoader: エラー - \(error)")
                     return
                 }
                 
                 if let data = data, let loadedImage = UIImage(data: data) {
-                    print("✅ [DEBUG] ImageLoader: 画像読み込み成功 - サイズ: \(loadedImage.size)")
                     self.image = loadedImage
                 } else {
-                    print("❌ [DEBUG] ImageLoader: 画像データの変換に失敗")
                 }
             }
         }.resume()
@@ -40,14 +36,12 @@ struct CustomAsyncImage: View {
     var body: some View {
         Group {
             if let image = loader.image {
-                let _ = print("🎨 [DEBUG] CustomAsyncImage: 画像表示中")
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFill()
                     .frame(width: width, height: height)
                     .clipped()
             } else if loader.isLoading {
-                let _ = print("⏳ [DEBUG] CustomAsyncImage: 読み込み中")
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.purple) // 読み込み中は紫色
                     .frame(width: width, height: height)
@@ -56,7 +50,6 @@ struct CustomAsyncImage: View {
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     )
             } else {
-                let _ = print("❌ [DEBUG] CustomAsyncImage: 画像なし")
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray)
                     .frame(width: width, height: height)
@@ -95,15 +88,10 @@ struct SpotListView: View {
                             showingDetail = true
                         },
                         onToggle: {
-                            print("🔄 DEBUG: チェックボックスがタップされました")
-                            print("  - インデックス: \(index)")
-                            print("  - スポット名: \(spots[index].name)")
-                            print("  - 現在のisCompleted: \(spots[index].isCompleted)")
                             
                             // 直接ここで値を更新
                             spots[index].isCompleted.toggle()
                             
-                            print("  - 更新後のisCompleted: \(spots[index].isCompleted)")
                             
                             // 新しく完了したスポットを追跡
                             if spots[index].isCompleted {
@@ -231,6 +219,9 @@ struct VisitGameScreen: View {
     @State private var showSpotEditSheet = false
     @State private var selectedSpotForEdit: VisitSpot?
     @State private var showStreamingSheet = false
+    @State private var showAddSpotSheet = false
+    @State private var showAddTransportSheet = false
+    @State private var selectedSpotForTransport: VisitSpot?
     let numberOfDays: Int
     let startTime: Date
     let onClose: (() -> Void)?
@@ -289,7 +280,7 @@ struct VisitGameScreen: View {
                 HStack {
                     Image(systemName: "clock.fill")
                         .foregroundColor(.blue)
-                    Text("開始時刻: \(timeFormatter.string(from: startTime))")
+                    Text(String(format: NSLocalizedString("start_time_format", comment: "Start time: %@"), timeFormatter.string(from: startTime)))
                         .font(.system(size: 14, weight: .medium))
                     Spacer()
                 }
@@ -308,12 +299,12 @@ struct VisitGameScreen: View {
                         .foregroundColor(.purple)
                         .scaleEffect(1.1)
                         .animation(.easeInOut(duration: 0.3).repeatCount(1), value: filteredSpotsCompletedCount)
-                    Text("Day \(selectedDay)のスポットを\nすべて巡りました！")
+                    Text(String(format: NSLocalizedString("day_spots_completed", comment: "Day %d spots\ncompleted!"), selectedDay))
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.purple)
                         .multilineTextAlignment(.center)
                     if completedSpotsCount == viewModel.spots.count {
-                        Text("すべての日程が完了しました\nお疲れ様でした")
+                        Text(NSLocalizedString("all_schedule_completed", comment: "All schedules completed\nGreat job"))
                             .font(.system(size: 16))
                             .foregroundColor(.gray)
                             .multilineTextAlignment(.center)
@@ -395,7 +386,11 @@ struct VisitGameScreen: View {
                                             isReadOnly: isReadOnly,
                                             isFirstSpot: index == 0,
                                             isLastSpot: index == dayFilteredSpots.count - 1,
-                                            previousDepartureTime: index > 0 ? dayFilteredSpots[index - 1].departureTime : nil
+                                            previousDepartureTime: index > 0 ? dayFilteredSpots[index - 1].departureTime : nil,
+                                            onEditTransport: {
+                                                selectedSpotForTransport = viewModel.spots[realIndex]
+                                                showAddTransportSheet = true
+                                            }
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
@@ -453,34 +448,60 @@ struct VisitGameScreen: View {
                 thumbnailUrl: thumbnailUrl
             )
         }
+        .sheet(isPresented: $showAddSpotSheet) {
+            GameAddSpotView(
+                animeName: animeName,
+                selectedDay: selectedDay,
+                onSave: { newSpot in
+                    var spot = newSpot
+                    spot.dayNumber = selectedDay
+                    
+                    // 時刻を設定
+                    let daySpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
+                    if let lastSpot = daySpots.last {
+                        // 最後のスポットの出発時刻から30分後を到着時刻に設定
+                        if let lastDeparture = lastSpot.departureTime {
+                            spot.arrivalTime = Calendar.current.date(byAdding: .minute, value: 30, to: lastDeparture)
+                            spot.departureTime = Calendar.current.date(byAdding: .minute, value: spot.stayDuration, to: spot.arrivalTime!)
+                        }
+                    } else {
+                        // その日の最初のスポットの場合
+                        spot.arrivalTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: startTime)
+                        spot.departureTime = Calendar.current.date(byAdding: .minute, value: spot.stayDuration, to: spot.arrivalTime!)
+                    }
+                    
+                    viewModel.spots.append(spot)
+                    savePlanProgress()
+                }
+            )
+        }
+        .sheet(isPresented: $showAddTransportSheet) {
+            if let spot = selectedSpotForTransport,
+               let spotIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
+                GameAddTransportView(
+                    transport: viewModel.spots[spotIndex].transportToNext,
+                    onSave: { newTransport in
+                        viewModel.spots[spotIndex].transportToNext = newTransport
+                        savePlanProgress()
+                    }
+                )
+            }
+        }
         }
         .onAppear {
-            print("🎮 [DEBUG] VisitGameScreen.body 呼び出し")
-            print("🎮 [DEBUG] planTitle: \(planTitle)")
-            print("🎮 [DEBUG] animeName: \(animeName)")
-            print("🎮 [DEBUG] spots.count: \(viewModel.spots.count)")
-            print("🎮 [DEBUG] numberOfDays: \(numberOfDays)")
-            print("🎮 [DEBUG] streamingUrls.count: \(streamingUrls.count)")
-            print("🎮 [DEBUG] streamingUrls: \(streamingUrls.map { $0.name + ": " + $0.url })")
-            print("🎮 [DEBUG] streamingUrls.isEmpty: \(streamingUrls.isEmpty)")
-            print("🎮 [DEBUG] spots dayNumber distribution:")
             for spot in viewModel.spots {
-                print("  - \(spot.name): day \(spot.dayNumber)")
                 if let arrival = spot.arrivalTime, let departure = spot.departureTime {
                     let formatter = DateFormatter()
                     formatter.dateFormat = "HH:mm"
-                    print("    到着: \(formatter.string(from: arrival)), 出発: \(formatter.string(from: departure))")
                 }
                 if let transport = spot.transportToNext {
-                    print("    次への移動: \(transport.method) \(transport.duration)分")
                 }
             }
             if viewModel.spots.isEmpty {
-                print("⚠️ WARNING: spotsが空です！")
             }
             
-            // ローカルに保存された変更を読み込み
-            loadLocalSpotChanges()
+            // 保存されたプランデータを読み込み
+            loadSavedPlanData()
             
             // 訪問進捗を復元
             loadVisitProgress()
@@ -516,12 +537,9 @@ struct VisitGameScreen: View {
             HStack {
                 // 戻るボタン
                 Button(action: {
-                    print("×ボタンがタップされました")
                     if let onClose = onClose {
-                        print("onCloseを実行します")
                         onClose()
                     } else {
-                        print("dismissを実行します")
                         dismiss()
                     }
                 }) {
@@ -535,27 +553,41 @@ struct VisitGameScreen: View {
                 
                 Spacer()
                 
-                // Watchボタン
-                Button(action: {
-                    showStreamingSheet = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 14))
-                        Text("Watch")
-                            .font(.system(size: 14, weight: .medium))
+                // 右側のボタン群
+                HStack(spacing: 8) {
+                    // スポット追加ボタン（読み取り専用でない場合のみ表示）
+                    if !isReadOnly {
+                        Button(action: {
+                            showAddSpotSheet = true
+                        }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.purple)
+                        }
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule()
-                            .fill(LinearGradient(
-                                gradient: Gradient(colors: [Color.purple, Color.yellow]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ))
-                    )
+                    
+                    // Watchボタン
+                    Button(action: {
+                        showStreamingSheet = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 14))
+                            Text("Watch")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(LinearGradient(
+                                    gradient: Gradient(colors: [Color.purple, Color.yellow]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                ))
+                        )
+                    }
                 }
             }
         }
@@ -632,7 +664,7 @@ struct VisitGameScreen: View {
                         HStack(spacing: 4) {
                             Image(systemName: "calendar")
                                 .font(.system(size: 14))
-                            Text("\(numberOfDays)日間")
+                            Text(String(format: NSLocalizedString("days_count", comment: "%d days"), numberOfDays))
                                 .font(.system(size: 14))
                         }
                         .foregroundColor(.white.opacity(0.9))
@@ -640,7 +672,7 @@ struct VisitGameScreen: View {
                         HStack(spacing: 4) {
                             Image(systemName: "location")
                                 .font(.system(size: 14))
-                            Text("\(viewModel.spots.count)スポット")
+                            Text(String(format: NSLocalizedString("spots_count_game", comment: "%d spots"), viewModel.spots.count))
                                 .font(.system(size: 14))
                         }
                         .foregroundColor(.white.opacity(0.9))
@@ -855,11 +887,11 @@ struct VisitGameScreen: View {
                 .font(.system(size: 50))
                 .foregroundColor(.green)
             
-            Text("すべて完了しました！")
+            Text(NSLocalizedString("all_completed", comment: "All completed!"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.green)
             
-            Text("お疲れ様でした")
+            Text(NSLocalizedString("great_job", comment: "Great job"))
                 .font(.system(size: 16))
                 .foregroundColor(.gray)
         }
@@ -877,7 +909,7 @@ struct VisitGameScreen: View {
         }) {
             HStack {
                 Image(systemName: "square.and.arrow.down.fill")
-                Text("旅をセーブ")
+                Text(NSLocalizedString("save_trip", comment: "Save Trip"))
             }
             .font(.system(size: 16, weight: .semibold))
             .foregroundColor(.white)
@@ -889,8 +921,9 @@ struct VisitGameScreen: View {
     }
     
     func savePlanProgress() {
-        // プランの変更を保存（必要に応じて実装）
-        print("📝 プランの変更を保存しました")
+        // Use new storage system that saves images to files
+        let planIdString = planId?.uuidString ?? planTitle
+        VisitPlanStorage.shared.savePlan(planId: planIdString, planTitle: planTitle, spots: viewModel.spots)
     }
     
     func getThumbnailImage() -> UIImage? {
@@ -911,7 +944,6 @@ struct VisitGameScreen: View {
         let completedSpotIds = viewModel.spots.filter { $0.isCompleted }.map { $0.id.uuidString }
         UserDefaults.standard.set(completedSpotIds, forKey: visitProgressKey)
         
-        print("✅ 訪問進捗を保存しました: \(completedSpotIds.count)件")
         
         // 簡単な成功フィードバック
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -925,13 +957,94 @@ struct VisitGameScreen: View {
         }
     }
     
+    // 保存されたプランデータを読み込む関数
+    func loadSavedPlanData() {
+        let planIdString = planId?.uuidString ?? planTitle
+        
+        // First try to load using the new storage system
+        if let restoredSpots = VisitPlanStorage.shared.loadPlan(planId: planIdString) {
+            viewModel.spots = restoredSpots
+            return
+        }
+        
+        // Fallback to old method for backward compatibility
+        let planKey = "visit_plan_\(planIdString)"
+        
+        guard let planData = UserDefaults.standard.dictionary(forKey: planKey),
+              let spotsData = planData["spots"] as? [[String: Any]] else {
+            return
+        }
+        
+        // If we found old data, migrate it
+        var restoredSpots: [VisitSpot] = []
+        
+        for spotData in spotsData {
+            guard let idString = spotData["id"] as? String,
+                  let id = UUID(uuidString: idString),
+                  let name = spotData["name"] as? String else { continue }
+            
+            var spot = VisitSpot(
+                id: id,
+                name: name,
+                address: spotData["address"] as? String ?? "",
+                notes: spotData["notes"] as? String ?? "",
+                nearestStation: spotData["nearestStation"] as? String ?? "",
+                stayDuration: spotData["stayDuration"] as? Int ?? 60,
+                isCompleted: spotData["isCompleted"] as? Bool ?? false,
+                timeRange: spotData["timeRange"] as? String ?? "",
+                activity: spotData["activity"] as? String ?? "",
+                dayNumber: spotData["dayNumber"] as? Int ?? 1,
+                spotCost: spotData["spotCost"] as? Int ?? 0,
+                imageUrl: spotData["imageUrl"] as? String ?? "",
+                images: spotData["images"] as? [String] ?? []
+            )
+            
+            // 日付の復元
+            if let arrivalInterval = spotData["arrivalTime"] as? Double {
+                spot.arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
+            }
+            if let departureInterval = spotData["departureTime"] as? Double {
+                spot.departureTime = Date(timeIntervalSince1970: departureInterval)
+            }
+            
+            // 交通手段の復元
+            if let transportData = spotData["transportToNext"] as? [String: Any],
+               let method = transportData["method"] as? String,
+               let duration = transportData["duration"] as? Int,
+               let cost = transportData["cost"] as? Int,
+               let route = transportData["route"] as? String {
+                spot.transportToNext = TransportInfo(
+                    method: method,
+                    duration: duration,
+                    cost: cost,
+                    route: route
+                )
+            }
+            
+            // 画像データの復元（Base64デコード）
+            if let imageDataBase64 = spotData["imageDataBase64"] as? String,
+               let imageData = Data(base64Encoded: imageDataBase64) {
+                spot.imageData = imageData
+            }
+            
+            restoredSpots.append(spot)
+        }
+        
+        // 復元したスポットで置き換え
+        if !restoredSpots.isEmpty {
+            viewModel.spots = restoredSpots
+            
+            // Migrate to new storage format
+            VisitPlanStorage.shared.savePlan(planId: planIdString, planTitle: planTitle, spots: restoredSpots)
+        }
+    }
+    
     // ローカルに保存された変更を読み込む関数
     func loadLocalSpotChanges() {
         for i in 0..<viewModel.spots.count {
             let key = "spot_changes_\(viewModel.spots[i].id.uuidString)"
             
             if let changes = UserDefaults.standard.dictionary(forKey: key) {
-                print("📱 ローカル変更を読み込み: \(viewModel.spots[i].name)")
                 
                 if let name = changes["name"] as? String {
                     viewModel.spots[i].name = name
@@ -975,7 +1088,6 @@ struct VisitGameScreen: View {
                     viewModel.spots[i].isCompleted = true
                 }
             }
-            print("✅ 訪問進捗を復元しました: \(savedCompletedSpotIds.count)件")
         }
     }
 }
@@ -991,6 +1103,7 @@ struct AnimeStyleSpotCard: View {
     let isFirstSpot: Bool
     let isLastSpot: Bool
     let previousDepartureTime: Date?
+    let onEditTransport: (() -> Void)?
     
     let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -1110,7 +1223,7 @@ struct AnimeStyleSpotCard: View {
                             HStack(spacing: 4) {
                                 Image(systemName: "clock")
                                     .font(.system(size: 11))
-                                Text("\(duration)分")
+                                Text(String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), duration))
                                     .font(.system(size: 12))
                                 
                                 if !spot.activity.isEmpty {
@@ -1137,34 +1250,68 @@ struct AnimeStyleSpotCard: View {
                 .padding(12)
                 
                 // 交通機関情報（次のスポットがある場合）
-                if !isLastSpot, let transport = spot.transportToNext {
-                    HStack(spacing: 8) {
-                        // 交通手段アイコン
-                        Image(systemName: transport.method == "電車" ? "tram.fill" : 
-                                        transport.method == "バス" ? "bus.fill" : 
-                                        transport.method == "徒歩" ? "figure.walk" : "car.fill")
-                            .font(.system(size: 14))
-                            .foregroundColor(.orange)
-                        
-                        Text(transport.method)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.orange)
-                        
-                        Text("• \(transport.duration)分")
-                            .font(.system(size: 13))
-                            .foregroundColor(.gray)
-                        
-                        if !transport.route.isEmpty {
-                            Text("• \(transport.route)")
-                                .font(.system(size: 12))
+                if !isLastSpot {
+                    if let transport = spot.transportToNext {
+                        HStack(spacing: 8) {
+                            // 交通手段アイコン
+                            Image(systemName: transport.method == NSLocalizedString("train", comment: "Train") ? "tram.fill" : 
+                                            transport.method == "バス" ? "bus.fill" : 
+                                            transport.method == "徒歩" ? "figure.walk" : "car.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                            
+                            Text(transport.method)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.orange)
+                            
+                            Text(String(format: "• %@", String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), transport.duration)))
+                                .font(.system(size: 13))
                                 .foregroundColor(.gray)
-                                .lineLimit(1)
+                            
+                            if !transport.route.isEmpty {
+                                Text("• \(transport.route)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                    .lineLimit(1)
+                            }
+                            
+                            Spacer()
+                            
+                            // 編集ボタン（読み取り専用でない場合のみ表示）
+                            if !isReadOnly {
+                                Button(action: {
+                                    onEditTransport?()
+                                }) {
+                                    Image(systemName: "pencil.circle")
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.orange)
+                                }
+                            }
                         }
-                        
-                        Spacer()
+                        .padding(.leading, 30)
+                        .padding(.vertical, 8)
+                    } else if !isReadOnly {
+                        // 交通手段が未設定の場合の追加ボタン
+                        Button(action: {
+                            onEditTransport?()
+                        }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "plus.circle")
+                                    .font(.system(size: 12))
+                                Text(NSLocalizedString("add_transportation", comment: "Add Transportation"))
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.orange, lineWidth: 1)
+                            )
+                        }
+                        .padding(.leading, 30)
+                        .padding(.vertical, 8)
                     }
-                    .padding(.leading, 30)
-                    .padding(.vertical, 8)
                 }
             }
             .padding(.trailing, 16)
@@ -1336,7 +1483,7 @@ struct SpotCard: View {
                 .background(Color.green.opacity(0.3)) // デバッグ用背景色
                 
                 // 滞在時間バッジ（左上に配置）
-                Text("\(spot.stayDuration)分")
+                Text(String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), spot.stayDuration))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
@@ -1426,11 +1573,6 @@ struct SpotCard: View {
                 
                 // チェックボックス
                 Button(action: {
-                    print("🔘 DEBUG: SpotCard - チェックボックスが押されました")
-                    print("  - スポット名: \(spot.name)")
-                    print("  - 現在のisCompleted (プロパティ): \(isCompleted)")
-                    print("  - spot.isCompleted: \(spot.isCompleted)")
-                    print("  - spot.id: \(spot.id)")
                     
                     // ハプティックフィードバック
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -1507,7 +1649,7 @@ struct TransportCard: View {
                         .foregroundColor(.orange)
                     Text(transport.method)
                         .font(.system(size: 14, weight: .medium))
-                    Text("・ \(transport.duration)分")
+                    Text(String(format: "• %@", String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), transport.duration)))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                     if transport.cost > 0 {
@@ -1639,7 +1781,7 @@ struct SpotDetailPageView: View {
                     // 滞在時間帯
                     if !spot.timeRange.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("滞在時間帯")
+                            Text(NSLocalizedString("stay_duration", comment: "Stay duration"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             HStack {
@@ -1656,7 +1798,7 @@ struct SpotDetailPageView: View {
                     // ここで何をするのか
                     if !spot.activity.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("ここで何をするのか")
+                            Text(NSLocalizedString("what_to_do_here", comment: "What to do here"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             Text(spot.activity)
@@ -1673,11 +1815,11 @@ struct SpotDetailPageView: View {
                                 .foregroundColor(.blue)
                                 .font(.system(size: 16))
                                 .frame(width: 20)
-                            Text("滞在時間")
+                            Text(NSLocalizedString("stay_time", comment: "Stay time"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                                 .frame(width: 80, alignment: .leading)
-                            Text("\(spot.stayDuration)分")
+                            Text(String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), spot.stayDuration))
                                 .font(.system(size: 16))
                                 .foregroundColor(.blue)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1690,7 +1832,7 @@ struct SpotDetailPageView: View {
                                     .foregroundColor(.blue)
                                     .font(.system(size: 16))
                                     .frame(width: 20)
-                                Text("住所")
+                                Text(NSLocalizedString("address", comment: "Address"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .frame(width: 80, alignment: .leading)
@@ -1708,7 +1850,7 @@ struct SpotDetailPageView: View {
                                     .foregroundColor(.blue)
                                     .font(.system(size: 16))
                                     .frame(width: 20)
-                                Text("費用")
+                                Text(NSLocalizedString("cost", comment: "Cost"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .frame(width: 80, alignment: .leading)
@@ -1723,7 +1865,7 @@ struct SpotDetailPageView: View {
                     // メモ
                     if !spot.notes.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("メモ")
+                            Text(NSLocalizedString("memo", comment: "Memo"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             Text(spot.notes)
@@ -1738,7 +1880,7 @@ struct SpotDetailPageView: View {
                     
                     if hasLocalImages || hasWebImages {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("詳細画像")
+                            Text(NSLocalizedString("detail_images", comment: "Detail images"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             
@@ -1785,7 +1927,7 @@ struct SpotDetailPageView: View {
                         }) {
                             HStack {
                                 Image(systemName: "map")
-                                Text("地図で開く")
+                                Text(NSLocalizedString("open_in_map", comment: "Open in Map"))
                             }
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -1924,15 +2066,15 @@ struct FullScreenWebImageView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(2.0)
                 } else {
-                    Text("画像を読み込めませんでした")
+                    Text(NSLocalizedString("image_load_failed", comment: "Failed to load image"))
                         .foregroundColor(.white)
                 }
             }
-            .navigationTitle("画像")
+            .navigationTitle(NSLocalizedString("image", comment: "Image"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
+                    Button(NSLocalizedString("close", comment: "Close")) {
                         isPresented = false
                     }
                     .foregroundColor(.white)
@@ -2022,6 +2164,211 @@ struct FullScreenImageView: View {
 }
 
 // 全日程完了時のポップアップビュー
+// スポット追加ビュー
+struct GameAddSpotView: View {
+    let animeName: String
+    let selectedDay: Int
+    let onSave: (VisitSpot) -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var name = ""
+    @State private var address = ""
+    @State private var activity = ""
+    @State private var stayDuration = 60
+    @State private var spotCost = 0
+    @State private var notes = ""
+    @State private var selectedImage: UIImage?
+    @State private var showImagePicker = false
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text(NSLocalizedString("basic_info", comment: "Basic Information"))) {
+                    TextField(NSLocalizedString("spot_name", comment: "Spot name"), text: $name)
+                    TextField(NSLocalizedString("address", comment: "Address"), text: $address)
+                    TextField(NSLocalizedString("activity", comment: "Activity"), text: $activity)
+                }
+                
+                Section(header: Text(NSLocalizedString("details", comment: "Details"))) {
+                    Stepper(String(format: NSLocalizedString("stay_duration_stepper", comment: "Stay duration: %d minutes"), stayDuration), value: $stayDuration, in: 15...480, step: 15)
+                    
+                    HStack {
+                        Text(NSLocalizedString("cost_label", comment: "Cost"))
+                        Spacer()
+                        TextField("0", value: $spotCost, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 100)
+                        Text(CurrencyManager.shared.getLocalizedCurrencyName())
+                    }
+                    
+                    TextField(NSLocalizedString("memo", comment: "Memo"), text: $notes, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+                
+                Section(header: Text(NSLocalizedString("images", comment: "Images"))) {
+                    if let image = selectedImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .onTapGesture {
+                                showImagePicker = true
+                            }
+                    } else {
+                        Button(action: {
+                            showImagePicker = true
+                        }) {
+                            HStack {
+                                Image(systemName: "photo")
+                                Text(NSLocalizedString("select_image", comment: "Select image"))
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(NSLocalizedString("add_spot", comment: "Add Spot"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("save", comment: "Save")) {
+                        let newSpot = VisitSpot(
+                            name: name,
+                            address: address,
+                            notes: notes,
+                            stayDuration: stayDuration,
+                            activity: activity,
+                            imageData: selectedImage?.jpegData(compressionQuality: 0.8),
+                            dayNumber: selectedDay,
+                            spotCost: spotCost
+                        )
+                        onSave(newSpot)
+                        dismiss()
+                    }
+                    .disabled(name.isEmpty)
+                }
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(image: $selectedImage)
+        }
+    }
+}
+
+// 交通手段追加/編集ビュー
+struct GameAddTransportView: View {
+    let transport: TransportInfo?
+    let onSave: (TransportInfo) -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var method: String = "電車"
+    @State private var duration: Int = 30
+    @State private var cost: Int = 0
+    @State private var route: String = ""
+    
+    let transportMethods = ["電車", "バス", "徒歩", "タクシー", "車", "自転車"]
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text(NSLocalizedString("transportation_method", comment: "Transportation method"))) {
+                    Picker(NSLocalizedString("movement_method", comment: "Movement method"), selection: $method) {
+                        ForEach(transportMethods, id: \.self) { method in
+                            Text(method).tag(method)
+                        }
+                    }
+                    
+                    Stepper(String(format: NSLocalizedString("travel_time_stepper", comment: "Travel time: %d minutes"), duration), value: $duration, in: 5...180, step: 5)
+                    
+                    HStack {
+                        Text(NSLocalizedString("transportation_cost", comment: "Transportation cost"))
+                        Spacer()
+                        TextField("0", value: $cost, format: .number)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 100)
+                        Text(CurrencyManager.shared.getLocalizedCurrencyName())
+                    }
+                    
+                    TextField(NSLocalizedString("route_info_placeholder", comment: "Route info (e.g. JR Yamanote Line → Tozai Line)"), text: $route)
+                }
+            }
+            .navigationTitle(NSLocalizedString("transportation", comment: "Transportation"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("save", comment: "Save")) {
+                        let newTransport = TransportInfo(
+                            method: method,
+                            duration: duration,
+                            cost: cost,
+                            route: route
+                        )
+                        onSave(newTransport)
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            if let transport = transport {
+                method = transport.method
+                duration = transport.duration
+                cost = transport.cost
+                route = transport.route
+            }
+        }
+    }
+}
+
+// 画像ピッカー
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) var dismiss
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let uiImage = info[.originalImage] as? UIImage {
+                parent.image = uiImage
+            }
+            parent.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
+}
+
 struct ImprovedCompletionView: View {
     @Binding var isPresented: Bool
     let planTitle: String
@@ -2099,7 +2446,7 @@ struct ImprovedCompletionView: View {
                 
                 // 完了テキスト
                 VStack(spacing: 8) {
-                    Text("🎉 お疲れ様でした！")
+                    Text(NSLocalizedString("congratulations", comment: "🎉 Congratulations!"))
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.primary)
                     
@@ -2108,7 +2455,7 @@ struct ImprovedCompletionView: View {
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                     
-                    Text("アニメ：\(animeName)")
+                    Text(String(format: NSLocalizedString("anime_label", comment: "Anime: %@"), animeName))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.blue)
                 }
@@ -2118,7 +2465,7 @@ struct ImprovedCompletionView: View {
                 Button(action: dismissView) {
                     HStack {
                         Image(systemName: "checkmark")
-                        Text("完了")
+                        Text(NSLocalizedString("complete", comment: "Complete"))
                     }
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
@@ -2234,7 +2581,7 @@ struct AllDaysCompletionView: View {
                 }
                 
                 // タイトル
-                Text("お疲れ様でした！")
+                Text(NSLocalizedString("congratulations", comment: "🎉 Congratulations!"))
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.white)
                     .opacity(opacity)
@@ -2249,7 +2596,7 @@ struct AllDaysCompletionView: View {
                     .animation(.easeInOut(duration: 0.8).delay(0.5), value: opacity)
                 
                 // 完了メッセージ
-                Text("すべての日程が完了しました")
+                Text(NSLocalizedString("all_schedule_completed", comment: "All schedules completed\nGreat job"))
                     .font(.system(size: 16))
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.center)
@@ -2260,7 +2607,7 @@ struct AllDaysCompletionView: View {
                 Button(action: {
                     dismissView()
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2409,7 +2756,7 @@ struct StreamingServicesSheet: View {
                     }
                     
                     VStack(spacing: 8) {
-                        Text("アニメを観る")
+                        Text(NSLocalizedString("watch_anime", comment: "Watch Anime"))
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.black)
                         
@@ -2430,11 +2777,11 @@ struct StreamingServicesSheet: View {
                                 Image(systemName: "tv.slash")
                                     .font(.system(size: 60))
                                     .foregroundColor(.gray)
-                                Text("ストリーミングサービスが設定されていません")
+                                Text(NSLocalizedString("streaming_not_configured", comment: "Streaming service not configured"))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
-                                Text("管理者による設定が必要です")
+                                Text(NSLocalizedString("admin_setup_required", comment: "Admin setup required"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
@@ -2454,7 +2801,7 @@ struct StreamingServicesSheet: View {
                 Button(action: {
                     isPresented = false
                 }) {
-                    Text("閉じる")
+                    Text(NSLocalizedString("close", comment: "Close"))
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -2497,7 +2844,7 @@ struct StreamingServiceRow: View {
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
                     
-                    Text("タップして視聴")
+                    Text(NSLocalizedString("tap_to_watch", comment: "Tap to watch"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                 }

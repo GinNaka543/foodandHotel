@@ -34,11 +34,11 @@ struct LoginView: View {
                 VStack(spacing: 20) {
                     // ユーザー名入力
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("ユーザー名")
+                        Text(NSLocalizedString("username", comment: "Username"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
-                        TextField("ユーザー名を入力", text: $username)
+                        TextField(NSLocalizedString("enter_username", comment: "Enter username"), text: $username)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .autocapitalization(.none)
                     }
@@ -46,11 +46,11 @@ struct LoginView: View {
                     // ユーザーID入力（ログイン時のみ）
                     if !isNewUser {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("ユーザーID")
+                            Text(NSLocalizedString("user_id", comment: "User ID"))
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.gray)
                             
-                            TextField("ユーザーIDを入力", text: $userId)
+                            TextField(NSLocalizedString("enter_user_id", comment: "Enter user ID"), text: $userId)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .autocapitalization(.none)
                         }
@@ -59,7 +59,7 @@ struct LoginView: View {
                     // 生成されたユーザーID表示（新規登録時）
                     if isNewUser && !generatedUserId.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("あなたのユーザーID（必ず保存してください）")
+                            Text(NSLocalizedString("your_user_id_save", comment: "Your User ID (Please save it)"))
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundColor(.red)
                             
@@ -73,8 +73,8 @@ struct LoginView: View {
                                 
                                 Button(action: {
                                     UIPasteboard.general.string = generatedUserId
-                                    alertTitle = "コピーしました"
-                                    alertMessage = "ユーザーIDをクリップボードにコピーしました"
+                                    alertTitle = NSLocalizedString("copied", comment: "Copied")
+                                    alertMessage = NSLocalizedString("user_id_copied", comment: "User ID copied to clipboard")
                                     showingAlert = true
                                 }) {
                                     Image(systemName: "doc.on.doc")
@@ -97,7 +97,7 @@ struct LoginView: View {
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                     .scaleEffect(0.8)
                             }
-                            Text(isNewUser ? "登録する" : "ログイン")
+                            Text(isNewUser ? NSLocalizedString("register", comment: "Register") : NSLocalizedString("login", comment: "Login"))
                                 .font(.system(size: 17, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -118,7 +118,7 @@ struct LoginView: View {
                             generatedUserId = ""
                         }
                     }) {
-                        Text(isNewUser ? "既存のアカウントでログイン" : "新規アカウントを作成")
+                        Text(isNewUser ? NSLocalizedString("login_with_existing", comment: "Login with existing account") : NSLocalizedString("create_new_account", comment: "Create new account"))
                             .font(.system(size: 16))
                             .foregroundColor(.blue)
                     }
@@ -130,7 +130,7 @@ struct LoginView: View {
             .ignoresSafeArea(edges: .bottom)
         }
         .alert(alertTitle, isPresented: $showingAlert) {
-            if alertTitle == "登録完了" {
+            if alertTitle == NSLocalizedString("registration_complete", comment: "Registration Complete") {
                 Button("OK") {
                     // 登録完了後、自動ログイン
                     saveUserData(username: username, userId: generatedUserId)
@@ -157,12 +157,12 @@ struct LoginView: View {
                         saveUserData(username: username, userId: userId)
                         authManager.login()
                     } else {
-                        alertTitle = "ログイン失敗"
-                        alertMessage = "ユーザー名またはユーザーIDが正しくありません"
+                        alertTitle = NSLocalizedString("login_failed", comment: "Login Failed")
+                        alertMessage = NSLocalizedString("invalid_credentials", comment: "Username or User ID is incorrect")
                         showingAlert = true
                     }
                 case .failure(let error):
-                    alertTitle = "エラー"
+                    alertTitle = NSLocalizedString("error", comment: "Error")
                     alertMessage = error.localizedDescription
                     showingAlert = true
                 }
@@ -194,7 +194,7 @@ struct LoginView: View {
                         FirebaseManager.shared.addPointsToUser(
                             userId: generatedUserId,
                             points: 50,
-                            description: "新規登録ボーナス"
+                            description: NSLocalizedString("registration_bonus", comment: "Registration bonus")
                         ) { pointsResult in
                             DispatchQueue.main.async {
                                 isLoading = false
@@ -202,14 +202,13 @@ struct LoginView: View {
                                 case .success:
                                     // ボーナス付与済みフラグを設定
                                     UserDefaults.standard.set(true, forKey: "hasReceivedFirstTimeBonus")
-                                    alertTitle = "登録完了"
-                                    alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\n🎉 新規登録ボーナスとして50ポイントが付与されました！\n\nこのIDは次回ログイン時に必要です。"
+                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
+                                    alertMessage = String(format: NSLocalizedString("registration_complete_with_bonus", comment: "Please save your User ID: %@\n\n🎉 50 points have been awarded as a new registration bonus!\n\nThis ID is required for your next login."), generatedUserId)
                                     showingAlert = true
                                 case .failure(let error):
-                                    print("ポイント付与エラー: \(error)")
                                     // ポイント付与に失敗してもユーザー登録は成功しているので続行
-                                    alertTitle = "登録完了"
-                                    alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\nこのIDは次回ログイン時に必要です。"
+                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
+                                    alertMessage = String(format: NSLocalizedString("registration_complete_message", comment: "Please save your User ID: %@\n\nThis ID is required for your next login."), generatedUserId)
                                     showingAlert = true
                                 }
                             }
@@ -223,7 +222,7 @@ struct LoginView: View {
                     }
                 case .failure(let error):
                     isLoading = false
-                    alertTitle = "登録エラー"
+                    alertTitle = NSLocalizedString("registration_error", comment: "Registration Error")
                     alertMessage = error.localizedDescription
                     showingAlert = true
                 }

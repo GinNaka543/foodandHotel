@@ -9,11 +9,11 @@ struct CharacterOrderModal: View {
         NavigationView {
             VStack {
                 VStack(spacing: 8) {
-                    Text("キャラクターの順番を変更")
+                    Text(NSLocalizedString("character_order_title", comment: "Character order title"))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("ドラッグ&ドロップで順番を変更できます")
+                    Text(NSLocalizedString("drag_drop_to_reorder", comment: "Drag and drop instruction"))
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -55,13 +55,13 @@ struct CharacterOrderModal: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel button")) {
                         dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save button")) {
                         saveOrder()
                         dismiss()
                     }
@@ -75,13 +75,10 @@ struct CharacterOrderModal: View {
     }
     
     private func loadCharacters() {
-        print("CharacterOrderModal: キャラクターを読み込み中...")
-        print("CharacterOrderModal: characterManager.characters.count = \(characterManager.characters.count)")
         // 名前のないキャラクターを除外してソート
         characters = characterManager.characters
             .filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             .sorted(by: { $0.order < $1.order })
-        print("CharacterOrderModal: 読み込み完了. characters.count = \(characters.count)")
     }
     
     private func moveCharacter(from source: IndexSet, to destination: Int) {
@@ -94,15 +91,12 @@ struct CharacterOrderModal: View {
     }
     
     private func saveOrder() {
-        print("CharacterOrderModal: 順番を保存中...")
         for (index, var character) in characters.enumerated() {
             character.order = index
-            print("CharacterOrderModal: \(character.name) の順番を \(index) に設定")
             characterManager.updateCharacter(character)
         }
         characterManager.saveCharacters()
         characterManager.refreshUI()
-        print("CharacterOrderModal: 保存完了")
     }
     
     private func loadImageFromPath(_ imagePath: String) -> UIImage? {

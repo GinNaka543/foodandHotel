@@ -37,7 +37,7 @@ struct AddPhotoView: View {
     
     var uploadMethodSelectionView: some View {
         VStack(spacing: 30) {
-            Text("アップロード方法を選択")
+            Text(NSLocalizedString("upload_method_select", comment: "Select upload method"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top, 50)
@@ -54,11 +54,11 @@ struct AddPhotoView: View {
                             .font(.system(size: 50))
                             .foregroundColor(.orange)
                         
-                        Text("Pixiv URLから追加")
+                        Text(NSLocalizedString("add_from_pixiv_url", comment: "Add from Pixiv URL"))
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Text("Pixiv作品のURLを入力して\n自動で情報を取得します")
+                        Text(NSLocalizedString("pixiv_url_description", comment: "Enter Pixiv artwork URL to automatically retrieve information"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -83,11 +83,11 @@ struct AddPhotoView: View {
                             .font(.system(size: 50))
                             .foregroundColor(.blue)
                         
-                        Text("手動でアップロード")
+                        Text(NSLocalizedString("manual_upload", comment: "Manual upload"))
                             .font(.headline)
                             .foregroundColor(.primary)
                         
-                        Text("デバイスから画像を選択して\n手動で情報を入力します")
+                        Text(NSLocalizedString("manual_upload_description", comment: "Select image from device and manually enter information"))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -106,11 +106,11 @@ struct AddPhotoView: View {
             
             Spacer()
         }
-        .navigationTitle("写真を追加")
+        .navigationTitle(NSLocalizedString("add_photo", comment: "Add Photo"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("キャンセル") {
+                Button(NSLocalizedString("cancel", comment: "Cancel")) {
                     dismiss()
                 }
             }
@@ -125,22 +125,22 @@ struct AddPhotoView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Pixiv URL")
                             .font(.headline)
-                        TextField("URLを入力してください", text: $pixivURL)
+                        TextField(NSLocalizedString("enter_url", comment: "Enter URL"), text: $pixivURL)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .foregroundColor(.primary)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("タイトル")
+                        Text(NSLocalizedString("title", comment: "Title"))
                             .font(.headline)
-                        TextField("作品タイトル", text: $pixivTitle)
+                        TextField(NSLocalizedString("artwork_title", comment: "Artwork title"), text: $pixivTitle)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("タグ（カンマ区切り）")
+                        Text(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"))
                             .font(.headline)
-                        TextField("タグ1,タグ2,タグ3", text: $pixivTags)
+                        TextField(NSLocalizedString("tags_placeholder", comment: "tag1,tag2,tag3"), text: $pixivTags)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
@@ -165,7 +165,7 @@ struct AddPhotoView: View {
                                     Image(systemName: "photo")
                                         .font(.largeTitle)
                                         .foregroundColor(.gray)
-                                    Text("画像を選択")
+                                    Text(NSLocalizedString("select_image", comment: "Select Image"))
                                         .foregroundColor(.gray)
                                 }
                             )
@@ -175,7 +175,7 @@ struct AddPhotoView: View {
                     PhotosPicker(selection: $selectedItem, matching: .images) {
                         HStack {
                             Image(systemName: "photo.on.rectangle")
-                            Text("画像を選択")
+                            Text(NSLocalizedString("select_image", comment: "Select Image"))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -186,19 +186,19 @@ struct AddPhotoView: View {
                     
                     // タイトル入力
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("タイトル")
+                        Text(NSLocalizedString("title", comment: "Title"))
                             .font(.headline)
                         
-                        TextField("タイトルを入力", text: $photoTitle)
+                        TextField(NSLocalizedString("enter_title", comment: "Enter title"), text: $photoTitle)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
                     // タグ入力
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("タグ（カンマ区切り）")
+                        Text(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"))
                             .font(.headline)
                         
-                        TextField("タグを入力", text: $photoTags)
+                        TextField(NSLocalizedString("enter_tags", comment: "Enter tags"), text: $photoTags)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
@@ -207,11 +207,11 @@ struct AddPhotoView: View {
             }
         }
         .padding()
-        .navigationTitle(selectedUploadMethod == .pixiv ? "Pixiv作品を追加" : "写真を追加")
+        .navigationTitle(selectedUploadMethod == .pixiv ? NSLocalizedString("add_pixiv_artwork", comment: "Add Pixiv Artwork") : NSLocalizedString("add_photo", comment: "Add Photo"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("戻る") {
+                    Button(NSLocalizedString("back", comment: "Back")) {
                         if selectedUploadMethod != nil {
                             selectedUploadMethod = nil
                             showUploadMethodSelection = true
@@ -222,7 +222,7 @@ struct AddPhotoView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         if selectedUploadMethod == .pixiv {
                             // Pixiv URLの保存処理
                             if let onPixivSave = onPixivSave,

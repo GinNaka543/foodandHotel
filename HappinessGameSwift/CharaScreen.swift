@@ -26,11 +26,8 @@ class CharacterManager: ObservableObject {
     func loadCharacters() {
         if let data = UserDefaultsHelper.shared.getData(forKey: "characters"),
            let decoded = try? JSONDecoder().decode([Character].self, from: data) {
-            print("[DEBUG] loadCharacters: 読み込んだキャラ数=\(decoded.count)")
-            for c in decoded { print("[DEBUG] キャラID=\(c.id), name=\(c.name), customFields=\(String(describing: c.customFields))") }
             characters = decoded
         } else {
-            print("[DEBUG] loadCharacters: データなし or デコード失敗")
             characters = []
         }
     }
@@ -38,29 +35,24 @@ class CharacterManager: ObservableObject {
     func saveCharacters() {
         if let data = try? JSONEncoder().encode(characters) {
             UserDefaultsHelper.shared.setData(data, forKey: "characters")
-            print("[DEBUG] saveCharacters: 保存キャラ数=\(characters.count)")
-            for c in characters { print("[DEBUG] 保存キャラID=\(c.id), name=\(c.name), customFields=\(String(describing: c.customFields))") }
             
             // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
-                print("キャラクター変更のFirebase同期開始")
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        print("✅ キャラクター変更のFirebase同期成功")
-                    case .failure(let error):
-                        print("❌ キャラクター変更のFirebase同期エラー: \(error)")
+                        break
+                    case .failure(_):
+                        break
                     }
                 }
             }
         } else {
-            print("[DEBUG] saveCharacters: エンコード失敗")
         }
     }
     
     func updateCharacter(_ updatedCharacter: Character) {
-        print("[DEBUG] updateCharacter: 更新キャラID=\(updatedCharacter.id), name=\(updatedCharacter.name), customFields=\(String(describing: updatedCharacter.customFields))")
         if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
             characters[idx] = updatedCharacter
             saveCharacters()
@@ -68,13 +60,11 @@ class CharacterManager: ObservableObject {
                 self.objectWillChange.send()
             }
         } else {
-            print("[DEBUG] updateCharacter: キャラID見つからず")
         }
     }
     
     func addCharacter(_ character: Character) {
         let exists = characters.contains { $0.id == character.id }
-        print("[DEBUG] addCharacter: 追加キャラID=\(character.id), name=\(character.name), customFields=\(String(describing: character.customFields)), exists=\(exists)")
         if !exists {
             characters.append(character)
             saveCharacters()
@@ -214,13 +204,16 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     var height: String // 身長
     var customFields: [CustomField]? // カスタムフィールド
     var order: Int = 0 // 表示順序用フィールド
+    var iconScale: Double = 1.0 // アイコンの拡大率
+    var iconOffsetX: Double = 0.0 // アイコンの横方向オフセット
+    var iconOffsetY: Double = 0.0 // アイコンの縦方向オフセット
 
     static func == (lhs: Character, rhs: Character) -> Bool {
         lhs.id == rhs.id
     }
     // Codable対応
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields, order
+        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields, order, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -238,6 +231,9 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         try container.encodeIfPresent(backgroundImagePath, forKey: .backgroundImagePath)
         try container.encodeIfPresent(customFields, forKey: .customFields)
         try container.encode(order, forKey: .order)
+        try container.encode(iconScale, forKey: .iconScale)
+        try container.encode(iconOffsetX, forKey: .iconOffsetX)
+        try container.encode(iconOffsetY, forKey: .iconOffsetY)
     }
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -255,8 +251,11 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([CustomField].self, forKey: .customFields)
         order = (try? container.decode(Int.self, forKey: .order)) ?? 0
+        iconScale = (try? container.decode(Double.self, forKey: .iconScale)) ?? 1.0
+        iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
+        iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0, iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -271,6 +270,9 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         self.height = height
         self.customFields = customFields
         self.order = order
+        self.iconScale = iconScale
+        self.iconOffsetX = iconOffsetX
+        self.iconOffsetY = iconOffsetY
     }
 }
 
@@ -281,12 +283,8 @@ struct CharaScreen: View {
     @State private var selectedCharacter: Character? = nil
     @State private var showRankingAdmin = false
     @State private var showNavigationMenu = false
-    @State private var showCharacterOrderModal = false
-    @State private var showFirebaseAd = false
-    @State private var firebaseAdData: [String: Any]? = nil
-    @State private var currentAdDocument: DocumentSnapshot? = nil
+    @State private var showPrivacyPolicy = false
     @State private var bannerTimer: Timer? = nil
-    @State private var availableAds: [DocumentSnapshot] = []
     @State private var bannerVideo: MemoryVideo? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
@@ -315,9 +313,12 @@ struct CharaScreen: View {
                                 .foregroundColor(.black)
                         }
                         Spacer()
+                        // 言語切り替えボタン
+                        LanguageButton()
+                            .padding(.trailing, 8)
                         // 右上＋ボタン
                         Button(action: { showAddSheet = true }) {
-                            Text("キャラを追加")
+                            Text(NSLocalizedString("add_character", comment: ""))
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 16)
@@ -334,11 +335,13 @@ struct CharaScreen: View {
                     }
                     .padding(.horizontal, 16)
                 .padding(.top, 12)
+                .padding(.bottom, 8)
                 // スクロール可能なコンテンツ
                 ScrollView {
                     VStack(spacing: 0) {
                         // 広告バナー
                         bannerView
+                            .padding(.bottom, 16)
                         
                         // キャラリスト
                         if filteredCharacters.isEmpty {
@@ -346,10 +349,10 @@ struct CharaScreen: View {
                                 Image(systemName: "person.2.square.stack")
                                     .font(.system(size: 50))
                                     .foregroundColor(.purple)
-                                Text("お気に入りのキャラクターを追加しよう")
+                                Text(NSLocalizedString("add_favorite_character", comment: ""))
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.black)
-                                Text("推しキャラの情報を管理して、いつでも確認できます")
+                                Text(NSLocalizedString("manage_character_info", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .multilineTextAlignment(.center)
@@ -358,7 +361,7 @@ struct CharaScreen: View {
                                 Button(action: { showAddSheet = true }) {
                                     HStack {
                                         Image(systemName: "plus")
-                                        Text("キャラクターを追加")
+                                        Text(NSLocalizedString("add_character_button", comment: ""))
                                     }
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.white)
@@ -394,6 +397,12 @@ struct CharaScreen: View {
                     }
                 }
             }
+            
+            // サントラプレイヤービュー
+            VStack {
+                Spacer()
+                    .padding(.bottom, 70) // タブバーの上に表示
+            }
         }
         .sheet(isPresented: $showAddSheet, onDismiss: {
             characterManager.loadCharacters()
@@ -404,21 +413,28 @@ struct CharaScreen: View {
         .sheet(isPresented: $showRankingAdmin) {
             CharacterRankingAdminView()
         }
-        .sheet(isPresented: $showCharacterOrderModal, onDismiss: {
+        .sheet(isPresented: $mainTab.showCharacterOrderModal, onDismiss: {
             // モーダルを閉じたときにデータを再読み込み
             characterManager.loadCharacters()
         }) {
             CharacterOrderModal()
                 .environmentObject(characterManager)
         }
+        .sheet(isPresented: $showPrivacyPolicy) {
+            PrivacyPolicyView(hasAgreed: .constant(true), isInitialAgreement: false)
+        }
         .onAppear {
             // YouTube動画を収集
             loadYouTubeVideos()
-            // 最初の動画を選択
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            // アプリがフォアグラウンドに戻った時に動画リストを更新
+            loadYouTubeVideos()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDeleted"))) { _ in
+            // 動画が削除された時に動画リストを更新
+            loadYouTubeVideos()
             selectRandomYouTubeVideo()
-            // Firebase広告と動画を交互に表示
-            loadFirebaseAdvertisement()
-            startBannerRotation()
         }
         .onDisappear {
             bannerTimer?.invalidate()
@@ -447,10 +463,11 @@ struct CharaScreen: View {
             if showNavigationMenu {
                 NavigationMenuView(
                     isPresented: $showNavigationMenu,
-                    onShowCharacterOrder: {
-                        showCharacterOrderModal = true
-                    },
-                    onShowAnimeOrder: nil
+                    onShowCharacterOrder: nil,
+                    onShowAnimeOrder: nil,
+                    onShowPrivacyPolicy: {
+                        showPrivacyPolicy = true
+                    }
                 )
                 .transition(.opacity)
                 .zIndex(2)
@@ -463,298 +480,188 @@ struct CharaScreen: View {
         characterManager.saveCharacters()
     }
     
-    // バナービュー
+    // バナービュー（簡素化版 - デバッグ用）
     private var bannerView: some View {
-        Group {
-            if showFirebaseAd, let adData = firebaseAdData {
-                // Firebase広告を表示
-                firebaseAdBanner(adData: adData)
-            } else if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
-                ZStack(alignment: .bottomLeading) {
-                    // カスタムサムネイルまたはYouTubeサムネイルを表示
-                    if let thumbnailData = video.thumbnailData, let uiImage = UIImage(data: thumbnailData) {
-                        ZStack {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                .clipped()
-                            
-                            // 暗いオーバーレイを追加
-                            Color.black.opacity(0.2)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        }
-                    } else if let customThumbnailURL = video.youtubeThumbnailURL {
-                        ZStack {
-                            AsyncImage(url: URL(string: customThumbnailURL)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                        .clipped()
-                                case .failure(_), .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                            
-                            // 暗いオーバーレイを追加
-                            Color.black.opacity(0.2)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        }
-                    } else {
-                        ZStack {
-                            AsyncImage(url: URL(string: getYouTubeThumbnailURLForBanner(from: youtubeURL))) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                        .clipped()
-                                case .failure(_), .empty:
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                            
-                            // 暗いオーバーレイを追加
-                            Color.black.opacity(0.2)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        }
-                    }
+        let _ = print("🎯 [CharaScreen] bannerView called. bannerVideo exists: \(bannerVideo != nil)")
+        
+        return Group {
+            if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                let _ = print("🔍 [CharaScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
                 
-                    // 動画情報
-                    VStack(alignment: .leading, spacing: 8) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(video.title.isEmpty ? "動画" : video.title)
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                                .lineLimit(1)
-                            
-                            if !video.tags.isEmpty {
-                                Text("#" + video.tags.joined(separator: " #"))
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                    .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                                    .lineLimit(1)
-                            }
-                        }
-                        
-                        HStack(spacing: 4) {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 16))
-                            Text("WATCH")
-                                .font(.system(size: 14, weight: .semibold))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.black)
-                        .cornerRadius(4)
-                    }
-                    .padding()
-                }
-                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                .cornerRadius(12)
-                .onTapGesture {
-                    if let url = URL(string: youtubeURL) {
-                        UIApplication.shared.open(url)
-                    }
-                }
-            } else {
-                EmptyView()
-            }
-        }
-        .frame(height: 200)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-    }
-    
-    // Firebase広告バナー
-    private func firebaseAdBanner(adData: [String: Any]) -> some View {
-        ZStack(alignment: .topTrailing) {
-            ZStack(alignment: .bottomLeading) {
-                // 広告画像
-                if let imageURL = adData["imageURL"] as? String {
-                    AsyncImage(url: URL(string: imageURL)) { phase in
-                        switch phase {
-                        case .success(let image):
+                VStack {
+                    if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
+                        let _ = print("🖼️ [CharaScreen] Using YouTube thumbnail: \(thumbnailURL)")
+                        AsyncImage(url: URL(string: thumbnailURL)) { image in
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
+                                .frame(height: 180)
                                 .clipped()
-                        case .failure(_), .empty:
+                        } placeholder: {
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))
-                                .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                        @unknown default:
-                            EmptyView()
+                                .frame(height: 180)
+                                .overlay(
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                )
                         }
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                        .overlay(
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(video.title)
+                                            .foregroundColor(.white)
+                                            .font(.headline)
+                                            .lineLimit(2)
+                                            .shadow(color: .black.opacity(0.7), radius: 2)
+                                        if let viewCount = video.viewCount {
+                                            Text("\(viewCount.formatted()) views")
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .font(.caption)
+                                                .shadow(color: .black.opacity(0.7), radius: 2)
+                                        }
+                                    }
+                                    Spacer()
+                                    Image(systemName: "play.circle.fill")
+                                        .foregroundColor(.white)
+                                        .font(.title)
+                                        .shadow(color: .black.opacity(0.7), radius: 2)
+                                }
+                                .padding()
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                            }
+                        )
+                        .onTapGesture {
+                            if let url = URL(string: youtubeURL) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                    } else {
+                        let _ = print("⚠️ [CharaScreen] No thumbnail URL available, using fallback")
+                        Rectangle()
+                            .fill(Color.red.opacity(0.8))
+                            .frame(height: 180)
+                            .overlay(
+                                VStack {
+                                    Image(systemName: "play.rectangle.fill")
+                                        .foregroundColor(.white)
+                                        .font(.largeTitle)
+                                    Text(video.title)
+                                        .foregroundColor(.white)
+                                        .font(.headline)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal)
+                                }
+                            )
+                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                            .onTapGesture {
+                                if let url = URL(string: youtubeURL) {
+                                    UIApplication.shared.open(url)
+                                }
+                            }
                     }
                 }
-                
-                // 暗いオーバーレイを追加
-                Color.black.opacity(0.2)
-                    .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-                
-                // 広告情報
-                VStack(alignment: .leading, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if let title = adData["title"] as? String {
-                            Text(title)
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                        }
-                        
-                        if let description = adData["description"] as? String {
-                            Text(description)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
-                                .shadow(color: .black.opacity(0.3), radius: 1, x: 0, y: 1)
-                                .lineLimit(2)
-                        }
-                    }
+                .padding(.horizontal, 16)
+            } else {
+                // YouTube動画が登録されていない場合の表示
+                ZStack {
+                    AnimatedGradientView()
+                        .frame(width: UIScreen.main.bounds.width - 32, height: 180)
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
                     
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 16))
-                        Text("WATCH")
-                            .font(.system(size: 14, weight: .semibold))
+                    VStack {
+                        Spacer()
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Image(systemName: "play.rectangle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 4)
+                                    .padding(.bottom, 4)
+                                
+                                Text(NSLocalizedString("from_youtube", comment: ""))
+                                    .font(.system(size: 20, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .shadow(radius: 2)
+                                Text(NSLocalizedString("register_video", comment: ""))
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.white.opacity(0.95))
+                                    .shadow(radius: 2)
+                            }
+                            .padding(.leading, 24)
+                            .padding(.bottom, 20)
+                            Spacer()
+                        }
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.black)
-                    .cornerRadius(4)
                 }
-                .padding()
+                .padding(.horizontal, 16)
             }
-            
-            // PR表示
-            Text("PR")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.white)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.black.opacity(0.7))
-                .cornerRadius(4)
-                .padding(.top, 8)
-                .padding(.trailing, 8)
         }
-        .frame(width: UIScreen.main.bounds.width - 32, height: 176)
-        .cornerRadius(12)
-        .onTapGesture {
-            if let link = adData["link"] as? String, let url = URL(string: link) {
-                UIApplication.shared.open(url)
-                
-                // clicks カウントを更新
-                if let document = currentAdDocument {
-                    let clicks = (document.data()?["clicks"] as? Int ?? 0) + 1
-                    document.reference.updateData(["clicks": clicks])
-                }
-            }
-        }
-    }
-    
-    // Firebase広告を読み込む
-    private func loadFirebaseAdvertisement() {
-        // 初回読み込み時は全広告を取得
-        if availableAds.isEmpty {
-            let db = Firestore.firestore()
-            
-            db.collection("advertisements")
-                .whereField("placements", arrayContains: "character")
-                .whereField("isActive", isEqualTo: true)
-                .getDocuments { snapshot, error in
-                    if let error = error {
-                        print("広告データの取得エラー: \(error)")
-                        return
-                    }
-                    
-                    guard let documents = snapshot?.documents, !documents.isEmpty else {
-                        return
-                    }
-                    
-                    DispatchQueue.main.async {
-                        self.availableAds = documents
-                        self.selectNextAd()
-                    }
-                }
-        } else {
-            // 既に広告がある場合は次の広告を選択
-            selectNextAd()
-        }
-    }
-    
-    // 次の広告を選択
-    private func selectNextAd() {
-        guard !availableAds.isEmpty else { return }
-        
-        // ランダムに広告を選択
-        let randomIndex = Int.random(in: 0..<availableAds.count)
-        let selectedAd = availableAds[randomIndex]
-        
-        currentAdDocument = selectedAd
-        firebaseAdData = selectedAd.data()
-        showFirebaseAd = true
     }
     
     // バナーローテーションタイマー開始
     private func startBannerRotation() {
         bannerTimer?.invalidate()
         
-        // YouTube動画がない場合は広告のみを表示
-        if allYouTubeVideos.isEmpty {
-            showFirebaseAd = true
+        // YouTube動画がある場合のみローテーション
+        if !allYouTubeVideos.isEmpty {
             bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
-                // 次の広告を読み込む
-                self.loadFirebaseAdvertisement()
-            }
-        } else {
-            // 初期状態を動画表示に設定
-            showFirebaseAd = false
-            
-            bannerTimer = Timer.scheduledTimer(withTimeInterval: 7.0, repeats: true) { _ in
-                self.showFirebaseAd.toggle()
-                
-                if self.showFirebaseAd {
-                    // 広告に切り替わった時に新しい広告を読み込む
-                    self.loadFirebaseAdvertisement()
-                } else {
-                    // 動画に切り替わった時に新しい動画を選択
-                    self.selectRandomYouTubeVideo()
-                }
+                // 新しい動画を選択
+                self.selectRandomYouTubeVideo()
             }
         }
     }
     
     // YouTube動画を収集
     private func loadYouTubeVideos() {
+        print("🔍 [CharaScreen] Loading YouTube videos...")
+        print("🔍 [CharaScreen] Total characters available: \(characterManager.characters.count)")
+        
+        // UserDefaultsの全キーを確認
+        let allKeys = UserDefaults.standard.dictionaryRepresentation().keys
+        let videoKeys = allKeys.filter { $0.contains("video") }
+        print("🔍 [CharaScreen] All video-related keys in UserDefaults: \(videoKeys)")
+        
         allYouTubeVideos = []
         for character in characterManager.characters {
-            let key = "videos_\(character.id.uuidString)"
-            if let data = UserDefaults.standard.data(forKey: key),
-               let videos = try? JSONDecoder().decode([MemoryVideo].self, from: data) {
+            // VideoStorage.swiftを使用して動画を取得
+            let videos = VideoStorage.shared.loadVideos(for: character.id.uuidString)
+            print("🔍 [CharaScreen] VideoStorage returned \(videos.count) videos for character: \(character.name)")
+            if !videos.isEmpty {
+                print("🔍 [CharaScreen] Found \(videos.count) total videos for character: \(character.name)")
                 // YouTube URLを持つ動画のみをフィルタリング
                 let youtubeVideos = videos.filter { $0.youtubeURL != nil && !$0.youtubeURL!.isEmpty }
                 allYouTubeVideos.append(contentsOf: youtubeVideos)
+                print("🔍 [CharaScreen] Found \(youtubeVideos.count) YouTube videos for character: \(character.name)")
+                
+                // 個別の動画情報も出力
+                for video in videos {
+                    if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                        print("🎥 [CharaScreen] YouTube video: \(video.title) - URL: \(youtubeURL)")
+                    } else {
+                        print("📱 [CharaScreen] Local video: \(video.title)")
+                    }
+                }
+            } else {
+                print("❌ [CharaScreen] No video data found for character: \(character.name)")
             }
+        }
+        print("🔍 [CharaScreen] Total YouTube videos found: \(allYouTubeVideos.count)")
+        
+        // 初回のバナー動画を選択
+        if !allYouTubeVideos.isEmpty {
+            selectRandomYouTubeVideo()
+            startBannerRotation()
         }
     }
     
@@ -864,12 +771,14 @@ struct CharacterRow: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 48, height: 48)
-                    .clipShape(Circle())
+            if let imageIdentifier = character.imageIdentifier {
+                OptimizedFileImage(
+                    path: imageIdentifier,
+                    targetSize: CGSize(width: 48, height: 48)
+                )
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
             } else {
                 Circle()
                     .fill(Color.gray.opacity(0.3))
@@ -924,13 +833,13 @@ struct AddCharacterSheet: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 ZStack {
-                    Text("キャラ追加")
+                    Text(NSLocalizedString("add_character", comment: ""))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                     
                     HStack {
                         Button(action: { dismiss() }) {
-                            Text("キャンセル")
+                            Text(NSLocalizedString("cancel", comment: ""))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 8)
@@ -947,16 +856,14 @@ struct AddCharacterSheet: View {
                         Spacer()
                         
                         Button(action: {
-                            print("[DEBUG] 追加ボタンタップ")
                             let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
                             let calendar = Calendar.current
                             let date = calendar.date(from: components) ?? Date()
                             let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
-                            print("[AddCharacterSheet] 新しいキャラクター作成: name=\(name), imageIdentifier=\(savedImagePath ?? "nil")")
                             characterManager.addCharacterAtTop(newChar)
                             dismiss()
                         }) {
-                            Text("追加")
+                            Text(NSLocalizedString("add", comment: ""))
                                 .foregroundColor(.white)
                                 .fontWeight(.bold)
                                 .padding(.horizontal, 20)
@@ -981,7 +888,7 @@ struct AddCharacterSheet: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         // 名前入力
-                        TextField("キャラクター名", text: $name)
+                        TextField(NSLocalizedString("character_name", comment: ""), text: $name)
                             .textFieldStyle(PlainTextFieldStyle())
                             .multilineTextAlignment(.center)
                             .padding(.vertical, 8)
@@ -1014,11 +921,11 @@ struct AddCharacterSheet: View {
                                         )
                                 }
                             }
-                            Text("アイコン画像を選択")
+                            Text(NSLocalizedString("select_icon_image", comment: ""))
                                 .font(.caption)
                                 .foregroundColor(.gray)
                         }
-                        .onChange(of: selectedItem) { newValue in
+                        .onChange(of: selectedItem) { _, newValue in
                             if let newItem = newValue {
                                 Task {
                                     if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -1026,7 +933,6 @@ struct AddCharacterSheet: View {
                                         let fileName = "icon_\(UUID().uuidString).png"
                                         if let path = saveImageToDocuments(uiImage, fileName: fileName) {
                                             savedImagePath = path
-                                            print("[AddCharacterSheet] 画像を保存: \(path)")
                                         }
                                     }
                                 }
@@ -1034,7 +940,7 @@ struct AddCharacterSheet: View {
                         }
                         
                         // タグ入力
-                        TextField("タグ", text: $tag)
+                        TextField(NSLocalizedString("tag", comment: ""), text: $tag)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.vertical, 8)
                             .overlay(
@@ -1047,7 +953,7 @@ struct AddCharacterSheet: View {
                             .padding(.horizontal)
                         
                         // 声優入力
-                        TextField("声優名", text: $voiceActor)
+                        TextField(NSLocalizedString("voice_actor", comment: ""), text: $voiceActor)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.vertical, 8)
                             .overlay(
@@ -1065,22 +971,22 @@ struct AddCharacterSheet: View {
                                 Image(systemName: "gift.fill")
                                     .foregroundColor(.gray.opacity(0.6))
                                     .font(.system(size: 20))
-                                Text("誕生日")
+                                Text(NSLocalizedString("birthday", comment: ""))
                                     .foregroundColor(.gray.opacity(0.8))
                                     .font(.system(size: 16))
                                 Spacer()
                                 
                                 HStack(spacing: 4) {
-                                    Picker(selection: $selectedMonth, label: Text("月")) {
+                                    Picker(selection: $selectedMonth, label: Text(NSLocalizedString("month", comment: ""))) {
                                         ForEach(1...12, id: \.self) { month in
-                                            Text("\(month)月").tag(month)
+                                            Text("\(month)" + NSLocalizedString("month", comment: "")).tag(month)
                                         }
                                     }
                                     .pickerStyle(MenuPickerStyle())
                                     
-                                    Picker(selection: $selectedDay, label: Text("日")) {
+                                    Picker(selection: $selectedDay, label: Text(NSLocalizedString("day", comment: ""))) {
                                         ForEach(1...daysInMonth(selectedMonth), id: \.self) { day in
-                                            Text("\(day)日").tag(day)
+                                            Text("\(day)" + NSLocalizedString("day", comment: "")).tag(day)
                                         }
                                     }
                                     .pickerStyle(MenuPickerStyle())
@@ -1123,6 +1029,8 @@ struct CharacterDetailView: View {
     @State private var showAbout = false
     @State private var showEditBackgroundModal = false
     @State private var showEditIconModal = false // ← 追加
+    @State private var showEditTitleTagModal = false
+    @State private var showIconAdjustment = false // アイコン位置調整モーダル
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
     @State private var tempIconImage: UIImage? = nil
@@ -1146,9 +1054,6 @@ struct CharacterDetailView: View {
                 }
                 .ignoresSafeArea()
                 .overlay(Color.black.opacity(0.35).ignoresSafeArea())
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             } else {
                 LinearGradient(
                     gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
@@ -1156,9 +1061,6 @@ struct CharacterDetailView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                .onTapGesture {
-                    showEditBackgroundModal = true
-                }
             }
             
             // コンテンツ
@@ -1189,37 +1091,41 @@ struct CharacterDetailView: View {
                 VStack {
                     Spacer().frame(height: 180)
                     // アイコン
-                    ZStack {
-                        if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 120, height: 120)
-                                .clipShape(Circle())
-                                .shadow(radius: 8)
-                        } else {
-                            ZStack {
-                                Circle()
-                                    .fill(Color(.systemGray5))
+                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                        ZStack {
+                            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
                                     .frame(width: 120, height: 120)
+                                    .clipShape(Circle())
                                     .shadow(radius: 8)
-                                    .overlay(
-                                        Circle().stroke(Color.white, lineWidth: 2)
-                                    )
-                                Image(systemName: "person")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray)
+                            } else {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(.systemGray5))
+                                        .frame(width: 120, height: 120)
+                                        .shadow(radius: 8)
+                                        .overlay(
+                                            Circle().stroke(Color.white, lineWidth: 2)
+                                        )
+                                    Image(systemName: "person")
+                                        .font(.system(size: 50))
+                                        .foregroundColor(.gray)
+                                }
                             }
                         }
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture { showEditIconModal = true }
                     // 名前
                     Text(currentCharacter.name)
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         .padding(.top, 20)
+                        .onTapGesture {
+                            showEditTitleTagModal = true
+                        }
                     // 誕生日
                     Text(DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday).uppercased())
                         .font(.system(size: 16, weight: .medium))
@@ -1234,9 +1140,10 @@ struct CharacterDetailView: View {
                                 Image(systemName: "photo.on.rectangle")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("ArtWork").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("artwork", comment: "Artwork")).font(.caption2).foregroundColor(.white)
                             }
-                            .frame(width: 80, height: 60)
+                            .frame(width: 90, height: 70)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -1245,9 +1152,10 @@ struct CharacterDetailView: View {
                                 Image(systemName: "video")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("Video").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("video", comment: "Video")).font(.caption2).foregroundColor(.white)
                             }
-                            .frame(width: 80, height: 60)
+                            .frame(width: 90, height: 70)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -1256,9 +1164,10 @@ struct CharacterDetailView: View {
                                 Image(systemName: "info.circle")
                                     .foregroundColor(.white)
                                     .font(.system(size: 24))
-                                Text("About").font(.caption2).foregroundColor(.white)
+                                Text(NSLocalizedString("about", comment: "About")).font(.caption2).foregroundColor(.white)
                             }
-                            .frame(width: 80, height: 60)
+                            .frame(width: 90, height: 70)
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(PlainButtonStyle())
                         Spacer()
@@ -1287,7 +1196,7 @@ struct CharacterDetailView: View {
                     .padding(.top, 24)
                     
                     VStack(spacing: 24) {
-                        Text("アイコンを選択")
+                        Text(NSLocalizedString("select_icon", comment: ""))
                             .font(.system(size: 20, weight: .bold))
                             .padding(.top, 16)
                         
@@ -1317,7 +1226,7 @@ struct CharacterDetailView: View {
                                 }
                             }
                         }
-                        .onChange(of: iconPickerItem) { newValue in
+                        .onChange(of: iconPickerItem) { _, newValue in
                             if let newItem = newValue {
                                 Task {
                                     if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
@@ -1350,7 +1259,7 @@ struct CharacterDetailView: View {
                             }
                         }
                         
-                        Text("画像をタップして変更")
+                        Text(NSLocalizedString("tap_to_change_image", comment: ""))
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                         
@@ -1381,7 +1290,8 @@ struct CharacterDetailView: View {
                 }
             }
             .fullScreenCover(isPresented: $showArtwork) {
-                ArtworkScreen(character: character)
+                // 最新のキャラクター情報を渡す
+                ArtworkScreen(character: characterManager.characters.first(where: { $0.id == character.id }) ?? character)
                     .environmentObject(characterManager)
             }
             .fullScreenCover(isPresented: $showVideo) {
@@ -1389,8 +1299,24 @@ struct CharacterDetailView: View {
                     .environmentObject(characterManager)
             }
             .fullScreenCover(isPresented: $showAbout) {
-                AboutView(characters: $characters, characterId: character.id, onClose: { showAbout = false })
+                AboutView(characters: $characters, characterId: character.id, onClose: { 
+                    showAbout = false
+                    // 最新のキャラクター情報を取得して更新
+                    if let updatedCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                        character = updatedCharacter
+                    }
+                })
                     .environmentObject(characterManager)
+            }
+            .sheet(isPresented: $showEditTitleTagModal) {
+                EditTitleTagBackgroundView(
+                    character: $character,
+                    characterManager: characterManager
+                )
+            }
+            // アイコン位置調整モーダル
+            .sheet(isPresented: $showIconAdjustment) {
+                CharacterIconAdjustmentView(character: $character, characterManager: characterManager)
             }
         }
         .navigationBarHidden(true)
@@ -1398,15 +1324,51 @@ struct CharacterDetailView: View {
             // デバッグ情報を表示
             let currentCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
             if let backgroundPath = currentCharacter.backgroundImagePath {
-                print("[DEBUG] 背景画像パス: \(backgroundPath)")
                 if loadImageFromPath(backgroundPath) != nil {
-                    print("[DEBUG] 背景画像読み込み成功")
                 } else {
-                    print("[DEBUG] 背景画像読み込み失敗: \(backgroundPath)")
                 }
             } else {
-                print("[DEBUG] 背景画像パスがnil")
             }
+            
+            // キャラクターのサントラがある場合、ランダムに再生
+            if !currentCharacter.soundtracks.isEmpty {
+                SoundtrackManager.shared.collectAllSoundtracks(
+                    characters: [currentCharacter],
+                    animes: []
+                )
+                SoundtrackManager.shared.startRandomPlayback()
+            }
+        }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 70)
+            }
+        )
+        .onChange(of: iconPickerItem) { newValue in
+            Task {
+                if let newValue = newValue {
+                    if let data = try? await newValue.loadTransferable(type: Data.self) {
+                        if let uiImage = UIImage(data: data) {
+                            // 画像を保存
+                            let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
+                            if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                // キャラクターを更新
+                                var updatedCharacter = character
+                                updatedCharacter.imageIdentifier = savedPath
+                                characterManager.updateCharacter(updatedCharacter)
+                                character = updatedCharacter
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            // ビューが消える時に音楽を停止
+            SoundtrackManager.shared.stopPlayback()
         }
     }
 }
@@ -1444,10 +1406,25 @@ struct AboutView: View {
     @State private var editedTag: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
-    @State private var showEditSelection: Bool = false
-    @State private var showIconPicker: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var newIconImage: UIImage?
+    @State private var showIconAdjustment: Bool = false
+    
+    // シート管理用のenum
+    enum ActiveSheet: Identifiable {
+        case soundtrackEdit
+        case iconPicker
+        case editSelection
+        
+        var id: Int {
+            switch self {
+            case .soundtrackEdit: return 0
+            case .iconPicker: return 1
+            case .editSelection: return 2
+            }
+        }
+    }
+    @State private var activeSheet: ActiveSheet?
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var characterManager: CharacterManager
 
@@ -1458,109 +1435,89 @@ struct AboutView: View {
     private var character: Character? {
         characterIndex.flatMap { characters[$0] }
     }
+    
+    @ViewBuilder
+    private var bannerView: some View {
+        if let character = character {
+            VStack(spacing: 0) {
+                PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                    if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .scaleEffect(CGFloat(character.iconScale))
+                            .offset(x: CGFloat(character.iconOffsetX), y: CGFloat(character.iconOffsetY))
+                            .clipped()
+                            .overlay(Color.black.opacity(0.4))
+                            .overlay(bannerOverlay)
+                    } else {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .overlay(
+                                VStack(spacing: 4) {
+                                    Image(systemName: "person.fill")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                    Text(NSLocalizedString("tap_to_add", comment: ""))
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                }
+                            )
+                            .overlay(Color.black.opacity(0.4))
+                            .overlay(bannerOverlay)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.top, 20)
+            .padding(.bottom, 10)
+        }
+    }
+    
+    @ViewBuilder
+    private var bannerOverlay: some View {
+        VStack {
+            Spacer()
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(isEditingProfile ? editedName : character?.name ?? "")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    let tagText = isEditingProfile ? editedTag : (character?.tag ?? "")
+                    if !tagText.isEmpty {
+                        Text(tagText)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                    
+                    let voiceActorText = isEditingProfile ? editedVoiceActor : (character?.voiceActor ?? "")
+                    if !voiceActorText.isEmpty {
+                        Text(voiceActorText)
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+    }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 0) {
                     // キャラクターバナー画像
-                    if let character = character {
-                        VStack(spacing: 0) {
-                            Button(action: {
-                                showIconPicker = true
-                            }) {
-                                if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .clipped()
-                                        .overlay(
-                                            Color.black.opacity(0.4)
-                                        )
-                                        .overlay(
-                                            VStack {
-                                                Spacer()
-                                                HStack {
-                                                    VStack(alignment: .leading, spacing: 4) {
-                                                        Text(character.name)
-                                                            .font(.system(size: 24, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                        
-                                                        if !character.tag.isEmpty {
-                                                            Text(character.tag)
-                                                                .font(.system(size: 16, weight: .medium))
-                                                                .foregroundColor(.white)
-                                                        }
-                                                        
-                                                        if !character.voiceActor.isEmpty {
-                                                            Text(character.voiceActor)
-                                                                .font(.system(size: 14, weight: .regular))
-                                                                .foregroundColor(.white.opacity(0.8))
-                                                        }
-                                                    }
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 16)
-                                                .padding(.bottom, 16)
-                                            }
-                                        )
-                                } else {
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(maxWidth: .infinity, maxHeight: 200)
-                                        .overlay(
-                                            VStack(spacing: 4) {
-                                                Image(systemName: "person.fill")
-                                                    .font(.system(size: 40))
-                                                    .foregroundColor(.gray)
-                                                Text("タップで追加")
-                                                    .font(.system(size: 12))
-                                                    .foregroundColor(.gray)
-                                            }
-                                        )
-                                        .overlay(
-                                            Color.black.opacity(0.4)
-                                        )
-                                        .overlay(
-                                            VStack {
-                                                Spacer()
-                                                HStack {
-                                                    VStack(alignment: .leading, spacing: 4) {
-                                                        Text(character.name)
-                                                            .font(.system(size: 24, weight: .bold))
-                                                            .foregroundColor(.white)
-                                                        
-                                                        if !character.tag.isEmpty {
-                                                            Text(character.tag)
-                                                                .font(.system(size: 16, weight: .medium))
-                                                                .foregroundColor(.white)
-                                                        }
-                                                        
-                                                        if !character.voiceActor.isEmpty {
-                                                            Text(character.voiceActor)
-                                                                .font(.system(size: 14, weight: .regular))
-                                                                .foregroundColor(.white.opacity(0.8))
-                                                        }
-                                                    }
-                                                    Spacer()
-                                                }
-                                                .padding(.horizontal, 16)
-                                                .padding(.bottom, 16)
-                                            }
-                                        )
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                        .padding(.top, 20)
-                        .padding(.bottom, 10)
-                    }
+                    bannerView
                     
                     // プロフィールセクション
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("プロフィール")
+                            Text(NSLocalizedString("profile", comment: ""))
                                 .font(.system(size: 20, weight: .bold))
                             Spacer()
                         }
@@ -1571,34 +1528,41 @@ struct AboutView: View {
                         // プロフィール項目
                         VStack(spacing: 0) {
                             if isEditingProfile {
-                                editableProfileRow(label: "名前", text: $editedName)
+                                editableProfileRow(label: NSLocalizedString("name", comment: ""), text: $editedName)
+                                    .onChange(of: editedName) { saveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "タグ", text: $editedTag)
+                                editableProfileRow(label: NSLocalizedString("tag", comment: ""), text: $editedTag)
+                                    .onChange(of: editedTag) { saveCharacter() }
                                 Divider().padding(.leading, 20)
-                                dateProfileRow(label: "誕生日", date: $editedBirthday)
+                                dateProfileRow(label: NSLocalizedString("birthday", comment: ""), date: $editedBirthday)
+                                    .onChange(of: editedBirthday) { saveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "年齢", text: $editedAge)
+                                editableProfileRow(label: NSLocalizedString("age", comment: ""), text: $editedAge)
+                                    .onChange(of: editedAge) { saveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "好きな食べ物", text: $editedFavoriteFood)
+                                editableProfileRow(label: NSLocalizedString("favorite_food", comment: ""), text: $editedFavoriteFood)
+                                    .onChange(of: editedFavoriteFood) { saveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "声優", text: $editedVoiceActor)
+                                editableProfileRow(label: NSLocalizedString("voice_actor", comment: ""), text: $editedVoiceActor)
+                                    .onChange(of: editedVoiceActor) { saveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: "カップ数", text: $editedCupSize)
+                                editableProfileRow(label: NSLocalizedString("cup_size", comment: ""), text: $editedCupSize)
+                                    .onChange(of: editedCupSize) { saveCharacter() }
                             } else {
-                                profileRow(label: "名前", value: character?.name ?? "")
+                                profileRow(label: NSLocalizedString("name", comment: ""), value: character?.name ?? "")
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "タグ", value: "#\(character?.tag ?? "")")
+                                profileRow(label: NSLocalizedString("tag", comment: ""), value: "#\(character?.tag ?? "")")
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "誕生日", value: DateFormatter.monthDayJapanese.string(from: character?.birthday ?? Date()))
+                                profileRow(label: NSLocalizedString("birthday", comment: ""), value: DateFormatter.monthDayJapanese.string(from: character?.birthday ?? Date()))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "年齢", value: character?.age ?? "未設定")
+                                profileRow(label: NSLocalizedString("age", comment: ""), value: character?.age ?? NSLocalizedString("not_set", comment: ""))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "好きな食べ物", value: character?.favoriteFood ?? "未設定")
+                                profileRow(label: NSLocalizedString("favorite_food", comment: ""), value: character?.favoriteFood ?? NSLocalizedString("not_set", comment: ""))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: "声優", value: character?.voiceActor ?? "未設定")
+                                profileRow(label: NSLocalizedString("voice_actor", comment: ""), value: character?.voiceActor ?? NSLocalizedString("not_set", comment: ""))
                                 if let cupSize = character?.cupSize, !cupSize.isEmpty {
                                     Divider().padding(.leading, 20)
-                                    profileRow(label: "カップ数", value: cupSize)
+                                    profileRow(label: NSLocalizedString("cup_size", comment: ""), value: cupSize)
                                 }
                             }
                         }
@@ -1608,7 +1572,7 @@ struct AboutView: View {
                     // 概要セクション
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
-                            Text("概要")
+                            Text(NSLocalizedString("description", comment: ""))
                                 .font(.system(size: 20, weight: .bold))
                             Spacer()
                         }
@@ -1620,7 +1584,7 @@ struct AboutView: View {
                         if isEditingDescription {
                             ZStack(alignment: .topLeading) {
                                 if profileDescription.isEmpty {
-                                    Text("概要を入力してください...")
+                                    Text(NSLocalizedString("enter_description", comment: ""))
                                         .font(.system(size: 16))
                                         .foregroundColor(.gray)
                                         .padding(.horizontal, 20)
@@ -1633,6 +1597,7 @@ struct AboutView: View {
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
                                     .frame(minHeight: 200)
+                                    .onChange(of: profileDescription) { saveCharacter() }
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
                             }
@@ -1644,7 +1609,7 @@ struct AboutView: View {
                             .padding(.horizontal, 20)
                         } else {
                             if profileDescription.isEmpty {
-                                Text("概要が未設定です")
+                                Text(NSLocalizedString("description_not_set", comment: ""))
                                     .font(.system(size: 16))
                                     .foregroundColor(.gray)
                                     .padding(.horizontal, 20)
@@ -1659,11 +1624,42 @@ struct AboutView: View {
                         }
                     }
                     
+                    // サントラセクション
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text(NSLocalizedString("soundtrack", comment: ""))
+                                .font(.system(size: 20, weight: .bold))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 32)
+                        .padding(.bottom, 16)
+                        
+                        // サントラリスト
+                        if character?.soundtracks.isEmpty ?? true {
+                            Text(NSLocalizedString("soundtrack_not_set", comment: ""))
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                        } else {
+                            VStack(spacing: 12) {
+                                ForEach(character?.soundtracks ?? [], id: \.id) { soundtrack in
+                                    SoundtrackRow(soundtrack: soundtrack) {
+                                        // 削除処理
+                                        deleteSoundtrack(soundtrack)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                    }
+                    
                     Spacer(minLength: 50)
                 }
             }
             .background(Color.white)
-            .navigationBarTitle("About", displayMode: .inline)
+            .navigationBarTitle(NSLocalizedString("about", comment: ""), displayMode: .inline)
             .navigationBarItems(
                 leading: Button(action: {
                     saveCharacter()
@@ -1675,16 +1671,15 @@ struct AboutView: View {
                 },
                 trailing: Button(action: {
                     if isEditingProfile || isEditingDescription {
-                        // 保存処理
-                        saveCharacter()
+                        // 編集モードを終了（自動保存されているので保存処理は不要）
                         isEditingProfile = false
                         isEditingDescription = false
                     } else {
                         // 編集選択モーダルを表示
-                        showEditSelection = true
+                        activeSheet = .editSelection
                     }
                 }) {
-                    Text(isEditingProfile || isEditingDescription ? "保存" : "編集")
+                    Text(isEditingProfile || isEditingDescription ? NSLocalizedString("complete", comment: "") : NSLocalizedString("edit", comment: ""))
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
@@ -1704,26 +1699,21 @@ struct AboutView: View {
                 editedCupSize = character.cupSize
                 editedBirthday = character.birthday
                 editedTag = character.tag
+                
             }
         }
+        // サントラプレイヤーを表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 20)
+            }
+        )
         .onDisappear {
             saveCharacter()
         }
-        .actionSheet(isPresented: $showEditSelection) {
-            ActionSheet(
-                title: Text("編集する項目を選択してください"),
-                buttons: [
-                    .default(Text("プロフィールを編集")) {
-                        isEditingProfile = true
-                    },
-                    .default(Text("概要を編集")) {
-                        isEditingDescription = true
-                    },
-                    .cancel(Text("キャンセル"))
-                ]
-            )
-        }
-        .sheet(isPresented: $showIconPicker) {
+        /* .sheet(isPresented: $showIconPicker) {
             PhotosPicker(selection: $iconPickerItem, matching: .images) {
                 VStack(spacing: 20) {
                     Text("アイコンを選択")
@@ -1748,7 +1738,7 @@ struct AboutView: View {
                     if newIconImage != nil {
                         Button("保存") {
                             saveNewIcon()
-                            showIconPicker = false
+                            activeSheet = nil
                         }
                         .padding()
                         .background(Color.green)
@@ -1756,7 +1746,7 @@ struct AboutView: View {
                         .cornerRadius(10)
                     }
                     
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "")) {
                         showIconPicker = false
                         newIconImage = nil
                         iconPickerItem = nil
@@ -1765,7 +1755,7 @@ struct AboutView: View {
                 }
                 .padding()
             }
-            .onChange(of: iconPickerItem) { newValue in
+            .onChange(of: iconPickerItem) { _, newValue in
                 if let newValue = newValue {
                     Task {
                         if let data = try? await newValue.loadTransferable(type: Data.self),
@@ -1774,9 +1764,112 @@ struct AboutView: View {
                         }
                     }
                 }
+            } */
+            .sheet(item: $activeSheet) { item in
+                switch item {
+                case .soundtrackEdit:
+                    SoundtrackEditView { soundtrack in
+                        // サントラを保存
+                        guard let idx = characterIndex else { return }
+                        var updatedCharacter = characters[idx]
+                        var soundtracks = updatedCharacter.soundtracks
+                        soundtracks.append(soundtrack)
+                        updatedCharacter.soundtracks = soundtracks
+                        characters[idx] = updatedCharacter
+                        characterManager.updateCharacter(updatedCharacter)
+                        
+                        // SoundtrackManagerのリストを更新
+                        SoundtrackManager.shared.collectAllSoundtracks(
+                            characters: characterManager.characters,
+                            animes: AnimeManager().animes
+                        )
+                    }
+                    .onAppear {
+                    }
+                case .iconPicker:
+                    NavigationView {
+                        VStack(spacing: 20) {
+                            Text(NSLocalizedString("select_icon", comment: ""))
+                                .font(.headline)
+                            
+                            if let newIconImage = newIconImage {
+                                Image(uiImage: newIconImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 150, height: 150)
+                                    .clipShape(Circle())
+                            }
+                            
+                            PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                                Text(NSLocalizedString("select_image", comment: ""))
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
+                            
+                            if newIconImage != nil {
+                                Button(NSLocalizedString("save", comment: "")) {
+                                    saveNewIcon()
+                                    activeSheet = nil
+                                }
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                            }
+                            
+                            Button(NSLocalizedString("cancel", comment: "")) {
+                                activeSheet = nil
+                                newIconImage = nil
+                                iconPickerItem = nil
+                            }
+                            .foregroundColor(.red)
+                        }
+                        .padding()
+                    }
+                    .onChange(of: iconPickerItem) {
+                        if let newValue = iconPickerItem {
+                            Task {
+                                if let data = try? await newValue.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    // 画像を保存
+                                    let fileName = "character_\(characters[characterIndex ?? 0].id)_\(Date().timeIntervalSince1970).jpg"
+                                    if let savedPath = saveImageToDocuments(image, fileName: fileName),
+                                       let idx = characterIndex {
+                                        characters[idx].imageIdentifier = savedPath
+                                        characterManager.updateCharacter(characters[idx])
+                                    }
+                                }
+                            }
+                        }
+                    }
+                case .editSelection:
+                    CharaEditSelectionSheet(
+                        isEditingProfile: $isEditingProfile,
+                        isEditingDescription: $isEditingDescription,
+                        activeSheet: $activeSheet
+                    )
+                }
+            }
+            // アイコン位置調整モーダル
+            .sheet(isPresented: $showIconAdjustment) {
+                if let character = character {
+                    CharacterIconAdjustmentView(
+                        character: Binding(
+                            get: { character },
+                            set: { newCharacter in
+                                if let idx = characterIndex {
+                                    characters[idx] = newCharacter
+                                    characterManager.updateCharacter(newCharacter)
+                                }
+                            }
+                        ),
+                        characterManager: characterManager
+                    )
+                }
             }
         }
-    }
     
     // MARK: - Helper Views
     private func profileRow(label: String, value: String) -> some View {
@@ -1895,8 +1988,15 @@ struct AboutView: View {
             updatedCharacter.customFields?.append(CustomField(name: "概要", value: profileDescription))
         }
         
-        characters[idx] = updatedCharacter
+        // 先にcharacterManagerを更新してから、バインディング配列を更新
         characterManager.updateCharacter(updatedCharacter)
+        
+        // メインスレッドで確実に更新
+        DispatchQueue.main.async {
+            self.characters[idx] = updatedCharacter
+            // UIを強制的にリフレッシュ
+            self.characterManager.refreshUI()
+        }
     }
     
     // アイコン保存機能
@@ -1926,6 +2026,16 @@ struct AboutView: View {
     }
     
     // 注: saveImageToDocuments関数はImageUtils.swiftのものを使用します
+    
+    private func deleteSoundtrack(_ soundtrack: Soundtrack) {
+        guard let idx = characterIndex else { return }
+        var updatedCharacter = characters[idx]
+        var soundtracks = updatedCharacter.soundtracks
+        soundtracks.removeAll { $0.id == soundtrack.id }
+        updatedCharacter.soundtracks = soundtracks
+        characters[idx] = updatedCharacter
+        characterManager.updateCharacter(updatedCharacter)
+    }
 }
 
 // --- 追加: 高さ自動調整＆空行削除付きTextEditor ---
@@ -2027,7 +2137,7 @@ struct CharacterRankingRow: View {
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.black)
                     .lineLimit(1)
-                Text("\(ranking.rank)位")
+                Text(String(format: NSLocalizedString("rank_format", comment: ""), ranking.rank))
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
             }
@@ -2134,11 +2244,11 @@ struct CharacterRankingAdminView: View {
             VStack(spacing: 0) {
                 // タイトル
                 HStack {
-                    Text("キャラクターランキング管理")
+                    Text(NSLocalizedString("character_ranking_management", comment: ""))
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.black)
                     Spacer()
-                    Button("閉じる") {
+                    Button(NSLocalizedString("close", comment: "")) {
                         dismiss()
                     }
                     .foregroundColor(.blue)
@@ -2245,7 +2355,7 @@ struct RankingSettingRow: View {
                     }
                 }
             } else {
-                Text("キャラクターを選択してください")
+                Text(NSLocalizedString("select_character_message", comment: ""))
                     .font(.system(size: 16))
                     .foregroundColor(.gray)
                 Spacer()
@@ -2303,11 +2413,11 @@ struct CharacterPickerView: View {
             VStack(spacing: 0) {
                 // タイトル
                 HStack {
-                    Text("\(selectedRank)位のキャラクターを選択")
+                    Text(String(format: NSLocalizedString("select_rank_character", comment: ""), selectedRank))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.black)
                     Spacer()
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "")) {
                         dismiss()
                     }
                     .foregroundColor(.blue)
@@ -2320,7 +2430,7 @@ struct CharacterPickerView: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
-                    TextField("キャラクターを検索", text: $searchText)
+                    TextField(NSLocalizedString("search_character", comment: ""), text: $searchText)
                         .textFieldStyle(PlainTextFieldStyle())
                 }
                 .padding(.horizontal, 12)
@@ -2391,7 +2501,7 @@ struct CharacterPickerRow: View {
             Spacer()
             
             // 選択ボタン
-            Button("選択") {
+            Button(NSLocalizedString("select", comment: "")) {
                 onSelect()
             }
             .font(.system(size: 14, weight: .medium))
@@ -2454,7 +2564,6 @@ struct NavigationBarItem: View {
         .animation(.easeInOut(duration: 0.1), value: isPressed)
         .contentShape(Rectangle())
         .onTapGesture {
-            print("🎯 [NavigationBarItem] タップ検出: \(title)")
             // 即座にタップアクションを実行
             onTap()
             
@@ -2482,7 +2591,7 @@ struct EditBackgroundView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text("背景画像を選択")
+                Text(NSLocalizedString("select_background_image", comment: ""))
                     .font(.headline)
                 
                 PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
@@ -2511,14 +2620,14 @@ struct EditBackgroundView: View {
                                         Image(systemName: "photo.fill")
                                             .font(.system(size: 50))
                                             .foregroundColor(.gray)
-                                        Text("背景画像を選択")
+                                        Text(NSLocalizedString("select_background_image", comment: ""))
                                             .foregroundColor(.gray)
                                     }
                                 )
                         }
                     }
                 }
-                .onChange(of: backgroundPickerItem) { newValue in
+                .onChange(of: backgroundPickerItem) { _, newValue in
                     if let newItem = newValue {
                         Task {
                             if let data = try? await newItem.loadTransferable(type: Data.self),
@@ -2552,7 +2661,7 @@ struct EditBackgroundView: View {
                     }
                 }
                 
-                Text("画像を選択すると自動的に背景が変更されます")
+                Text(NSLocalizedString("image_auto_change_notice", comment: ""))
                     .font(.caption)
                     .foregroundColor(.gray)
                     .padding(.top, 10)
@@ -2560,7 +2669,7 @@ struct EditBackgroundView: View {
                 Spacer()
             }
             .padding()
-            .navigationBarTitle("背景画像を変更", displayMode: .inline)
+            .navigationBarTitle(NSLocalizedString("change_background_image", comment: ""), displayMode: .inline)
             .navigationBarItems(
                 trailing: Button(action: { dismiss() }) {
                     Image(systemName: "xmark")
@@ -2576,6 +2685,441 @@ struct EditBackgroundView: View {
     }
 }
 
+// アニメーション付きグラデーションビュー
+struct AnimatedGradientView: View {
+    @State private var animateGradient = false
+    
+    var body: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(red: 0.6, green: 0.4, blue: 0.9),
+                Color(red: 0.8, green: 0.5, blue: 0.9),
+                Color(red: 0.6, green: 0.4, blue: 0.9)
+            ]),
+            startPoint: animateGradient ? .topLeading : .bottomTrailing,
+            endPoint: animateGradient ? .bottomTrailing : .topLeading
+        )
+        .onAppear {
+            withAnimation(
+                Animation.easeInOut(duration: 3.0)
+                    .repeatForever(autoreverses: true)
+            ) {
+                animateGradient.toggle()
+            }
+        }
+    }
+}
+
 #Preview {
     CharaScreen()
+}
+
+// キャラクター編集選択シート（アニメページと同じスタイル）
+struct CharaEditSelectionSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var isEditingProfile: Bool
+    @Binding var isEditingDescription: Bool
+    @Binding var activeSheet: AboutView.ActiveSheet?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                VStack(spacing: 15) {
+                    Button(action: {
+                        isEditingProfile = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "person.crop.circle")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("edit_profile", comment: ""))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        isEditingDescription = true
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "text.alignleft")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("edit_description", comment: ""))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            activeSheet = .soundtrackEdit
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "music.note")
+                                .foregroundColor(.blue)
+                            Text(NSLocalizedString("add_soundtrack", comment: ""))
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                }
+                .padding()
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("select_edit_item_title", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("cancel", comment: "")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// タイトル、タグ、背景編集ビュー
+struct EditTitleTagBackgroundView: View {
+    @Binding var character: Character
+    @ObservedObject var characterManager: CharacterManager
+    @Environment(\.dismiss) var dismiss
+    @State private var editedName: String = ""
+    @State private var editedTag: String = ""
+    @State private var backgroundPickerItem: PhotosPickerItem? = nil
+    @State private var tempBackgroundImage: UIImage? = nil
+    @State private var showDeleteConfirmation = false
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // タイトル編集
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("name", comment: ""))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField(NSLocalizedString("character_name", comment: ""), text: $editedName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                .padding(.horizontal)
+                
+                // タグ編集
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("tag", comment: ""))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField("#" + NSLocalizedString("tag", comment: ""), text: $editedTag)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                }
+                .padding(.horizontal)
+                
+                // 背景画像編集
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("background_image", comment: ""))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                        .padding(.horizontal)
+                    
+                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
+                        ZStack {
+                            if let tempBackgroundImage = tempBackgroundImage {
+                                Image(uiImage: tempBackgroundImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 150)
+                                    .clipped()
+                                    .cornerRadius(10)
+                            } else if let backgroundPath = character.backgroundImagePath,
+                                      let backgroundImage = loadImageFromPath(backgroundPath) {
+                                Image(uiImage: backgroundImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(height: 150)
+                                    .clipped()
+                                    .cornerRadius(10)
+                            } else {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(height: 150)
+                                    .overlay(
+                                        VStack(spacing: 8) {
+                                            Image(systemName: "photo")
+                                                .font(.system(size: 40))
+                                                .foregroundColor(.gray)
+                                            Text(NSLocalizedString("tap_to_select_background", comment: ""))
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.gray)
+                                        }
+                                    )
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    // 背景削除ボタン
+                    if character.backgroundImagePath != nil || tempBackgroundImage != nil {
+                        Button(action: {
+                            showDeleteConfirmation = true
+                        }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                                Text(NSLocalizedString("delete_background", comment: ""))
+                                    .foregroundColor(.red)
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding(.top)
+            .navigationTitle(NSLocalizedString("edit", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("保存") {
+                        saveChanges()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+            .onAppear {
+                editedName = character.name
+                editedTag = character.tag
+            }
+            .onChange(of: backgroundPickerItem) { _, newValue in
+                if let newItem = newValue {
+                    Task {
+                        if let data = try? await newItem.loadTransferable(type: Data.self),
+                           let uiImage = UIImage(data: data) {
+                            tempBackgroundImage = uiImage
+                        }
+                    }
+                }
+            }
+            .alert(NSLocalizedString("delete_background_confirm", comment: ""), isPresented: $showDeleteConfirmation) {
+                Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
+                    deleteBackground()
+                }
+                Button("キャンセル", role: .cancel) {}
+            } message: {
+                Text(NSLocalizedString("delete_background_message", comment: ""))
+            }
+        }
+    }
+    
+    private func saveChanges() {
+        var updatedCharacter = character
+        updatedCharacter.name = editedName
+        updatedCharacter.tag = editedTag
+        
+        // 背景画像の保存
+        if let tempBackgroundImage = tempBackgroundImage {
+            let fileName = "background_\(UUID().uuidString).png"
+            let imagePath = saveImageToDocuments(tempBackgroundImage, fileName: fileName)
+            
+            // 古い背景画像を削除
+            if let oldPath = character.backgroundImagePath {
+                try? FileManager.default.removeItem(atPath: oldPath)
+            }
+            
+            updatedCharacter.backgroundImagePath = imagePath
+        }
+        
+        // 更新を反映
+        character = updatedCharacter
+        characterManager.updateCharacter(updatedCharacter)
+        characterManager.refreshUI()
+        
+        dismiss()
+    }
+    
+    private func deleteBackground() {
+        var updatedCharacter = character
+        
+        // 背景画像ファイルを削除
+        if let backgroundPath = character.backgroundImagePath {
+            try? FileManager.default.removeItem(atPath: backgroundPath)
+        }
+        
+        updatedCharacter.backgroundImagePath = nil
+        tempBackgroundImage = nil
+        
+        // 更新を反映
+        character = updatedCharacter
+        characterManager.updateCharacter(updatedCharacter)
+        characterManager.refreshUI()
+    }
+    
+    // MARK: - YouTube Thumbnail Helper
+    private func getYouTubeThumbnailURLForBanner(from youtubeURL: String) -> String {
+        print("🎥 [DEBUG] YouTube URL input: \(youtubeURL)")
+        
+        // YouTube URLからvideo IDを抽出
+        let videoId = extractVideoId(from: youtubeURL)
+        print("🎥 [DEBUG] Extracted video ID: \(videoId)")
+        
+        if videoId.isEmpty {
+            print("❌ [ERROR] Failed to extract video ID from URL: \(youtubeURL)")
+            return ""
+        }
+        
+        // 高解像度サムネイルURLを生成（複数の候補を試す）
+        let thumbnailUrls = [
+            "https://img.youtube.com/vi/\(videoId)/maxresdefault.jpg",  // 最高解像度
+            "https://img.youtube.com/vi/\(videoId)/hqdefault.jpg",     // 高解像度
+            "https://img.youtube.com/vi/\(videoId)/mqdefault.jpg",     // 中解像度
+            "https://img.youtube.com/vi/\(videoId)/default.jpg"        // デフォルト解像度
+        ]
+        
+        let selectedUrl = thumbnailUrls[0] // まずは最高解像度を試す
+        print("🎥 [DEBUG] Generated thumbnail URL: \(selectedUrl)")
+        
+        return selectedUrl
+    }
+    
+    private func extractVideoId(from url: String) -> String {
+        print("🔍 [DEBUG] Extracting video ID from: \(url)")
+        
+        // 各種YouTube URLフォーマットに対応
+        let patterns = [
+            "(?:youtube\\.com/watch\\?v=|youtu\\.be/|youtube\\.com/embed/)([a-zA-Z0-9_-]{11})",
+            "(?:youtube\\.com/watch\\?.*&v=)([a-zA-Z0-9_-]{11})",
+            "(?:youtube\\.com/v/)([a-zA-Z0-9_-]{11})"
+        ]
+        
+        for pattern in patterns {
+            do {
+                let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
+                let range = NSRange(location: 0, length: url.utf16.count)
+                
+                if let match = regex.firstMatch(in: url, options: [], range: range) {
+                    let videoIdRange = match.range(at: 1)
+                    if let swiftRange = Range(videoIdRange, in: url) {
+                        let videoId = String(url[swiftRange])
+                        print("✅ [DEBUG] Successfully extracted video ID: \(videoId)")
+                        return videoId
+                    }
+                }
+            } catch {
+                print("❌ [ERROR] Regex error for pattern \(pattern): \(error)")
+            }
+        }
+        
+        print("❌ [ERROR] No video ID found in URL: \(url)")
+        return ""
+    }
+}
+
+
+// アイコン位置調整ビュー（キャラクター用）
+struct CharacterIconAdjustmentView: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var character: Character
+    @ObservedObject var characterManager: CharacterManager
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // プレビュー
+                ZStack {
+                    if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: UIScreen.main.bounds.width, height: 200)
+                            .scaleEffect(CGFloat(character.iconScale))
+                            .offset(x: CGFloat(character.iconOffsetX), y: CGFloat(character.iconOffsetY))
+                            .frame(maxWidth: .infinity, maxHeight: 200)
+                            .clipped()
+                            .background(Color.gray.opacity(0.2))
+                    }
+                }
+                .frame(height: 200)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(10)
+                .padding(.horizontal)
+                
+                // 調整スライダー
+                VStack(spacing: 15) {
+                    // 大きさ
+                    VStack(alignment: .leading) {
+                        Text(NSLocalizedString("icon_scale", comment: "Size"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Slider(value: $character.iconScale, in: 0.5...2.0)
+                    }
+                    
+                    // 横位置
+                    VStack(alignment: .leading) {
+                        Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Slider(value: $character.iconOffsetX, in: -100...100)
+                    }
+                    
+                    // 縦位置
+                    VStack(alignment: .leading) {
+                        Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Slider(value: $character.iconOffsetY, in: -100...100)
+                    }
+                }
+                .padding(.horizontal)
+                
+                // リセットボタン
+                Button(action: {
+                    character.iconScale = 1.0
+                    character.iconOffsetX = 0.0
+                    character.iconOffsetY = 0.0
+                }) {
+                    Text(NSLocalizedString("reset", comment: "Reset"))
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 10)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                }
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("adjust_icon_position", comment: "Adjust icon position"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("done", comment: "Done")) {
+                        // 変更を保存
+                        characterManager.updateCharacter(character)
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
 }

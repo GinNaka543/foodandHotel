@@ -17,6 +17,7 @@ try {
             credential: admin.credential.cert(serviceAccount)
         });
     } else {
+    
         // 開発環境では仮の初期化
         console.log('Firebase service account not found, running in demo mode');
     }

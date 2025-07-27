@@ -40,14 +40,12 @@ struct FirebaseAdView: View {
         guard index < advertisements.count else { return nil }
         
         var ad = advertisements[index]
-        print("🎯 [FirebaseAdView] 広告表示: placement=\(placement), adIndex=\(adIndex), currentIndex=\(currentIndex), 選択された広告=\(ad.title)")
         
         // GitHub URLの場合はraw URLに変換
         if ad.imageURL.contains("github.com") && ad.imageURL.contains("/blob/") {
             ad.imageURL = ad.imageURL
                 .replacingOccurrences(of: "github.com", with: "raw.githubusercontent.com")
                 .replacingOccurrences(of: "/blob/", with: "/")
-            print("🔄 [FirebaseAdView] GitHub URLをraw URLに変換: \(ad.imageURL)")
         }
         return ad
     }
@@ -83,12 +81,10 @@ struct FirebaseAdView: View {
                                 AsyncImage(url: url) { phase in
                                     switch phase {
                                     case .success(let image):
-                                        let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
                                         image
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
                                     case .failure(let error):
-                                        let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
                                         Color(.systemGray5)
                                             .overlay(
                                                 Text("画像エラー")
@@ -106,7 +102,6 @@ struct FirebaseAdView: View {
                                 .cornerRadius(8)
                                 .clipped()
                             } else {
-                                let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
                                 Color(.systemGray5)
                                     .frame(width: 132, height: 86)
                                     .cornerRadius(8)
@@ -129,12 +124,10 @@ struct FirebaseAdView: View {
                                 AsyncImage(url: url) { phase in
                                     switch phase {
                                     case .success(let image):
-                                        let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
                                         image
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
                                     case .failure(let error):
-                                        let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
                                         Color(.systemGray5)
                                             .overlay(
                                                 Text("画像エラー")
@@ -152,7 +145,6 @@ struct FirebaseAdView: View {
                                 .cornerRadius(10)
                                 .clipped()
                             } else {
-                                let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
                                 Color(.systemGray5)
                                     .frame(width: 168.48, height: 99)
                                     .cornerRadius(10)
@@ -342,12 +334,10 @@ struct FirebaseAdView: View {
                                     AsyncImage(url: url) { phase in
                                         switch phase {
                                         case .success(let image):
-                                            let _ = print("✅ [FirebaseAdView] 画像読み込み成功: \(ad.imageURL)")
                                             image
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
                                         case .failure(let error):
-                                            let _ = print("❌ [FirebaseAdView] 画像読み込み失敗: \(error.localizedDescription)")
                                             Color(.systemGray5)
                                                 .overlay(
                                                     Text("画像エラー")
@@ -362,7 +352,6 @@ struct FirebaseAdView: View {
                                         }
                                     }
                                 } else {
-                                    let _ = print("⚠️ [FirebaseAdView] 画像URLが空または無効: imageURL='\(ad.imageURL)'")
                                     Color(.systemGray5)
                                 }
                             }
@@ -386,7 +375,6 @@ struct FirebaseAdView: View {
     }
     
     private func handleAdClick(_ ad: Advertisement) {
-        print("🖱️ [FirebaseAdView] 広告クリック: \(ad.title) - \(ad.linkURL)")
         
         // クリックを記録
         if let adId = ad.id {
@@ -400,26 +388,16 @@ struct FirebaseAdView: View {
     }
     
     func loadAds() {
-        print("🔥 [FirebaseAdView] 広告読み込み開始: placement=\(placement)")
         FirebaseManager.shared.fetchAds(for: placement) { result in
             switch result {
             case .success(let ads):
-                print("✅ [FirebaseAdView] 広告取得成功: \(ads.count)件")
                 for (index, ad) in ads.enumerated() {
-                    print("📄 [FirebaseAdView] 広告[\(index)]: id=\(ad.id ?? "nil"), title=\(ad.title)")
-                    print("   - imageURL: \(ad.imageURL)")
-                    print("   - placements: \(ad.placements)")
-                    print("   - isActive: \(ad.isActive)")
                 }
                 
                 let userAnimes = animeManager.animes.map { $0.title }
                 let userCharacters = characterManager.characters.map { $0.name }
                 let userHashtags = (animeManager.animes.map { $0.hashtag } + characterManager.characters.map { $0.tag }).filter { !$0.isEmpty }
                 
-                print("👤 [FirebaseAdView] ユーザー情報:")
-                print("   - アニメ: \(userAnimes)")
-                print("   - キャラクター: \(userCharacters)")
-                print("   - ハッシュタグ: \(userHashtags)")
                 
                 let targetAds = ads.filter { ad in
                     (ad.targetAnimes.first(where: { userAnimes.contains($0) }) != nil) ||
@@ -430,8 +408,6 @@ struct FirebaseAdView: View {
                     (ad.targetAnimes.isEmpty && ad.targetCharacters.isEmpty && ad.targetHashtags.isEmpty)
                 }
                 
-                print("🎯 [FirebaseAdView] ターゲット広告: \(targetAds.count)件")
-                print("📢 [FirebaseAdView] 一般広告: \(generalAds.count)件")
                 
                 // --- 確率ベースの広告選択 ---
                 var candidateAds: [Advertisement] = []
@@ -473,9 +449,7 @@ struct FirebaseAdView: View {
                 // 制限なしで全ての広告を表示
                 self.advertisements = candidateAds
                 
-                print("🎬 [FirebaseAdView] 最終的に表示する広告: \(self.advertisements.count)件")
                 for (index, ad) in self.advertisements.enumerated() {
-                    print("   [\(index)] \(ad.title) - imageURL: \(ad.imageURL)")
                 }
                 
                 self.isLoading = false
@@ -485,7 +459,6 @@ struct FirebaseAdView: View {
                     self.startTimer()
                 }
             case .failure(let error):
-                print("❌ [FirebaseAdView] 広告読み込みエラー: \(error)")
                 self.isLoading = false
             }
         }

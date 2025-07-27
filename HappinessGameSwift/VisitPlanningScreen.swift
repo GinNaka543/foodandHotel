@@ -81,7 +81,7 @@ struct VisitPlanningScreen: View {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 20, weight: .medium))
-                            Text("Back")
+                            Text(NSLocalizedString("back", comment: "Back"))
                                 .font(.system(size: 17, weight: .medium))
                         }
                         .foregroundColor(.blue)
@@ -98,10 +98,10 @@ struct VisitPlanningScreen: View {
                             // タイトル入力
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text("プランタイトル")
+                                    Text(NSLocalizedString("plan_title", comment: "Plan title"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
-                                    Text("必須")
+                                    Text(NSLocalizedString("required", comment: "Required"))
                                         .font(.system(size: 12, weight: .medium))
                                         .foregroundColor(.red)
                                         .padding(.horizontal, 6)
@@ -109,7 +109,7 @@ struct VisitPlanningScreen: View {
                                         .background(Color.red.opacity(0.1))
                                         .cornerRadius(4)
                                 }
-                                TextField("例: 京都の聖地巡礼", text: $planTitle)
+                                TextField(NSLocalizedString("plan_title_placeholder", comment: "e.g. Kyoto pilgrimage"), text: $planTitle)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
                             }
@@ -117,10 +117,10 @@ struct VisitPlanningScreen: View {
                             // アニメ名入力
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text("アニメ名")
+                                    Text(NSLocalizedString("anime_name", comment: "Anime name"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
-                                    Text("必須")
+                                    Text(NSLocalizedString("required", comment: "Required"))
                                         .font(.system(size: 12, weight: .medium))
                                         .foregroundColor(.red)
                                         .padding(.horizontal, 6)
@@ -128,7 +128,7 @@ struct VisitPlanningScreen: View {
                                         .background(Color.red.opacity(0.1))
                                         .cornerRadius(4)
                                 }
-                                TextField("例: 響け！ユーフォニアム", text: $animeName)
+                                TextField(NSLocalizedString("anime_name_placeholder", comment: "e.g. Sound! Euphonium"), text: $animeName)
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .font(.system(size: 16))
                             }
@@ -136,7 +136,7 @@ struct VisitPlanningScreen: View {
                             // 開始時刻と旅行日数
                             HStack(spacing: 16) {
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("開始時刻")
+                                    Text(NSLocalizedString("start_time", comment: "Start time"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
                                     DatePicker("", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
@@ -145,24 +145,24 @@ struct VisitPlanningScreen: View {
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("旅行日数")
+                                    Text(NSLocalizedString("trip_days", comment: "Number of days"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
                                     
                                     if numberOfDays <= 7 {
                                         Menu {
                                             ForEach(1...7, id: \.self) { days in
-                                                Button("\(days)日間") {
+                                                Button(String(format: NSLocalizedString("days_format", comment: "%d days"), days)) {
                                                     numberOfDays = days
                                                 }
                                             }
                                             Divider()
-                                            Button("カスタマイズ") {
+                                            Button(NSLocalizedString("customize", comment: "Customize")) {
                                                 showingCustomDaysPicker = true
                                             }
                                         } label: {
                                             HStack {
-                                                Text("\(numberOfDays)日間")
+                                                Text(String(format: NSLocalizedString("days_format", comment: "%d days"), numberOfDays))
                                                     .foregroundColor(.black)
                                                 Spacer()
                                                 Image(systemName: "chevron.down")
@@ -178,17 +178,17 @@ struct VisitPlanningScreen: View {
                                     } else {
                                         Menu {
                                             ForEach(1...7, id: \.self) { days in
-                                                Button("\(days)日間") {
+                                                Button(String(format: NSLocalizedString("days_format", comment: "%d days"), days)) {
                                                     numberOfDays = days
                                                 }
                                             }
                                             Divider()
-                                            Button("カスタマイズ") {
+                                            Button(NSLocalizedString("customize", comment: "Customize")) {
                                                 showingCustomDaysPicker = true
                                             }
                                         } label: {
                                             HStack {
-                                                Text("\(numberOfDays)日間")
+                                                Text(String(format: NSLocalizedString("days_format", comment: "%d days"), numberOfDays))
                                                     .foregroundColor(.black)
                                                 Spacer()
                                                 Image(systemName: "chevron.down")
@@ -209,7 +209,7 @@ struct VisitPlanningScreen: View {
                         
                         // サムネイル選択
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("サムネイル画像")
+                            Text(NSLocalizedString("thumbnail_image", comment: "Thumbnail image"))
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.gray)
                                 .padding(.horizontal, 16)
@@ -233,7 +233,7 @@ struct VisitPlanningScreen: View {
                                                 Image(systemName: "photo")
                                                     .font(.system(size: 40))
                                                     .foregroundColor(.gray)
-                                                Text("画像を選択")
+                                                Text(NSLocalizedString("select_image", comment: "Select image"))
                                                     .font(.system(size: 14))
                                                     .foregroundColor(.gray)
                                             }
@@ -254,7 +254,7 @@ struct VisitPlanningScreen: View {
                         // タイムライン
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Text("タイムライン")
+                                Text(NSLocalizedString("timeline", comment: "Timeline"))
                                     .font(.system(size: 18, weight: .semibold))
                                 Spacer()
                                 Button(action: { 
@@ -267,7 +267,7 @@ struct VisitPlanningScreen: View {
                                 }) {
                                     HStack(spacing: 4) {
                                         Image(systemName: "plus")
-                                        Text("追加")
+                                        Text(NSLocalizedString("add", comment: "Add"))
                                     }
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.white)
@@ -285,7 +285,7 @@ struct VisitPlanningScreen: View {
                                     HStack(spacing: 8) {
                                         ForEach(1...min(numberOfDays, 30), id: \.self) { day in
                                             Button(action: { selectedDay = day }) {
-                                                Text("Day \(day)")
+                                                Text(String(format: NSLocalizedString("day_format", comment: "Day %d"), day))
                                                     .font(.system(size: 14, weight: selectedDay == day ? .semibold : .medium))
                                                     .foregroundColor(selectedDay == day ? .white : .black)
                                                     .padding(.horizontal, 12)
@@ -306,7 +306,7 @@ struct VisitPlanningScreen: View {
                                     Image(systemName: "clock.arrow.circlepath")
                                         .font(.system(size: 40))
                                         .foregroundColor(.gray)
-                                    Text("スポットを追加して旅程を作成")
+                                    Text(NSLocalizedString("add_spots_to_create_itinerary", comment: "Add spots to create itinerary"))
                                         .font(.system(size: 14))
                                         .foregroundColor(.gray)
                                 }
@@ -344,7 +344,7 @@ struct VisitPlanningScreen: View {
                                 HStack {
                                     Image(systemName: "info.circle")
                                         .foregroundColor(.blue)
-                                    Text("概要")
+                                    Text(NSLocalizedString("overview", comment: "Overview"))
                                         .font(.system(size: 16, weight: .semibold))
                                     Spacer()
                                 }
@@ -353,7 +353,7 @@ struct VisitPlanningScreen: View {
                                         .font(.system(size: 14))
                                         .foregroundColor(.gray)
                                     Spacer()
-                                    Text("¥\(calculateTotalCost())")
+                                    Text(String(format: NSLocalizedString("price_format", comment: "¥%d"), calculateTotalCost()))
                                         .font(.system(size: 14, weight: .medium))
                                 }
                             }
@@ -373,7 +373,7 @@ struct VisitPlanningScreen: View {
                     Button(action: {
                         showingItinerary = true
                     }) {
-                        Text("旅程を確認")
+                        Text(NSLocalizedString("review_itinerary", comment: "Review itinerary"))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -389,7 +389,7 @@ struct VisitPlanningScreen: View {
                         Button(action: {
                             saveDraft()
                         }) {
-                            Text("下書きを保存")
+                            Text(NSLocalizedString("save_draft", comment: "Save draft"))
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(.blue)
                                 .frame(maxWidth: .infinity)
@@ -403,7 +403,7 @@ struct VisitPlanningScreen: View {
                         Button(action: {
                             showingConfirmation = true
                         }) {
-                            Text("プランを確定")
+                            Text(NSLocalizedString("finalize_plan", comment: "Finalize plan"))
                                 .font(.system(size: 17, weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -571,8 +571,8 @@ struct VisitPlanningScreen: View {
             case .success(let payment):
                 // 支払い成功後、プランをFirebaseに保存
                 self.uploadPlanToFirebase(payment: payment, isPublic: true)
-            case .failure(let error):
-                print("支払いエラー: \(error)")
+            case .failure(_):
+                break
             }
         } */
     }
@@ -590,8 +590,8 @@ struct VisitPlanningScreen: View {
                 switch result {
                 case .success(let url):
                     thumbnailUrl = url
-                case .failure(let error):
-                    print("画像アップロードエラー: \(error)")
+                case .failure(_):
+                    break
                 }
                 group.leave()
             }
@@ -636,8 +636,8 @@ struct VisitPlanningScreen: View {
                             self.dismiss()
                         }
                     }
-                case .failure(let error):
-                    print("プラン保存エラー: \(error)")
+                case .failure(_):
+                    break
                 }
             }
         })
@@ -654,9 +654,9 @@ struct VisitPlanningScreen: View {
             case .success:
                 // ポイント消費成功、プランを保存
                 self.savePlanAsConfirmed()
-            case .failure(let error):
-                print("ポイント消費エラー: \(error)")
+            case .failure(_):
                 // エラー処理（必要に応じてアラートを表示）
+                break
             }
         }
     }
@@ -715,7 +715,6 @@ struct VisitPlanningScreen: View {
         
         if let encoded = try? JSONEncoder().encode(localPlans) {
             UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-            print("🔍 DEBUG: 確定プランをローカルに保存しました: \(planData.title)")
         }
         
         // Firebaseに保存
@@ -730,8 +729,8 @@ struct VisitPlanningScreen: View {
                     )
                     self.dismiss()
                 }
-            case .failure(let error):
-                print("プラン保存エラー: \(error)")
+            case .failure(_):
+                break
             }
         }
     }
@@ -757,16 +756,13 @@ struct VisitPlanningScreen: View {
             // 既存の下書きを更新
             if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
                 savedPlans[index] = planData
-                print("既存の下書きを更新しました: \(planData.title)")
             } else {
                 // 既存の下書きが見つからない場合は新規追加
                 savedPlans.append(planData)
-                print("下書きが見つからないため新規追加しました: \(planData.title)")
             }
         } else {
             // 新規の下書きとして追加
             savedPlans.append(planData)
-            print("新規下書きを保存しました: \(planData.title)")
         }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
@@ -781,7 +777,6 @@ struct VisitPlanningScreen: View {
                 self.dismiss()
             }
         } else {
-            print("下書き保存エラー")
         }
     }
     
@@ -806,22 +801,18 @@ struct VisitPlanningScreen: View {
             // 既存の下書きを更新
             if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
                 savedPlans[index] = planData
-                print("戻るボタンで下書きを自動更新しました: \(planData.title)")
             } else {
                 // 既存の下書きが見つからない場合は新規追加
                 savedPlans.append(planData)
-                print("戻るボタンで下書きを自動追加しました: \(planData.title)")
             }
         } else {
             // 新規の下書きとして追加
             savedPlans.append(planData)
-            print("戻るボタンで新規下書きを自動保存しました: \(planData.title)")
         }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
             UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
         } else {
-            print("自動下書き保存エラー")
         }
         
         // dismiss()を最後に呼び出す
@@ -1015,11 +1006,11 @@ struct CustomDaysPickerView: View {
                         .multilineTextAlignment(.center)
                         .keyboardType(.numberPad)
                     
-                    Text("日間")
+                    Text(NSLocalizedString("days_unit", comment: "days"))
                         .font(.system(size: 16))
                 }
                 
-                Text("1〜30日間で設定できます")
+                Text(NSLocalizedString("day_range_instruction", comment: "Can be set from 1 to 30 days"))
                     .font(.system(size: 12))
                     .foregroundColor(.gray)
                 
@@ -1213,7 +1204,7 @@ struct AddSpotView: View {
                 .pickerStyle(MenuPickerStyle())
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("どのくらい時間がかかりますか？")
+                    Text(NSLocalizedString("how_long_does_it_take", comment: "How long does it take?"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                     HStack {
@@ -1221,13 +1212,13 @@ struct AddSpotView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 60)
                             .multilineTextAlignment(.center)
-                        Text("分")
+                        Text(NSLocalizedString("minutes", comment: "minutes"))
                             .font(.system(size: 14))
                     }
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("交通費はいくらですか？")
+                    Text(NSLocalizedString("transportation_cost", comment: "How much is the transportation cost?"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                     HStack {
@@ -1235,13 +1226,13 @@ struct AddSpotView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 80)
                             .multilineTextAlignment(.center)
-                        Text("円")
+                        Text(NSLocalizedString("yen", comment: "yen"))
                             .font(.system(size: 14))
                     }
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("どのルートを使いますか？（任意）")
+                    Text(NSLocalizedString("which_route_optional", comment: "Which route will you use? (Optional)"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
                     TextField("例：JR山手線 → 東京メトロ銀座線", text: $transportRoute)
@@ -1255,7 +1246,7 @@ struct AddSpotView: View {
     var durationText: some View {
         let duration = calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
         if duration > 0 {
-            Text("滞在時間: \(duration)分")
+            Text(String(format: NSLocalizedString("stay_duration_format", comment: "Stay duration: %d minutes"), duration))
                 .font(.system(size: 12))
                 .foregroundColor(.blue)
         }
@@ -1317,7 +1308,7 @@ struct AddSpotView: View {
                 Section("スポット情報 - Day \(selectedDay)") {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("スポット名")
+                            Text(NSLocalizedString("spot_name", comment: "Spot name"))
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.gray)
                             Text("必須")
@@ -1334,7 +1325,7 @@ struct AddSpotView: View {
                     
                     // 滞在時間帯選択
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("滞在時間帯")
+                        Text(NSLocalizedString("stay_time_period", comment: "Stay time period"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
@@ -1343,7 +1334,7 @@ struct AddSpotView: View {
                                 .labelsHidden()
                                 .frame(width: 100)
                             
-                            Text("〜")
+                            Text(NSLocalizedString("time_separator", comment: "~"))
                                 .font(.system(size: 16))
                                 .foregroundColor(.gray)
                             
@@ -1366,7 +1357,7 @@ struct AddSpotView: View {
                     
                     // スポット費用
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("このスポットでいくら使いますか？")
+                        Text(NSLocalizedString("spot_spending", comment: "How much will you spend at this spot?"))
                             .font(.system(size: 13))
                             .foregroundColor(.gray)
                         HStack {
@@ -1375,14 +1366,14 @@ struct AddSpotView: View {
                                 .frame(width: 100)
                                 .multilineTextAlignment(.center)
                                 .keyboardType(.numberPad)
-                            Text("円")
+                            Text(NSLocalizedString("yen", comment: "yen"))
                                 .font(.system(size: 14))
                         }
                     }
                     
                     // サムネイル画像選択
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("サムネイル画像")
+                        Text(NSLocalizedString("thumbnail_image", comment: "Thumbnail image"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
@@ -1405,7 +1396,7 @@ struct AddSpotView: View {
                                     Image(systemName: "photo")
                                         .font(.system(size: 40))
                                         .foregroundColor(.gray)
-                                    Text("タップしてサムネイルを選択")
+                                    Text(NSLocalizedString("tap_to_select_thumbnail", comment: "Tap to select thumbnail"))
                                         .font(.system(size: 14))
                                         .foregroundColor(.gray)
                                 }
@@ -1431,7 +1422,7 @@ struct AddSpotView: View {
                     
                     // 画像選択（複数対応）
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("スポット画像")
+                        Text(NSLocalizedString("spot_images", comment: "Spot images"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
@@ -1475,7 +1466,7 @@ struct AddSpotView: View {
                             HStack {
                                 Image(systemName: "plus")
                                     .foregroundColor(.blue)
-                                Text("画像を追加（最大10枚）")
+                                Text(NSLocalizedString("add_images_max_10", comment: "Add images (max 10)"))
                                     .foregroundColor(.blue)
                             }
                             .frame(maxWidth: .infinity)
@@ -1546,7 +1537,7 @@ struct DetailImagesSection: View {
             // 既存画像の表示
             if totalImageCount > 0 {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("現在のメイン画像 (\(totalImageCount)枚)")
+                    Text(String(format: NSLocalizedString("current_main_images_count", comment: "Current main images (%d)"), totalImageCount))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                     
@@ -1579,7 +1570,7 @@ struct DetailImagesSection: View {
                     Image(systemName: "photo.stack")
                         .font(.system(size: 20))
                         .foregroundColor(.gray)
-                    Text("メイン画像がまだ追加されていません")
+                    Text(NSLocalizedString("no_main_images_added", comment: "No main images added yet"))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                 }
@@ -1599,7 +1590,7 @@ struct DetailImagesSection: View {
                 HStack(spacing: 8) {
                     Image(systemName: "photo.stack.fill")
                         .font(.system(size: 16, weight: .medium))
-                    Text("メイン画像を追加")
+                    Text(NSLocalizedString("add_main_image", comment: "Add main image"))
                         .font(.system(size: 15, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -1611,7 +1602,7 @@ struct DetailImagesSection: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            Text("最大5枚まで追加できます")
+            Text(NSLocalizedString("max_5_images", comment: "You can add up to 5 images"))
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -1774,7 +1765,7 @@ struct EditSpotView: View {
                     
                     // 滞在時間帯選択
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("滞在時間帯")
+                        Text(NSLocalizedString("stay_time_period", comment: "Stay time period"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
@@ -1783,7 +1774,7 @@ struct EditSpotView: View {
                                 .labelsHidden()
                                 .frame(width: 100)
                             
-                            Text("〜")
+                            Text(NSLocalizedString("time_separator", comment: "~"))
                                 .font(.system(size: 16))
                                 .foregroundColor(.gray)
                             
@@ -1795,7 +1786,7 @@ struct EditSpotView: View {
                         // 計算された滞在時間を表示
                         let duration = calculateDurationFromDates(start: startTimeForSpot, end: endTimeForSpot)
                         if duration > 0 {
-                            Text("滞在時間: \(duration)分")
+                            Text(String(format: NSLocalizedString("stay_duration_format", comment: "Stay duration: %d minutes"), duration))
                                 .font(.system(size: 12))
                                 .foregroundColor(.blue)
                         }
@@ -1811,7 +1802,7 @@ struct EditSpotView: View {
                     
                     // スポット費用
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("このスポットでいくら使いますか？")
+                        Text(NSLocalizedString("spot_spending", comment: "How much will you spend at this spot?"))
                             .font(.system(size: 13))
                             .foregroundColor(.gray)
                         HStack {
@@ -1820,14 +1811,14 @@ struct EditSpotView: View {
                                 .frame(width: 100)
                                 .multilineTextAlignment(.center)
                                 .keyboardType(.numberPad)
-                            Text("円")
+                            Text(NSLocalizedString("yen", comment: "yen"))
                                 .font(.system(size: 14))
                         }
                     }
                     
                     // サムネイル画像セクション
                     VStack(spacing: 12) {
-                        Text("サムネイル画像")
+                        Text(NSLocalizedString("thumbnail_image", comment: "Thumbnail image"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1849,7 +1840,7 @@ struct EditSpotView: View {
                                         Image(systemName: "photo.badge.plus")
                                             .font(.system(size: 40))
                                             .foregroundColor(.blue)
-                                        Text("サムネイル画像を追加")
+                                        Text(NSLocalizedString("add_thumbnail_image", comment: "Add thumbnail image"))
                                             .font(.subheadline)
                                             .foregroundColor(.blue)
                                             .fontWeight(.medium)
@@ -1863,7 +1854,7 @@ struct EditSpotView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "photo.fill")
                                     .font(.system(size: 16, weight: .medium))
-                                Text(spotImage != nil ? "サムネイルを変更" : "サムネイルを選択")
+                                Text(spotImage != nil ? NSLocalizedString("change_thumbnail", comment: "Change thumbnail") : NSLocalizedString("select_thumbnail", comment: "Select thumbnail"))
                                     .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -1895,7 +1886,7 @@ struct EditSpotView: View {
                 }
                 
                 // 詳細画像セクション
-                Section(header: Text("詳細画像（メイン画像）")) {
+                Section(header: Text(NSLocalizedString("detail_images_main", comment: "Detail images (Main images)"))) {
                     DetailImagesSection(
                         detailImagesData: $detailImagesData,
                         existingImageUrls: $existingImageUrls,
@@ -1940,7 +1931,7 @@ struct EditSpotView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         if let index = spots.firstIndex(where: { $0.id == spot.id }) {
                             spots[index].name = spotName
                             spots[index].address = spotAddress

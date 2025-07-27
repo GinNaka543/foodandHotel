@@ -46,10 +46,8 @@ class UserProfileManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
            let user = try? JSONDecoder().decode(UserProfile.self, from: data) {
             self.currentUser = user
-            print("📱 [UserProfileManager] UserDefaultsから読み込み成功: username=\(user.username), iconPath=\(user.iconImagePath ?? "nil")")
         } else {
             self.currentUser = UserProfile()
-            print("📱 [UserProfileManager] 新規UserProfile作成")
         }
         
         // ログイン済みの場合はFirebaseから最新データを取得
@@ -71,9 +69,8 @@ class UserProfileManager: ObservableObject {
                         self.currentUser.iconImagePath = existingIconPath
                     }
                     self.saveProfile()
-                    print("✅ Firebaseからプロフィール読み込み成功: iconPath=\(self.currentUser.iconImagePath ?? "nil")")
-                case .failure(let error):
-                    print("❌ Firebaseからプロフィール読み込みエラー: \(error)")
+                case .failure(_):
+                    break
                 }
             }
         }
@@ -83,7 +80,6 @@ class UserProfileManager: ObservableObject {
         currentUser.updatedAt = Date()
         if let data = try? JSONEncoder().encode(currentUser) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
-            print("💾 [UserProfileManager] UserDefaultsに保存: username=\(currentUser.username), iconPath=\(currentUser.iconImagePath ?? "nil")")
         }
     }
 }
@@ -106,23 +102,15 @@ struct HomeScreen: View {
     // リストページを表示する関数（現在未使用）
     /*
     private func showListPageWithTab(_ tab: ListTab) {
-        print("[DEBUG] ===== showListPageWithTab =====")
-        print("[DEBUG] Requested tab: \(tab.debugDescription) (raw value: \(tab.rawValue))")
-        print("[DEBUG] Before: selectedListTab = \(selectedListTab.debugDescription)")
         
         selectedListTab = tab
         
-        print("[DEBUG] After: selectedListTab = \(selectedListTab.debugDescription)")
-        print("[DEBUG] Setting showListPage to true...")
         
         // 確実に値が設定されるように、メインスレッドで実行
         DispatchQueue.main.async { [self] in
-            print("[DEBUG] Main thread: selectedListTab = \(self.selectedListTab.debugDescription)")
             self.showListPage = true
-            print("[DEBUG] Main thread: showListPage = \(self.showListPage)")
         }
         
-        print("[DEBUG] ================================")
     }
     */
     
@@ -131,7 +119,7 @@ struct HomeScreen: View {
         let names = characterManager.characters.filter { !$0.name.isEmpty }.map { $0.name }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
-            return joinedNames.isEmpty ? "キャラクターが登録されていません" : joinedNames
+            return joinedNames.isEmpty ? NSLocalizedString("no_characters_registered", comment: "No characters registered") : joinedNames
         } else {
             let truncated = String(joinedNames.prefix(30))
             return truncated + "..."
@@ -143,7 +131,7 @@ struct HomeScreen: View {
         let names = animeManager.animes.map { $0.title }
         let joinedNames = names.joined(separator: ", ")
         if joinedNames.count <= 30 {
-            return joinedNames.isEmpty ? "アニメが登録されていません" : joinedNames
+            return joinedNames.isEmpty ? NSLocalizedString("no_anime_registered", comment: "No anime registered") : joinedNames
         } else {
             let truncated = String(joinedNames.prefix(30))
             return truncated + "..."
@@ -218,7 +206,7 @@ struct HomeScreen: View {
                             Text(profileManager.currentUser.username.isEmpty ? "中島 銀星" : profileManager.currentUser.username)
                                 .font(.system(size: 25, weight: .bold)) // 28 * 0.9 ≒ 25
                                 .foregroundColor(.primary)
-                            Text(profileManager.currentUser.animeQuote.isEmpty ? "好きなアニメのセリフを設定" : profileManager.currentUser.animeQuote)
+                            Text(profileManager.currentUser.animeQuote.isEmpty ? NSLocalizedString("set_anime_quote", comment: "Set anime quote") : profileManager.currentUser.animeQuote)
                                 .font(.system(size: 14)) // 16 * 0.9 ≒ 14
                                 .foregroundColor(.gray)
                                 .lineLimit(2)
@@ -227,6 +215,10 @@ struct HomeScreen: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     Spacer()
+                    
+                    // 言語切り替えボタン
+                    LanguageButton()
+                        .padding(.trailing, 8)
                     
                     // ユーザーアイコン
                     Button(action: {
@@ -343,10 +335,7 @@ struct HomeScreen: View {
                         .padding(.vertical, 6)
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            print("[DEBUG] ===== BIRTHDAY TAP DETECTED =====")
                             showBirthdayList = true
-                            print("[DEBUG] showBirthdayList set to: \(showBirthdayList)")
-                            print("[DEBUG] =================================")
                         }
                     }
                     
@@ -377,11 +366,7 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        print("[DEBUG] ===== CHARACTER TAP DETECTED =====")
-                        print("[DEBUG] characterManager.characters.count: \(characterManager.characters.count)")
                         showCharacterList = true
-                        print("[DEBUG] showCharacterList set to: \(showCharacterList)")
-                        print("[DEBUG] ==================================")
                     }
                     
                     // Animes
@@ -411,58 +396,45 @@ struct HomeScreen: View {
                     .padding(.vertical, 6)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        print("[DEBUG] ===== ANIME TAP DETECTED =====")
-                        print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
                         showAnimeList = true
-                        print("[DEBUG] showAnimeList set to: \(showAnimeList)")
-                        print("[DEBUG] =============================")
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
                 
+                // スケジュールタイトル
+                HStack {
+                    Text("Schedule")
+                        .font(.system(size: 19, weight: .bold))
+                    Spacer()
+                    Button(action: {
+                        // ScheduleViewの中でshowingAddScheduleをトリガーする必要があるため、
+                        // ScheduleViewに渡すための状態を追加
+                        NotificationCenter.default.post(name: NSNotification.Name("ShowAddSchedule"), object: nil)
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.purple)
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                // スケジュールビュー
+                ScheduleView()
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                    .padding(.bottom, 20)
+                
                 // 人気キャラランキングセクション
                 // タイトルはCharacterRankingScrollView内で表示
                 CharacterRankingScrollView()
                     .frame(height: 140) // 1.4倍サイズ用に高さ調整
-                .padding(.top, 1)
-                .padding(.bottom, 6)
-                
-                // インフォメーションタイトル
-                HStack {
-                    Text("Information")
-                        .font(.system(size: 19, weight: .bold))
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-
-                // 広告バナー（1つの広告を表示、高さを1.3倍に）
-                HStack {
-                    Spacer()
-                    ZStack(alignment: .topTrailing) {
-                        FirebaseAdView(placement: "home", adIndex: 0)
-                            .frame(width: 360, height: 245.7) // 189 * 1.3 = 245.7
-                            .cornerRadius(10)
-                            .clipped()
-                        
-                        Text("PR")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.purple)
-                            .cornerRadius(4)
-                            .padding(8)
-                    }
-                    Spacer()
-                }
-                .padding(.top, 20)
-                .padding(.bottom, 12)
+                    .padding(.top, 1)
+                    .padding(.bottom, 6)
             }
         }
         .background(Color.white)
         .fullScreenCover(isPresented: $showCharacterList) {
-            let _ = print("[DEBUG] ===== PRESENTING CHARACTER LIST =====")
             ListPageScreen(
                 selectedTab: .chara,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
@@ -473,8 +445,6 @@ struct HomeScreen: View {
             .environmentObject(animeManager)
         }
         .fullScreenCover(isPresented: $showAnimeList) {
-            let _ = print("[DEBUG] ===== PRESENTING ANIME LIST =====")
-            let _ = print("[DEBUG] animeManager.animes.count: \(animeManager.animes.count)")
             ListPageScreen(
                 selectedTab: .anime,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
@@ -485,7 +455,6 @@ struct HomeScreen: View {
             .environmentObject(animeManager)
         }
         .fullScreenCover(isPresented: $showBirthdayList) {
-            let _ = print("[DEBUG] ===== PRESENTING BIRTHDAY LIST =====")
             ListPageScreen(
                 selectedTab: .birthday,
                 characters: characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty },
@@ -502,14 +471,12 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $showingPoints) {
             PointsView()
-        }
+}
         .onAppear {
             if !hasLoadedData {
-                print("[DEBUG] HomeScreen onAppear - Loading data")
                 characterManager.loadCharacters()
                 animeManager.loadAnimes()
                 hasLoadedData = true
-                print("[DEBUG] After loading - animes count: \(animeManager.animes.count)")
             }
         }
     }
@@ -521,7 +488,9 @@ struct FriendListIconView: View {
     let fallbackSystemName: String
     let color: Color
     var body: some View {
+        #if DEBUG
         let _ = print("[FriendListIconView] 画像数: \(images.count), nilでない画像数: \(images.compactMap { $0 }.count)")
+        #endif
         ZStack {
             if images.count == 1 {
                 iconImage(images[0], fallback: fallbackSystemName, color: color)
@@ -657,6 +626,863 @@ struct QuarterCircleShape: Shape {
 }
 
 // プレビュー用
+// スケジュール管理用の構造体
+struct ScheduleItem: Identifiable, Codable {
+    var id: String = UUID().uuidString
+    var date: Date
+    var animeId: String
+    var animeTitle: String
+    var episode: Int?
+    var note: String?
+}
+
+// スケジュールアイテムの行ビュー
+struct ScheduleItemRow: View {
+    let item: ScheduleItem
+    let deleteAction: () -> Void
+    @EnvironmentObject var animeManager: AnimeManager
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // アニメサムネイル
+            if let anime = animeManager.animes.first(where: { $0.id.uuidString == item.animeId }),
+               let imagePath = anime.imageIdentifier,
+               let uiImage = loadImageFromPath(imagePath) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                    )
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.purple.opacity(0.1))
+                    .frame(width: 60, height: 60)
+                    .overlay(
+                        Image(systemName: "tv")
+                            .font(.system(size: 24))
+                            .foregroundColor(.purple.opacity(0.5))
+                    )
+            }
+            
+            // 日付
+            VStack(spacing: 2) {
+                Text(getMonthDay(from: item.date))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.gray)
+                Text(getDay(from: item.date))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.purple)
+                Text(getWeekday(from: item.date))
+                    .font(.system(size: 11))
+                    .foregroundColor(.gray)
+            }
+            .frame(width: 50)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.animeTitle)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                if let episode = item.episode {
+                    Text("第\(episode)話")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+                
+                if let note = item.note, !note.isEmpty {
+                    Text(note)
+                        .font(.system(size: 12))
+                        .foregroundColor(.gray)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+            
+            Button(action: deleteAction) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundColor(.gray.opacity(0.5))
+            }
+        }
+        .padding(12)
+    }
+    
+    private func getMonthDay(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: date)
+    }
+    
+    private func getDay(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+    
+    private func getWeekday(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "E"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.string(from: date)
+    }
+}
+
+// 空のスケジュールビュー
+struct EmptyScheduleView: View {
+    let showingAddSchedule: Binding<Bool>
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 40))
+                .foregroundColor(.purple.opacity(0.6))
+            
+            Text(NSLocalizedString("schedule_empty", comment: "No schedules registered"))
+                .font(.system(size: 16))
+                .foregroundColor(.gray)
+            
+            Button(action: {
+                showingAddSchedule.wrappedValue = true
+            }) {
+                Label(NSLocalizedString("schedule_add", comment: "Add schedule"), systemImage: "plus.circle.fill")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.purple)
+                    .cornerRadius(20)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+}
+
+// スケジュールビュー
+struct ScheduleView: View {
+    @EnvironmentObject var animeManager: AnimeManager
+    @State private var scheduleItems: [ScheduleItem] = []
+    @State private var showingAddSchedule = false
+    @State private var selectedDate = Date()
+    @State private var selectedAnimeId: String = ""
+    @State private var episode: String = ""
+    @State private var note: String = ""
+    
+    private let userDefaultsKey = "scheduleItems"
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            if scheduleItems.isEmpty {
+                EmptyScheduleView(showingAddSchedule: $showingAddSchedule)
+            } else {
+                ScheduleCalendarView(
+                    scheduleItems: scheduleItems,
+                    showingAddSchedule: $showingAddSchedule,
+                    deleteAction: deleteScheduleItem,
+                    animeManager: animeManager
+                )
+            }
+        }
+        .onAppear {
+            loadScheduleItems()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowAddSchedule"))) { _ in
+            showingAddSchedule = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("AddScheduleItem"))) { notification in
+            if let userInfo = notification.userInfo,
+               let item = userInfo["item"] as? ScheduleItem {
+                scheduleItems.append(item)
+                saveScheduleItems()
+            }
+        }
+        .sheet(isPresented: $showingAddSchedule) {
+            AddScheduleSheet(
+                animeManager: animeManager,
+                selectedDate: $selectedDate,
+                selectedAnimeId: $selectedAnimeId,
+                episode: $episode,
+                note: $note,
+                showingAddSchedule: $showingAddSchedule,
+                addAction: addScheduleItem,
+                resetAction: resetForm,
+                getSelectedAnimeTitle: getSelectedAnimeTitle
+            )
+        }
+    }
+    
+    private func getSelectedAnimeTitle() -> String {
+        if selectedAnimeId.isEmpty {
+            return NSLocalizedString("anime_select", comment: "Select anime")
+        }
+        return animeManager.animes.first(where: { $0.id.uuidString == selectedAnimeId })?.title ?? NSLocalizedString("anime_select", comment: "Select anime")
+    }
+    
+    private func addScheduleItem() {
+        guard !selectedAnimeId.isEmpty,
+              let anime = animeManager.animes.first(where: { $0.id.uuidString == selectedAnimeId }) else { return }
+        
+        let newItem = ScheduleItem(
+            date: selectedDate,
+            animeId: selectedAnimeId,
+            animeTitle: anime.title,
+            episode: Int(episode),
+            note: note.isEmpty ? nil : note
+        )
+        
+        scheduleItems.append(newItem)
+        saveScheduleItems()
+        resetForm()
+    }
+    
+    private func deleteScheduleItem(_ item: ScheduleItem) {
+        scheduleItems.removeAll(where: { $0.id == item.id })
+        saveScheduleItems()
+    }
+    
+    private func resetForm() {
+        selectedDate = Date()
+        selectedAnimeId = ""
+        episode = ""
+        note = ""
+    }
+    
+    private func loadScheduleItems() {
+        if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
+           let items = try? JSONDecoder().decode([ScheduleItem].self, from: data) {
+            scheduleItems = items
+        }
+    }
+    
+    private func saveScheduleItems() {
+        if let data = try? JSONEncoder().encode(scheduleItems) {
+            UserDefaults.standard.set(data, forKey: userDefaultsKey)
+        }
+    }
+}
+
+// カレンダー表示用の構造体
+struct CalendarDay: Identifiable {
+    let id = UUID()
+    let date: Date
+    let dayNumber: Int
+    let isCurrentMonth: Bool
+    let scheduleItems: [ScheduleItem]
+}
+
+// スケジュールカレンダービュー
+struct ScheduleCalendarView: View {
+    let scheduleItems: [ScheduleItem]
+    let showingAddSchedule: Binding<Bool>
+    let deleteAction: (ScheduleItem) -> Void
+    let animeManager: AnimeManager
+    
+    @State private var selectedMonth = Date()
+    @State private var selectedDate: Date?
+    @State private var showingDayDetail = false
+    @State private var showingAddScheduleForDate = false
+    @State private var selectedDateForAdd: Date = Date()
+    
+    private let calendar = Calendar.current
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy年M月"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter
+    }()
+    
+    private var calendarDays: [CalendarDay] {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: selectedMonth) else {
+            return []
+        }
+        
+        var days: [CalendarDay] = []
+        
+        // 月の最初の日の曜日を取得
+        let firstWeekday = calendar.component(.weekday, from: monthInterval.start) - 1
+        
+        // 前月の日付を追加
+        if firstWeekday > 0 {
+            let previousMonth = calendar.date(byAdding: .month, value: -1, to: selectedMonth)!
+            let previousMonthDays = calendar.range(of: .day, in: .month, for: previousMonth)!.count
+            
+            for i in (previousMonthDays - firstWeekday + 1)...previousMonthDays {
+                if let date = calendar.date(byAdding: .day, value: i - previousMonthDays - 1, to: monthInterval.start) {
+                    let items = scheduleItems.filter { calendar.isDate($0.date, inSameDayAs: date) }
+                    days.append(CalendarDay(date: date, dayNumber: i, isCurrentMonth: false, scheduleItems: items))
+                }
+            }
+        }
+        
+        // 当月の日付を追加
+        let numberOfDays = calendar.range(of: .day, in: .month, for: selectedMonth)!.count
+        for i in 1...numberOfDays {
+            if let date = calendar.date(byAdding: .day, value: i - 1, to: monthInterval.start) {
+                let items = scheduleItems.filter { calendar.isDate($0.date, inSameDayAs: date) }
+                days.append(CalendarDay(date: date, dayNumber: i, isCurrentMonth: true, scheduleItems: items))
+            }
+        }
+        
+        // 次月の日付を追加（6週分になるように）
+        let remainingDays = 42 - days.count
+        for i in 1...remainingDays {
+            if let nextMonth = calendar.date(byAdding: .month, value: 1, to: selectedMonth),
+               let date = calendar.date(byAdding: .day, value: i - 1, to: calendar.dateInterval(of: .month, for: nextMonth)!.start) {
+                let items = scheduleItems.filter { calendar.isDate($0.date, inSameDayAs: date) }
+                days.append(CalendarDay(date: date, dayNumber: i, isCurrentMonth: false, scheduleItems: items))
+            }
+        }
+        
+        return days
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            // 月の切り替えヘッダー
+            HStack {
+                Button(action: {
+                    withAnimation {
+                        selectedMonth = calendar.date(byAdding: .month, value: -1, to: selectedMonth) ?? selectedMonth
+                    }
+                }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.purple)
+                }
+                
+                Spacer()
+                
+                Text(dateFormatter.string(from: selectedMonth))
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button(action: {
+                    withAnimation {
+                        selectedMonth = calendar.date(byAdding: .month, value: 1, to: selectedMonth) ?? selectedMonth
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.purple)
+                }
+            }
+            .padding(.horizontal, 16)
+            
+            // 曜日ヘッダー
+            HStack(spacing: 0) {
+                ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { weekday in
+                    Text(weekday)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(weekday == "日" ? .red : weekday == "土" ? .blue : .gray)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .padding(.horizontal, 8)
+            
+            // カレンダーグリッド
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
+                ForEach(calendarDays) { day in
+                    CalendarDayCell(
+                        day: day,
+                        isToday: calendar.isDateInToday(day.date),
+                        isSelected: selectedDate != nil && calendar.isDate(day.date, inSameDayAs: selectedDate!),
+                        animeManager: animeManager
+                    )
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            if !day.scheduleItems.isEmpty {
+                                selectedDate = day.date
+                                showingDayDetail = true
+                            } else if day.isCurrentMonth {
+                                // 空の日付をタップした場合、その日にスケジュールを追加
+                                selectedDateForAdd = day.date
+                                showingAddScheduleForDate = true
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+        }
+        .padding(.vertical, 8)
+        .sheet(isPresented: $showingDayDetail) {
+            if let date = selectedDate {
+                DayScheduleDetailView(
+                    date: date,
+                    scheduleItems: scheduleItems.filter { calendar.isDate($0.date, inSameDayAs: date) },
+                    animeManager: animeManager,
+                    deleteAction: deleteAction
+                )
+            }
+        }
+        .sheet(isPresented: $showingAddScheduleForDate) {
+            AddScheduleSheetForDate(
+                animeManager: animeManager,
+                selectedDate: selectedDateForAdd,
+                onAdd: { anime, episode, note in
+                    let newItem = ScheduleItem(
+                        date: selectedDateForAdd,
+                        animeId: anime.id.uuidString,
+                        animeTitle: anime.title,
+                        episode: episode,
+                        note: note
+                    )
+                    // 親のScheduleViewにアイテムを追加する必要があるため、
+                    // NotificationCenterを使用して通知
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("AddScheduleItem"),
+                        object: nil,
+                        userInfo: ["item": newItem]
+                    )
+                }
+            )
+        }
+    }
+}
+
+// カレンダーの日付セル
+struct CalendarDayCell: View {
+    let day: CalendarDay
+    let isToday: Bool
+    let isSelected: Bool
+    let animeManager: AnimeManager
+    
+    @ViewBuilder
+    private var backgroundFill: some View {
+        if isToday {
+            LinearGradient(
+                gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.8)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        } else if isSelected {
+            Color.purple.opacity(0.1)
+        } else if !day.scheduleItems.isEmpty && day.isCurrentMonth {
+            Color.purple.opacity(0.05)
+        } else {
+            Color.clear
+        }
+    }
+    
+    private var dayNumberColor: Color {
+        if !day.isCurrentMonth {
+            return .gray.opacity(0.5)
+        } else if isToday {
+            return .white
+        } else {
+            return .primary
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(day.dayNumber)")
+                .font(.system(size: 14, weight: isToday ? .bold : .medium))
+                .foregroundColor(dayNumberColor)
+            
+            // スケジュールインジケーター
+            if !day.scheduleItems.isEmpty {
+                HStack(spacing: 2) {
+                    ForEach(day.scheduleItems.prefix(3)) { item in
+                        ScheduleIndicator(item: item, animeManager: animeManager)
+                    }
+                }
+                
+                if day.scheduleItems.count > 3 {
+                    Text("+\(day.scheduleItems.count - 3)")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.purple)
+                }
+            }
+        }
+        .frame(height: 50)
+        .frame(maxWidth: .infinity)
+        .background(
+            backgroundFill
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isSelected ? Color.purple : Color.clear, lineWidth: 2)
+        )
+        .scaleEffect(!day.scheduleItems.isEmpty && day.isCurrentMonth ? 1.05 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+}
+
+// スケジュールインジケーター
+struct ScheduleIndicator: View {
+    let item: ScheduleItem
+    let animeManager: AnimeManager
+    
+    var body: some View {
+        if let anime = animeManager.animes.first(where: { $0.id.uuidString == item.animeId }),
+           let imagePath = anime.imageIdentifier,
+           let uiImage = loadImageFromPath(imagePath) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 12, height: 12)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.white, lineWidth: 1)
+                )
+        } else {
+            Circle()
+                .fill(Color.purple)
+                .frame(width: 8, height: 8)
+        }
+    }
+}
+
+// 日付別スケジュール詳細ビュー
+struct DayScheduleDetailView: View {
+    let date: Date
+    let scheduleItems: [ScheduleItem]
+    let animeManager: AnimeManager
+    let deleteAction: (ScheduleItem) -> Void
+    @Environment(\.dismiss) var dismiss
+    
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月d日(E)"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter
+    }()
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 16) {
+                    ForEach(scheduleItems) { item in
+                        ScheduleItemRow(item: item) {
+                            deleteAction(item)
+                            if scheduleItems.count == 1 {
+                                dismiss()
+                            }
+                        }
+                        .environmentObject(animeManager)
+                    }
+                }
+                .padding()
+            }
+            .navigationTitle(dateFormatter.string(from: date))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("close", comment: "Close")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 特定の日付用スケジュール追加シート
+struct AddScheduleSheetForDate: View {
+    let animeManager: AnimeManager
+    let selectedDate: Date
+    let onAdd: (Anime, Int?, String?) -> Void
+    
+    @State private var selectedAnime: Anime?
+    @State private var episode = ""
+    @State private var note = ""
+    @State private var showAnimeSelection = false
+    @Environment(\.dismiss) var dismiss
+    
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月d日(E)"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter
+    }()
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text("日付")) {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundColor(.purple)
+                        Text(dateFormatter.string(from: selectedDate))
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                }
+                
+                Section(header: Text("アニメ")) {
+                    Button(action: {
+                        showAnimeSelection = true
+                    }) {
+                        HStack {
+                            if let anime = selectedAnime,
+                               let imagePath = anime.imageIdentifier,
+                               let uiImage = loadImageFromPath(imagePath) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 40, height: 40)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            } else {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.purple.opacity(0.1))
+                                    .frame(width: 40, height: 40)
+                                    .overlay(
+                                        Image(systemName: "tv")
+                                            .foregroundColor(.purple.opacity(0.5))
+                                    )
+                            }
+                            
+                            Text(selectedAnime?.title ?? "アニメを選択")
+                                .foregroundColor(selectedAnime == nil ? .gray : .primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                }
+                
+                if selectedAnime != nil {
+                    Section(header: Text("詳細（任意）")) {
+                        HStack {
+                            Text("話数")
+                            TextField(NSLocalizedString("example_12", comment: "e.g. 12"), text: $episode)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        
+                        VStack(alignment: .leading) {
+                            Text("メモ")
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                            TextEditor(text: $note)
+                                .frame(minHeight: 60)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(NSLocalizedString("add_watch_schedule", comment: "Add watch schedule"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("add", comment: "Add")) {
+                        if let anime = selectedAnime {
+                            onAdd(anime, Int(episode), note.isEmpty ? nil : note)
+                            dismiss()
+                        }
+                    }
+                    .disabled(selectedAnime == nil)
+                }
+            }
+        }
+        .sheet(isPresented: $showAnimeSelection) {
+            AnimeSelectionView(
+                animes: animeManager.animes,
+                selectedAnime: $selectedAnime
+            )
+        }
+    }
+}
+
+// アニメ選択ビュー
+struct AnimeSelectionView: View {
+    let animes: [Anime]
+    @Binding var selectedAnime: Anime?
+    @Environment(\.dismiss) var dismiss
+    @State private var searchText = ""
+    
+    var filteredAnimes: [Anime] {
+        if searchText.isEmpty {
+            return animes.filter { !$0.title.isEmpty }
+        } else {
+            return animes.filter { 
+                !$0.title.isEmpty && 
+                $0.title.localizedCaseInsensitiveContains(searchText) 
+            }
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            List(filteredAnimes) { anime in
+                Button(action: {
+                    selectedAnime = anime
+                    dismiss()
+                }) {
+                    HStack {
+                        if let imagePath = anime.imageIdentifier,
+                           let uiImage = loadImageFromPath(imagePath) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 50, height: 50)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        } else {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.purple.opacity(0.1))
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Image(systemName: "tv")
+                                        .foregroundColor(.purple.opacity(0.5))
+                                )
+                        }
+                        
+                        Text(anime.title)
+                            .font(.system(size: 16))
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        if selectedAnime?.id == anime.id {
+                            Image(systemName: "checkmark")
+                                .foregroundColor(.purple)
+                        }
+                    }
+                }
+            }
+            .searchable(text: $searchText, prompt: NSLocalizedString("search_anime", comment: "Search anime"))
+            .navigationTitle(NSLocalizedString("select_anime", comment: "Select anime"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("close", comment: "Close")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+// スケジュール追加シート
+struct AddScheduleSheet: View {
+    let animeManager: AnimeManager
+    @Binding var selectedDate: Date
+    @Binding var selectedAnimeId: String
+    @Binding var episode: String
+    @Binding var note: String
+    @Binding var showingAddSchedule: Bool
+    let addAction: () -> Void
+    let resetAction: () -> Void
+    let getSelectedAnimeTitle: () -> String
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // 日付選択
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("watch_schedule_date", comment: "Watch schedule date"))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                        .datePickerStyle(GraphicalDatePickerStyle())
+                        .frame(height: 320)
+                }
+                .padding(.horizontal)
+                
+                // アニメ選択
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("anime", comment: "Anime"))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    
+                    let validAnimes = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    if validAnimes.isEmpty {
+                        Text(NSLocalizedString("no_anime_registered", comment: "No anime registered"))
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        Menu {
+                            ForEach(validAnimes) { anime in
+                                Button(action: {
+                                    selectedAnimeId = anime.id.uuidString
+                                }) {
+                                    Text(anime.title)
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(getSelectedAnimeTitle())
+                                    .foregroundColor(selectedAnimeId.isEmpty ? .gray : .primary)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                
+                // エピソード番号（オプション）
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("episode_number_optional", comment: "Episode number (optional)"))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField(NSLocalizedString("example_12", comment: "e.g. 12"), text: $episode)
+                        .keyboardType(.numberPad)
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal)
+                
+                // メモ（オプション）
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("memo_optional", comment: "Memo (optional)"))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    TextField(NSLocalizedString("example_watch_with_friends", comment: "e.g. Watch with friends"), text: $note)
+                        .padding()
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("schedule_add_title", comment: "Add Schedule"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        showingAddSchedule = false
+                        resetAction()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("add", comment: "Add")) {
+                        addAction()
+                        showingAddSchedule = false
+                    }
+                    .disabled(selectedAnimeId.isEmpty)
+                }
+            }
+        }
+    }
+}
+
 struct HomeScreen_Previews: PreviewProvider {
     static var previews: some View {
         HomeScreen()
@@ -674,6 +1500,7 @@ struct UserProfileScreenTemp: View {
     @State private var showBirthdayPicker = false
     @State private var animeQuote: String = ""
     @State private var showingLogoutConfirmation = false
+    @State private var showingPurchaseHistory = false
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -693,7 +1520,7 @@ struct UserProfileScreenTemp: View {
                         
                         Spacer()
                         
-                        Text("プロフィール編集")
+                        Text(NSLocalizedString("profile_edit", comment: "Profile edit"))
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.black)
                         
@@ -759,7 +1586,7 @@ struct UserProfileScreenTemp: View {
                                     }
                                 }
                                 
-                                Text("プロフィール画像を変更")
+                                Text(NSLocalizedString("change_profile_image", comment: "Change profile image"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.blue)
                             }
@@ -770,10 +1597,10 @@ struct UserProfileScreenTemp: View {
                             VStack(alignment: .leading, spacing: 0) {
                                 // ユーザー名
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("ユーザー名")
+                                    Text(NSLocalizedString("username", comment: "Username"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
-                                    TextField("名前を入力", text: $username)
+                                    TextField(NSLocalizedString("enter_name", comment: "Enter name"), text: $username)
                                         .font(.system(size: 16))
                                         .padding(.vertical, 12)
                                         .padding(.horizontal, 16)
@@ -788,14 +1615,14 @@ struct UserProfileScreenTemp: View {
                                 
                                 // 誕生日
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("誕生日")
+                                    Text(NSLocalizedString("birthday", comment: "Birthday"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
                                     
                                     Button(action: { showBirthdayPicker.toggle() }) {
                                         HStack {
                                             Text(profileManager.currentUser.birthday != nil ? 
-                                                DateFormatter.japaneseDate.string(from: birthday) : "誕生日を設定")
+                                                DateFormatter.japaneseDate.string(from: birthday) : NSLocalizedString("set_birthday", comment: "Set birthday"))
                                                 .font(.system(size: 16))
                                                 .foregroundColor(profileManager.currentUser.birthday != nil ? .black : .gray)
                                             Spacer()
@@ -813,10 +1640,10 @@ struct UserProfileScreenTemp: View {
                                 
                                 // アニメのセリフ
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text("好きなアニメのセリフ")
+                                    Text(NSLocalizedString("favorite_anime_quote", comment: "Favorite anime quote"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.gray)
-                                    TextField("アニメのセリフを入力", text: $animeQuote)
+                                    TextField(NSLocalizedString("enter_anime_quote", comment: "Enter anime quote"), text: $animeQuote)
                                         .font(.system(size: 16))
                                         .padding(.vertical, 12)
                                         .padding(.horizontal, 16)
@@ -830,6 +1657,30 @@ struct UserProfileScreenTemp: View {
                                 .padding(.bottom, 32)
                             }
                             
+                            // 購入履歴セクション
+                            VStack(spacing: 16) {
+                                Divider()
+                                    .padding(.horizontal, 16)
+                                
+                                Button(action: {
+                                    showingPurchaseHistory = true
+                                }) {
+                                    HStack {
+                                        Image(systemName: "doc.text")
+                                            .foregroundColor(.purple)
+                                        Text("購入履歴")
+                                            .font(.system(size: 16))
+                                            .foregroundColor(.purple)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 12))
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                }
+                            }
+                            
                             // ログアウトボタン
                             VStack(spacing: 16) {
                                 Divider()
@@ -841,7 +1692,7 @@ struct UserProfileScreenTemp: View {
                                     HStack {
                                         Image(systemName: "rectangle.portrait.and.arrow.right")
                                             .foregroundColor(.red)
-                                        Text("ログアウト")
+                                        Text(NSLocalizedString("logout", comment: "Logout"))
                                             .font(.system(size: 16))
                                             .foregroundColor(.red)
                                         Spacer()
@@ -881,14 +1732,14 @@ struct UserProfileScreenTemp: View {
         }
         .sheet(isPresented: $showBirthdayPicker) {
             NavigationView {
-                DatePicker("誕生日を選択", selection: $birthday, displayedComponents: .date)
+                DatePicker(NSLocalizedString("select_birthday", comment: "Select birthday"), selection: $birthday, displayedComponents: .date)
                     .datePickerStyle(WheelDatePickerStyle())
                     .labelsHidden()
-                    .navigationTitle("誕生日")
+                    .navigationTitle(NSLocalizedString("birthday", comment: "Birthday"))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("完了") {
+                            Button(NSLocalizedString("complete", comment: "Complete")) {
                                 showBirthdayPicker = false
                                 saveProfile()
                             }
@@ -902,6 +1753,9 @@ struct UserProfileScreenTemp: View {
         }
         .onChange(of: profileManager.currentUser) { oldValue, newValue in
             loadCurrentProfile()
+        }
+        .sheet(isPresented: $showingPurchaseHistory) {
+            PurchaseHistoryView()
         }
         .fullScreenCover(isPresented: $showingLogoutConfirmation) {
             LogoutConfirmationView(
@@ -926,12 +1780,9 @@ struct UserProfileScreenTemp: View {
         if let imagePath = profileManager.currentUser.iconImagePath,
            let uiImage = loadImageFromPath(imagePath) {
             iconImage = uiImage
-            print("✅ [Profile] 画像読み込み成功: \(imagePath)")
         } else {
-            print("❌ [Profile] 画像読み込み失敗: \(profileManager.currentUser.iconImagePath ?? "nil")")
         }
         
-        print("📱 [Profile] 現在のプロフィール読み込み: username=\(username), animeQuote=\(animeQuote), iconPath=\(profileManager.currentUser.iconImagePath ?? "nil")")
     }
     
     private func saveProfile() {
@@ -942,13 +1793,15 @@ struct UserProfileScreenTemp: View {
         // 画像を保存
         if let iconImage = iconImage {
             // 古い画像ファイルを削除
-            if let oldImagePath = profileManager.currentUser.iconImagePath {
-                let oldFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!.appendingPathComponent(oldImagePath)
+            if let oldImagePath = profileManager.currentUser.iconImagePath,
+               let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                let oldFilePath = documentsURL.appendingPathComponent(oldImagePath)
                 try? FileManager.default.removeItem(at: oldFilePath)
-                print("🗑️ [Profile] 古い画像削除: \(oldImagePath)")
             }
             
-            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+            guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                return
+            }
             let fileName = "profile_\(UUID().uuidString).jpg"
             let filePath = documentsPath.appendingPathComponent(fileName)
             
@@ -957,9 +1810,7 @@ struct UserProfileScreenTemp: View {
                     try imageData.write(to: filePath)
                     // 相対パスで保存（ファイル名のみ）
                     profileManager.currentUser.iconImagePath = fileName
-                    print("✅ [Profile] 画像保存成功: \(fileName)")
                 } catch {
-                    print("❌ [Profile] 画像保存エラー: \(error)")
                 }
             }
         }
@@ -967,14 +1818,13 @@ struct UserProfileScreenTemp: View {
         profileManager.saveProfile()
         
         // Firebaseにも保存
-        print("Firebaseに保存開始: \(profileManager.currentUser.username)")
         FirebaseManager.shared.saveUserProfile(profileManager.currentUser) { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success():
-                    print("✅ Firebaseに保存成功: \(profileManager.currentUser.username)")
-                case .failure(let error):
-                    print("❌ Firebase保存エラー: \(error)")
+                    break
+                case .failure(_):
+                    break
                 }
             }
         }
@@ -1072,7 +1922,7 @@ struct LogoutConfirmationView: View {
                     
                     // ユーザー名
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("ユーザー名")
+                        Text(NSLocalizedString("username", comment: "Username"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.gray)
                         
@@ -1143,7 +1993,7 @@ struct LogoutConfirmationView: View {
                         isPresented = false
                         onLogout()
                     }) {
-                        Text("ログアウト")
+                        Text(NSLocalizedString("logout", comment: "Logout"))
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)

@@ -190,7 +190,6 @@ struct PlanConfirmationView: View {
                 case .success(let points):
                     self.userPoints = points
                 case .failure(let error):
-                    print("ポイント取得エラー: \(error)")
                     self.userPoints = 0
                 }
                 self.isLoading = false

@@ -47,7 +47,7 @@ struct TargetedAdBannerView: View {
                             .foregroundColor(.secondary)
                             .lineLimit(2)
                         
-                        Text("広告")
+                        Text(NSLocalizedString("advertisement", comment: "Advertisement"))
                             .font(.system(size: 10))
                             .foregroundColor(.gray)
                             .padding(.horizontal, 6)
@@ -112,8 +112,8 @@ class AdManager: ObservableObject {
                 switch result {
                 case .success(let ads):
                     self?.currentAds = ads
-                case .failure(let error):
-                    print("広告の読み込みに失敗: \(error)")
+                case .failure(_):
+                    break
                 }
             }
         }

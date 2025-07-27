@@ -11,7 +11,7 @@ struct PixivConfirmationScreen: View {
     var body: some View {
         VStack(spacing: 24) {
             // タイトル
-            Text("Pixivで開きますか？")
+            Text(NSLocalizedString("open_in_pixiv_question", comment: "Open in Pixiv?"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .padding(.top, 40)
@@ -39,7 +39,7 @@ struct PixivConfirmationScreen: View {
                                         .font(.system(size: 60))
                                         .foregroundColor(.gray)
                                 }
-                                Text("Pixiv作品")
+                                Text(NSLocalizedString("pixiv_artwork", comment: "Pixiv Artwork"))
                                     .font(.headline)
                                     .foregroundColor(.gray)
                             }
@@ -82,7 +82,7 @@ struct PixivConfirmationScreen: View {
                         UIApplication.shared.open(url)
                     }
                 }) {
-                    Text("Pixivで開く")
+                    Text(NSLocalizedString("open_in_pixiv", comment: "Open in Pixiv"))
                         .font(.headline)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -94,7 +94,7 @@ struct PixivConfirmationScreen: View {
                 Button(action: {
                     presentationMode.wrappedValue.dismiss()
                 }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .font(.headline)
                         .foregroundColor(.gray)
                         .frame(maxWidth: .infinity)

@@ -4,13 +4,24 @@ import FirebaseAuth
 import FirebaseFirestore
 import StripePaymentSheet
 import UIKit
+import BackgroundTasks
+
+// AppDelegate for orientation control
+class AppDelegate: NSObject, UIApplicationDelegate {
+    static var orientationLock = UIInterfaceOrientationMask.portrait
+    
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        return AppDelegate.orientationLock
+    }
+}
 
 class MainTabSelection: ObservableObject {
     @Published var selectedTab: MainContainerView.Tab = .chara {
         didSet {
-            print("🔄 [MainTabSelection] タブ変更: \(oldValue.title) → \(selectedTab.title)")
         }
     }
+    @Published var showCharacterOrderModal = false
+    @Published var showAnimeOrderModal = false
 }
 
 class AuthenticationManager: ObservableObject {
@@ -38,8 +49,8 @@ class AuthenticationManager: ObservableObject {
     }
     
     private func startPaymentCheckTimer() {
-        // Check every 5 seconds for testing
-        paymentCheckTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
+        // Check every hour in production
+        paymentCheckTimer = Timer.scheduledTimer(withTimeInterval: 3600.0, repeats: true) { _ in
             self.checkPaymentRequirement()
             self.syncSubscriptionStatus()
         }
@@ -48,10 +59,10 @@ class AuthenticationManager: ObservableObject {
     func checkPaymentRequirement() {
         // Get first install date from keychain (persists across app reinstalls)
         if let firstInstallDate = getFirstInstallDateFromKeychain() {
-            // For testing: Check seconds instead of months
-            let secondsSinceInstall = Calendar.current.dateComponents([.second], from: firstInstallDate, to: Date()).second ?? 0
+            // Check months for production (2 months)
+            let monthsSinceInstall = Calendar.current.dateComponents([.month], from: firstInstallDate, to: Date()).month ?? 0
             
-            if secondsSinceInstall >= 30 && !hasPaid {
+            if monthsSinceInstall >= 2 && !hasPaid {
                 requiresPayment = true
             }
         } else {
@@ -99,37 +110,36 @@ class AuthenticationManager: ObservableObject {
                 "deviceId": self.deviceId,
                 "currentUserId": userId,
                 "firstInstallDate": firstInstallDate.timeIntervalSince1970,
-                "daysUntilPayment": 60, // Will be 60 days in production
+                "daysUntilPayment": 60, // 2 months (60 days) in production
                 "hasPaid": self.hasPaid,
                 "createdAt": Date().timeIntervalSince1970,
                 "lastSeenAt": Date().timeIntervalSince1970
             ]
             
-            db.collection("device_subscriptions").document(self.deviceId).setData(trackingData) { error in
-                if let error = error {
-                    print("Error creating device subscription tracking: \(error)")
-                } else {
-                    print("Device subscription tracking created successfully")
-                }
+            db.collection("device_subscriptions").document(self.deviceId).setData(trackingData) { _ in
+                // Successfully saved tracking data
             }
         }
     }
     
     func logout() {
-        // 現在のユーザーのローカルデータをクリア
-        UserDefaultsHelper.shared.clearCurrentUserData()
-        
-        // ユーザー認証情報を削除
+        // ユーザー認証情報を削除（データは保持）
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "username")
         UserDefaults.standard.removeObject(forKey: "isLoggedIn")
         isLoggedIn = false
+        
+        // 注意: ユーザーのデータ（キャラクター、アニメ等）は削除しない
+        // 再ログイン時に同じユーザーIDでログインすれば、データは自動的に復元される
     }
     
     func completePayment() {
         hasPaid = true
         requiresPayment = false
         UserDefaults.standard.set(true, forKey: "hasPaidSubscription")
+        
+        // PaymentGatekeeperを更新
+        PaymentGatekeeper.shared.markAsPremium()
         
         // Save payment status to keychain with device ID
         savePaymentStatusToKeychain(deviceId: deviceId, hasPaid: true)
@@ -139,14 +149,10 @@ class AuthenticationManager: ObservableObject {
         db.collection("device_subscriptions").document(deviceId).updateData([
             "hasPaid": true,
             "paymentDate": Date().timeIntervalSince1970,
-            "amount": 500,
+            "amount": 600,
             "lastSeenAt": Date().timeIntervalSince1970
-        ]) { error in
-            if let error = error {
-                print("❌ Error updating device subscription: \(error)")
-            } else {
-                print("✅ Device subscription updated successfully")
-            }
+        ]) { _ in
+            // Successfully updated device subscription
         }
         
         // Also update user document if logged in
@@ -155,12 +161,8 @@ class AuthenticationManager: ObservableObject {
                 "hasPaidSubscription": true,
                 "subscriptionDate": Timestamp(date: Date()),
                 "subscriptionUpdatedAt": Timestamp(date: Date())
-            ]) { error in
-                if let error = error {
-                    print("❌ Error updating user subscription: \(error)")
-                } else {
-                    print("✅ User subscription updated successfully")
-                }
+            ]) { _ in
+                // Successfully updated user subscription
             }
         }
     }
@@ -176,7 +178,6 @@ class AuthenticationManager: ObservableObject {
                     // Sync local status with server status
                     if serverHasPaid && self?.hasPaid == false {
                         // Server says paid but locally is unpaid, update local status
-                        print("📱 Syncing: Server says paid, updating local status")
                         self?.hasPaid = true
                         self?.requiresPayment = false
                         UserDefaults.standard.set(true, forKey: "hasPaidSubscription")
@@ -187,7 +188,6 @@ class AuthenticationManager: ObservableObject {
                         }
                     } else if !serverHasPaid && self?.hasPaid == true {
                         // Server says unpaid but locally is paid, reset local status
-                        print("📱 Syncing: Server says unpaid, resetting local status")
                         self?.hasPaid = false
                         self?.requiresPayment = true
                         UserDefaults.standard.set(false, forKey: "hasPaidSubscription")
@@ -202,7 +202,6 @@ class AuthenticationManager: ObservableObject {
                     self?.checkPaymentRequirement()
                 }
             } else {
-                print("📱 No device subscription document found for deviceId: \(self?.deviceId ?? "unknown")")
             }
         }
     }
@@ -272,57 +271,204 @@ class AuthenticationManager: ObservableObject {
 
 @main
 struct HappinessGameSwiftApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var mainTab = MainTabSelection()
     @StateObject private var characterManager = CharacterManager()
     @StateObject private var animeManager = AnimeManager()
     @StateObject private var productManager = ProductManager()
     @StateObject private var authManager = AuthenticationManager()
+    @StateObject private var paymentGatekeeper = PaymentGatekeeper.shared
     @State private var showSplash = true
+    @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
+    @State private var hasRequestedTracking = UserDefaults.standard.bool(forKey: "hasRequestedTracking")
     
     init() {
+        // Initialize memory pressure monitoring
+        _ = MemoryPressureManager.shared
+        
+        #if DEBUG
+        // Track app launch performance
+        let launchTracker = PerformanceMonitor.shared.startTracking(.appLaunch)
+        #endif
+        
+        // Configure Firebase
         FirebaseApp.configure()
+        #if DEBUG
+        print("Firebase configured successfully")
+        print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")")
+        
+        // Start network monitoring and diagnostics
+        NetworkManager.shared.startMonitoring()
+        
+        // Delay network diagnostics to avoid blocking app launch
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 3.0) {
+            NetworkManager.shared.diagnoseNetworkIssues()
+        }
+        #endif
         
         // Stripe SDKを初期化
-        StripeAPI.defaultPublishableKey = "pk_live_51RjjWjD7PsaPGu6xz0RGH0Gnw36ORTqI9pjec4ycPMlxAQ8biO4igeEMwoKZxdwhB8EJGeW947jmgaCWNKZi3ZTR005t6UHTLA"
+        // Read Stripe publishable key from Info.plist
+        if let infoDict = Bundle.main.infoDictionary,
+           let stripeKey = infoDict["STRIPE_PUBLISHABLE_KEY"] as? String,
+           !stripeKey.isEmpty {
+            StripeAPI.defaultPublishableKey = stripeKey
+        } else {
+            fatalError("STRIPE_PUBLISHABLE_KEY not found in Info.plist")
+        }
         
-        cleanupLargeUserDefaultsEntries()
+        // Initialize app optimizations
+        _ = AppOptimizationManager.shared
+        
+        // Emergency cleanup for large data
+        EmergencyCleanup.performEmergencyCleanup()
+        
+        // First, enforce UserDefaults size limit to prevent crashes
+        DataMigrationManager.shared.enforceUserDefaultsSizeLimit()
+        
         // 画像パスの移行処理を実行
         ImageMigrationHelper.shared.migrateAllImagePaths()
+        
+        // Migrate large data from UserDefaults to file storage
+        DataMigrationManager.shared.performMigrationIfNeeded()
+        
+        // Enforce size limit again after migration
+        DataMigrationManager.shared.enforceUserDefaultsSizeLimit()
+        
+        // Clean up old data
+        DataMigrationManager.shared.cleanupOldData()
+        
+        // Debug: Check UserDefaults size (only in debug mode)
+        #if DEBUG
+        print("=== UserDefaults Size Analysis ===")
+        print(DataMigrationManager.shared.estimateUserDefaultsSize())
+        print("===================================")
+        #endif
+        
+        // Stripe決済の事前初期化
+        preloadStripePayment()
+        
+        #if DEBUG
+        // End launch tracking
+        launchTracker.end()
+        #endif
+        
+        #if DEBUG
+        // Setup app lifecycle monitoring
+        setupLifecycleMonitoring()
+        #endif
+    }
+    
+    #if DEBUG
+    private func setupLifecycleMonitoring() {
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            PerformanceMonitor.shared.trackEvent(.appEnterBackground)
+            // Clean up resources
+            ImageCache.shared.clearMemoryCache()
+        }
+        
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            PerformanceMonitor.shared.trackEvent(.appEnterForeground)
+        }
+    }
+    #endif
+    
+    private func preloadStripePayment() {
+        // アプリ起動時にStripeの支払いインテントを事前に作成
+        // 少し遅延させてユーザーIDが利用可能になるのを待つ
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 2.0) {
+            // ユーザーIDがない場合は、後でリトライするか、汎用的なプリロードを行う
+            let userId = UserDefaults.standard.string(forKey: "userId") ?? "preload_user"
+            
+            guard let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent") else {
+                return
+            }
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            let body: [String: Any] = [
+                "amount": 600,
+                "userId": userId,
+                "pointAmount": 500,
+                "type": "app_subscription"
+            ]
+            
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            } catch {
+                return
+            }
+            
+            URLSession.shared.dataTask(with: request) { data, response, _ in
+                
+                guard let data = data else { return }
+                
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let clientSecret = json["clientSecret"] as? String {
+                        // PaymentSheetの設定を事前に準備
+                        var configuration = PaymentSheet.Configuration()
+                        configuration.merchantDisplayName = "AniCollect"
+                        configuration.allowsDelayedPaymentMethods = false
+                        
+                        // 事前にPaymentSheetを作成（表示はしない）
+                        _ = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
+                    }
+                } catch {
+                }
+            }.resume()
+        }
     }
     
     var body: some Scene {
         WindowGroup {
             ZStack {
                 // Main content
-                if authManager.isLoggedIn && authManager.requiresPayment {
-                    PaymentRequiredView()
-                        .environmentObject(authManager)
+                if !hasSeenFirstLaunch {
+                    // 初回起動時の説明画面
+                    FirstLaunchView(hasSeenFirstLaunch: $hasSeenFirstLaunch)
+                } else if !hasRequestedTracking {
+                    // トラッキング許可画面
+                    TrackingPermissionView(hasRequestedTracking: $hasRequestedTracking)
                 } else if authManager.isLoggedIn {
-                    MainContainerView()
-                        .environmentObject(mainTab)
-                        .environmentObject(characterManager)
-                        .environmentObject(animeManager)
-                        .environmentObject(productManager)
-                        .environmentObject(authManager)
-                    .onAppear {
-                        // 開発用: サンプル画像を自動生成
-                        createSampleImagesIfNeeded()
-                        // ユーザーIDを確認
-                        if let userId = UserDefaults.standard.string(forKey: "userId") {
-                            print("✅ ログイン済み: userId=\(userId)")
-                            // 既存データの移行を実行
-                            UserDefaultsHelper.shared.migrateDataIfNeeded()
-                            // データを再読み込み
-                            characterManager.loadCharacters()
-                            animeManager.loadAnimes()
-                        }
+                    if paymentGatekeeper.isAppLocked {
+                        PaymentBlockerView()
+                            .environmentObject(paymentGatekeeper)
+                    } else {
+                        MainContainerView()
+                            .environmentObject(mainTab)
+                            .environmentObject(characterManager)
+                            .environmentObject(animeManager)
+                            .environmentObject(productManager)
+                            .environmentObject(authManager)
+                            .environmentObject(paymentGatekeeper)
+                            .onAppear {
+                                // 開発用: サンプル画像を自動生成
+                                createSampleImagesIfNeeded()
+                                // ユーザーIDを確認
+                                if UserDefaults.standard.string(forKey: "userId") != nil {
+                                    // 既存データの移行を実行
+                                    UserDefaultsHelper.shared.migrateDataIfNeeded()
+                                    // データを再読み込み
+                                    characterManager.loadCharacters()
+                                    animeManager.loadAnimes()
+                                }
+                            }
                     }
                 } else {
                     AuthSelectionView(authManager: authManager)
                 }
                 
                 // Splash screen overlay
-                if showSplash {
+                if showSplash && hasSeenFirstLaunch {
                     SplashScreenView()
                         .transition(.opacity)
                         .zIndex(1)
@@ -346,7 +492,6 @@ struct HappinessGameSwiftApp: App {
             if key.hasPrefix("artworks_") || key.hasPrefix("videos_") {
                 if let data = userDefaults.data(forKey: key), data.count >= 4_000_000 {
                     userDefaults.removeObject(forKey: key)
-                    print("[CLEANUP] Removed large UserDefaults entry: \(key), size: \(data.count)")
                 }
             }
         }
@@ -360,6 +505,7 @@ struct MainContainerView: View {
     @EnvironmentObject var animeManager: AnimeManager
     @EnvironmentObject var authManager: AuthenticationManager
     @State private var showingTermsOfService = false
+    @State private var showingPaymentPopup = false
     
     enum Tab: Int, CaseIterable {
         case home = 0
@@ -380,11 +526,11 @@ struct MainContainerView: View {
         
         var title: String {
             switch self {
-            case .home: return "ホーム"
-            case .chara: return "キャラ"
-            case .anime: return "アニメ"
-            case .visit: return "聖地旅"
-            case .card: return "プロダクト"
+            case .home: return NSLocalizedString("home", comment: "Home tab")
+            case .chara: return NSLocalizedString("character", comment: "Character tab")
+            case .anime: return NSLocalizedString("anime", comment: "Anime tab")
+            case .visit: return NSLocalizedString("visit", comment: "Visit tab")
+            case .card: return NSLocalizedString("product", comment: "Product tab")
             }
         }
     }
@@ -411,7 +557,11 @@ struct MainContainerView: View {
                                 .environmentObject(mainTab)
                                 .environmentObject(animeManager)
                         } else if mainTab.selectedTab == .visit {
-                            VisitScreen()
+                            if UIDevice.current.userInterfaceIdiom == .pad {
+                                VisitScreen_iPad()
+                            } else {
+                                VisitScreen()
+                            }
                         } else if mainTab.selectedTab == .card {
                             ProductScreen()
                         }
@@ -434,7 +584,6 @@ struct MainContainerView: View {
                             title: tab.title,
                             isSelected: mainTab.selectedTab == tab,
                             onTap: {
-                                print("🔄 [Tab] \(mainTab.selectedTab.title) → \(tab.title)")
                                 // 即座にタブを切り替える（アニメーション削除）
                                 mainTab.selectedTab = tab
                             }
@@ -458,6 +607,30 @@ struct MainContainerView: View {
         }
         .fullScreenCover(isPresented: $showingTermsOfService) {
             TermsOfServiceView()
+        }
+        .sheet(isPresented: $showingPaymentPopup) {
+            PaymentPopupView()
+                .environmentObject(authManager)
+                .interactiveDismissDisabled(true) // 支払い完了まで閉じれないようにする
+        }
+        .onAppear {
+            // Check if payment is required
+            if authManager.requiresPayment {
+                showingPaymentPopup = true
+            }
+        }
+        .onChange(of: authManager.requiresPayment) { _, newValue in
+            if newValue {
+                showingPaymentPopup = true
+            }
+        }
+        .sheet(isPresented: $mainTab.showCharacterOrderModal) {
+            CharacterOrderModal()
+                .environmentObject(characterManager)
+        }
+        .sheet(isPresented: $mainTab.showAnimeOrderModal) {
+            AnimeOrderModal()
+                .environmentObject(animeManager)
         }
     }
 }
@@ -825,77 +998,22 @@ struct SplashScreenView: View {
     }
 }
 
-// MARK: - PaymentRequiredView
-struct PaymentRequiredView: View {
+// MARK: - PaymentPopupView
+struct PaymentPopupView: View {
     @EnvironmentObject var authManager: AuthenticationManager
-    @State private var showingPaymentSheet = false
-    
-    var body: some View {
-        ZStack {
-            Color(.systemBackground)
-                .ignoresSafeArea()
-            
-            VStack(spacing: 30) {
-                Spacer()
-                
-                Image(systemName: "lock.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.orange)
-                
-                VStack(spacing: 16) {
-                    Text("お試し期間が終了しました")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    
-                    Text("引き続きご利用いただくには、500ポイントの課金が必要です")
-                        .font(.body)
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 40)
-                }
-                
-                VStack(spacing: 20) {
-                    Button(action: {
-                        showingPaymentSheet = true
-                    }) {
-                        HStack {
-                            Image(systemName: "creditcard")
-                            Text("500ポイントを購入")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.orange)
-                        .cornerRadius(10)
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    Button(action: {
-                        authManager.logout()
-                    }) {
-                        Text("ログアウト")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Spacer()
-            }
-        }
-        .sheet(isPresented: $showingPaymentSheet) {
-            PaymentSheetView(authManager: authManager)
-        }
-    }
-}
-
-// MARK: - PaymentSheetView
-struct PaymentSheetView: View {
-    let authManager: AuthenticationManager
     @Environment(\.dismiss) var dismiss
+    @State private var selectedPaymentMethod: PaymentMethod = .card
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var showError = false
+    @State private var userPoints: Int = 0
+    @State private var preloadedPaymentIntent: String? = nil
+    @State private var isPreloadingPayment = false
+    
+    enum PaymentMethod {
+        case card
+        case points
+    }
     
     private let subscriptionPackage = PointPackage(
         points: 500,
@@ -905,67 +1023,163 @@ struct PaymentSheetView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 30) {
-                VStack(spacing: 16) {
-                    Image(systemName: "creditcard.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.orange)
-                    
-                    Text("アプリ利用料")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    
-                    Text("¥500")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                }
-                .padding(.top, 40)
+            ZStack {
+                // Purple gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.6, green: 0.4, blue: 0.9),
+                        Color(red: 0.8, green: 0.6, blue: 0.95)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                VStack(alignment: .leading, spacing: 12) {
-                    Label("無制限のアクセス", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Label("全ての機能が利用可能", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Label("永続的な利用権", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                }
-                .padding(.horizontal, 40)
-                
-                Spacer()
-                
-                Button(action: {
-                    processPayment()
-                }) {
-                    if isProcessing {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .cornerRadius(10)
-                    } else {
-                        Text("購入する")
-                            .font(.headline)
+                VStack(spacing: 25) {
+                    // Header
+                    VStack(spacing: 16) {
+                        Image(systemName: "sparkles.square.filled.on.square")
+                            .font(.system(size: 70))
                             .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.orange)
-                            .cornerRadius(10)
+                            .shadow(radius: 5)
+                        
+                        Text("2ヶ月の無料期間が終了しました")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                        
+                        Text("引き続きアプリをご利用いただくには\n600円（600ポイント）が必要です")
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(.horizontal, 20)
                     }
+                    .padding(.top, 30)
+                    
+                    // Payment options
+                    VStack(spacing: 16) {
+                        // Points balance display
+                        HStack {
+                            Image(systemName: "star.circle.fill")
+                                .foregroundColor(.yellow)
+                            Text("保有ポイント: \(userPoints)pt")
+                                .fontWeight(.medium)
+                            
+                            // Refresh button
+                            Button(action: {
+                                loadUserPoints()
+                            }) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(20)
+                        
+                        // Payment method selection
+                        VStack(spacing: 12) {
+                            // Point payment option
+                            Button(action: {
+                                selectedPaymentMethod = .points
+                            }) {
+                                HStack {
+                                    Image(systemName: "star.circle.fill")
+                                        .font(.title2)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("ポイントで支払う")
+                                            .fontWeight(.semibold)
+                                        Text("500pt")
+                                            .font(.caption)
+                                            .foregroundColor(userPoints >= 500 ? .white.opacity(0.8) : .white.opacity(0.5))
+                                    }
+                                    Spacer()
+                                    if selectedPaymentMethod == .points {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                    }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(userPoints >= 500 ? Color.white.opacity(0.3) : Color.white.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(selectedPaymentMethod == .points ? Color.white : Color.clear, lineWidth: 2)
+                                        )
+                                )
+                            }
+                            .disabled(userPoints < 500)
+                            .foregroundColor(.white)
+                            
+                            // Card payment option
+                            Button(action: {
+                                selectedPaymentMethod = .card
+                            }) {
+                                HStack {
+                                    Image(systemName: "creditcard.circle.fill")
+                                        .font(.title2)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("カードで支払う")
+                                            .fontWeight(.semibold)
+                                        Text("¥500")
+                                            .font(.caption)
+                                            .foregroundColor(.white.opacity(0.8))
+                                    }
+                                    Spacer()
+                                    if selectedPaymentMethod == .card {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                    }
+                                }
+                                .padding()
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.3))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(selectedPaymentMethod == .card ? Color.white : Color.clear, lineWidth: 2)
+                                        )
+                                )
+                            }
+                            .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    
+                    Spacer()
+                    
+                    // Action buttons
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            processPayment()
+                        }) {
+                            if isProcessing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .purple))
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                            } else {
+                                Text(selectedPaymentMethod == .points ? "500ポイントで支払う" : "購入する")
+                                    .font(.headline)
+                                    .foregroundColor(.purple)
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                            }
+                        }
+                        .disabled(isProcessing || (selectedPaymentMethod == .points && userPoints < 500))
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 30)
                 }
-                .padding(.horizontal, 40)
-                .disabled(isProcessing)
-                
-                Button(action: {
-                    dismiss()
-                }) {
-                    Text("キャンセル")
-                        .foregroundColor(.secondary)
-                }
-                .padding(.bottom, 30)
             }
-            .navigationTitle("アップグレード")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarHidden(true)
             .alert("エラー", isPresented: $showError) {
                 Button("OK") {
                     showError = false
@@ -974,6 +1188,91 @@ struct PaymentSheetView: View {
                 Text(errorMessage ?? "支払い処理中にエラーが発生しました")
             }
         }
+        .onAppear {
+            loadUserPoints()
+            preloadPaymentIntent()
+        }
+    }
+    
+    private func loadUserPoints() {
+        // Load user points from Firebase
+        if let userId = UserDefaults.standard.string(forKey: "userId") {
+            // Use FirebaseManager to get user points
+            FirebaseManager.shared.getUserPoints(userId: userId) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(let pointsModel):
+                        self.userPoints = pointsModel.points
+                    case .failure(_):
+                        // Try fallback to userPoints collection directly
+                        let db = Firestore.firestore()
+                        db.collection("userPoints").document(userId).getDocument { document, _ in
+                            if let document = document, document.exists {
+                                DispatchQueue.main.async {
+                                    self.userPoints = document.data()?["points"] as? Int ?? 0
+                                }
+                            } else {
+                                // Final fallback to UserDefaults
+                                DispatchQueue.main.async {
+                                    self.userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func preloadPaymentIntent() {
+        guard preloadedPaymentIntent == nil,
+              !isPreloadingPayment,
+              let userId = UserDefaults.standard.string(forKey: "userId") else { return }
+        
+        isPreloadingPayment = true
+        
+        // Create payment intent in advance
+        guard let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent") else {
+            isPreloadingPayment = false
+            return
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "amount": subscriptionPackage.price,
+            "userId": userId,
+            "pointAmount": subscriptionPackage.points,
+            "type": "app_subscription"
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            isPreloadingPayment = false
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            DispatchQueue.main.async {
+                self.isPreloadingPayment = false
+                
+                if error != nil {
+                    return
+                }
+                
+                guard let data = data else { return }
+                
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                       let clientSecret = json["clientSecret"] as? String {
+                        self.preloadedPaymentIntent = clientSecret
+                    }
+                } catch {
+                }
+            }
+        }.resume()
     }
     
     private func processPayment() {
@@ -985,30 +1284,112 @@ struct PaymentSheetView: View {
         
         isProcessing = true
         
-        // Use the existing Stripe payment manager
-        StripePaymentManager.shared.purchasePoints(userId: userId, package: subscriptionPackage) { result in
+        if selectedPaymentMethod == .points {
+            // Process point payment
+            processPointPayment(userId: userId)
+        } else {
+            // Process card payment
+            processCardPayment(userId: userId)
+        }
+    }
+    
+    private func processPointPayment(userId: String) {
+        // Use FirebaseManager to deduct points
+        FirebaseManager.shared.usePoints(userId: userId, points: 500, reason: "アプリ利用料支払い") { result in
             DispatchQueue.main.async {
-                isProcessing = false
-                
                 switch result {
                 case .success:
-                    // Payment successful - update local state
-                    authManager.completePayment()
+                    // Update local points display
+                    self.userPoints = max(0, self.userPoints - 500)
+                    UserDefaults.standard.set(self.userPoints, forKey: "userPoints_\(userId)")
                     
-                    // Save subscription info to Firebase
-                    saveSubscriptionToFirebase(userId: userId)
-                    
-                    dismiss()
+                    // Payment successful
+                    self.authManager.completePayment()
+                    self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "points")
+                    self.isProcessing = false
+                    self.dismiss()
                     
                 case .failure(let error):
-                    errorMessage = error.localizedDescription
-                    showError = true
+                    self.isProcessing = false
+                    self.errorMessage = "ポイント支払いに失敗しました: \(error.localizedDescription)"
+                    self.showError = true
+                    // Reload points in case of error
+                    self.loadUserPoints()
                 }
             }
         }
     }
     
-    private func saveSubscriptionToFirebase(userId: String) {
+    private func processCardPayment(userId: String) {
+        // If we have a preloaded payment intent, use it
+        if let preloadedIntent = preloadedPaymentIntent {
+            // Configure payment sheet
+            var configuration = PaymentSheet.Configuration()
+            configuration.merchantDisplayName = "AniCollect"
+            configuration.allowsDelayedPaymentMethods = false
+            
+            // Create payment sheet with preloaded intent
+            let paymentSheet = PaymentSheet(paymentIntentClientSecret: preloadedIntent, configuration: configuration)
+            
+            // Present payment sheet
+            DispatchQueue.main.async {
+                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                   let window = windowScene.windows.first,
+                   let viewController = window.rootViewController {
+                    
+                    var topViewController = viewController
+                    while let presented = topViewController.presentedViewController {
+                        topViewController = presented
+                    }
+                    
+                    paymentSheet.present(from: topViewController) { paymentResult in
+                        switch paymentResult {
+                        case .completed:
+                            // Payment successful
+                            self.authManager.completePayment()
+                            self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
+                            self.isProcessing = false
+                            self.dismiss()
+                            
+                        case .canceled:
+                            self.isProcessing = false
+                            self.errorMessage = "決済がキャンセルされました"
+                            self.showError = true
+                            
+                        case .failed(let error):
+                            self.isProcessing = false
+                            self.errorMessage = error.localizedDescription
+                            self.showError = true
+                        }
+                    }
+                }
+            }
+        } else {
+            // Fallback to regular payment flow
+            StripePaymentManager.shared.purchasePoints(userId: userId, package: subscriptionPackage) { result in
+                DispatchQueue.main.async {
+                    self.isProcessing = false
+                    
+                    switch result {
+                    case .success:
+                        // Payment successful - update local state
+                        self.authManager.completePayment()
+                        
+                        // Save subscription info to Firebase
+                        self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
+                        
+                        self.dismiss()
+                        
+                    case .failure(let error):
+                        self.errorMessage = error.localizedDescription
+                        self.showError = true
+                    }
+                }
+            }
+        }
+    }
+    
+    private func saveSubscriptionToFirebase(userId: String, paymentMethod: String) {
         // Save subscription status to Firebase by device ID
         let db = Firestore.firestore()
         let subscriptionData: [String: Any] = [
@@ -1017,6 +1398,7 @@ struct PaymentSheetView: View {
             "subscribedAt": Date().timeIntervalSince1970,
             "amount": subscriptionPackage.price,
             "type": "app_subscription",
+            "paymentMethod": paymentMethod,
             "firstInstallDate": authManager.getFirstInstallDateFromKeychain()?.timeIntervalSince1970 ?? Date().timeIntervalSince1970,
             "hasPaid": true,
             "paymentDate": Date().timeIntervalSince1970,
@@ -1024,24 +1406,20 @@ struct PaymentSheetView: View {
         ]
         
         // Save to device_subscriptions collection
-        db.collection("device_subscriptions").document(authManager.deviceId).setData(subscriptionData, merge: true) { error in
-            if let error = error {
-                print("Error saving device subscription to Firebase: \(error)")
-            } else {
-                print("Device subscription saved to Firebase successfully")
-            }
+        db.collection("device_subscriptions").document(authManager.deviceId).setData(subscriptionData, merge: true) { _ in
+            // Successfully saved device subscription
         }
         
         // Also update user document with subscription status
         db.collection("users").document(userId).updateData([
             "hasSubscription": true,
-            "subscriptionDate": Date().timeIntervalSince1970
-        ]) { error in
-            if let error = error {
-                print("Error updating user subscription status: \(error)")
-            }
+            "subscriptionDate": Date().timeIntervalSince1970,
+            "subscriptionPaymentMethod": paymentMethod
+        ]) { _ in
+            // Successfully updated user subscription status
         }
     }
 }
+
 
  

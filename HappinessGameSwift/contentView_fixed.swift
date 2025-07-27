@@ -10,11 +10,11 @@
                         .font(.system(size: 60))
                         .foregroundColor(.purple)
                     
-                    Text("まだアルバムがありません")
+                    Text(NSLocalizedString("no_albums_yet", comment: "No albums yet"))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("同じタグのビデオからアルバムを作成できます")
+                    Text(NSLocalizedString("create_album_from_videos", comment: "You can create albums from videos with the same tag"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -23,7 +23,7 @@
                     Button(action: {
                         showTagInput = true
                     }) {
-                        Label("アルバムを作成", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("create_album", comment: "Create Album"), systemImage: "plus.circle.fill")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding()
@@ -64,13 +64,13 @@
                                             .foregroundColor(.black)
                                         
                                         if let firstVideo = album.videos.first {
-                                            Text(firstVideo.tags.isEmpty ? "タグなし" : firstVideo.tags.joined(separator: ", "))
+                                            Text(firstVideo.tags.isEmpty ? NSLocalizedString("no_tags", comment: "No tags") : firstVideo.tags.joined(separator: ", "))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(.gray)
                                                 .lineLimit(2)
                                         }
                                         
-                                        Text("\(album.videos.count)件")
+                                        Text(String(format: NSLocalizedString("video_count", comment: "%d videos"), album.videos.count))
                                             .font(.system(size: 12))
                                             .foregroundColor(.gray)
                                     }
@@ -111,11 +111,11 @@
                         .font(.system(size: 60))
                         .foregroundColor(.purple)
                     
-                    Text("まだビデオがありません")
+                    Text(NSLocalizedString("no_videos_yet", comment: "No videos yet"))
                         .font(.title2)
                         .fontWeight(.semibold)
                     
-                    Text("右上の追加ボタンからビデオを追加できます")
+                    Text(NSLocalizedString("add_video_instruction", comment: "You can add videos from the add button in the top right"))
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -124,7 +124,7 @@
                     Button(action: {
                         showAddSheet = true
                     }) {
-                        Label("ビデオを追加", systemImage: "plus.circle.fill")
+                        Label(NSLocalizedString("add_video", comment: "Add Video"), systemImage: "plus.circle.fill"))
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding()
@@ -193,24 +193,24 @@
                                         Button(action: {
                                             // タイトル編集
                                         }) {
-                                            Label("タイトルを編集", systemImage: "pencil")
+                                            Label(NSLocalizedString("edit_title", comment: "Edit Title"), systemImage: "pencil")
                                         }
                                         Button(action: {
                                             // タグ編集
                                         }) {
-                                            Label("タグを編集", systemImage: "tag")
+                                            Label(NSLocalizedString("edit_tags", comment: "Edit Tags"), systemImage: "tag")
                                         }
                                         Button(action: {
                                             // サムネイル変更
                                         }) {
-                                            Label("サムネイルを変更", systemImage: "photo")
+                                            Label(NSLocalizedString("change_thumbnail", comment: "Change Thumbnail"), systemImage: "photo")
                                         }
                                         Divider()
                                         Button(role: .destructive, action: {
                                             deletingVideoID = video.id
                                             showDeleteVideoAlert = true
                                         }) {
-                                            Label("削除", systemImage: "trash")
+                                            Label(NSLocalizedString("delete", comment: "Delete"), systemImage: "trash"))
                                         }
                                     } label: {
                                         Image(systemName: "ellipsis")

@@ -7,7 +7,15 @@ class StripePaymentManager: NSObject, ObservableObject {
     static let shared = StripePaymentManager()
     
     // Stripe設定
-    private let publishableKey = "pk_live_51RjjWjD7PsaPGu6xz0RGH0Gnw36ORTqI9pjec4ycPMlxAQ8biO4igeEMwoKZxdwhB8EJGeW947jmgaCWNKZi3ZTR005t6UHTLA"
+    private let publishableKey: String = {
+        // Read Stripe publishable key from Info.plist
+        guard let infoDict = Bundle.main.infoDictionary,
+              let key = infoDict["STRIPE_PUBLISHABLE_KEY"] as? String,
+              !key.isEmpty else {
+            fatalError("STRIPE_PUBLISHABLE_KEY not found in Info.plist")
+        }
+        return key
+    }()
     private let baseURL = "https://happiness-game.onrender.com/api" // バックエンドURL
     
     @Published var paymentSheet: PaymentSheet?
@@ -20,9 +28,30 @@ class StripePaymentManager: NSObject, ObservableObject {
         super.init()
     }
     
+    // リトライ付きのネットワークリクエスト実行
+    private func performRequestWithRetry(session: URLSession, request: URLRequest, retryCount: Int, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
+        session.dataTask(with: request) { data, response, error in
+            // サーバーが起動中の可能性がある場合はリトライ
+            if let error = error as? NSError,
+               retryCount < 2,  // 最大2回リトライ
+               (error.code == NSURLErrorTimedOut || error.code == NSURLErrorCannotConnectToHost) {
+                
+                DispatchQueue.global().asyncAfter(deadline: .now() + 3.0) { // 3秒待ってリトライ
+                    self.performRequestWithRetry(session: session, request: request, retryCount: retryCount + 1, completion: completion)
+                }
+                return
+            }
+            
+            completion(data, response, error)
+        }.resume()
+    }
+    
     // プランを購入する
     func purchasePlan(userId: String, plan: VisitPlanModel, completion: @escaping (Result<PlanPurchase, Error>) -> Void) {
-        let url = URL(string: "\(baseURL)/create-payment-intent")!
+        guard let url = URL(string: "\(baseURL)/create-payment-intent") else {
+            completion(.failure(NSError(domain: "StripePaymentManager", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -43,10 +72,31 @@ class StripePaymentManager: NSObject, ObservableObject {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 60.0 // 60秒のタイムアウト（Renderの起動時間を考慮）
+        configuration.timeoutIntervalForResource = 60.0
+        
+        let session = URLSession(configuration: configuration)
+        
+        performRequestWithRetry(session: session, request: request, retryCount: 0) { data, response, error in
             if let error = error {
-                completion(.failure(error))
+                let nsError = error as NSError
+                if nsError.code == NSURLErrorTimedOut {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 1005, userInfo: [NSLocalizedDescriptionKey: "リクエストがタイムアウトしました。もう一度お試しください。"])))
+                } else if nsError.code == NSURLErrorNotConnectedToInternet {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 1006, userInfo: [NSLocalizedDescriptionKey: "インターネット接続を確認してください。"])))
+                } else {
+                    completion(.failure(error))
+                }
                 return
+            }
+            
+            // HTTPステータスコードをチェック
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode >= 500 {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 1007, userInfo: [NSLocalizedDescriptionKey: "サーバーエラーが発生しました。しばらく待ってからもう一度お試しください。"])))
+                    return
+                }
             }
             
             guard let data = data,
@@ -77,7 +127,7 @@ class StripePaymentManager: NSObject, ObservableObject {
                     }
                 }
             }
-        }.resume()
+        }
     }
     
     // 支払い処理（Stripe Payment Sheetを使用）
@@ -101,7 +151,6 @@ class StripePaymentManager: NSObject, ObservableObject {
         // PaymentSheetを作成
         self.paymentSheet = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
         
-        print("📝 [StripePaymentManager] PaymentSheet準備完了")
         
         // ViewControllerが必要なので、現在のウィンドウから取得
         DispatchQueue.main.async {
@@ -111,7 +160,6 @@ class StripePaymentManager: NSObject, ObservableObject {
                 
                 self.presentPaymentSheet(from: viewController)
             } else {
-                print("❌ [StripePaymentManager] ViewControllerが見つかりません")
                 completion(.failure(NSError(domain: "StripePaymentManager", code: 1002, userInfo: [NSLocalizedDescriptionKey: "決済画面を表示できません"])))
             }
         }
@@ -120,12 +168,10 @@ class StripePaymentManager: NSObject, ObservableObject {
     // Payment Sheetを表示
     private func presentPaymentSheet(from viewController: UIViewController) {
         guard let paymentSheet = self.paymentSheet else {
-            print("❌ [StripePaymentManager] PaymentSheetが初期化されていません")
             self.currentCompletion?(.failure(NSError(domain: "StripePaymentManager", code: 1003, userInfo: [NSLocalizedDescriptionKey: "PaymentSheetエラー"])))
             return
         }
         
-        print("🎯 [StripePaymentManager] PaymentSheet表示")
         
         // 最前面のViewControllerを取得
         var topViewController = viewController
@@ -138,15 +184,12 @@ class StripePaymentManager: NSObject, ObservableObject {
             paymentSheet.present(from: topViewController) { paymentResult in
                 switch paymentResult {
                 case .completed:
-                    print("✅ [StripePaymentManager] 決済成功")
                     self.currentCompletion?(.success(()))
                     
                 case .canceled:
-                    print("⚠️ [StripePaymentManager] 決済キャンセル")
                     self.currentCompletion?(.failure(NSError(domain: "StripePaymentManager", code: 1004, userInfo: [NSLocalizedDescriptionKey: "決済がキャンセルされました"])))
                     
                 case .failed(let error):
-                    print("❌ [StripePaymentManager] 決済エラー: \(error.localizedDescription)")
                     self.currentCompletion?(.failure(error))
                 }
                 
@@ -159,9 +202,11 @@ class StripePaymentManager: NSObject, ObservableObject {
     
     // ポイントを購入する
     func purchasePoints(userId: String, package: PointPackage, completion: @escaping (Result<Void, Error>) -> Void) {
-        print("🔥 [StripePaymentManager] purchasePoints開始: userId=\(userId), points=\(package.points), price=\(package.price)")
         
-        let url = URL(string: "\(baseURL)/create-payment-intent")!
+        guard let url = URL(string: "\(baseURL)/create-payment-intent") else {
+            completion(.failure(NSError(domain: "StripePaymentManager", code: 1001, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
+            return
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -170,7 +215,8 @@ class StripePaymentManager: NSObject, ObservableObject {
             "amount": package.price,
             "userId": userId,
             "pointAmount": package.points,
-            "type": "point_purchase"
+            "type": "point_purchase",
+            "statement_descriptor": "アニレコポイント購入"
         ]
         
         do {
@@ -180,28 +226,52 @@ class StripePaymentManager: NSObject, ObservableObject {
             return
         }
         
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 60.0 // 60秒のタイムアウト（Renderの起動時間を考慮）
+        configuration.timeoutIntervalForResource = 60.0
+        
+        let session = URLSession(configuration: configuration)
+        
+        performRequestWithRetry(session: session, request: request, retryCount: 0) { data, response, error in
             if let error = error {
-                print("❌ [StripePaymentManager] ネットワークエラー: \(error.localizedDescription)")
-                completion(.failure(error))
+                let nsError = error as NSError
+                if nsError.code == NSURLErrorTimedOut {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 1005, userInfo: [NSLocalizedDescriptionKey: "リクエストがタイムアウトしました。もう一度お試しください。"])))
+                } else if nsError.code == NSURLErrorNotConnectedToInternet {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 1006, userInfo: [NSLocalizedDescriptionKey: "インターネット接続を確認してください。"])))
+                } else {
+                    completion(.failure(error))
+                }
                 return
             }
             
+            // HTTPステータスコードをチェック
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode >= 500 {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 1007, userInfo: [NSLocalizedDescriptionKey: "サーバーエラーが発生しました。しばらく待ってからもう一度お試しください。"])))
+                    return
+                }
+            }
+            
             guard let data = data else {
-                print("❌ [StripePaymentManager] データが空です")
                 completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received"])))
                 return
             }
             
             // レスポンスをログ出力
             if let responseString = String(data: data, encoding: .utf8) {
-                print("📝 [StripePaymentManager] サーバーレスポンス: \(responseString)")
+                print("Stripe API Response: \(responseString)")
             }
             
             guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let clientSecret = json["clientSecret"] as? String else {
-                print("❌ [StripePaymentManager] JSONパースエラー")
-                completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])))
+                // エラーレスポンスの詳細を取得
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let errorMessage = json["error"] as? String {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: errorMessage])))
+                } else {
+                    completion(.failure(NSError(domain: "StripePaymentManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid response format"])))
+                }
                 return
             }
             
@@ -210,15 +280,13 @@ class StripePaymentManager: NSObject, ObservableObject {
                 self.processPayment(clientSecret: clientSecret) { result in
                     switch result {
                     case .success:
-                        print("✅ [StripePaymentManager] ポイント購入決済成功")
                         completion(.success(()))
                     case .failure(let error):
-                        print("❌ [StripePaymentManager] ポイント購入決済エラー: \(error)")
                         completion(.failure(error))
                     }
                 }
             }
-        }.resume()
+        }
     }
 }
 

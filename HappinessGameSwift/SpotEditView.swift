@@ -298,7 +298,6 @@ struct SpotEditView: View {
         let key = "spot_changes_\(spot.id.uuidString)"
         
         if let changes = UserDefaults.standard.dictionary(forKey: key) {
-            print("📱 ローカル変更を読み込み: \(spot.name)")
             
             if let name = changes["name"] as? String {
                 spot.name = name
@@ -362,6 +361,5 @@ struct SpotEditView: View {
         ]
         
         UserDefaults.standard.set(changes, forKey: key)
-        print("💾 スポット変更をローカルに保存: \(spot.name)")
     }
 }

@@ -656,3 +656,16 @@
 "character_order_title" = "キャラクター順序変更";
 "anime_order_title" = "アニメ順序変更";
 "cancel" = "キャンセル";
+
+/* Thumbnail Picker */
+"current_thumbnail" = "現在のサムネイル";
+"upload_image" = "画像をアップロード";
+"select_from_photo_library" = "フォトライブラリから選択";
+"thumbnail_adjustment" = "サムネイル調整";
+"thumbnail_size" = "サイズ";
+"change_thumbnail_title" = "サムネイルを変更";
+"horizontal_position" = "水平位置";
+"vertical_position" = "垂直位置";
+"reset" = "リセット";
+"reset_all" = "全てリセット";
+"select_from_video" = "動画から選択";

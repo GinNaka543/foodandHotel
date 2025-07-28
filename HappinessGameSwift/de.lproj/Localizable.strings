@@ -897,3 +897,16 @@ Gute Arbeit";
 
 "member_list" = "Mitgliederliste";
 "cancel" = "Abbrechen";
+
+/* Thumbnail Picker */
+"current_thumbnail" = "Aktuelles Thumbnail";
+"upload_image" = "Bild hochladen";
+"select_from_photo_library" = "Aus Fotobibliothek auswählen";
+"thumbnail_adjustment" = "Thumbnail-Anpassung";
+"thumbnail_size" = "Größe";
+"change_thumbnail_title" = "Thumbnail ändern";
+"horizontal_position" = "Horizontale Position";
+"vertical_position" = "Vertikale Position";
+"reset" = "Zurücksetzen";
+"reset_all" = "Alles zurücksetzen";
+"select_from_video" = "Aus Video auswählen";

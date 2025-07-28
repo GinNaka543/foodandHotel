@@ -44,7 +44,7 @@ struct ThumbnailPickerView: View {
                         VStack(spacing: 24) {
                             // 現在のサムネイル
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("現在のサムネイル")
+                                Text(NSLocalizedString("current_thumbnail", comment: "Current Thumbnail"))
                                     .font(.headline)
                                 
                                 // サムネイルプレビュー
@@ -79,7 +79,7 @@ struct ThumbnailPickerView: View {
                             
                             // カスタム画像をアップロード（調整バーの上に配置）
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("画像をアップロード")
+                                Text(NSLocalizedString("upload_image", comment: "Upload Image"))
                                     .font(.headline)
                                 
                                 PhotosPicker(selection: $selectedImageItem,
@@ -88,7 +88,7 @@ struct ThumbnailPickerView: View {
                                     HStack {
                                         Image(systemName: "photo.on.rectangle")
                                             .font(.title2)
-                                        Text("フォトライブラリから選択")
+                                        Text(NSLocalizedString("select_from_photo_library", comment: "Select from Photo Library"))
                                             .font(.body)
                                     }
                                     .foregroundColor(.white)
@@ -117,13 +117,13 @@ struct ThumbnailPickerView: View {
                             // 調整コントロール（画像アップロードの下に配置）
                             if showAdjustmentControls && originalImage != nil {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    Text("サムネイル調整")
+                                    Text(NSLocalizedString("thumbnail_adjustment", comment: "Thumbnail Adjustment"))
                                         .font(.headline)
                                     VStack(spacing: 16) {
                                         // スケール調整
                                         VStack(alignment: .leading, spacing: 8) {
                                             HStack {
-                                                Text("サイズ")
+                                                Text(NSLocalizedString("thumbnail_size", comment: "Size"))
                                                     .font(.subheadline)
                                                 Spacer()
                                                 Text(String(format: "%.0f%%", thumbnailScale * 100))
@@ -140,10 +140,10 @@ struct ThumbnailPickerView: View {
                                         // 水平位置調整
                                         VStack(alignment: .leading, spacing: 8) {
                                             HStack {
-                                                Text("水平位置")
+                                                Text(NSLocalizedString("horizontal_position", comment: "Horizontal Position"))
                                                     .font(.subheadline)
                                                 Spacer()
-                                                Button("リセット") {
+                                                Button(NSLocalizedString("reset", comment: "Reset")) {
                                                     thumbnailOffsetX = 0
                                                 }
                                                 .font(.caption)
@@ -159,10 +159,10 @@ struct ThumbnailPickerView: View {
                                         // 垂直位置調整
                                         VStack(alignment: .leading, spacing: 8) {
                                             HStack {
-                                                Text("垂直位置")
+                                                Text(NSLocalizedString("vertical_position", comment: "Vertical Position"))
                                                     .font(.subheadline)
                                                 Spacer()
-                                                Button("リセット") {
+                                                Button(NSLocalizedString("reset", comment: "Reset")) {
                                                     thumbnailOffsetY = 0
                                                 }
                                                 .font(.caption)
@@ -182,7 +182,7 @@ struct ThumbnailPickerView: View {
                                             thumbnailOffsetY = 0
                                             updateThumbnailData()
                                         }) {
-                                            Text("全てリセット")
+                                            Text(NSLocalizedString("reset_all", comment: "Reset All"))
                                                 .font(.system(size: 14))
                                                 .foregroundColor(.red)
                                         }
@@ -197,7 +197,7 @@ struct ThumbnailPickerView: View {
                             // 動画から生成したサムネイル
                             if !thumbnailImages.isEmpty {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    Text("動画から選択")
+                                    Text(NSLocalizedString("select_from_video", comment: "Select from Video"))
                                         .font(.headline)
                                     
                                     ScrollView(.horizontal, showsIndicators: false) {
@@ -235,17 +235,17 @@ struct ThumbnailPickerView: View {
                     }
                 }
             }
-            .navigationTitle("サムネイルを変更")
+            .navigationTitle(NSLocalizedString("change_thumbnail_title", comment: "Change Thumbnail"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         onCancel()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("save", comment: "Save")) {
                         // 保存前に最新の調整値を適用
                         if originalImage != nil {
                             updateThumbnailData()

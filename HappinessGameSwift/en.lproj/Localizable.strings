@@ -837,3 +837,16 @@
 
 "member_list" = "Member List";
 "cancel" = "Cancel";
+
+/* Thumbnail Picker */
+"current_thumbnail" = "Current Thumbnail";
+"upload_image" = "Upload Image";
+"select_from_photo_library" = "Select from Photo Library";
+"thumbnail_adjustment" = "Thumbnail Adjustment";
+"thumbnail_size" = "Size";
+"change_thumbnail_title" = "Change Thumbnail";
+"horizontal_position" = "Horizontal Position";
+"vertical_position" = "Vertical Position";
+"reset" = "Reset";
+"reset_all" = "Reset All";
+"select_from_video" = "Select from Video";

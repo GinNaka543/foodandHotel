@@ -811,3 +811,16 @@
 
 "member_list" = "Elenco membri";
 "cancel" = "Annulla";
+
+/* Thumbnail Picker */
+"current_thumbnail" = "Miniatura attuale";
+"upload_image" = "Carica immagine";
+"select_from_photo_library" = "Seleziona dalla libreria foto";
+"thumbnail_adjustment" = "Regolazione miniatura";
+"thumbnail_size" = "Dimensione";
+"change_thumbnail_title" = "Cambia miniatura";
+"horizontal_position" = "Posizione orizzontale";
+"vertical_position" = "Posizione verticale";
+"reset" = "Reimposta";
+"reset_all" = "Reimposta tutto";
+"select_from_video" = "Seleziona dal video";

@@ -1699,9 +1699,9 @@ struct VideoThumbnailPlayer: View {
                     GeometryReader { geometry in
                         Image(uiImage: uiImage)
                             .resizable()
-                            .scaledToFill()
-                            .frame(width: geometry.size.width, height: 233)
-                            .clipped()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .background(Color.black)
                     }
                     .frame(height: 233)
                     .onTapGesture {
@@ -1716,9 +1716,9 @@ struct VideoThumbnailPlayer: View {
                         AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
                             image
                                 .resizable()
-                                .scaledToFill()
-                                .frame(width: geometry.size.width, height: 233)
-                                .clipped()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .background(Color.black)
                         } placeholder: {
                             RoundedRectangle(cornerRadius: 0, style: .continuous)
                                 .fill(Color.gray.opacity(0.3))

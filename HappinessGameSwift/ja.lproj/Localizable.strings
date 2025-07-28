@@ -16,6 +16,7 @@
 
 /* Language */
 "language_title" = "言語";
+"language" = "言語";
 
 /* Tab Bar */
 "home" = "ホーム";
@@ -698,3 +699,9 @@
 "delete_image_confirm_message" = "この画像は完全に削除されます。";
 "delete_image" = "画像を削除";
 "tags" = "タグ";
+
+/* Time Duration */
+"duration_minutes" = "%d分";
+"total_duration_hours_minutes" = "計%d時間%d分";
+"total_duration_hours" = "計%d時間";
+"total_duration_minutes" = "計%d分";

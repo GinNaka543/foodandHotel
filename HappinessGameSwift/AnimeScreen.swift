@@ -502,9 +502,6 @@ struct AnimeScreen: View {
                     .foregroundColor(.black)
             }
             Spacer()
-            // 言語切り替えボタン
-            LanguageButton()
-                .padding(.trailing, 8)
             Button(action: { showAddSheet = true }) {
                 Text(NSLocalizedString("add_anime", comment: ""))
                     .font(.system(size: 16, weight: .semibold))

@@ -3,6 +3,7 @@ import SwiftUI
 struct NavigationMenuView: View {
     @Binding var isPresented: Bool
     @EnvironmentObject var mainTab: MainTabSelection
+    @State private var showingLanguageSelection = false
     var onShowCharacterOrder: (() -> Void)?
     var onShowAnimeOrder: (() -> Void)?
     var onShowTermsOfService: (() -> Void)?
@@ -21,15 +22,16 @@ struct NavigationMenuView: View {
             
             // メニューコンテンツ
             HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    // セーフエリア対応のための上部スペース
-                    Rectangle()
-                        .fill(Color.white)
-                        .frame(height: 0)
-                        .ignoresSafeArea(edges: .top)
-                    
-                    // ヘッダー
-                    HStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // セーフエリア対応のための上部スペース
+                        Rectangle()
+                            .fill(Color.white)
+                            .frame(height: 0)
+                            .ignoresSafeArea(edges: .top)
+                        
+                        // ヘッダー
+                        HStack {
                         Button(action: {
                             withAnimation(.easeOut(duration: 0.2)) {
                                 isPresented = false
@@ -113,6 +115,16 @@ struct NavigationMenuView: View {
                                 mainTab.showAnimeOrderModal = true
                             }
                         }
+                        
+                        Divider()
+                            .padding(.vertical, 8)
+                        
+                        // 言語
+                        NavigationMenuItem(
+                            title: NSLocalizedString("language", comment: "Language menu item")
+                        ) {
+                            showingLanguageSelection = true
+                        }
                     }
                     .padding(.top, 8)
                     
@@ -148,6 +160,7 @@ struct NavigationMenuView: View {
                         isGrayed: true
                     )
                     .padding(.bottom, 20)
+                    }
                 }
                 .frame(width: 280)
                 .background(Color.white)
@@ -165,6 +178,9 @@ struct NavigationMenuView: View {
             }
             .offset(x: isPresented ? 0 : -280)
             .animation(.easeOut(duration: 0.25), value: isPresented)
+        }
+        .sheet(isPresented: $showingLanguageSelection) {
+            LanguageSelectionView()
         }
     }
 }

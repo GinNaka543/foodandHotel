@@ -15,6 +15,7 @@
 
 /* Language */
 "language_title" = "Sprache";
+"language" = "Sprache";
 
 /* Tab Bar */
 "home" = "Startseite";
@@ -936,3 +937,9 @@ Gute Arbeit";
 "delete_image_confirm_message" = "Dieses Bild wird dauerhaft gelöscht.";
 "delete_image" = "Bild löschen";
 "tags" = "Tags";
+
+/* Time Duration */
+"duration_minutes" = "%d Minuten";
+"total_duration_hours_minutes" = "Gesamt %d Stunden %d Minuten";
+"total_duration_hours" = "Gesamt %d Stunden";
+"total_duration_minutes" = "Gesamt %d Minuten";

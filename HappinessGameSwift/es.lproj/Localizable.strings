@@ -15,6 +15,7 @@
 
 /* Language */
 "language_title" = "Idioma";
+"language" = "Idioma";
 
 /* Tab Bar */
 "home" = "Inicio";
@@ -903,3 +904,9 @@
 "delete_image_confirm_message" = "Esta imagen se eliminará permanentemente.";
 "delete_image" = "Eliminar imagen";
 "tags" = "Etiquetas";
+
+/* Time Duration */
+"duration_minutes" = "%d minutos";
+"total_duration_hours_minutes" = "Total %d horas %d minutos";
+"total_duration_hours" = "Total %d horas";
+"total_duration_minutes" = "Total %d minutos";

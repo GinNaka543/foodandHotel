@@ -16,6 +16,7 @@
 
 /* Language */
 "language_title" = "Language";
+"language" = "Language";
 
 /* Tab Bar */
 "home" = "Home";
@@ -879,3 +880,9 @@
 "delete_image_confirm_message" = "This image will be permanently deleted.";
 "delete_image" = "Delete image";
 "tags" = "Tags";
+
+/* Time Duration */
+"duration_minutes" = "%d minutes";
+"total_duration_hours_minutes" = "Total %d hours %d minutes";
+"total_duration_hours" = "Total %d hours";
+"total_duration_minutes" = "Total %d minutes";

@@ -314,9 +314,6 @@ struct CharaScreen: View {
                                 .foregroundColor(.black)
                         }
                         Spacer()
-                        // 言語切り替えボタン
-                        LanguageButton()
-                            .padding(.trailing, 8)
                         // 右上＋ボタン
                         Button(action: { showAddSheet = true }) {
                             Text(NSLocalizedString("add_character", comment: ""))

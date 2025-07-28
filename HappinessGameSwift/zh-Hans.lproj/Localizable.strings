@@ -15,6 +15,7 @@
 
 /* Language */
 "language_title" = "语言";
+"language" = "语言";
 
 /* Tab Bar */
 "home" = "主页";
@@ -852,3 +853,9 @@
 "delete_image_confirm_message" = "此图片将被永久删除。";
 "delete_image" = "删除图片";
 "tags" = "标签";
+
+/* Time Duration */
+"duration_minutes" = "%d分钟";
+"total_duration_hours_minutes" = "共%d小时%d分钟";
+"total_duration_hours" = "共%d小时";
+"total_duration_minutes" = "共%d分钟";

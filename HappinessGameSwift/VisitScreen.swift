@@ -288,7 +288,7 @@ public struct VisitScreen: View {
                         }
                     } else {
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text(plan.duration)
+                            Text(formatPlanDuration(plan.duration))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.blue)
                             Text(String(format: NSLocalizedString("spots_count", comment: "%d spots"), plan.spots.count))
@@ -407,9 +407,6 @@ public struct VisitScreen: View {
                             .foregroundColor(.black)
                     }
                     Spacer()
-                    // 言語切り替えボタン
-                    LanguageButton()
-                        .padding(.trailing, 8)
                     // Amazon風検索バー（常時表示）
                     HStack(spacing: 0) {
                         HStack {
@@ -1059,6 +1056,47 @@ public struct VisitScreen: View {
                 self.savePurchasedPlan(plan)
             } else {
             }
+        }
+    }
+    
+    // Helper function to format plan duration for localization
+    func formatPlanDuration(_ duration: String) -> String {
+        // Parse Japanese duration format (e.g., "4時間", "2時間30分", "30分")
+        let pattern = #"(?:(\d+)時間)?(?:(\d+)分)?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: duration, options: [], range: NSRange(location: 0, length: duration.count)) else {
+            return duration // Return original if parsing fails
+        }
+        
+        var hours = 0
+        var minutes = 0
+        
+        // Extract hours
+        if match.range(at: 1).location != NSNotFound {
+            let hoursRange = Range(match.range(at: 1), in: duration)!
+            hours = Int(duration[hoursRange]) ?? 0
+        }
+        
+        // Extract minutes
+        if match.range(at: 2).location != NSNotFound {
+            let minutesRange = Range(match.range(at: 2), in: duration)!
+            minutes = Int(duration[minutesRange]) ?? 0
+        }
+        
+        // Format using localized strings
+        if hours > 0 && minutes > 0 {
+            return String(format: NSLocalizedString("total_duration_hours_minutes", comment: "Total %d hours %d minutes"), hours, minutes)
+        } else if hours > 0 {
+            return String(format: NSLocalizedString("total_duration_hours", comment: "Total %d hours"), hours)
+        } else if minutes > 0 {
+            return String(format: NSLocalizedString("total_duration_minutes", comment: "Total %d minutes"), minutes)
+        } else {
+            // If the duration contains "計" at the beginning, try to parse it
+            if duration.hasPrefix("計") {
+                let cleanDuration = String(duration.dropFirst())
+                return formatPlanDuration(cleanDuration)
+            }
+            return duration
         }
     }
 }

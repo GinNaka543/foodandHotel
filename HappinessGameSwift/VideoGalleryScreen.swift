@@ -583,6 +583,9 @@ struct VideoGalleryScreen: View {
                         .foregroundColor(.black)
                         .padding(.vertical, 4)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: true, vertical: true)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     
                     // ハッシュタグ
                     if let firstTag = video.tags.first {
@@ -596,7 +599,7 @@ struct VideoGalleryScreen: View {
                         .foregroundColor(.gray)
                         .padding(.vertical, 1)
                 }
-                .frame(alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 3)
                 .padding(.leading, 8)
                 
@@ -1899,6 +1902,9 @@ struct VideoAlbumGridView: View {
                                 .font(.system(size: 16.5, weight: .semibold))
                                 .foregroundColor(.black)
                                 .multilineTextAlignment(.leading)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
                                 .font(.system(size: 13.8, weight: .regular))
                                 .foregroundColor(.gray)
@@ -2242,6 +2248,9 @@ struct AlbumVideoListScreen: View {
                                         .foregroundColor(.black)
                                         .padding(.vertical, 4)
                                         .multilineTextAlignment(.leading)
+                                        .lineLimit(2)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                     
                                     // ハッシュタグ
                                     if let firstTag = video.tags.first {
@@ -2598,26 +2607,28 @@ extension String {
         return result
     }
     
-    // Format video titles: 8 characters per line, truncate after 15 characters with ellipsis
+    // Format video titles: force line break at 8 characters
     func formatVideoTitle() -> String {
-        // Count actual characters (not bytes) for proper Japanese text handling
-        let characters = Array(self)
+        // Remove any existing line breaks and whitespace
+        let cleanTitle = self.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        if characters.count <= 8 {
-            // If 8 characters or less, return as is
-            return self
-        } else if characters.count <= 15 {
-            // If 9-15 characters, split into two lines at 8 characters
-            let firstLine = String(characters.prefix(8))
-            let secondLine = String(characters.dropFirst(8))
-            return "\(firstLine)\n\(secondLine)"
+        // If 8 characters or less, return as is
+        if cleanTitle.count <= 8 {
+            return cleanTitle
+        }
+        
+        // Force break at exactly 8 characters
+        let index8 = cleanTitle.index(cleanTitle.startIndex, offsetBy: 8)
+        let firstLine = String(cleanTitle[..<index8])
+        let remaining = String(cleanTitle[index8...])
+        
+        // If second line would be longer than 15 characters, truncate with ellipsis
+        if remaining.count > 15 {
+            let index15 = remaining.index(remaining.startIndex, offsetBy: 15)
+            let secondLine = String(remaining[..<index15]) + "..."
+            return firstLine + "\n" + secondLine
         } else {
-            // If more than 15 characters, truncate to 15 and add ellipsis
-            let truncated = String(characters.prefix(15)) + "..."
-            let truncatedChars = Array(truncated)
-            let firstLine = String(truncatedChars.prefix(8))
-            let secondLine = String(truncatedChars.dropFirst(8))
-            return "\(firstLine)\n\(secondLine)"
+            return firstLine + "\n" + remaining
         }
     }
 }

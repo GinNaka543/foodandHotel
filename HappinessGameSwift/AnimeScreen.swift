@@ -579,6 +579,8 @@ struct AnimeScreen: View {
                                     .font(.headline)
                                     .multilineTextAlignment(.leading)
                                     .shadow(color: .black.opacity(0.7), radius: 2)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: true, vertical: true)
                                 if let viewCount = video.viewCount {
                                     Text("\(viewCount.formatted()) views")
                                         .foregroundColor(.white.opacity(0.8))
@@ -2513,6 +2515,8 @@ struct AnimeVideoRowView: View {
                     Text(video.title.formatVideoTitle())
                         .font(.headline)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: true, vertical: true)
                     if !video.tags.isEmpty {
                         Text("#" + video.tags.joined(separator: " #"))
                             .font(.caption)
@@ -3569,6 +3573,9 @@ struct AnimeVideoScreen: View {
                         .foregroundColor(.black)
                         .padding(.vertical, 4)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: true, vertical: true)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     
                     // ハッシュタグ
                     if let firstTag = video.tags.first {
@@ -3582,7 +3589,7 @@ struct AnimeVideoScreen: View {
                         .foregroundColor(.gray)
                         .padding(.vertical, 1)
                 }
-                .frame(alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 3)
                 .padding(.leading, 8)
                 

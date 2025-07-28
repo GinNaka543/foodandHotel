@@ -143,12 +143,12 @@ struct ArtworkPlayerScreen: View {
                 VStack(spacing: 0) {
                     // ヘッダー
                     HStack(spacing: 12) {
-                        // ログインロゴ（左端に配置）
-                        if let logoImage = UIImage(named: "ログインロゴ") {
+                        // White logo（左端に配置）
+                        if let logoImage = UIImage(named: "whitelogo") {
                             Image(uiImage: logoImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 50)
+                                .frame(height: 38)
                         }
                         
                         Spacer()
@@ -179,7 +179,7 @@ struct ArtworkPlayerScreen: View {
                         }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 6)
                     .background(Color.black)
                     
                     ScrollView {

@@ -436,6 +436,14 @@ struct CharaScreen: View {
             loadYouTubeVideos()
             selectRandomYouTubeVideo()
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDataUpdated"))) { _ in
+            // 動画データが更新された時にバナーを更新
+            print("🔄 [CharaScreen] Received VideoDataUpdated notification - refreshing banner")
+            bannerVideo = nil  // 現在のバナーをクリア
+            displayedVideoIds.removeAll()  // 表示履歴をリセット
+            allYouTubeVideos = []  // 既存の動画リストをクリア
+            loadYouTubeVideos()
+        }
         .onDisappear {
             bannerTimer?.invalidate()
         }
@@ -498,6 +506,7 @@ struct CharaScreen: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(height: 180)
                             .clipped()
+                            .id("\(video.id)_\(video.thumbnailData?.hashValue ?? 0)") // Force view refresh when thumbnail changes
                     } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
                         let _ = print("🖼️ [CharaScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
@@ -1048,6 +1057,12 @@ struct CharacterDetailView: View {
     @State private var tempIconImage: UIImage? = nil
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
+    
+    // バナー管理用の変数を追加
+    @State private var bannerVideo: MemoryVideo? = nil
+    @State private var bannerTimer: Timer? = nil
+    @State private var allYouTubeVideos: [MemoryVideo] = []
+    @State private var displayedVideoIds: Set<UUID> = []
 
     var body: some View {
         ZStack {
@@ -1308,9 +1323,20 @@ struct CharacterDetailView: View {
                 ArtworkScreen(character: characterManager.characters.first(where: { $0.id == character.id }) ?? character)
                     .environmentObject(characterManager)
             }
-            .fullScreenCover(isPresented: $showVideo) {
+            .fullScreenCover(isPresented: $showVideo, onDismiss: {
+                // VideoGalleryScreenから戻った時に強制的にリフレッシュ
+                print("🔄 [CharacterDetailView] VideoGalleryScreen dismissed - force refreshing")
+                bannerVideo = nil
+                allYouTubeVideos = []
+                displayedVideoIds.removeAll()
+                loadYouTubeVideosForDetail()
+            }) {
                 VideoGalleryScreen(character: character)
                     .environmentObject(characterManager)
+            }
+            .onDisappear {
+                // タイマーを停止
+                bannerTimer?.invalidate()
             }
             .fullScreenCover(isPresented: $showAbout) {
                 AboutView(characters: $characters, characterId: character.id, onClose: { 
@@ -1352,6 +1378,28 @@ struct CharacterDetailView: View {
                 )
                 SoundtrackManager.shared.startRandomPlayback()
             }
+            
+            // CharacterDetailView用のバナー初期化
+            loadYouTubeVideosForDetail()
+            
+            // ビデオ更新通知を受信
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("VideoDataUpdated"),
+                object: nil,
+                queue: .main
+            ) { _ in
+                print("🔄 [CharacterDetailView] Received VideoDataUpdated notification")
+                // バナーを強制的にクリアしてから再読み込み
+                bannerVideo = nil
+                allYouTubeVideos = []
+                displayedVideoIds.removeAll()
+                // タイマーも一度停止
+                bannerTimer?.invalidate()
+                // 遅延を入れて確実にリフレッシュ
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    loadYouTubeVideosForDetail()
+                }
+            }
         }
         // サントラプレイヤーを表示
         .overlay(
@@ -1361,7 +1409,7 @@ struct CharacterDetailView: View {
                     .padding(.bottom, 70)
             }
         )
-        .onChange(of: iconPickerItem) { newValue in
+        .onChange(of: iconPickerItem) { _, newValue in
             Task {
                 if let newValue = newValue {
                     if let data = try? await newValue.loadTransferable(type: Data.self) {
@@ -1388,6 +1436,69 @@ struct CharacterDetailView: View {
             SoundtrackManager.shared.stopPlayback()
         }
     }
+    
+    // MARK: - Banner Management Functions
+    private func loadYouTubeVideosForDetail() {
+        print("🎬 [CharacterDetailView] Loading YouTube videos for banner")
+        
+        // VideoStorage経由で動画を取得
+        let videos = VideoStorage.shared.loadVideos(for: character.id.uuidString)
+        allYouTubeVideos = videos.filter { video in
+            video.youtubeURL != nil && 
+            !video.youtubeURL!.isEmpty
+        }
+        
+        print("🎬 [CharacterDetailView] Found \(allYouTubeVideos.count) YouTube videos")
+        
+        // 最初のランダム動画を選択
+        selectRandomYouTubeVideoForDetail()
+        
+        // バナーローテーションを開始
+        startBannerRotationForDetail()
+    }
+    
+    private func selectRandomYouTubeVideoForDetail() {
+        guard !allYouTubeVideos.isEmpty else {
+            print("❌ [CharacterDetailView] No YouTube videos available")
+            bannerVideo = nil
+            return
+        }
+        
+        // 表示されていない動画がある場合はそれを優先
+        let unDisplayedVideos = allYouTubeVideos.filter { !displayedVideoIds.contains($0.id) }
+        
+        let availableVideos = unDisplayedVideos.isEmpty ? allYouTubeVideos : unDisplayedVideos
+        
+        if let randomVideo = availableVideos.randomElement() {
+            bannerVideo = randomVideo
+            displayedVideoIds.insert(randomVideo.id)
+            print("🎬 [CharacterDetailView] Selected random video: \(randomVideo.title)")
+            
+            // 全動画を表示し終わったらリセット
+            if displayedVideoIds.count >= allYouTubeVideos.count {
+                displayedVideoIds.removeAll()
+                print("🔄 [CharacterDetailView] Reset displayed videos list")
+            }
+        }
+    }
+    
+    private func startBannerRotationForDetail() {
+        // 既存のタイマーを停止
+        bannerTimer?.invalidate()
+        
+        // 動画が2つ以上ある場合のみローテーション
+        guard allYouTubeVideos.count > 1 else {
+            print("🔄 [CharacterDetailView] Not enough videos for rotation")
+            return
+        }
+        
+        bannerTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
+            print("🔄 [CharacterDetailView] Timer triggered - selecting next video")
+            selectRandomYouTubeVideoForDetail()
+        }
+        
+        print("⏰ [CharacterDetailView] Banner rotation started")
+    }
 }
 
 // Helper functions
@@ -1406,6 +1517,7 @@ extension DateFormatter {
         formatter.dateFormat = NSLocalizedString("date_format_month_day", comment: "Month and day format")
         return formatter
     }()
+    
 }
 
 struct AboutView: View {

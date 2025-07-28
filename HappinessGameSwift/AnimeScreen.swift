@@ -5028,7 +5028,11 @@ struct AnimeDetailView: View {
                     .fullScreenCover(isPresented: $showArtwork) {
                         AnimeArtworkScreen(anime: $anime, animes: $animes, onClose: { showArtwork = false })
                     }
-                    .fullScreenCover(isPresented: $showVideo) {
+                    .fullScreenCover(isPresented: $showVideo, onDismiss: {
+                        // ビデオページが閉じられた時にバナーを更新
+                        // AnimeScreen用の関数名に修正
+                        showVideo = false
+                    }) {
                         AnimeVideoScreen(anime: $anime, animes: $animes, onClose: { showVideo = false })
                     }
                     .fullScreenCover(isPresented: $showAbout) {

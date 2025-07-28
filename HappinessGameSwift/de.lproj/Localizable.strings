@@ -925,3 +925,14 @@ Gute Arbeit";
 "reset" = "Zurücksetzen";
 "reset_all" = "Alles zurücksetzen";
 "select_from_video" = "Aus Video auswählen";
+
+/* Media Player */
+"see_more_dots" = "...Mehr anzeigen";
+"edit_image" = "Bild bearbeiten";
+"views_times" = "%@ Mal";
+"view_count_format" = "%@ Aufrufe";
+"related_images" = "Verwandte Bilder";
+"delete_image_confirm_title" = "Dieses Bild löschen?";
+"delete_image_confirm_message" = "Dieses Bild wird dauerhaft gelöscht.";
+"delete_image" = "Bild löschen";
+"tags" = "Tags";

@@ -687,3 +687,14 @@
 "reset" = "リセット";
 "reset_all" = "全てリセット";
 "select_from_video" = "動画から選択";
+
+/* Media Player */
+"see_more_dots" = "...もっと見る";
+"edit_image" = "画像の編集";
+"views_times" = "%@回";
+"view_count_format" = "%@回";
+"related_images" = "関連画像";
+"delete_image_confirm_title" = "本当に削除しますか？";
+"delete_image_confirm_message" = "この画像は完全に削除されます。";
+"delete_image" = "画像を削除";
+"tags" = "タグ";

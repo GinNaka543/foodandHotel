@@ -123,17 +123,17 @@ struct ArtworkPlayerScreen: View {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: ""), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: ""), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: ""), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: ""), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: ""), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "")
         }
     }
 
@@ -155,37 +155,60 @@ struct ArtworkPlayerScreen: View {
                         
                         // 検索バー（表示時）
                         if showSearchBar {
-                            TextField("検索", text: $searchText, onCommit: {
-                                filterArtworks()
-                            })
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.gray)
+                                    .font(.system(size: 14))
+                                TextField(NSLocalizedString("search", comment: "Search"), text: $searchText)
+                                    .foregroundColor(.white)
+                                    .accentColor(.white)
+                                    .onChange(of: searchText) { _ in
+                                        filterArtworks()
+                                    }
+                                if !searchText.isEmpty {
+                                    Button(action: {
+                                        searchText = ""
+                                        filterArtworks()
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 14))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(20)
                             .transition(.move(edge: .trailing).combined(with: .opacity))
-                            .frame(maxWidth: 200)
+                            .frame(maxWidth: 250)
                         }
                         
                         // 虫眼鏡アイコン
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showSearchBar.toggle()
-                                if !showSearchBar {
-                                    searchText = ""
-                                    filterArtworks()
+                        if !showSearchBar {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showSearchBar.toggle()
                                 }
+                            }) {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 20))
+                                    .padding(8)
+                                    .background(Color.white.opacity(0.2))
+                                    .clipShape(Circle())
                             }
-                        }) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.white)
-                                .font(.system(size: 20))
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
                     .background(Color.black)
                     
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // 画像表示部分
-                        ZStack(alignment: .topLeading) {
+                    ScrollViewReader { scrollProxy in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                // 画像表示部分
+                            ZStack(alignment: .topLeading) {
                         if let imagePath = artwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                             Image(uiImage: uiImage)
                                 .resizable()
@@ -243,6 +266,7 @@ struct ArtworkPlayerScreen: View {
                         }
                         .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                         .background(Color.black)
+                        .id("player")
                         
                         // 画像情報・関連画像セクション
                         VStack(alignment: .leading, spacing: 0) {
@@ -260,7 +284,7 @@ struct ArtworkPlayerScreen: View {
                         // 関連画像リスト
                         if allArtworks.count > 1 {
                             VStack(alignment: .leading, spacing: 16) {
-                                Text("関連画像")
+                                Text(NSLocalizedString("related_images", comment: "Related Images"))
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 16)
@@ -334,7 +358,7 @@ struct ArtworkPlayerScreen: View {
                                                                 .font(.system(size: 12))
                                                                 .foregroundColor(.gray)
                                                             
-                                                            Text("\(formatViewCount(relatedArtwork.viewCount ?? 0))回・\(timeAgo(from: relatedArtwork.createdAt))")
+                                                            Text("\(formatViewCount(relatedArtwork.viewCount ?? 0))\(NSLocalizedString("views_times", comment: "")) · \(timeAgo(from: relatedArtwork.createdAt))")
                                                                 .font(.system(size: 12))
                                                                 .foregroundColor(.gray)
                                                         }
@@ -353,7 +377,21 @@ struct ArtworkPlayerScreen: View {
                         }
                     }
                 }
-                }
+                        .onChange(of: selectedArtwork) { newArtwork in
+                            if let newArtwork = newArtwork {
+                                // 新しい画像を表示
+                                artwork = newArtwork
+                                editTitle = newArtwork.title
+                                editTags = newArtwork.tags.joined(separator: ",")
+                                selectedArtwork = nil
+                                // プレイヤーまで自動スクロール
+                                withAnimation(.easeInOut(duration: 0.5)) {
+                                    scrollProxy.scrollTo("player", anchor: .top)
+                                }
+                            }
+                        }
+                    }
+                    }
                 
                 // 戻るボタン
                 VStack {
@@ -363,7 +401,7 @@ struct ArtworkPlayerScreen: View {
                         Button(action: {
                             presentationMode.wrappedValue.dismiss()
                         }) {
-                            Text("戻る")
+                            Text(NSLocalizedString("back", comment: "Back"))
                                 .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 24)
@@ -384,7 +422,6 @@ struct ArtworkPlayerScreen: View {
                     )
                 }
             }
-        }
         .navigationBarHidden(true)
         .onAppear {
             filteredArtworks = allArtworks
@@ -429,19 +466,10 @@ struct ArtworkPlayerScreen: View {
             editTitle = artwork.title
             editTags = artwork.tags.joined(separator: ",")
         }
-        .onChange(of: selectedArtwork) { newArtwork in
-            if let newArtwork = newArtwork {
-                // 新しい画像を表示
-                artwork = newArtwork
-                editTitle = newArtwork.title
-                editTags = newArtwork.tags.joined(separator: ",")
-                selectedArtwork = nil
-            }
-        }
         // Removed onChange modifiers that were interfering with user input
         .sheet(isPresented: $showMenuSheet) {
             VStack(spacing: 24) {
-                Text("画像の編集")
+                Text(NSLocalizedString("edit_image", comment: "Edit image"))
                     .font(.headline)
                     .onAppear {
                         // シートが表示されるときに最新の値を設定
@@ -450,7 +478,7 @@ struct ArtworkPlayerScreen: View {
                     }
                 // タイトル（編集不可）
                 HStack {
-                    Text("タイトル:")
+                    Text("\(NSLocalizedString("title", comment: "Title")):")
                         .foregroundColor(.gray)
                     Text(editTitle)
                         .font(.system(size: 16, weight: .medium))
@@ -462,7 +490,7 @@ struct ArtworkPlayerScreen: View {
                 
                 // タグ（編集不可）
                 HStack {
-                    Text("タグ:")
+                    Text("\(NSLocalizedString("tags", comment: "Tags")):")
                         .foregroundColor(.gray)
                     Text(editTags)
                         .font(.system(size: 16, weight: .medium))
@@ -515,27 +543,28 @@ struct ArtworkPlayerScreen: View {
                 .background(Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(10)*/
-                Button("画像を削除") {
+                Button(NSLocalizedString("delete_image", comment: "Delete image")) {
                     showDeleteAlert = true
                 }
                 .foregroundColor(.red)
-                Button("キャンセル") {
+                Button(NSLocalizedString("cancel", comment: "Cancel")) {
                     showMenuSheet = false
                 }
             }
             .padding(32)
             .alert(isPresented: $showDeleteAlert) {
                 Alert(
-                    title: Text("本当に削除しますか？"),
-                    message: Text("この画像は完全に削除されます。"),
-                    primaryButton: .destructive(Text("削除")) {
+                    title: Text(NSLocalizedString("delete_image_confirm_title", comment: "Delete this image?")),
+                    message: Text(NSLocalizedString("delete_image_confirm_message", comment: "This image will be permanently deleted.")),
+                    primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                         onDelete?()
                         showMenuSheet = false
                         presentationMode.wrappedValue.dismiss()
                     },
-                    secondaryButton: .cancel(Text("キャンセル"))
+                    secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
                 )
             }
+        }
         }
     }
 }
@@ -587,7 +616,7 @@ struct FullScreenArtworkView: View {
                 HStack {
                     Spacer()
                     Button(action: { onDismiss() }) {
-                        Text("戻る")
+                        Text(NSLocalizedString("back", comment: "Back"))
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 24)
@@ -626,7 +655,7 @@ private struct ArtworkInfoView: View {
                 
                 HStack(spacing: 4) {
                     Text("\(timeAgo(from: artwork.createdAt))")
-                    Text("...もっと見る")
+                    Text(NSLocalizedString("see_more_dots", comment: "...Show more"))
                         .foregroundColor(.gray)
                     Spacer()
                 }
@@ -674,7 +703,7 @@ private struct ArtworkInfoView: View {
                 Button(action: {
                     showMenuSheet()
                 }) {
-                    Text("編集")
+                    Text(NSLocalizedString("edit", comment: "Edit"))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.black)
                         .padding(.horizontal, 16)
@@ -736,17 +765,17 @@ private struct ArtworkInfoView: View {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: ""), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: ""), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: ""), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: ""), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: ""), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "")
         }
     }
 }

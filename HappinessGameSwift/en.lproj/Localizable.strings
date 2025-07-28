@@ -868,3 +868,14 @@
 "reset" = "Reset";
 "reset_all" = "Reset All";
 "select_from_video" = "Select from Video";
+
+/* Media Player */
+"see_more_dots" = "...Show more";
+"edit_image" = "Edit image";
+"views_times" = "%@ times";
+"view_count_format" = "%@ views";
+"related_images" = "Related Images";
+"delete_image_confirm_title" = "Delete this image?";
+"delete_image_confirm_message" = "This image will be permanently deleted.";
+"delete_image" = "Delete image";
+"tags" = "Tags";

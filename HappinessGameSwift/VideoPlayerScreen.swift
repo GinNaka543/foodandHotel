@@ -39,6 +39,7 @@ struct VideoPlayerScreen: View {
     @State private var showFullscreen = false
     @State private var showExpandButton = false
     @State private var showThumbnailPicker = false
+    @State private var shouldScrollToPlayer = false
     // フルスクリーン用
     @State private var fullscreenShowControls = true
     @State private var fullscreenPlayer: AVPlayer? = nil
@@ -86,8 +87,6 @@ struct VideoPlayerScreen: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let player = self.player {
                     player.play()
-                    if let currentItem = player.currentItem {
-                    }
                 } else {
                 }
             }
@@ -167,46 +166,71 @@ struct VideoPlayerScreen: View {
                         
                         // 検索バー（表示時）
                         if showSearchBar {
-                            TextField(NSLocalizedString("search", comment: "Search"), text: $searchText, onCommit: {
-                                filterVideos()
-                            })
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            HStack {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.gray)
+                                    .font(.system(size: 14))
+                                TextField(NSLocalizedString("search", comment: "Search"), text: $searchText)
+                                    .foregroundColor(.white)
+                                    .accentColor(.white)
+                                    .onChange(of: searchText) { _ in
+                                        filterVideos()
+                                    }
+                                if !searchText.isEmpty {
+                                    Button(action: {
+                                        searchText = ""
+                                        filterVideos()
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 14))
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.2))
+                            .cornerRadius(20)
                             .transition(.move(edge: .trailing).combined(with: .opacity))
-                            .frame(maxWidth: 200)
+                            .frame(maxWidth: 250)
                         }
                         
                         // 虫眼鏡アイコン
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showSearchBar.toggle()
-                                if !showSearchBar {
-                                    searchText = ""
-                                    filterVideos()
+                        if !showSearchBar {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showSearchBar.toggle()
                                 }
+                            }) {
+                                Image(systemName: "magnifyingglass")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 20))
+                                    .padding(8)
+                                    .background(Color.white.opacity(0.2))
+                                    .clipShape(Circle())
                             }
-                        }) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.white)
-                                .font(.system(size: 20))
                         }
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 6)
                     .background(Color.black)
                     
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // 動画プレイヤー部分
-                        if let player = player {
+                    ScrollViewReader { scrollProxy in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                // 動画プレイヤー部分
+                            if let player = player {
                             VideoPlayer(player: player)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                                 .background(Color.black)
                                 .onAppear {
                                 }
+                                .id("player")
                         } else {
                             Rectangle()
                                 .fill(Color.black)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                                .id("player")
                                 .overlay(
                                     Text(NSLocalizedString("initializing_player", comment: "Initializing player..."))
                                         .foregroundColor(.white)
@@ -318,6 +342,15 @@ struct VideoPlayerScreen: View {
                         }
                     }
                 }
+                .onChange(of: shouldScrollToPlayer) { shouldScroll in
+                    if shouldScroll {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            scrollProxy.scrollTo("player", anchor: .top)
+                        }
+                        shouldScrollToPlayer = false
+                    }
+                }
+                    }
                 }
                 
                 // 画面全体の右下に戻るボタン（固定位置）
@@ -456,7 +489,7 @@ extension VideoPlayerScreen {
             if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
                 do {
                     let contents = try FileManager.default.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
-                    for url in contents {
+                    for _ in contents {
                     }
                 } catch {
                 }
@@ -481,14 +514,14 @@ extension VideoPlayerScreen {
             self.player = newPlayer
             
             // プレイヤーの準備状態を確認
-            if let error = playerItem.error {
+            if playerItem.error != nil {
             }
             
             // アセットのプロパティをロード
             let asset = playerItem.asset
             Task {
                 do {
-                    let isPlayable = try await asset.load(.isPlayable)
+                    let _ = try await asset.load(.isPlayable)
                 } catch {
                 }
             }
@@ -559,6 +592,9 @@ extension VideoPlayerScreen {
         // 現在の動画を停止
         player?.pause()
         player = nil
+        
+        // プレイヤーまでスクロール
+        shouldScrollToPlayer = true
         
         // 新しい動画のプレイヤーを設定
         if let videoURL = loadVideoURLFromPath(newVideo.videoPath) {
@@ -1043,7 +1079,7 @@ struct FullScreenVideoPlayer: View {
                 }
             if showControls {
                 Button(action: { onDismiss() }) {
-                    Text("戻る")
+                    Text(NSLocalizedString("back", comment: "Back"))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)

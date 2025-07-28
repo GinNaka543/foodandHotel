@@ -892,3 +892,14 @@
 "reset" = "Restablecer";
 "reset_all" = "Restablecer todo";
 "select_from_video" = "Seleccionar del video";
+
+/* Media Player */
+"see_more_dots" = "...Ver más";
+"edit_image" = "Editar imagen";
+"views_times" = "%@ veces";
+"view_count_format" = "%@ vistas";
+"related_images" = "Imágenes relacionadas";
+"delete_image_confirm_title" = "¿Eliminar esta imagen?";
+"delete_image_confirm_message" = "Esta imagen se eliminará permanentemente.";
+"delete_image" = "Eliminar imagen";
+"tags" = "Etiquetas";

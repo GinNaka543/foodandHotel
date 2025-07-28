@@ -534,7 +534,16 @@ struct AnimeScreen: View {
                 let _ = print("🔍 [AnimeScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
                 
                 VStack {
-                    if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
+                    // First check for custom thumbnail data
+                    if let thumbnailData = video.thumbnailData,
+                       let thumbnailImage = UIImage(data: thumbnailData) {
+                        let _ = print("🖼️ [AnimeScreen] Using custom thumbnail data")
+                        Image(uiImage: thumbnailImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 180)
+                            .clipped()
+                    } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
                         let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
                             image
@@ -551,78 +560,58 @@ struct AnimeScreen: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 )
                         }
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
-                        .overlay(
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(video.title)
-                                            .foregroundColor(.white)
-                                            .font(.headline)
-                                            .lineLimit(2)
-                                            .shadow(color: .black.opacity(0.7), radius: 2)
-                                        if let viewCount = video.viewCount {
-                                            Text("\(viewCount.formatted()) views")
-                                                .foregroundColor(.white.opacity(0.8))
-                                                .font(.caption)
-                                                .shadow(color: .black.opacity(0.7), radius: 2)
-                                        }
-                                    }
-                                    Spacer()
-                                    Image(systemName: "play.circle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.title)
-                                        .shadow(color: .black.opacity(0.7), radius: 2)
-                                }
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                            }
-                        )
-                        .onTapGesture {
-                            if let url = URL(string: youtubeURL) {
-                                UIApplication.shared.open(url)
-                            }
-                        }
                     } else {
-                        let _ = print("⚠️ [AnimeScreen] No thumbnail URL available, using fallback")
                         Rectangle()
-                            .fill(Color.blue.opacity(0.8))
+                            .fill(Color.gray.opacity(0.3))
                             .frame(height: 180)
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "play.rectangle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.largeTitle)
-                                    Text(video.title)
-                                        .foregroundColor(.white)
-                                        .font(.headline)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal)
-                                }
-                            )
-                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
-                            .onTapGesture {
-                                if let url = URL(string: youtubeURL) {
-                                    UIApplication.shared.open(url)
-                                }
-                            }
                     }
                 }
-                .padding(.horizontal, 16)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    VStack {
+                        Spacer()
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(video.title.formatVideoTitle())
+                                    .foregroundColor(.white)
+                                    .font(.headline)
+                                    .multilineTextAlignment(.leading)
+                                    .shadow(color: .black.opacity(0.7), radius: 2)
+                                if let viewCount = video.viewCount {
+                                    Text("\(viewCount.formatted()) views")
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .font(.caption)
+                                        .shadow(color: .black.opacity(0.7), radius: 2)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "play.circle.fill")
+                                .foregroundColor(.white)
+                                .font(.title)
+                                .shadow(color: .black.opacity(0.7), radius: 2)
+                        }
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
+                )
+                .onTapGesture {
+                    if let url = URL(string: youtubeURL) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            .padding(.horizontal, 16)
             } else {
                 // YouTube動画が登録されていない場合の表示
                 ZStack {
                     AnimatedGradientView()
                         .frame(width: UIScreen.main.bounds.width - 32, height: 180)
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     
                     VStack {
                         Spacer()
@@ -2301,6 +2290,10 @@ struct AnimeArtworkScreen: View {
         let newArtwork = Artwork(id: UUID(), characterId: anime.id, imagePath: path, title: photoTitle, tags: tags, createdAt: Date())
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
+        
+        // Add to matching albums
+        addArtworkToMatchingAlbums(newArtwork)
+        
         selectedImage = nil
         photoTitle = ""
         photoTags = ""
@@ -2371,16 +2364,38 @@ struct AnimeArtworkScreen: View {
     private func saveAlbumsToUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
+            // Save directly to UserDefaults to ensure persistence
+            UserDefaults.standard.set(encodedData, forKey: key)
+            UserDefaults.standard.synchronize()
+            print("💾 [ArtworkAlbum] Saved \(albums.count) albums to UserDefaults with key: \(key)")
+        } else {
+            print("❌ [ArtworkAlbum] Failed to encode albums for saving")
         }
     }
     
     private func loadAlbumsFromUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
-        if let data = UserDefaultsHelper.shared.getData(forKey: key),
+        // Load directly from UserDefaults for consistency with saving
+        if let data = UserDefaults.standard.data(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
+            print("💾 [ArtworkAlbum] Loaded \(albums.count) albums from UserDefaults with key: \(key)")
+        } else {
+            albums = []
+            print("💾 [ArtworkAlbum] No albums found or failed to decode. Starting with empty array.")
         }
+    }
+    
+    private func addArtworkToMatchingAlbums(_ artwork: Artwork) {
+        for (index, album) in albums.enumerated() {
+            if artwork.tags.contains(album.tag) {
+                if !albums[index].videos.contains(where: { $0.id == artwork.id }) {
+                    albums[index].videos.append(artwork)
+                    print("📝 [ArtworkAlbum] Added artwork '\(artwork.title)' to album '\(album.tag)'")
+                }
+            }
+        }
+        saveAlbumsToUserDefaults()
     }
     
     private func updateAlbumsAfterArtworkDeletion(deletedArtworkId: UUID) {
@@ -2434,6 +2449,9 @@ struct AnimeArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         
+        // Add to matching albums
+        addArtworkToMatchingAlbums(newArtwork)
+        
         // フォームをリセット
         photoTitle = ""
         photoTags = ""
@@ -2476,8 +2494,9 @@ struct AnimeVideoRowView: View {
                         )
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(video.title)
+                    Text(video.title.formatVideoTitle())
                         .font(.headline)
+                        .multilineTextAlignment(.leading)
                     if !video.tags.isEmpty {
                         Text("#" + video.tags.joined(separator: " #"))
                             .font(.caption)
@@ -3140,18 +3159,23 @@ struct AnimeVideoScreen: View {
     }
     
     private func saveVideoAlbumsToUserDefaults() {
-        let key = "video_albums_\(anime.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaults.standard.set(encodedData, forKey: key)
-        }
+        VideoStorage.shared.saveAlbums(for: anime.id.uuidString, albums: albums)
     }
     
     private func loadVideoAlbumsFromUserDefaults() {
-        let key = "video_albums_\(anime.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
-            albums = decodedAlbums
+        albums = VideoStorage.shared.loadAlbums(for: anime.id.uuidString)
+    }
+    
+    private func addVideoToMatchingAlbums(_ video: MemoryVideo) {
+        for (index, album) in albums.enumerated() {
+            if video.tags.contains(album.tag) {
+                if !albums[index].videos.contains(where: { $0.id == video.id }) {
+                    albums[index].videos.append(video)
+                    print("📝 [VideoAlbum] Added video '\(video.title)' to album '\(album.tag)'")
+                }
+            }
         }
+        saveVideoAlbumsToUserDefaults()
     }
     
     private func updateAlbumsAfterVideoDeletion(deletedVideoId: UUID) {
@@ -3162,6 +3186,7 @@ struct AnimeVideoScreen: View {
             }
             return Album(tag: album.tag, videos: updatedVideos)
         }
+        saveVideoAlbumsToUserDefaults()
     }
     
     private func deleteVideo(id: UUID) {
@@ -3207,6 +3232,10 @@ struct AnimeVideoScreen: View {
         let newVideo = MemoryVideo(id: UUID(), characterId: anime.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date(), youtubeURL: nil, youtubeThumbnailURL: nil)
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        
+        // Add to matching albums
+        addVideoToMatchingAlbums(newVideo)
+        
         selectedVideoURL = nil
         videoTitle = ""
         videoTags = ""
@@ -3255,6 +3284,10 @@ struct AnimeVideoScreen: View {
         
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        
+        // Add to matching albums
+        addVideoToMatchingAlbums(newVideo)
+        
         selectedThumbnailData = nil
         showAddSheet = false
     }
@@ -3506,10 +3539,11 @@ struct AnimeVideoScreen: View {
                 
                 // タイトルとタグ
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(video.title)
+                    Text(video.title.formatVideoTitle())
                         .font(.system(size: 16.5, weight: .semibold))
                         .foregroundColor(.black)
                         .padding(.vertical, 4)
+                        .multilineTextAlignment(.leading)
                     
                     // ハッシュタグ
                     if let firstTag = video.tags.first {
@@ -5980,33 +6014,31 @@ struct AnimeMemberListView: View {
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .background(
-                                NavigationLink(
-                                    destination: CharacterDetailView(
-                                        character: Binding(
-                                            get: { character },
-                                            set: { updatedCharacter in
-                                                if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
-                                                    characterManager.characters[index] = updatedCharacter
-                                                    characterManager.saveCharacters()
-                                                }
-                                            }
-                                        ),
-                                        characters: $characterManager.characters
-                                    )
-                                    .environmentObject(characterManager),
-                                    isActive: Binding(
-                                        get: { navigateToCharacter?.id == character.id },
-                                        set: { isActive in
-                                            if !isActive {
-                                                navigateToCharacter = nil
+                            .onTapGesture {
+                                navigateToCharacter = character
+                            }
+                            .navigationDestination(isPresented: Binding(
+                                get: { navigateToCharacter?.id == character.id },
+                                set: { isActive in
+                                    if !isActive {
+                                        navigateToCharacter = nil
+                                    }
+                                }
+                            )) {
+                                CharacterDetailView(
+                                    character: Binding(
+                                        get: { character },
+                                        set: { updatedCharacter in
+                                            if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                                characterManager.characters[index] = updatedCharacter
+                                                characterManager.saveCharacters()
                                             }
                                         }
-                                    )
-                                ) {
-                                    EmptyView()
-                                }
-                            )
+                                    ),
+                                    characters: $characterManager.characters
+                                )
+                                .environmentObject(characterManager)
+                            }
                         }
                     }
                     .padding(16)
@@ -6024,3 +6056,5 @@ struct AnimeMemberListView: View {
         }
     }
 }
+
+

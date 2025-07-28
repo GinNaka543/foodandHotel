@@ -512,10 +512,10 @@ struct CharaScreen: View {
                                 Spacer()
                                 HStack {
                                     VStack(alignment: .leading) {
-                                        Text(video.title)
+                                        Text(video.title.formatVideoTitle())
                                             .foregroundColor(.white)
                                             .font(.headline)
-                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
                                             .shadow(color: .black.opacity(0.7), radius: 2)
                                         if let viewCount = video.viewCount {
                                             Text("\(viewCount.formatted()) views")
@@ -555,10 +555,10 @@ struct CharaScreen: View {
                                     Image(systemName: "play.rectangle.fill")
                                         .foregroundColor(.white)
                                         .font(.largeTitle)
-                                    Text(video.title)
+                                    Text(video.title.formatVideoTitle())
                                         .foregroundColor(.white)
                                         .font(.headline)
-                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
                                         .multilineTextAlignment(.center)
                                         .padding(.horizontal)
                                 }
@@ -2529,20 +2529,6 @@ struct CharacterPickerRow: View {
         .background(Color.white)
         .cornerRadius(12)
         .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 1)
-    }
-}
-
-// 文字列をn文字ごとに分割するchunked拡張を追加
-extension String {
-    func chunked(_ length: Int) -> [String] {
-        var result: [String] = []
-        var start = startIndex
-        while start < endIndex {
-            let end = index(start, offsetBy: length, limitedBy: endIndex) ?? endIndex
-            result.append(String(self[start..<end]))
-            start = end
-        }
-        return result
     }
 }
 

@@ -1296,15 +1296,23 @@ struct ArtworkScreen: View {
     private func saveAlbumsToUserDefaults() {
         let key = "artwork_albums_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
+            // Save directly to UserDefaults to ensure persistence
+            UserDefaults.standard.set(encodedData, forKey: key)
+            UserDefaults.standard.synchronize()
         }
     }
     
     private func loadAlbumsFromUserDefaults() {
         let key = "artwork_albums_\(character.id.uuidString)"
+        // Try to load from UserDefaultsHelper first, then fallback to direct UserDefaults
         if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
+        } else if let data = UserDefaults.standard.data(forKey: key),
+                  let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
+            albums = decodedAlbums
+        } else {
+            albums = []
         }
     }
     
@@ -1323,6 +1331,10 @@ struct ArtworkScreen: View {
         )
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
+        
+        // Check for existing albums with matching tags and add the artwork
+        addArtworkToMatchingAlbums(newArtwork)
+        
         selectedImage = nil
         photoTitle = ""
         photoTags = ""
@@ -1346,6 +1358,9 @@ struct ArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         
+        // Check for existing albums with matching tags and add the artwork
+        addArtworkToMatchingAlbums(newArtwork)
+        
         photoTitle = ""
         photoTags = ""
         activeSheet = nil
@@ -1358,6 +1373,27 @@ struct ArtworkScreen: View {
                 return nil
             }
             return ArtworkAlbum(tag: album.tag, videos: updatedArtworks, characterImageName: "")
+        }
+    }
+    
+    // Add artwork to albums with matching tags
+    private func addArtworkToMatchingAlbums(_ artwork: Artwork) {
+        var albumsUpdated = false
+        
+        for (index, album) in albums.enumerated() {
+            // Check if the artwork has the same tag as the album
+            if artwork.tags.contains(album.tag) {
+                // Check if the artwork is not already in the album
+                if !albums[index].videos.contains(where: { $0.id == artwork.id }) {
+                    albums[index].videos.append(artwork)
+                    albumsUpdated = true
+                }
+            }
+        }
+        
+        // Save albums if any were updated
+        if albumsUpdated {
+            saveAlbumsToUserDefaults()
         }
     }
     

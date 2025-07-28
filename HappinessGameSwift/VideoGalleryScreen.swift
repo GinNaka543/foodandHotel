@@ -23,13 +23,34 @@ struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
 struct Album: Identifiable, Hashable, Equatable, Codable {
     let id: UUID
     let tag: String
-    let videos: [MemoryVideo]
+    var videos: [MemoryVideo]
     
     init(tag: String, videos: [MemoryVideo]) {
         self.id = UUID()
         self.tag = tag
         self.videos = videos
     }
+    
+    // Custom initializer for decoding to ensure ID is preserved
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.tag = try container.decode(String.self, forKey: .tag)
+        self.videos = try container.decode([MemoryVideo].self, forKey: .videos)
+    }
+    
+    // Custom encoder
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(tag, forKey: .tag)
+        try container.encode(videos, forKey: .videos)
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, tag, videos
+    }
+    
     static func == (lhs: Album, rhs: Album) -> Bool {
         lhs.id == rhs.id && lhs.tag == rhs.tag && lhs.videos == rhs.videos
     }
@@ -63,6 +84,7 @@ struct VideoGalleryScreen: View {
     @State private var activeAlert: ActiveAlert? = nil
     @State private var activeSheet: ActiveSheet? = nil
     @State private var showIconAdjustment = false
+    @State private var backgroundObserver: NSObjectProtocol?
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -517,10 +539,11 @@ struct VideoGalleryScreen: View {
                 
                 // タイトルとタグ
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(video.title)
+                    Text(video.title.formatVideoTitle())
                         .font(.system(size: 16.5, weight: .semibold))
                         .foregroundColor(.black)
                         .padding(.vertical, 4)
+                        .multilineTextAlignment(.leading)
                     
                     // ハッシュタグ
                     if let firstTag = video.tags.first {
@@ -807,8 +830,43 @@ struct VideoGalleryScreen: View {
             }
         )
         .onAppear {
+            print("📱 [VideoGallery] onAppear called for character: \(character.name)")
+            print("📱 [VideoGallery] Character ID: \(character.id.uuidString)")
             loadVideos()
             loadAlbumsFromUserDefaults()
+            setupBackgroundObserver()
+            
+            // Debug: Print all album keys
+            VideoStorage.shared.debugPrintAllAlbumKeys()
+            
+            // Debug: Check for specific key
+            let expectedKey = "video_albums_\(character.id.uuidString)"
+            if let data = UserDefaults.standard.data(forKey: expectedKey) {
+                print("📱 [VideoGallery] Key '\(expectedKey)' exists with \(data.count) bytes")
+            } else {
+                print("📱 [VideoGallery] Key '\(expectedKey)' does NOT exist")
+            }
+            
+            // Run persistence test if no albums exist
+            if albums.isEmpty && videos.isEmpty {
+                print("📱 [VideoGallery] No albums found, checking UserDefaults directly...")
+                
+                // Try to load and decode directly
+                if let data = UserDefaults.standard.data(forKey: expectedKey) {
+                    do {
+                        let decoded = try JSONDecoder().decode([Album].self, from: data)
+                        print("📱 [VideoGallery] Direct decode successful: \(decoded.count) albums")
+                        albums = decoded
+                    } catch {
+                        print("📱 [VideoGallery] Direct decode failed: \(error)")
+                    }
+                }
+            }
+        }
+        .onDisappear {
+            print("📱 [VideoGallery] onDisappear - saving albums before view dismisses")
+            saveAlbumsToUserDefaults()
+            removeBackgroundObserver()
         }
         .fullScreenCover(isPresented: $showAbout) {
             AboutView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
@@ -927,9 +985,17 @@ struct VideoGalleryScreen: View {
                 if !tag.isEmpty {
                     let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
                     if !tagVideos.isEmpty {
-                        albums.append(Album(tag: tag, videos: tagVideos))
+                        let newAlbum = Album(tag: tag, videos: tagVideos)
+                        print("📱 [VideoGallery] Creating new album '\(tag)' with \(tagVideos.count) videos")
+                        print("📱 [VideoGallery] New album ID: \(newAlbum.id)")
+                        albums.append(newAlbum)
+                        print("📱 [VideoGallery] Total albums after adding: \(albums.count)")
                         saveAlbumsToUserDefaults()
+                    } else {
+                        print("📱 [VideoGallery] No videos found with tag '\(tag)'")
                     }
+                } else {
+                    print("📱 [VideoGallery] Tag is empty, not creating album")
                 }
                 newTag = ""
                 activeSheet = nil
@@ -1144,7 +1210,7 @@ struct VideoGalleryScreen: View {
                         .frame(height: 200)
                 }
                 
-                Text(video.title)
+                Text(video.title.formatVideoTitle())
                     .font(.title2)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
@@ -1398,6 +1464,9 @@ struct VideoGalleryScreen: View {
         let newVideo = MemoryVideo(id: UUID(), characterId: character.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date(), youtubeURL: nil, youtubeThumbnailURL: nil)
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        
+        // Check for existing albums with matching tags and add the video
+        addVideoToMatchingAlbums(newVideo)
         selectedVideoURL = nil
         videoTitle = ""
         videoTags = ""
@@ -1446,18 +1515,25 @@ struct VideoGalleryScreen: View {
     }
     
     private func saveAlbumsToUserDefaults() {
-        let key = "video_albums_\(character.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaults.standard.set(encodedData, forKey: key)
-        }
+        print("📱 [VideoGallery] Saving \(albums.count) albums for character: \(character.name) (ID: \(character.id.uuidString))")
+        VideoStorage.shared.saveAlbums(for: character.id.uuidString, albums: albums)
     }
     
     private func loadAlbumsFromUserDefaults() {
-        let key = "video_albums_\(character.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
-            albums = decodedAlbums
+        print("📱 [VideoGallery] Loading albums for character: \(character.name) (ID: \(character.id.uuidString))")
+        
+        // Debug print all album keys before loading
+        VideoStorage.shared.debugPrintAllAlbumKeys()
+        
+        // Test album persistence on first load
+        #if DEBUG
+        if albums.isEmpty {
+            VideoStorage.shared.testAlbumPersistence(characterId: character.id.uuidString)
         }
+        #endif
+        
+        albums = VideoStorage.shared.loadAlbums(for: character.id.uuidString)
+        print("📱 [VideoGallery] Loaded \(albums.count) albums")
     }
     
     private func deleteVideo(id: UUID) {
@@ -1511,14 +1587,56 @@ struct VideoGalleryScreen: View {
         
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        
+        // Check for existing albums with matching tags and add the video
+        addVideoToMatchingAlbums(newVideo)
+        
         selectedThumbnailData = nil // リセット
         showAddSheet = false
+    }
+    
+    // Add video to albums with matching tags
+    private func addVideoToMatchingAlbums(_ video: MemoryVideo) {
+        var albumsUpdated = false
+        
+        for (index, album) in albums.enumerated() {
+            // Check if the video has the same tag as the album
+            if video.tags.contains(album.tag) {
+                // Check if the video is not already in the album
+                if !albums[index].videos.contains(where: { $0.id == video.id }) {
+                    albums[index].videos.append(video)
+                    albumsUpdated = true
+                }
+            }
+        }
+        
+        // Save albums if any were updated
+        if albumsUpdated {
+            saveAlbumsToUserDefaults()
+        }
+    }
+    
+    private func setupBackgroundObserver() {
+        backgroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("📱 [VideoGallery] App entering background - saving albums")
+            saveAlbumsToUserDefaults()
+        }
+    }
+    
+    private func removeBackgroundObserver() {
+        if let observer = backgroundObserver {
+            NotificationCenter.default.removeObserver(observer)
+            backgroundObserver = nil
+        }
     }
     
     private func downloadYouTubeVideo(youtubeURL: String) async throws -> URL {
         // Use server-side proxy endpoint for YouTube downloads
         let endpoint = Bundle.main.infoDictionary?["YOUTUBE_DOWNLOAD_API_ENDPOINT"] as? String ?? "https://happiness-game.onrender.com/api/youtube-download"
-        let encodedURL = youtubeURL.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? youtubeURL
         
         guard let apiURL = URL(string: endpoint) else {
             throw NSError(domain: "URL生成エラー", code: 0)
@@ -1535,9 +1653,6 @@ struct VideoGalleryScreen: View {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             throw NSError(domain: "APIリクエスト失敗", code: 0)
-        }
-        // --- レスポンス内容をprintで出力 ---
-        if let jsonString = String(data: data, encoding: .utf8) {
         }
         // 2. レスポンスからダウンロードリンクを抽出（仮にJSONで { "link": "..." } 形式とする）
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -1700,9 +1815,10 @@ struct VideoAlbumGridView: View {
                                 .frame(width: 176, height: 106)
                         }
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(video.title)
+                            Text(video.title.formatVideoTitle())
                                 .font(.system(size: 16.5, weight: .semibold))
                                 .foregroundColor(.black)
+                                .multilineTextAlignment(.leading)
                             Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
                                 .font(.system(size: 13.8, weight: .regular))
                                 .foregroundColor(.gray)
@@ -2029,10 +2145,11 @@ struct AlbumVideoListScreen: View {
                                 
                                 // タイトルとタグ
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(video.title)
+                                    Text(video.title.formatVideoTitle())
                                         .font(.system(size: 16.5, weight: .semibold))
                                         .foregroundColor(.black)
                                         .padding(.vertical, 4)
+                                        .multilineTextAlignment(.leading)
                                     
                                     // ハッシュタグ
                                     if let firstTag = video.tags.first {
@@ -2301,7 +2418,7 @@ struct AlbumVideoListScreen: View {
                         .frame(height: 200)
                 }
                 
-                Text(video.title)
+                Text(video.title.formatVideoTitle())
                     .font(.title2)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
@@ -2364,4 +2481,43 @@ struct VideoNavigationButtonStyle: ButtonStyle {
         seichi: "",
         height: ""
     ))
-} 
+}
+
+// String extension for video title formatting
+extension String {
+    func chunked(_ length: Int) -> [String] {
+        var result: [String] = []
+        var start = startIndex
+        while start < endIndex {
+            let end = index(start, offsetBy: length, limitedBy: endIndex) ?? endIndex
+            result.append(String(self[start..<end]))
+            start = end
+        }
+        return result
+    }
+    
+    // Format video titles: 8 characters per line, truncate after 15 characters with ellipsis
+    func formatVideoTitle() -> String {
+        // Count actual characters (not bytes) for proper Japanese text handling
+        let characters = Array(self)
+        
+        if characters.count <= 8 {
+            // If 8 characters or less, return as is
+            return self
+        } else if characters.count <= 15 {
+            // If 9-15 characters, split into two lines at 8 characters
+            let firstLine = String(characters.prefix(8))
+            let secondLine = String(characters.dropFirst(8))
+            return "\(firstLine)\n\(secondLine)"
+        } else {
+            // If more than 15 characters, truncate to 15 and add ellipsis
+            let truncated = String(characters.prefix(15)) + "..."
+            let truncatedChars = Array(truncated)
+            let firstLine = String(truncatedChars.prefix(8))
+            let secondLine = String(truncatedChars.dropFirst(8))
+            return "\(firstLine)\n\(secondLine)"
+        }
+    }
+}
+
+ 

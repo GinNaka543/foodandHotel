@@ -428,7 +428,6 @@
 "character_name" = "Nome do personagem";
 "character_ranking_management" = "Character Ranking Management";
 "ranking_selection" = "Seleção de ranking";
-"characters" = "Characters";
 "collapse" = "Collapse";
 "complete_button" = "Complete";
 "copy" = "Copy";
@@ -635,7 +634,6 @@
 "visit_tab_original" = "Original";
 "visit_tab_purchased" = "Purchased";
 "voice_actor" = "Dublador";
-"voice_actors" = "Voice Actors";
 "watch_again" = "Watch Again";
 "watch_anime" = "Watch Anime";
 "watching" = "Watching";

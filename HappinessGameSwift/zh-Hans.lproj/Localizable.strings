@@ -707,6 +707,9 @@
 "trip_days" = "旅行天数";
 "days_format" = "%d天";
 "day_range_instruction" = "可设置1至30天";
+"enter_trip_days" = "输入旅行天数";
+"custom_days" = "自定义天数";
+"decide" = "确定";
 "timeline" = "时间线";
 "day_format" = "第%d天";
 "add_spots_to_create_itinerary" = "添加地点以创建行程";
@@ -718,6 +721,7 @@
 "minutes" = "分钟";
 "transportation_cost" = "交通费用是多少？";
 "which_route_optional" = "您将使用哪条路线？（可选）";
+"route_example" = "例：JR山手线 → 东京地铁银座线";
 "stay_duration_format" = "停留时间：%d分钟";
 "spot_name" = "地点名称";
 "stay_time_period" = "停留时间段";
@@ -783,6 +787,19 @@
 "admin_setup_required" = "需要管理员设置";
 "watch_anime" = "观看动画";
 "tap_to_watch" = "点击观看";
+
+/* Spot Addition Screen */
+"spot_name_example" = "例：清水寺";
+"previous_spot_end_time" = "上一个地点结束时间：%@";
+"transportation_from" = "交通方式 - 从%@";
+"from_previous_spot" = "从上一个地点";
+"select_spot_add_day" = "选择添加地点的日期";
+"spot_info_day" = "地点信息 - 第%d天";
+"spot_edit" = "编辑地点";
+"spot_info" = "地点信息";
+"select_date" = "选择日期";
+"delete" = "删除";
+
 "create" = "创建";
 
 /* Points Purchase Modal */

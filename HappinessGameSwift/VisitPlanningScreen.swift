@@ -973,13 +973,13 @@ struct TransportView: View {
     
     func transportIcon(_ method: String) -> String {
         switch method {
-        case "電車":
+        case NSLocalizedString("train", comment: "Train"):
             return "tram"
-        case "バス":
+        case NSLocalizedString("bus", comment: "Bus"):
             return "bus"
-        case "徒歩":
+        case NSLocalizedString("walking", comment: "Walking"):
             return "figure.walk"
-        case "タクシー":
+        case NSLocalizedString("taxi", comment: "Taxi"):
             return "car"
         default:
             return "arrow.right"
@@ -995,7 +995,7 @@ struct CustomDaysPickerView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text("旅行日数を入力")
+                Text(NSLocalizedString("enter_trip_days", comment: "Enter trip days"))
                     .font(.system(size: 18, weight: .semibold))
                     .padding(.top, 20)
                 
@@ -1022,7 +1022,7 @@ struct CustomDaysPickerView: View {
                         dismiss()
                     }
                 }) {
-                    Text("決定")
+                    Text(NSLocalizedString("decide", comment: "Decide"))
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -1036,11 +1036,11 @@ struct CustomDaysPickerView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
             }
-            .navigationTitle("カスタム日数")
+            .navigationTitle(NSLocalizedString("custom_days", comment: "Custom days"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
                     }
                 }
@@ -1058,7 +1058,7 @@ struct DayPickerView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                Text("スポットを追加する日を選択")
+                Text(NSLocalizedString("select_spot_add_day", comment: "Select day to add spot"))
                     .font(.system(size: 18, weight: .semibold))
                     .padding(.top, 20)
                 
@@ -1090,11 +1090,11 @@ struct DayPickerView: View {
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .navigationTitle("日付を選択")
+            .navigationTitle(NSLocalizedString("select_date", comment: "Select Date"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
                     }
                 }
@@ -1129,7 +1129,7 @@ struct AddSpotView: View {
     @State private var thumbnailImage: UIImage?
     @State private var thumbnailData: Data?
     
-    let transportMethods = ["電車", "バス", "徒歩", "タクシー"]
+    let transportMethods = [NSLocalizedString("train", comment: "Train"), NSLocalizedString("bus", comment: "Bus"), NSLocalizedString("walking", comment: "Walking"), NSLocalizedString("taxi", comment: "Taxi")]
     
     init(spots: Binding<[VisitSpot]>, startTime: Date, previousSpots: [VisitSpot], selectedDay: Int) {
         self._spots = spots
@@ -1182,7 +1182,7 @@ struct AddSpotView: View {
                     HStack {
                         Image(systemName: "clock.fill")
                             .foregroundColor(.blue)
-                        Text("前のスポットの終了時刻: \(endTime)")
+                        Text(String(format: NSLocalizedString("previous_spot_end_time", comment: "Previous spot end time: %@"), endTime))
                             .font(.system(size: 14, weight: .medium))
                     }
                     .padding(.vertical, 8)
@@ -1195,8 +1195,8 @@ struct AddSpotView: View {
     var transportSection: some View {
         if !previousSpots.isEmpty {
             let lastSpot = previousSpots.filter { $0.dayNumber == selectedDay }.last ?? previousSpots.last
-            Section("移動手段 - \(lastSpot?.name ?? "前のスポット")から") {
-                Picker("移動手段", selection: $transportMethod) {
+            Section(String(format: NSLocalizedString("transportation_from", comment: "Transportation - From %@"), lastSpot?.name ?? NSLocalizedString("from_previous_spot", comment: "from previous spot"))) {
+                Picker(NSLocalizedString("transportation_method", comment: "Transportation method"), selection: $transportMethod) {
                     ForEach(transportMethods, id: \.self) { method in
                         Text(method).tag(method)
                     }
@@ -1235,7 +1235,7 @@ struct AddSpotView: View {
                     Text(NSLocalizedString("which_route_optional", comment: "Which route will you use? (Optional)"))
                         .font(.system(size: 13))
                         .foregroundColor(.gray)
-                    TextField("例：JR山手線 → 東京メトロ銀座線", text: $transportRoute)
+                    TextField(NSLocalizedString("route_example", comment: "e.g. JR Yamanote Line → Tokyo Metro Ginza Line"), text: $transportRoute)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
             }
@@ -1255,13 +1255,13 @@ struct AddSpotView: View {
     var body: some View {
         NavigationView {
             formContent
-                .navigationTitle("スポット追加")
+                .navigationTitle(NSLocalizedString("add_spot", comment: "Add Spot"))
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarItems(
-                    leading: Button("キャンセル") {
+                    leading: Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
                     },
-                    trailing: Button("追加") {
+                    trailing: Button(NSLocalizedString("add", comment: "Add")) {
                         if !previousSpots.isEmpty && previousSpots.count == spots.count {
                             spots[spots.count - 1].transportToNext = TransportInfo(
                                 method: transportMethod,
@@ -1305,13 +1305,13 @@ struct AddSpotView: View {
             // 交通手段セクションを上に配置
             transportSection
                 
-                Section("スポット情報 - Day \(selectedDay)") {
+                Section(String(format: NSLocalizedString("spot_info_day", comment: "Spot Info - Day %d"), selectedDay)) {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text(NSLocalizedString("spot_name", comment: "Spot name"))
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.gray)
-                            Text("必須")
+                            Text(NSLocalizedString("required", comment: "Required"))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.red)
                                 .padding(.horizontal, 6)
@@ -1319,7 +1319,7 @@ struct AddSpotView: View {
                                 .background(Color.red.opacity(0.1))
                                 .cornerRadius(4)
                         }
-                        TextField("例: 清水寺", text: $spotName)
+                        TextField(NSLocalizedString("spot_name_example", comment: "e.g. Kiyomizu Temple"), text: $spotName)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
                     
@@ -1347,12 +1347,12 @@ struct AddSpotView: View {
                         durationText
                     }
                     
-                    TextField("住所", text: $spotAddress)
+                    TextField(NSLocalizedString("address", comment: "Address"), text: $spotAddress)
                     
-                    TextField("ここで何をするのか", text: $activity, axis: .vertical)
+                    TextField(NSLocalizedString("what_to_do_here", comment: "What to do here"), text: $activity, axis: .vertical)
                         .lineLimit(2...4)
                     
-                    TextField("メモ", text: $spotNotes, axis: .vertical)
+                    TextField(NSLocalizedString("memo", comment: "Memo"), text: $spotNotes, axis: .vertical)
                         .lineLimit(2...4)
                     
                     // スポット費用
@@ -1760,8 +1760,8 @@ struct EditSpotView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("スポット情報") {
-                    TextField("スポット名", text: $spotName)
+                Section(NSLocalizedString("spot_info", comment: "Spot Info")) {
+                    TextField(NSLocalizedString("spot_name", comment: "Spot name"), text: $spotName)
                     
                     // 滞在時間帯選択
                     VStack(alignment: .leading, spacing: 8) {
@@ -1792,12 +1792,12 @@ struct EditSpotView: View {
                         }
                     }
                     
-                    TextField("住所", text: $spotAddress)
+                    TextField(NSLocalizedString("address", comment: "Address"), text: $spotAddress)
                     
-                    TextField("ここで何をするのか", text: $activity, axis: .vertical)
+                    TextField(NSLocalizedString("what_to_do_here", comment: "What to do here"), text: $activity, axis: .vertical)
                         .lineLimit(2...4)
                     
-                    TextField("メモ", text: $spotNotes, axis: .vertical)
+                    TextField(NSLocalizedString("memo", comment: "Memo"), text: $spotNotes, axis: .vertical)
                         .lineLimit(2...4)
                     
                     // スポット費用
@@ -1911,7 +1911,7 @@ struct EditSpotView: View {
                 }
                 
                 Section {
-                    Button("削除", role: .destructive) {
+                    Button(NSLocalizedString("delete", comment: "Delete"), role: .destructive) {
                         if let index = spots.firstIndex(where: { $0.id == spot.id }) {
                             spots.remove(at: index)
                             if index > 0 && index < spots.count {
@@ -1922,11 +1922,11 @@ struct EditSpotView: View {
                     }
                 }
             }
-            .navigationTitle("スポット編集")
+            .navigationTitle(NSLocalizedString("spot_edit", comment: "Edit Spot"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
                     }
                 }

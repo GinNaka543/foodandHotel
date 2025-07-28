@@ -1415,6 +1415,10 @@ struct AnimeArtworkScreen: View {
                                         
                                         saveArtworksToUserDefaults()
                                     }
+                                },
+                                onAlbumDeleted: {
+                                    // アルバム全体を削除
+                                    deleteArtworkAlbum(album)
                                 }
                             )
                         }
@@ -3060,6 +3064,10 @@ struct AnimeVideoScreen: View {
                         // 動画が削除されたことを通知
                         NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
                     }
+                },
+                onAlbumDeleted: {
+                    // アルバム全体を削除
+                    deleteVideoAlbum(album)
                 }
             )
         }
@@ -3410,6 +3418,10 @@ struct AnimeVideoScreen: View {
                         saveVideosToUserDefaults()
                         saveVideoAlbumsToUserDefaults()
                     }
+                },
+                onAlbumDeleted: {
+                    // アルバム全体を削除
+                    deleteVideoAlbum(album)
                 }
             )
         }
@@ -3647,6 +3659,50 @@ struct AnimeVideoScreen: View {
             return "\(minutes)分前"
         } else {
             return "たった今"
+        }
+    }
+    
+    @ViewBuilder
+    private var descriptionSectionView: some View {
+        if let customFields = currentAnime.customFields,
+           let descriptionField = customFields.first(where: { $0.name == NSLocalizedString("description", comment: "Description") }),
+           !descriptionField.value.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                if descriptionField.value.count > 13 && !isShowingFullDescription {
+                    HStack(spacing: 0) {
+                        Text(String(descriptionField.value.prefix(13)) + "... ")
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                        Text(NSLocalizedString("show_more", comment: ""))
+                            .font(.system(size: 14))
+                            .foregroundColor(.black)
+                            .underline()
+                            .onTapGesture {
+                                isShowingFullDescription = true
+                            }
+                    }
+                } else {
+                    Text(descriptionField.value)
+                        .font(.system(size: 14))
+                        .foregroundColor(.black)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    if descriptionField.value.count > 13 {
+                        Button(action: {
+                            isShowingFullDescription = false
+                        }) {
+                            Text(NSLocalizedString("show_less", comment: ""))
+                                .font(.system(size: 14))
+                                .foregroundColor(.black)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 16)
+            .padding(.trailing, 16)
+            .padding(.bottom, 12)
         }
     }
 }

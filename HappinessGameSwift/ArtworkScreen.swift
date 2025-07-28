@@ -437,27 +437,6 @@ struct ArtworkScreen: View {
                                                                     .foregroundColor(.white.opacity(0.8))
                                                             }
                                                             Spacer()
-                                                            
-                                                            // 3点ボタン
-                                                            Button(action: {
-                                                                deletingArtworkAlbum = album
-                                                                showDeleteArtworkAlbumAlert = true
-                                                            }) {
-                                                                Image(systemName: "ellipsis")
-                                                                    .font(.system(size: 18))
-                                                                    .foregroundColor(.white)
-                                                                    .rotationEffect(.degrees(90))
-                                                                    .frame(width: 44, height: 44)
-                                                                    .contentShape(Rectangle())
-                                                            }
-                                                            .buttonStyle(PlainButtonStyle())
-                                                            .contentShape(Rectangle())
-                                                            .highPriorityGesture(
-                                                                TapGesture().onEnded {
-                                                                    deletingArtworkAlbum = album
-                                                                    showDeleteArtworkAlbumAlert = true
-                                                                }
-                                                            )
                                                         }
                                                         .padding(.horizontal, 16)
                                                         .padding(.bottom, 12)
@@ -492,6 +471,10 @@ struct ArtworkScreen: View {
                                         updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
                                         saveArtworksToUserDefaults()
                                     }
+                                },
+                                onAlbumDeleted: {
+                                    // アルバム全体を削除
+                                    deleteArtworkAlbum(album)
                                 }
                             )
                         }

@@ -450,7 +450,14 @@ struct ArtworkScreen: View {
                                                                     .frame(width: 44, height: 44)
                                                                     .contentShape(Rectangle())
                                                             }
+                                                            .buttonStyle(PlainButtonStyle())
                                                             .contentShape(Rectangle())
+                                                            .highPriorityGesture(
+                                                                TapGesture().onEnded {
+                                                                    deletingArtworkAlbum = album
+                                                                    showDeleteArtworkAlbumAlert = true
+                                                                }
+                                                            )
                                                         }
                                                         .padding(.horizontal, 16)
                                                         .padding(.bottom, 12)
@@ -1101,15 +1108,15 @@ struct ArtworkScreen: View {
         }
         .alert(isPresented: $showDeleteArtworkAlbumAlert) {
             Alert(
-                title: Text("アルバムを削除しますか？"),
-                message: Text("このアルバムは完全に削除されます。"),
-                primaryButton: .destructive(Text("削除")) {
+                title: Text(NSLocalizedString("delete_album_confirm_title", comment: "Delete album?")),
+                message: Text(NSLocalizedString("delete_album_confirm_message", comment: "Delete permanently")),
+                primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                     if let album = deletingArtworkAlbum {
                         deleteArtworkAlbum(album)
                     }
                     deletingArtworkAlbum = nil
                 },
-                secondaryButton: .cancel(Text("キャンセル")) {
+                secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel"))) {
                     deletingArtworkAlbum = nil
                 }
             )

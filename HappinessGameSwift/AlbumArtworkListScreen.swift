@@ -6,7 +6,9 @@ struct AlbumArtworkListScreen: View {
     let tag: String
     let onArtworkDeleted: ((Artwork) -> Void)?
     let onArtworkEdited: ((Artwork) -> Void)?
+    let onAlbumDeleted: (() -> Void)?
     @State private var selectedArtwork: Artwork? = nil
+    @State private var showDeleteAlbumAlert = false
     @Environment(\.presentationMode) var presentationMode
     
     // Increment view count for an artwork
@@ -103,6 +105,14 @@ struct AlbumArtworkListScreen: View {
                 }
                 .padding(.leading, 16)
                 Spacer()
+                Button(action: {
+                    showDeleteAlbumAlert = true
+                }) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.blue)
+                }
+                .padding(.trailing, 16)
             }
             .padding(.top, 24)
             ScrollView {
@@ -211,6 +221,17 @@ struct AlbumArtworkListScreen: View {
                 onArtworkChange: { newArtwork in
                     selectedArtwork = newArtwork
                 }
+            )
+        }
+        .alert(isPresented: $showDeleteAlbumAlert) {
+            Alert(
+                title: Text(NSLocalizedString("delete_album_confirm_title", comment: "Delete album?")),
+                message: Text(NSLocalizedString("delete_album_confirm_message", comment: "Delete permanently")),
+                primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
+                    onAlbumDeleted?()
+                    presentationMode.wrappedValue.dismiss()
+                },
+                secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
             )
         }
     }

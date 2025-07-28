@@ -328,16 +328,6 @@ struct VideoGalleryScreen: View {
                                                 .foregroundColor(.white.opacity(0.8))
                                         }
                                         Spacer()
-                                        
-                                        // 3点ボタン
-                                        Button(action: {
-                                            activeAlert = .deleteAlbum(album)
-                                        }) {
-                                            Image(systemName: "ellipsis")
-                                                .font(.system(size: 18))
-                                                .foregroundColor(.white)
-                                                .rotationEffect(.degrees(90))
-                                        }
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.bottom, 12)
@@ -366,6 +356,10 @@ struct VideoGalleryScreen: View {
                         saveVideosToUserDefaults()
                         saveAlbumsToUserDefaults()
                     }
+                },
+                onAlbumDeleted: {
+                    // アルバム全体を削除
+                    deleteAlbum(album)
                 }
             )
         }
@@ -1954,20 +1948,24 @@ struct AlbumVideoListScreen: View {
     let videos: [MemoryVideo]
     let tag: String
     let onVideoDeleted: ((MemoryVideo) -> Void)?
+    let onAlbumDeleted: (() -> Void)?
     @Environment(\.presentationMode) var presentationMode
     @State private var selectedVideo: MemoryVideo? = nil
     @State private var activeAlert: ActiveAlert? = nil
     @State private var activeSheet: ActiveSheet? = nil
     @State private var editText = ""
     @State private var localVideos: [MemoryVideo] = []
+    @State private var showDeleteAlbumAlert = false
     
     enum ActiveAlert: Identifiable {
         case deleteVideo(UUID)
+        case deleteAlbum
         case youtubeError(String)
         
         var id: String {
             switch self {
             case .deleteVideo: return "deleteVideo"
+            case .deleteAlbum: return "deleteAlbum"
             case .youtubeError: return "youtubeError"
             }
         }
@@ -2101,6 +2099,13 @@ struct AlbumVideoListScreen: View {
                         .foregroundColor(.black)
                 }
                 Spacer()
+                Button(action: {
+                    activeAlert = .deleteAlbum
+                }) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.blue)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 24)
@@ -2261,6 +2266,16 @@ struct AlbumVideoListScreen: View {
                                 localVideos.remove(at: idx)
                             }
                         }
+                    },
+                    secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
+                )
+            case .deleteAlbum:
+                return Alert(
+                    title: Text(NSLocalizedString("delete_album_confirm_title", comment: "Delete album?")),
+                    message: Text(NSLocalizedString("delete_album_confirm_message", comment: "Delete permanently")),
+                    primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
+                        onAlbumDeleted?()
+                        presentationMode.wrappedValue.dismiss()
                     },
                     secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
                 )

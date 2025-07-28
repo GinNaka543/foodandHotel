@@ -437,20 +437,6 @@ struct ArtworkScreen: View {
                                                                     .foregroundColor(.white.opacity(0.8))
                                                             }
                                                             Spacer()
-                                                            
-                                                            // 3点ボタン
-                                                            Button(action: {
-                                                                deletingArtworkAlbum = album
-                                                                showDeleteArtworkAlbumAlert = true
-                                                            }) {
-                                                                Image(systemName: "ellipsis")
-                                                                    .font(.system(size: 18))
-                                                                    .foregroundColor(.white)
-                                                                    .rotationEffect(.degrees(90))
-                                                                    .frame(width: 44, height: 44)
-                                                                    .contentShape(Rectangle())
-                                                            }
-                                                            .contentShape(Rectangle())
                                                         }
                                                         .padding(.horizontal, 16)
                                                         .padding(.bottom, 12)
@@ -485,6 +471,10 @@ struct ArtworkScreen: View {
                                         updateAlbumsAfterArtworkEdit(editedArtwork: editedArtwork)
                                         saveArtworksToUserDefaults()
                                     }
+                                },
+                                onAlbumDeleted: {
+                                    // アルバム全体を削除
+                                    deleteArtworkAlbum(album)
                                 }
                             )
                         }
@@ -1101,15 +1091,15 @@ struct ArtworkScreen: View {
         }
         .alert(isPresented: $showDeleteArtworkAlbumAlert) {
             Alert(
-                title: Text("アルバムを削除しますか？"),
-                message: Text("このアルバムは完全に削除されます。"),
-                primaryButton: .destructive(Text("削除")) {
+                title: Text(NSLocalizedString("delete_album_confirm_title", comment: "Delete album?")),
+                message: Text(NSLocalizedString("delete_album_confirm_message", comment: "Delete permanently")),
+                primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
                     if let album = deletingArtworkAlbum {
                         deleteArtworkAlbum(album)
                     }
                     deletingArtworkAlbum = nil
                 },
-                secondaryButton: .cancel(Text("キャンセル")) {
+                secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel"))) {
                     deletingArtworkAlbum = nil
                 }
             )

@@ -811,3 +811,16 @@
 
 "member_list" = "멤버 리스트";
 "cancel" = "취소";
+
+/* Thumbnail Picker */
+"current_thumbnail" = "현재 썸네일";
+"upload_image" = "이미지 업로드";
+"select_from_photo_library" = "사진 라이브러리에서 선택";
+"thumbnail_adjustment" = "썸네일 조정";
+"thumbnail_size" = "크기";
+"change_thumbnail_title" = "썸네일 변경";
+"horizontal_position" = "수평 위치";
+"vertical_position" = "수직 위치";
+"reset" = "리셋";
+"reset_all" = "모두 리셋";
+"select_from_video" = "비디오에서 선택";

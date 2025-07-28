@@ -3395,7 +3395,7 @@ struct AnimeVideoScreen: View {
                         }
                     }
                     .padding(.top, 8)
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 80)
                 }
             }
         }
@@ -3462,6 +3462,7 @@ struct AnimeVideoScreen: View {
                             }
                             videoRowView(video: video)
                         }
+                        Spacer().frame(height: 80)
                     }
                 }
             }

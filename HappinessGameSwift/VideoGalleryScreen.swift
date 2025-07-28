@@ -351,7 +351,7 @@ struct VideoGalleryScreen: View {
                     }
                 }
                 .padding(.top, 8)
-                .padding(.bottom, 8)
+                .padding(.bottom, 80)
             }
             }
         }
@@ -418,6 +418,7 @@ struct VideoGalleryScreen: View {
                             }
                             videoRowView(video: video)
                         }
+                        Spacer().frame(height: 80)
                     }
                 }
             }
@@ -1865,6 +1866,7 @@ struct VideoAlbumGridView: View {
                 }
             }
         }
+        .padding(.bottom, 80)
         .fullScreenCover(item: $expandedVideo) { (video: MemoryVideo) in
             VideoPlayerScreen(
                 video: video,

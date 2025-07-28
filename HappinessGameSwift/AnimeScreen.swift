@@ -403,6 +403,7 @@ struct AnimeScreen: View {
     @State private var bannerTimer: Timer? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
+    @State private var refreshID = UUID() // 強制リフレッシュ用のID
     
     // 利用可能なタブを動的に生成
     var availableTabs: [CustomTab] {
@@ -543,6 +544,7 @@ struct AnimeScreen: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(height: 180)
                             .clipped()
+                            .id("\(video.id)_\(video.thumbnailData?.hashValue ?? 0)") // Force view refresh when thumbnail changes
                     } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
                         let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
@@ -735,6 +737,7 @@ struct AnimeScreen: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         bannerView
+                            .id(refreshID) // 強制リフレッシュ用
                         tabView
                             .padding(.top, 0)
                         animeListContents
@@ -766,6 +769,15 @@ struct AnimeScreen: View {
             
             // 動画のローテーションを開始
             startBannerRotation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDataUpdated"))) { _ in
+            // 動画データが更新された時にバナーを更新
+            print("🔄 [AnimeScreen] Received VideoDataUpdated notification - refreshing banner")
+            bannerVideo = nil  // 現在のバナーをクリア
+            displayedVideoIds.removeAll()  // 表示履歴をリセット
+            allYouTubeVideos = []  // 既存の動画リストをクリア
+            loadYouTubeVideos()
+            refreshID = UUID()  // ビューを強制的にリフレッシュ
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             // アプリがフォアグラウンドに戻った時に動画リストを更新

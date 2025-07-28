@@ -660,6 +660,7 @@
 /* Thumbnail Picker */
 "current_thumbnail" = "現在のサムネイル";
 "upload_image" = "画像をアップロード";
+"recommended_image_size" = "推奨画像サイズ: 1920×1080 (16:9)";
 "select_from_photo_library" = "フォトライブラリから選択";
 "thumbnail_adjustment" = "サムネイル調整";
 "thumbnail_size" = "サイズ";

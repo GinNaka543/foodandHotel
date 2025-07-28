@@ -841,6 +841,7 @@
 /* Thumbnail Picker */
 "current_thumbnail" = "Current Thumbnail";
 "upload_image" = "Upload Image";
+"recommended_image_size" = "Recommended image size: 1920×1080 (16:9)";
 "select_from_photo_library" = "Select from Photo Library";
 "thumbnail_adjustment" = "Thumbnail Adjustment";
 "thumbnail_size" = "Size";

@@ -113,7 +113,7 @@ struct VideoGalleryScreen: View {
     @State private var showIconAdjustment = false
     @State private var backgroundObserver: NSObjectProtocol?
     
-    // 最新のキャラクター情報を取得
+    // 最新のキャラクター情報を取得（計算プロパティとして毎回最新情報を取得）
     private var currentCharacter: Character {
         characterManager.characters.first(where: { $0.id == character.id }) ?? character
     }
@@ -188,17 +188,24 @@ struct VideoGalleryScreen: View {
     // バナービュー
     var bannerView: some View {
         Group {
-            if let imageIdentifier = currentCharacter.imageIdentifier {
-                OptimizedFileImage(
-                    path: imageIdentifier,
-                    targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
-                )
-                .aspectRatio(contentMode: .fill)
+            let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
+            if let imageIdentifier = latestCharacter.imageIdentifier {
+                ZStack {
+                    // 背景色（デバッグ用）
+                    Color.gray.opacity(0.1)
+                    
+                    OptimizedFileImage(
+                        path: imageIdentifier,
+                        targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
+                    )
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: (UIScreen.main.bounds.width - 32) * CGFloat(latestCharacter.iconScale), 
+                           height: 60 * CGFloat(latestCharacter.iconScale))
+                    .offset(x: CGFloat(latestCharacter.iconOffsetX), y: CGFloat(latestCharacter.iconOffsetY))
+                }
                 .frame(width: UIScreen.main.bounds.width - 32, height: 60)
-                .scaleEffect(CGFloat(currentCharacter.iconScale))
-                .offset(x: CGFloat(currentCharacter.iconOffsetX), y: CGFloat(currentCharacter.iconOffsetY))
-                .frame(maxWidth: .infinity, maxHeight: 60)
                 .clipped()
+                .id("\(latestCharacter.id)_\(latestCharacter.iconScale)_\(latestCharacter.iconOffsetX)_\(latestCharacter.iconOffsetY)_\(refreshID)") // 位置調整が変更されたときに強制更新
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
@@ -207,6 +214,10 @@ struct VideoGalleryScreen: View {
         }
         .cornerRadius(12)
         .padding(.horizontal, 16)
+        .onTapGesture {
+            print("🔍 [VideoGallery] Banner tapped - Current scale: \(currentCharacter.iconScale), offsetX: \(currentCharacter.iconOffsetX), offsetY: \(currentCharacter.iconOffsetY)")
+            print("🔍 [VideoGallery] Latest character scale: \(characterManager.characters.first(where: { $0.id == character.id })?.iconScale ?? -1)")
+        }
     }
     
     // タブビュー
@@ -820,6 +831,7 @@ struct VideoGalleryScreen: View {
                         .onTapGesture {
                             showIconAdjustment = true
                         }
+                        .id("\(currentCharacter.iconScale)_\(currentCharacter.iconOffsetX)_\(currentCharacter.iconOffsetY)") // 追加：変更を反映
                     
                     // Profile section
                     profileSection
@@ -998,7 +1010,10 @@ struct VideoGalleryScreen: View {
                 )
             }
         }
-        .sheet(isPresented: $showIconAdjustment) {
+        .sheet(isPresented: $showIconAdjustment, onDismiss: {
+            // アイコン位置調整が完了したらビューを強制的にリフレッシュ
+            refreshID = UUID()
+        }) {
             CharacterIconAdjustmentView(
                 character: Binding(
                     get: { currentCharacter },

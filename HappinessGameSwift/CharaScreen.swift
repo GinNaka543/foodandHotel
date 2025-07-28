@@ -288,6 +288,7 @@ struct CharaScreen: View {
     @State private var bannerVideo: MemoryVideo? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
+    @State private var refreshID = UUID() // 強制リフレッシュ用のID
     
     var filteredCharacters: [Character] {
         // Filter out characters without names first
@@ -341,6 +342,7 @@ struct CharaScreen: View {
                     VStack(spacing: 0) {
                         // 広告バナー
                         bannerView
+                            .id(refreshID) // 強制リフレッシュ用
                             .padding(.bottom, 16)
                         
                         // キャラリスト
@@ -443,6 +445,7 @@ struct CharaScreen: View {
             displayedVideoIds.removeAll()  // 表示履歴をリセット
             allYouTubeVideos = []  // 既存の動画リストをクリア
             loadYouTubeVideos()
+            refreshID = UUID()  // ビューを強制的にリフレッシュ
         }
         .onDisappear {
             bannerTimer?.invalidate()
@@ -1063,87 +1066,151 @@ struct CharacterDetailView: View {
     @State private var bannerTimer: Timer? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
+    @State private var refreshID = UUID() // 強制リフレッシュ用のID
+    
+    // 最新のキャラクター情報を取得
+    private var currentCharacter: Character {
+        characterManager.characters.first(where: { $0.id == character.id }) ?? character
+    }
 
+    @ViewBuilder
+    private var backgroundView: some View {
+        
+        if let backgroundPath = currentCharacter.backgroundImagePath,
+           let bgImage = loadImageFromPath(backgroundPath) {
+            GeometryReader { geo in
+                Image(uiImage: bgImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
+            }
+            .ignoresSafeArea()
+            .overlay(Color.black.opacity(0.35).ignoresSafeArea())
+        } else {
+            LinearGradient(
+                gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+        }
+    }
+    
+    @ViewBuilder
+    private var profileIconView: some View {
+        PhotosPicker(selection: $iconPickerItem, matching: .images) {
+            ZStack {
+                if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 120, height: 120)
+                        .clipShape(Circle())
+                        .shadow(radius: 8)
+                } else {
+                    ZStack {
+                        Circle()
+                            .fill(Color(.systemGray5))
+                            .frame(width: 120, height: 120)
+                            .shadow(radius: 8)
+                            .overlay(
+                                Circle().stroke(Color.white, lineWidth: 2)
+                            )
+                        Image(systemName: "person")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+            .contentShape(Rectangle())
+        }
+    }
+    
+    @ViewBuilder
+    private var actionButtons: some View {
+        HStack {
+            Spacer()
+            Button(action: { showArtwork = true }) {
+                VStack(spacing: 4) {
+                    Image(systemName: "photo.on.rectangle")
+                        .foregroundColor(.white)
+                        .font(.system(size: 24))
+                    Text(NSLocalizedString("artwork", comment: "Artwork")).font(.caption2).foregroundColor(.white)
+                }
+                .frame(width: 90, height: 70)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            Spacer()
+            Button(action: { showVideo = true }) {
+                VStack(spacing: 4) {
+                    Image(systemName: "video")
+                        .foregroundColor(.white)
+                        .font(.system(size: 24))
+                    Text(NSLocalizedString("video", comment: "Video")).font(.caption2).foregroundColor(.white)
+                }
+                .frame(width: 90, height: 70)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            Spacer()
+            Button(action: { showAbout = true }) {
+                VStack(spacing: 4) {
+                    Image(systemName: "info.circle")
+                        .foregroundColor(.white)
+                        .font(.system(size: 24))
+                    Text(NSLocalizedString("about", comment: "About")).font(.caption2).foregroundColor(.white)
+                }
+                .frame(width: 90, height: 70)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(PlainButtonStyle())
+            Spacer()
+        }
+        .padding(.top, 30)
+        .padding(.bottom, 20)
+    }
+    
+    @ViewBuilder
+    private var backButton: some View {
+        HStack {
+            Button(action: {
+                if let onDismiss = onDismiss {
+                    onDismiss()
+                } else {
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.white)
+                    Text("Back")
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
+                }
+            }
+            .padding(.top, 24)
+            .padding(.leading, 16)
+            
+            Spacer()
+        }
+    }
+    
     var body: some View {
         ZStack {
             // 背景を最初に配置
-            let currentCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
-            
-            // 背景画像 or グラデーション
-            if let backgroundPath = currentCharacter.backgroundImagePath,
-               let bgImage = loadImageFromPath(backgroundPath) {
-                GeometryReader { geo in
-                    Image(uiImage: bgImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .clipped()
-                }
-                .ignoresSafeArea()
-                .overlay(Color.black.opacity(0.35).ignoresSafeArea())
-            } else {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-            }
+            backgroundView
             
             // コンテンツ
             VStack(alignment: .leading) {
                 // 戻るボタン
-                HStack {
-                    Button(action: {
-                        if let onDismiss = onDismiss {
-                            onDismiss()
-                        } else {
-                            presentationMode.wrappedValue.dismiss()
-                        }
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(.white)
-                            Text("Back")
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
-                        }
-                    }
-                    .padding(.top, 24)
-                    .padding(.leading, 16)
-                    
-                    Spacer()
-                }
+                backButton
                 
                 VStack {
                     Spacer().frame(height: 180)
                     // アイコン
-                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
-                        ZStack {
-                            if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 120, height: 120)
-                                    .clipShape(Circle())
-                                    .shadow(radius: 8)
-                            } else {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color(.systemGray5))
-                                        .frame(width: 120, height: 120)
-                                        .shadow(radius: 8)
-                                        .overlay(
-                                            Circle().stroke(Color.white, lineWidth: 2)
-                                        )
-                                    Image(systemName: "person")
-                                        .font(.system(size: 50))
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                        }
-                        .contentShape(Rectangle())
-                    }
+                    profileIconView
                     // 名前
                     Text(currentCharacter.name)
                         .font(.system(size: 24, weight: .bold))
@@ -1160,46 +1227,7 @@ struct CharacterDetailView: View {
                         .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         .padding(.top, 4)
                     // ボタン群
-                    HStack {
-                        Spacer()
-                        Button(action: { showArtwork = true }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: "photo.on.rectangle")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 24))
-                                Text(NSLocalizedString("artwork", comment: "Artwork")).font(.caption2).foregroundColor(.white)
-                            }
-                            .frame(width: 90, height: 70)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        Spacer()
-                        Button(action: { showVideo = true }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: "video")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 24))
-                                Text(NSLocalizedString("video", comment: "Video")).font(.caption2).foregroundColor(.white)
-                            }
-                            .frame(width: 90, height: 70)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        Spacer()
-                        Button(action: { showAbout = true }) {
-                            VStack(spacing: 4) {
-                                Image(systemName: "info.circle")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 24))
-                                Text(NSLocalizedString("about", comment: "About")).font(.caption2).foregroundColor(.white)
-                            }
-                            .frame(width: 90, height: 70)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        Spacer()
-                    }
-                    .padding(.top, 40)
+                    actionButtons
                     Spacer()
                 }
                 .zIndex(1)
@@ -1355,7 +1383,11 @@ struct CharacterDetailView: View {
                 )
             }
             // アイコン位置調整モーダル
-            .sheet(isPresented: $showIconAdjustment) {
+            .sheet(isPresented: $showIconAdjustment, onDismiss: {
+                // アイコン調整後にUIを更新
+                characterManager.refreshUI()
+                refreshID = UUID() // Force refresh the banner view
+            }) {
                 CharacterIconAdjustmentView(character: $character, characterManager: characterManager)
             }
         }
@@ -1581,6 +1613,7 @@ struct AboutView: View {
                             .clipped()
                             .overlay(Color.black.opacity(0.4))
                             .overlay(bannerOverlay)
+                            .id("\(character.id)_\(character.iconScale)_\(character.iconOffsetX)_\(character.iconOffsetY)") // Force refresh when scale or offset changes
                     } else {
                         Rectangle()
                             .fill(Color.gray.opacity(0.3))
@@ -1983,7 +2016,10 @@ struct AboutView: View {
                 }
             }
             // アイコン位置調整モーダル
-            .sheet(isPresented: $showIconAdjustment) {
+            .sheet(isPresented: $showIconAdjustment, onDismiss: {
+                // アイコン調整後にUIを更新
+                characterManager.refreshUI()
+            }) {
                 if let character = character {
                     CharacterIconAdjustmentView(
                         character: Binding(
@@ -3264,6 +3300,7 @@ struct CharacterIconAdjustmentView: View {
                     Button(NSLocalizedString("done", comment: "Done")) {
                         // 変更を保存
                         characterManager.updateCharacter(character)
+                        characterManager.refreshUI()
                         dismiss()
                     }
                 }

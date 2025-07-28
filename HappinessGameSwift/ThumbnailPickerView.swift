@@ -82,6 +82,12 @@ struct ThumbnailPickerView: View {
                                 Text(NSLocalizedString("upload_image", comment: "Upload Image"))
                                     .font(.headline)
                                 
+                                // 推奨サイズの説明を追加
+                                Text(NSLocalizedString("recommended_image_size", comment: "Recommended image size: 1920×1080 (16:9)"))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.bottom, 4)
+                                
                                 PhotosPicker(selection: $selectedImageItem,
                                            matching: .images,
                                            photoLibrary: .shared()) {

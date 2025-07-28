@@ -847,15 +847,16 @@ struct VideoGalleryScreen: View {
                 print("📱 [VideoGallery] Key '\(expectedKey)' does NOT exist")
             }
             
-            // Run persistence test if no albums exist
-            if albums.isEmpty && videos.isEmpty {
-                print("📱 [VideoGallery] No albums found, checking UserDefaults directly...")
+            // Debug: Try to load directly if albums are empty
+            if albums.isEmpty {
+                print("📱 [VideoGallery] Albums are empty after load, checking for data issues...")
                 
                 // Try to load and decode directly
                 if let data = UserDefaults.standard.data(forKey: expectedKey) {
                     do {
                         let decoded = try JSONDecoder().decode([Album].self, from: data)
                         print("📱 [VideoGallery] Direct decode successful: \(decoded.count) albums")
+                        print("⚠️ [VideoGallery] loadAlbumsFromUserDefaults may have failed, using direct decode")
                         albums = decoded
                     } catch {
                         print("📱 [VideoGallery] Direct decode failed: \(error)")
@@ -1516,6 +1517,12 @@ struct VideoGalleryScreen: View {
     
     private func saveAlbumsToUserDefaults() {
         print("📱 [VideoGallery] Saving \(albums.count) albums for character: \(character.name) (ID: \(character.id.uuidString))")
+        
+        // Log album details before saving
+        for album in albums {
+            print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
+        }
+        
         VideoStorage.shared.saveAlbums(for: character.id.uuidString, albums: albums)
     }
     
@@ -1525,15 +1532,15 @@ struct VideoGalleryScreen: View {
         // Debug print all album keys before loading
         VideoStorage.shared.debugPrintAllAlbumKeys()
         
-        // Test album persistence on first load
-        #if DEBUG
-        if albums.isEmpty {
-            VideoStorage.shared.testAlbumPersistence(characterId: character.id.uuidString)
-        }
-        #endif
+        // Removed test album persistence to prevent interfering with actual data
         
         albums = VideoStorage.shared.loadAlbums(for: character.id.uuidString)
         print("📱 [VideoGallery] Loaded \(albums.count) albums")
+        
+        // Debug print loaded albums
+        for album in albums {
+            print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
+        }
     }
     
     private func deleteVideo(id: UUID) {

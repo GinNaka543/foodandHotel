@@ -543,6 +543,9 @@ class VideoStorage {
     func testAlbumPersistence(for characterId: String) {
         print("🧪 [VideoAlbum] Starting persistence test for character: \(characterId)")
         
+        // Use a test-specific ID to avoid conflicts
+        let testCharacterId = "TEST_\(characterId)"
+        
         // Create a test album
         let testVideo = MemoryVideo(
             id: UUID(),
@@ -559,13 +562,13 @@ class VideoStorage {
         
         let testAlbum = Album(tag: "test", videos: [testVideo])
         
-        // Save the test album
-        print("🧪 [VideoAlbum] Saving test album...")
-        saveAlbums(for: characterId, albums: [testAlbum])
+        // Save the test album with test ID
+        print("🧪 [VideoAlbum] Saving test album with test ID...")
+        saveAlbums(for: testCharacterId, albums: [testAlbum])
         
         // Immediately try to load it
         print("🧪 [VideoAlbum] Loading test album...")
-        let loadedAlbums = loadAlbums(for: characterId)
+        let loadedAlbums = loadAlbums(for: testCharacterId)
         
         if loadedAlbums.count == 1 && loadedAlbums[0].tag == "test" {
             print("✅ [VideoAlbum] Persistence test PASSED")
@@ -577,8 +580,12 @@ class VideoStorage {
         
         // Clean up test data
         print("🧪 [VideoAlbum] Cleaning up test data...")
-        UserDefaults.standard.removeObject(forKey: "video_albums_\(characterId)")
+        UserDefaults.standard.removeObject(forKey: "video_albums_\(testCharacterId)")
         UserDefaults.standard.synchronize()
+        
+        // Also clean up test file
+        let testFileURL = albumFileURL(for: testCharacterId)
+        try? FileManager.default.removeItem(at: testFileURL)
     }
     
     

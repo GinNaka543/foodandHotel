@@ -872,7 +872,7 @@
 /* Media Player */
 "see_more_dots" = "...Show more";
 "edit_image" = "Edit image";
-"views_times" = "%@ times";
+"views_times" = "%@ views";
 "view_count_format" = "%@ views";
 "related_images" = "Related Images";
 "delete_image_confirm_title" = "Delete this image?";

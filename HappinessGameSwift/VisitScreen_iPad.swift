@@ -451,7 +451,10 @@ struct VisitScreen_iPad: View {
     private func getDisplayPlans() -> [VisitPlanModel] {
         switch selectedTab {
         case .all:
-            return publicPlans
+            // オールタブでは言語フィルタリングを適用
+            return publicPlans.filter { plan in
+                LanguageDetector.shared.isTitleMatchingCurrentLanguage(plan.title)
+            }
         case .original:
             return userOriginalPlans
         case .purchased:

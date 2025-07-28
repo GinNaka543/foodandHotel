@@ -556,6 +556,7 @@ struct MainContainerView: View {
                             AnimeScreen()
                                 .environmentObject(mainTab)
                                 .environmentObject(animeManager)
+                                .environmentObject(characterManager)
                         } else if mainTab.selectedTab == .visit {
                             if UIDevice.current.userInterfaceIdiom == .pad {
                                 VisitScreen_iPad()

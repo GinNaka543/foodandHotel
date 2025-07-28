@@ -343,6 +343,10 @@
 "change_profile_image" = "更改个人资料图片";
 "enter_name" = "输入姓名";
 "birthday" = "生日";
+"anime_list" = "动画列表";
+"character_list" = "角色列表";
+"birthday_list" = "生日列表";
+"date_format_month_day" = "M月d日";
 "enter_anime_quote" = "输入动画台词";
 "complete" = "完成";
 "add_watch_schedule" = "添加观看计划";
@@ -413,8 +417,7 @@
 "background_image_anime" = "Background Image";
 "basic_info_section" = "Basic Information";
 "cancel_button" = "Cancel";
-"cannot_access_after_logout" = "You cannot access your account without this information after logout";
-"cannot_restore_without_info" = "Without this information, you cannot restore your account";
+"cannot_restore_without_info" = "没有这些信息，您无法恢复您的账户";
 "category_info_section" = "类别信息";
 "category_list" = "Category List";
 "category_management" = "Category Management";
@@ -494,7 +497,7 @@
 "id_not_found" = "ID not found";
 "image_auto_change_notice" = "Background will be automatically changed when you select an image";
 "image_data_not_found" = "No image data";
-"important_confirm_before_logout" = "Important: Confirm Before Logout";
+"important_confirm_before_logout" = "重要：退出前确认";
 "just_now" = "Just now";
 "link_optional" = "链接（可选）";
 "loading_draft_plans" = "Loading draft plans...";
@@ -561,7 +564,7 @@
 "registered_products" = "Registered Products";
 "same_tag_albums" = "可以使用相同的#为每个系列分开";
 "save_button" = "Save";
-"save_following_info" = "Please save the following information";
+"save_following_info" = "请保存以下信息";
 "search_anime" = "Search Anime";
 "search_by_anime_or_character" = "按动漫或角色搜索";
 "search_by_title_or_anime" = "Search by title or anime";
@@ -602,7 +605,7 @@
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";
-"take_screenshot_or_save" = "Take a screenshot or save to notes";
+"take_screenshot_or_save" = "截图或保存到备忘录";
 "tap_to_add" = "Tap to add";
 "tap_to_add_memo" = "点击添加备忘录";
 "tap_to_change_image" = "Tap image to change";
@@ -805,3 +808,6 @@
 "anime_order_menu" = "更改动漫顺序";
 "character_order_title" = "更改角色顺序";
 "anime_order_title" = "更改动漫顺序";
+
+"member_list" = "成员列表";
+"cancel" = "取消";

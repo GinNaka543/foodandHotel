@@ -512,10 +512,10 @@ struct CharaScreen: View {
                                 Spacer()
                                 HStack {
                                     VStack(alignment: .leading) {
-                                        Text(video.title)
+                                        Text(video.title.formatVideoTitle())
                                             .foregroundColor(.white)
                                             .font(.headline)
-                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
                                             .shadow(color: .black.opacity(0.7), radius: 2)
                                         if let viewCount = video.viewCount {
                                             Text("\(viewCount.formatted()) views")
@@ -546,29 +546,64 @@ struct CharaScreen: View {
                             }
                         }
                     } else {
-                        let _ = print("⚠️ [CharaScreen] No thumbnail URL available, using fallback")
-                        Rectangle()
-                            .fill(Color.red.opacity(0.8))
-                            .frame(height: 180)
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "play.rectangle.fill")
+                        // youtubeThumbnailURLが空の場合、URLから自動生成
+                        let generatedThumbnailURL = getYouTubeThumbnailURLForBanner(from: youtubeURL)
+                        let _ = print("🎬 [CharaScreen] Generated thumbnail URL from video URL: \(generatedThumbnailURL)")
+                        
+                        AsyncImage(url: URL(string: generatedThumbnailURL)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 180)
+                                .clipped()
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 180)
+                                .overlay(
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                )
+                        }
+                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                        .overlay(
+                            VStack {
+                                Spacer()
+                                HStack {
+                                    VStack(alignment: .leading) {
+                                        Text(video.title.formatVideoTitle())
+                                            .foregroundColor(.white)
+                                            .font(.headline)
+                                            .multilineTextAlignment(.leading)
+                                            .shadow(color: .black.opacity(0.7), radius: 2)
+                                        if let viewCount = video.viewCount {
+                                            Text("\(viewCount.formatted()) views")
+                                                .foregroundColor(.white.opacity(0.8))
+                                                .font(.caption)
+                                                .shadow(color: .black.opacity(0.7), radius: 2)
+                                        }
+                                    }
+                                    Spacer()
+                                    Image(systemName: "play.circle.fill")
                                         .foregroundColor(.white)
-                                        .font(.largeTitle)
-                                    Text(video.title)
-                                        .foregroundColor(.white)
-                                        .font(.headline)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal)
+                                        .font(.title)
+                                        .shadow(color: .black.opacity(0.7), radius: 2)
                                 }
-                            )
-                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
-                            .onTapGesture {
-                                if let url = URL(string: youtubeURL) {
-                                    UIApplication.shared.open(url)
-                                }
+                                .padding()
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
                             }
+                        )
+                        .onTapGesture {
+                            if let url = URL(string: youtubeURL) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -769,9 +804,15 @@ struct CharacterRow: View {
     let character: Character
     @ObservedObject var characterManager: CharacterManager
     
+    // 最新のキャラクター情報を取得
+    private var currentCharacter: Character {
+        characterManager.characters.first(where: { $0.id == character.id }) ?? character
+    }
+    
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            if let imageIdentifier = character.imageIdentifier {
+            if let imageIdentifier = currentCharacter.imageIdentifier {
+                // 画像パスをIDとして使用して、パスが変わったときに確実に再描画されるようにする
                 OptimizedFileImage(
                     path: imageIdentifier,
                     targetSize: CGSize(width: 48, height: 48)
@@ -779,6 +820,7 @@ struct CharacterRow: View {
                 .aspectRatio(contentMode: .fill)
                 .frame(width: 48, height: 48)
                 .clipShape(Circle())
+                .id(imageIdentifier) // パスが変わったときに強制的に再作成
             } else {
                 Circle()
                     .fill(Color.gray.opacity(0.3))
@@ -790,16 +832,16 @@ struct CharacterRow: View {
                     )
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text(character.name)
+                Text(currentCharacter.name)
                     .font(.system(size: 17, weight: .semibold))
-                Text("#" + character.tag)
+                Text("#" + currentCharacter.tag)
                     .font(.system(size: 14))
                     .foregroundColor(.gray)
                     .lineLimit(1)
                     .frame(maxWidth: 200, alignment: .leading)
             }
             Spacer()
-            Text(DateFormatter.monthDayEnglish.string(from: character.birthday))
+            Text(DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday))
                 .font(.system(size: 14))
                 .foregroundColor(.gray)
                 .padding(.top, 4)
@@ -1236,19 +1278,21 @@ struct CharacterDetailView: View {
                                         
                                         // 古い画像ファイルを削除
                                         if let oldPath = currentCharacter.imageIdentifier {
+                                            // キャッシュをクリア
+                                            ImageCache.shared.removeImage(for: oldPath)
                                             try? FileManager.default.removeItem(atPath: oldPath)
                                         }
                                         
-                                        // 新しいCharacterオブジェクトを作成して更新
-                                        var updatedCharacter = character
-                                        updatedCharacter.imageIdentifier = imagePath
-                                        
-                                        // Bindingを通じて更新（これがsetterを呼び出す）
-                                        character = updatedCharacter
-                                        
-                                        // CharacterManagerも更新してUI全体を更新
-                                        characterManager.updateCharacter(updatedCharacter)
-                                        characterManager.refreshUI()
+                                        // 最新のデータを取得
+                                        if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                                            var updatedCharacter = latestCharacter
+                                            updatedCharacter.imageIdentifier = imagePath
+                                            // backgroundImagePathは最新のデータから保持される
+                                            
+                                            // Bindingを通じて更新（これがsetterを呼び出す）
+                                            character = updatedCharacter
+                                            
+                                        }
                                         
                                         // モーダルを自動的に閉じる
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -1355,11 +1399,14 @@ struct CharacterDetailView: View {
                             // 画像を保存
                             let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
                             if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
-                                // キャラクターを更新
-                                var updatedCharacter = character
-                                updatedCharacter.imageIdentifier = savedPath
-                                characterManager.updateCharacter(updatedCharacter)
-                                character = updatedCharacter
+                                // 最新のデータを取得
+                                if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                                    var updatedCharacter = latestCharacter
+                                    updatedCharacter.imageIdentifier = savedPath
+                                    // backgroundImagePathは最新のデータから保持される
+                                    characterManager.updateCharacter(updatedCharacter)
+                                    character = updatedCharacter
+                                }
                             }
                         }
                     }
@@ -1384,10 +1431,9 @@ extension DateFormatter {
         return formatter
     }()
     
-    static let monthDayJapanese: DateFormatter = {
+    static let monthDayLocalized: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = "M月d日"
+        formatter.dateFormat = NSLocalizedString("date_format_month_day", comment: "Month and day format")
         return formatter
     }()
 }
@@ -1440,7 +1486,9 @@ struct AboutView: View {
     private var bannerView: some View {
         if let character = character {
             VStack(spacing: 0) {
-                PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                Button(action: {
+                    showIconAdjustment = true
+                }) {
                     if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                         Image(uiImage: image)
                             .resizable()
@@ -1553,7 +1601,7 @@ struct AboutView: View {
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("tag", comment: ""), value: "#\(character?.tag ?? "")")
                                 Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("birthday", comment: ""), value: DateFormatter.monthDayJapanese.string(from: character?.birthday ?? Date()))
+                                profileRow(label: NSLocalizedString("birthday", comment: ""), value: DateFormatter.monthDayLocalized.string(from: character?.birthday ?? Date()))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("age", comment: ""), value: character?.age ?? NSLocalizedString("not_set", comment: ""))
                                 Divider().padding(.leading, 20)
@@ -2519,20 +2567,6 @@ struct CharacterPickerRow: View {
     }
 }
 
-// 文字列をn文字ごとに分割するchunked拡張を追加
-extension String {
-    func chunked(_ length: Int) -> [String] {
-        var result: [String] = []
-        var start = startIndex
-        while start < endIndex {
-            let end = index(start, offsetBy: length, limitedBy: endIndex) ?? endIndex
-            result.append(String(self[start..<end]))
-            start = end
-        }
-        return result
-    }
-}
-
 struct NavigationBarItem: View {
     let icon: String
     let title: String
@@ -3037,6 +3071,7 @@ struct CharacterIconAdjustmentView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var character: Character
     @ObservedObject var characterManager: CharacterManager
+    @State private var iconPickerItem: PhotosPickerItem? = nil
     
     var body: some View {
         NavigationView {
@@ -3053,12 +3088,43 @@ struct CharacterIconAdjustmentView: View {
                             .frame(maxWidth: .infinity, maxHeight: 200)
                             .clipped()
                             .background(Color.gray.opacity(0.2))
+                    } else {
+                        PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: UIScreen.main.bounds.width, height: 200)
+                                .overlay(
+                                    VStack(spacing: 4) {
+                                        Image(systemName: "photo.badge.plus")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(.gray)
+                                        Text(NSLocalizedString("tap_to_add", comment: ""))
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.gray)
+                                    }
+                                )
+                        }
                     }
                 }
                 .frame(height: 200)
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(10)
                 .padding(.horizontal)
+                
+                // 画像変更ボタン（画像が存在する場合）
+                if character.imageIdentifier != nil {
+                    PhotosPicker(selection: $iconPickerItem, matching: .images) {
+                        HStack {
+                            Image(systemName: "photo")
+                            Text(NSLocalizedString("change_image", comment: "Change Image"))
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
+                }
                 
                 // 調整スライダー
                 VStack(spacing: 15) {
@@ -3075,7 +3141,7 @@ struct CharacterIconAdjustmentView: View {
                         Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Slider(value: $character.iconOffsetX, in: -100...100)
+                        Slider(value: $character.iconOffsetX, in: -200...200)
                     }
                     
                     // 縦位置
@@ -3083,7 +3149,7 @@ struct CharacterIconAdjustmentView: View {
                         Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Slider(value: $character.iconOffsetY, in: -100...100)
+                        Slider(value: $character.iconOffsetY, in: -200...200)
                     }
                 }
                 .padding(.horizontal)
@@ -3117,6 +3183,26 @@ struct CharacterIconAdjustmentView: View {
                         // 変更を保存
                         characterManager.updateCharacter(character)
                         dismiss()
+                    }
+                }
+            }
+            .onChange(of: iconPickerItem) { _, newValue in
+                if let newValue = newValue {
+                    Task {
+                        if let data = try? await newValue.loadTransferable(type: Data.self),
+                           let uiImage = UIImage(data: data) {
+                            let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
+                            if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                // 古い画像ファイルを削除
+                                if let oldPath = character.imageIdentifier {
+                                    try? FileManager.default.removeItem(atPath: oldPath)
+                                }
+                                
+                                // キャラクターを更新
+                                character.imageIdentifier = savedPath
+                                characterManager.updateCharacter(character)
+                            }
+                        }
                     }
                 }
             }

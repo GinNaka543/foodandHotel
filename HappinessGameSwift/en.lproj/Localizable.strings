@@ -85,6 +85,14 @@
 "genre" = "Genre";
 "select_status" = "Select status (multiple selection)";
 "select_genre" = "Select genre (multiple selection)";
+"create_custom_genre" = "Create custom genre";
+"genre_name" = "Genre name";
+"create" = "Create";
+"custom_genres" = "Custom Genres";
+"anime_list" = "Anime List";
+"character_list" = "Character List";
+"birthday_list" = "Birthday List";
+"date_format_month_day" = "MMM d";
 "edit_item_selection" = "Select Edit Item";
 "edit_profile" = "Edit Profile";
 "edit_description" = "Edit Description";
@@ -381,7 +389,6 @@
 "cannot_restore_without_info" = "Without this information, you cannot restore your account";
 "copy" = "Copy";
 "take_screenshot_or_save" = "Take a screenshot or save to notes";
-"cannot_access_after_logout" = "Without this information, you cannot access your account after logout";
 
 /* Visit */
 "loading_plans" = "Loading plans...";
@@ -827,3 +834,6 @@
 "home_page" = "Home Page";
 "character_page" = "Character Page";
 "product_page" = "Product Page";
+
+"member_list" = "Member List";
+"cancel" = "Cancel";

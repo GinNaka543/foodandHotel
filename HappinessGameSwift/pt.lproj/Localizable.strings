@@ -342,6 +342,10 @@
 "change_profile_image" = "Alterar imagem do perfil";
 "enter_name" = "Digite o nome";
 "birthday" = "Aniversário";
+"anime_list" = "Lista de Anime";
+"character_list" = "Lista de Personagens";
+"birthday_list" = "Lista de Aniversários";
+"date_format_month_day" = "d MMM";
 "enter_anime_quote" = "Digite uma citação de anime";
 "complete" = "Concluir";
 "add_watch_schedule" = "Adicionar agendamento de exibição";
@@ -412,8 +416,7 @@
 "background_image_anime" = "Background Image";
 "basic_info_section" = "Basic Information";
 "cancel_button" = "Cancel";
-"cannot_access_after_logout" = "You cannot access your account without this information after logout";
-"cannot_restore_without_info" = "Without this information, you cannot restore your account";
+"cannot_restore_without_info" = "Sem estas informações, você não pode restaurar sua conta";
 "category_info_section" = "Informações da categoria";
 "category_list" = "Category List";
 "category_management" = "Category Management";
@@ -493,7 +496,7 @@
 "id_not_found" = "ID not found";
 "image_auto_change_notice" = "Background will be automatically changed when you select an image";
 "image_data_not_found" = "No image data";
-"important_confirm_before_logout" = "Important: Confirm Before Logout";
+"important_confirm_before_logout" = "Importante: Confirmar antes de sair";
 "just_now" = "Just now";
 "link_optional" = "Link (opcional)";
 "loading_draft_plans" = "Loading draft plans...";
@@ -560,7 +563,7 @@
 "registered_products" = "Registered Products";
 "same_tag_albums" = "Você pode separar séries com o mesmo #";
 "save_button" = "Save";
-"save_following_info" = "Please save the following information";
+"save_following_info" = "Por favor, salve as seguintes informações";
 "search_anime" = "Search Anime";
 "search_by_anime_or_character" = "Pesquisar por anime ou personagem";
 "search_by_title_or_anime" = "Search by title or anime";
@@ -601,7 +604,7 @@
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";
-"take_screenshot_or_save" = "Take a screenshot or save to notes";
+"take_screenshot_or_save" = "Tire uma captura de tela ou salve nas notas";
 "tap_to_add" = "Tap to add";
 "tap_to_add_memo" = "Toque para adicionar nota";
 "tap_to_change_image" = "Tap image to change";
@@ -804,3 +807,6 @@
 "anime_order_menu" = "Alterar ordem dos animes";
 "character_order_title" = "Alterar ordem dos personagens";
 "anime_order_title" = "Alterar ordem dos animes";
+
+"member_list" = "Lista de membros";
+"cancel" = "Cancelar";

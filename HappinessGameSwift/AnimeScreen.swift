@@ -126,7 +126,11 @@ class AnimeManager: ObservableObject {
     
 }
 
-// カスタムフィールド用構造体
+
+
+
+
+// Restored type definitions 
 struct AnimeCustomField: Hashable, Codable {
     var name: String
     var value: String
@@ -156,34 +160,22 @@ enum WatchStatus: String, Codable, CaseIterable {
 }
 
 enum AnimeGenre: String, Codable, CaseIterable {
-    case serious = "serious"
     case romcom = "romcom"
-    case sports = "sports"
-    case comedy = "comedy"
     case isekai = "isekai"
     case sf = "sf"
-    case art = "art"
-    case brain = "brain"
+    case sports = "sports"
     case healing = "healing"
     
     var displayName: String {
         switch self {
-        case .serious:
-            return NSLocalizedString("serious", comment: "Serious")
         case .romcom:
             return NSLocalizedString("romcom", comment: "Romance/Comedy")
-        case .sports:
-            return NSLocalizedString("sports", comment: "Sports")
-        case .comedy:
-            return NSLocalizedString("comedy", comment: "Comedy")
         case .isekai:
             return NSLocalizedString("isekai", comment: "Isekai")
         case .sf:
             return NSLocalizedString("sf", comment: "Science Fiction")
-        case .art:
-            return NSLocalizedString("art", comment: "Art")
-        case .brain:
-            return NSLocalizedString("brain", comment: "Brain")
+        case .sports:
+            return NSLocalizedString("sports", comment: "Sports")
         case .healing:
             return NSLocalizedString("healing", comment: "Healing")
         }
@@ -203,9 +195,11 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var order: Int = 0  // 表示順序用フィールド
     var rating: Double = 0.0  // レーティング（0.0〜5.0）
     var voiceActors: [String] = []  // 声優リスト
-    var characters: [String] = []  // 出演キャラクターリスト
+    var characters: [String] = []  // 出演キャラクターリスト（後方互換性のため残す）
+    var characterIds: [UUID] = []  // 登録済みキャラクターのIDリスト
     var watchLink: String = ""  // アニメ視聴リンク
     var genres: [AnimeGenre] = []  // ジャンルリスト
+    var customGenres: [String] = []  // カスタムジャンルリスト
     
     // アイコン表示設定
     var iconScale: Double = 1.0  // アイコンの拡大率（0.5〜2.0）
@@ -217,7 +211,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, watchLink, genres, iconScale, iconOffsetX, iconOffsetY
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, characterIds, watchLink, genres, customGenres, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -234,8 +228,10 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encode(rating, forKey: .rating)
         try container.encode(voiceActors, forKey: .voiceActors)
         try container.encode(characters, forKey: .characters)
+        try container.encode(characterIds, forKey: .characterIds)
         try container.encode(watchLink, forKey: .watchLink)
         try container.encode(genres, forKey: .genres)
+        try container.encode(customGenres, forKey: .customGenres)
         try container.encode(iconScale, forKey: .iconScale)
         try container.encode(iconOffsetX, forKey: .iconOffsetX)
         try container.encode(iconOffsetY, forKey: .iconOffsetY)
@@ -249,11 +245,27 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
         backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([AnimeCustomField].self, forKey: .customFields)
-        watchStatus = (try? container.decode(WatchStatus.self, forKey: .watchStatus)) ?? .none
+        // watchStatusの読み込みと移行
+        if let statusString = try? container.decode(String.self, forKey: .watchStatus) {
+            // completedやdroppedの場合はnoneに変換
+            if statusString == "completed" || statusString == "dropped" {
+                watchStatus = .none
+            } else {
+                watchStatus = WatchStatus(rawValue: statusString) ?? .none
+            }
+        } else {
+            watchStatus = .none
+        }
         
         // watchStatusesを読み込む。古いデータの場合は、watchStatusから移行
-        if let statuses = try? container.decode([WatchStatus].self, forKey: .watchStatuses) {
-            watchStatuses = statuses
+        if let statusStrings = try? container.decode([String].self, forKey: .watchStatuses) {
+            // completedやdroppedを除外して変換
+            watchStatuses = statusStrings.compactMap { statusString in
+                if statusString == "completed" || statusString == "dropped" {
+                    return nil
+                }
+                return WatchStatus(rawValue: statusString)
+            }
         } else if watchStatus != .none {
             // 後方互換性: 古いデータの場合、watchStatusから配列を作成
             watchStatuses = [watchStatus]
@@ -268,15 +280,17 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         rating = (try? container.decode(Double.self, forKey: .rating)) ?? 0.0
         voiceActors = (try? container.decode([String].self, forKey: .voiceActors)) ?? []
         characters = (try? container.decode([String].self, forKey: .characters)) ?? []
+        characterIds = (try? container.decode([UUID].self, forKey: .characterIds)) ?? []
         watchLink = (try? container.decode(String.self, forKey: .watchLink)) ?? ""
         genres = (try? container.decode([AnimeGenre].self, forKey: .genres)) ?? []
+        customGenres = (try? container.decode([String].self, forKey: .customGenres)) ?? []
         
         // アイコン表示設定を読み込む。古いデータの場合はデフォルト値を使用
         iconScale = (try? container.decode(Double.self, forKey: .iconScale)) ?? 1.0
         iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
         iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], watchLink: String = "", genres: [AnimeGenre] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], characterIds: [UUID] = [], watchLink: String = "", genres: [AnimeGenre] = [], customGenres: [String] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -290,19 +304,94 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.rating = rating
         self.voiceActors = voiceActors
         self.characters = characters
+        self.characterIds = characterIds
         self.watchLink = watchLink
         self.genres = genres
+        self.customGenres = customGenres
         self.iconScale = iconScale
         self.iconOffsetX = iconOffsetX
         self.iconOffsetY = iconOffsetY
     }
 }
 
+// AnimeTab enum moved outside of struct for global access
+enum AnimeTab: String, CaseIterable {
+    case all = "all"
+    case watching = "watching"
+    case thisTerm = "thisTerm"
+    case willWatch = "willWatch"
+    case watchAgain = "watchAgain"
+    // ジャンル
+    case romcom = "romcom"
+    case isekai = "isekai"
+    case sf = "sf"
+    case sports = "sports"
+    case healing = "healing"
+}
+
+// カスタムタブのタイプを表す構造体
+struct CustomTab: Identifiable, Hashable {
+    let id = UUID()
+    let type: TabType
+    let value: String
+    
+    enum TabType {
+        case defaultTab(AnimeTab)
+        case customGenre(String)
+    }
+    
+    var displayName: String {
+        switch type {
+        case .defaultTab(let animeTab):
+            switch animeTab {
+            case .all:
+                return NSLocalizedString("all", comment: "")
+            case .watching:
+                return NSLocalizedString("watching_status", comment: "")
+            case .thisTerm:
+                return NSLocalizedString("this_term_status", comment: "")
+            case .willWatch:
+                return NSLocalizedString("will_watch_status", comment: "")
+            case .watchAgain:
+                return NSLocalizedString("watch_again_status", comment: "")
+            case .romcom:
+                return NSLocalizedString("romcom", comment: "")
+            case .isekai:
+                return NSLocalizedString("isekai", comment: "")
+            case .sf:
+                return "SF"
+            case .sports:
+                return NSLocalizedString("sports", comment: "")
+            case .healing:
+                return NSLocalizedString("healing", comment: "")
+            }
+        case .customGenre(let genreName):
+            return genreName
+        }
+    }
+    
+    static func == (lhs: CustomTab, rhs: CustomTab) -> Bool {
+        switch (lhs.type, rhs.type) {
+        case (.defaultTab(let lTab), .defaultTab(let rTab)):
+            return lTab == rTab
+        case (.customGenre(let lGenre), .customGenre(let rGenre)):
+            return lGenre == rGenre
+        default:
+            return false
+        }
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(value)
+    }
+}
+
 struct AnimeScreen: View {
     @EnvironmentObject var animeManager: AnimeManager
+    @EnvironmentObject var characterManager: CharacterManager
     @EnvironmentObject var mainTab: MainTabSelection
     @State private var showAddSheet = false
-    @State private var selectedTab: AnimeTab = .all
+    @State private var selectedTab: CustomTab = CustomTab(type: .defaultTab(.all), value: "all")
     @State private var selectedAnime: Anime? = nil
     @State private var showNavigationMenu = false
     @State private var showPrivacyPolicy = false
@@ -315,22 +404,50 @@ struct AnimeScreen: View {
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
     
-    enum AnimeTab: String, CaseIterable {
-        case all = "all"
-        case watching = "watching"
-        case thisTerm = "thisTerm"
-        case willWatch = "willWatch"
-        case watchAgain = "watchAgain"
-        // ジャンル
-        case serious = "serious"
-        case romcom = "romcom"
-        case sports = "sports"
-        case comedy = "comedy"
-        case isekai = "isekai"
-        case sf = "sf"
-        case art = "art"
-        case brain = "brain"
-        case healing = "healing"
+    // 利用可能なタブを動的に生成
+    var availableTabs: [CustomTab] {
+        var tabs: [CustomTab] = []
+        
+        // デフォルトタブを追加
+        for animeTab in AnimeTab.allCases {
+            tabs.append(CustomTab(type: .defaultTab(animeTab), value: animeTab.rawValue))
+        }
+        
+        // すべてのカスタムジャンルを取得
+        let allCustomGenres = Set(animeManager.animes.flatMap { $0.customGenres })
+        
+        // カスタムジャンルタブを追加
+        for customGenre in allCustomGenres.sorted() {
+            tabs.append(CustomTab(type: .customGenre(customGenre), value: customGenre))
+        }
+        
+        return tabs
+    }
+    
+    // localizedTabName関数を定義
+    func localizedTabName(for tab: AnimeTab) -> String {
+        switch tab {
+        case .all:
+            return NSLocalizedString("all", comment: "")
+        case .watching:
+            return NSLocalizedString("watching_status", comment: "")
+        case .thisTerm:
+            return NSLocalizedString("this_term_status", comment: "")
+        case .willWatch:
+            return NSLocalizedString("will_watch_status", comment: "")
+        case .watchAgain:
+            return NSLocalizedString("watch_again_status", comment: "")
+        case .romcom:
+            return NSLocalizedString("romcom", comment: "")
+        case .isekai:
+            return NSLocalizedString("isekai", comment: "")
+        case .sf:
+            return "SF"
+        case .sports:
+            return NSLocalizedString("sports", comment: "")
+        case .healing:
+            return NSLocalizedString("healing", comment: "")
+        }
     }
     
     var filteredAnimes: [Anime] {
@@ -338,36 +455,33 @@ struct AnimeScreen: View {
         let animesWithTitles = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         
         let result: [Anime]
-        switch selectedTab {
-        case .all:
-            result = animesWithTitles
-        case .watching:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
-        case .willWatch:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
-        case .watchAgain:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
-        case .thisTerm:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
-        // ジャンルフィルタ
-        case .serious:
-            result = animesWithTitles.filter { $0.genres.contains(.serious) }
-        case .romcom:
-            result = animesWithTitles.filter { $0.genres.contains(.romcom) }
-        case .sports:
-            result = animesWithTitles.filter { $0.genres.contains(.sports) }
-        case .comedy:
-            result = animesWithTitles.filter { $0.genres.contains(.comedy) }
-        case .isekai:
-            result = animesWithTitles.filter { $0.genres.contains(.isekai) }
-        case .sf:
-            result = animesWithTitles.filter { $0.genres.contains(.sf) }
-        case .art:
-            result = animesWithTitles.filter { $0.genres.contains(.art) }
-        case .brain:
-            result = animesWithTitles.filter { $0.genres.contains(.brain) }
-        case .healing:
-            result = animesWithTitles.filter { $0.genres.contains(.healing) }
+        switch selectedTab.type {
+        case .defaultTab(let animeTab):
+            switch animeTab {
+            case .all:
+                result = animesWithTitles
+            case .watching:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
+            case .willWatch:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
+            case .watchAgain:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
+            case .thisTerm:
+                result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
+            // ジャンルフィルタ
+            case .romcom:
+                result = animesWithTitles.filter { $0.genres.contains(.romcom) }
+            case .isekai:
+                result = animesWithTitles.filter { $0.genres.contains(.isekai) }
+            case .sf:
+                result = animesWithTitles.filter { $0.genres.contains(.sf) }
+            case .sports:
+                result = animesWithTitles.filter { $0.genres.contains(.sports) }
+            case .healing:
+                result = animesWithTitles.filter { $0.genres.contains(.healing) }
+            }
+        case .customGenre(let customGenreName):
+            result = animesWithTitles.filter { $0.customGenres.contains(customGenreName) }
         }
         
         // Sort by order
@@ -420,7 +534,16 @@ struct AnimeScreen: View {
                 let _ = print("🔍 [AnimeScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
                 
                 VStack {
-                    if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
+                    // First check for custom thumbnail data
+                    if let thumbnailData = video.thumbnailData,
+                       let thumbnailImage = UIImage(data: thumbnailData) {
+                        let _ = print("🖼️ [AnimeScreen] Using custom thumbnail data")
+                        Image(uiImage: thumbnailImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 180)
+                            .clipped()
+                    } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
                         let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
                             image
@@ -437,78 +560,58 @@ struct AnimeScreen: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 )
                         }
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
-                        .overlay(
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(video.title)
-                                            .foregroundColor(.white)
-                                            .font(.headline)
-                                            .lineLimit(2)
-                                            .shadow(color: .black.opacity(0.7), radius: 2)
-                                        if let viewCount = video.viewCount {
-                                            Text("\(viewCount.formatted()) views")
-                                                .foregroundColor(.white.opacity(0.8))
-                                                .font(.caption)
-                                                .shadow(color: .black.opacity(0.7), radius: 2)
-                                        }
-                                    }
-                                    Spacer()
-                                    Image(systemName: "play.circle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.title)
-                                        .shadow(color: .black.opacity(0.7), radius: 2)
-                                }
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                            }
-                        )
-                        .onTapGesture {
-                            if let url = URL(string: youtubeURL) {
-                                UIApplication.shared.open(url)
-                            }
-                        }
                     } else {
-                        let _ = print("⚠️ [AnimeScreen] No thumbnail URL available, using fallback")
                         Rectangle()
-                            .fill(Color.blue.opacity(0.8))
+                            .fill(Color.gray.opacity(0.3))
                             .frame(height: 180)
-                            .overlay(
-                                VStack {
-                                    Image(systemName: "play.rectangle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.largeTitle)
-                                    Text(video.title)
-                                        .foregroundColor(.white)
-                                        .font(.headline)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal)
-                                }
-                            )
-                            .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
-                            .onTapGesture {
-                                if let url = URL(string: youtubeURL) {
-                                    UIApplication.shared.open(url)
-                                }
-                            }
                     }
                 }
-                .padding(.horizontal, 16)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    VStack {
+                        Spacer()
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(video.title.formatVideoTitle())
+                                    .foregroundColor(.white)
+                                    .font(.headline)
+                                    .multilineTextAlignment(.leading)
+                                    .shadow(color: .black.opacity(0.7), radius: 2)
+                                if let viewCount = video.viewCount {
+                                    Text("\(viewCount.formatted()) views")
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .font(.caption)
+                                        .shadow(color: .black.opacity(0.7), radius: 2)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "play.circle.fill")
+                                .foregroundColor(.white)
+                                .font(.title)
+                                .shadow(color: .black.opacity(0.7), radius: 2)
+                        }
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
+                )
+                .onTapGesture {
+                    if let url = URL(string: youtubeURL) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            .padding(.horizontal, 16)
             } else {
                 // YouTube動画が登録されていない場合の表示
                 ZStack {
                     AnimatedGradientView()
                         .frame(width: UIScreen.main.bounds.width - 32, height: 180)
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     
                     VStack {
                         Spacer()
@@ -540,47 +643,20 @@ struct AnimeScreen: View {
         }
     }
     
-    // タブの表示名を取得するヘルパー関数
-    private func localizedTabName(for tab: AnimeTab) -> String {
-        switch tab {
-        case .all:
-            return NSLocalizedString("all", comment: "")
-        case .watching:
-            return NSLocalizedString("watching_status", comment: "")
-        case .thisTerm:
-            return NSLocalizedString("this_term_status", comment: "")
-        case .willWatch:
-            return NSLocalizedString("will_watch_status", comment: "")
-        case .watchAgain:
-            return NSLocalizedString("watch_again_status", comment: "")
-        case .serious:
-            return NSLocalizedString("serious", comment: "")
-        case .romcom:
-            return NSLocalizedString("romcom", comment: "")
-        case .sports:
-            return NSLocalizedString("sports", comment: "")
-        case .comedy:
-            return NSLocalizedString("comedy", comment: "")
-        case .isekai:
-            return NSLocalizedString("isekai", comment: "")
-        case .sf:
-            return "SF"
-        case .art:
-            return NSLocalizedString("art", comment: "")
-        case .brain:
-            return NSLocalizedString("brain", comment: "")
-        case .healing:
-            return NSLocalizedString("healing", comment: "")
-        }
-    }
-    
     // タブビュー部分
     private var tabView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                ForEach(AnimeTab.allCases, id: \.self) { tab in
-                    Button(action: { selectedTab = tab }) {
-                        Text(localizedTabName(for: tab))
+                ForEach(availableTabs, id: \.id) { tab in
+                    Button(action: { 
+                        selectedTab = tab
+                        // Reload YouTube videos for the new tab
+                        loadYouTubeVideos()
+                        // Reset displayed video IDs so we can show videos from the new tab
+                        displayedVideoIds.removeAll()
+                        selectRandomYouTubeVideo()
+                    }) {
+                        Text(tab.displayName)
                             .font(.system(size: 16, weight: .regular))
                             .foregroundColor(selectedTab == tab ? .white : .black)
                             .padding(.horizontal, 18)
@@ -777,10 +853,15 @@ struct AnimeScreen: View {
     
     // YouTube動画を収集
     private func loadYouTubeVideos() {
-        print("🔍 [AnimeScreen] Loading YouTube videos...")
+        print("🔍 [AnimeScreen] Loading YouTube videos for tab: \(selectedTab)")
         print("🔍 [AnimeScreen] Total animes available: \(animeManager.animes.count)")
         allYouTubeVideos = []
-        for anime in animeManager.animes {
+        
+        // 現在のタブに基づいてアニメをフィルタリング
+        let filteredAnimesForVideos = filteredAnimes
+        print("🔍 [AnimeScreen] Filtered animes count: \(filteredAnimesForVideos.count)")
+        
+        for anime in filteredAnimesForVideos {
             // VideoStorage.swiftを使用して動画を取得  
             let videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
             print("🔍 [AnimeScreen] VideoStorage returned \(videos.count) videos for anime: \(anime.title)")
@@ -808,7 +889,7 @@ struct AnimeScreen: View {
                 print("❌ [AnimeScreen] No video data found for anime: \(anime.title)")
             }
         }
-        print("🔍 [AnimeScreen] Total YouTube videos found: \(allYouTubeVideos.count)")
+        print("🔍 [AnimeScreen] Total YouTube videos found for current tab: \(allYouTubeVideos.count)")
     }
     
     // ランダムなYouTube動画を選択
@@ -870,10 +951,10 @@ struct AnimeScreen: View {
 struct AnimeRow: View {
     let anime: Anime
     @ObservedObject var animeManager: AnimeManager
+    @EnvironmentObject var characterManager: CharacterManager
     
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // 左側：サムネイルのみ
+    private var thumbnailView: some View {
+        Group {
             if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                 Image(uiImage: image)
                     .resizable()
@@ -886,6 +967,13 @@ struct AnimeRow: View {
                     .fill(Color.gray.opacity(0.3))
                     .frame(width: 183, height: 229)
             }
+        }
+    }
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            // 左側：サムネイルのみ
+            thumbnailView
             
             // 右側：アニメ情報
             VStack(alignment: .leading, spacing: 8) {
@@ -936,7 +1024,48 @@ struct AnimeRow: View {
                     Text(NSLocalizedString("characters", comment: ""))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.gray)
-                    if !anime.characters.isEmpty {
+                    if !anime.characterIds.isEmpty {
+                        HStack(spacing: -4) {
+                            ForEach(Array(anime.characterIds.prefix(4)), id: \.self) { characterId in
+                                if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                    if let imageIdentifier = character.imageIdentifier {
+                                        OptimizedFileImage(
+                                            path: imageIdentifier,
+                                            targetSize: CGSize(width: 24, height: 24)
+                                        )
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 24, height: 24)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white, lineWidth: 1)
+                                        )
+                                        .id(imageIdentifier)
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 24, height: 24)
+                                            .overlay(
+                                                Image(systemName: "person")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.gray)
+                                            )
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: 1)
+                                            )
+                                    }
+                                }
+                            }
+                            if anime.characterIds.count > 4 {
+                                Text("+\(anime.characterIds.count - 4)")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.gray)
+                                    .padding(.leading, 4)
+                            }
+                        }
+                    } else if !anime.characters.isEmpty {
+                        // 後方互換性: 古いデータの場合はテキストで表示
                         Text(anime.characters.prefix(3).joined(separator: ", "))
                             .font(.system(size: 12))
                             .foregroundColor(.black)
@@ -995,6 +1124,7 @@ struct AnimeArtworkScreen: View {
     let onClose: () -> Void
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var animeManager: AnimeManager
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var artworks: [Artwork] = []
     @State private var showAddSheet = false
     @State private var selectedImage: UIImage? = nil
@@ -1024,6 +1154,7 @@ struct AnimeArtworkScreen: View {
     @State private var showR18Alert = false
     @State private var r18ArtworkTitles: [String] = []
     @State private var isShowingFullDescription = false
+    @State private var showIconAdjustment = false
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -1075,6 +1206,9 @@ struct AnimeArtworkScreen: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 60)
+                    .scaleEffect(CGFloat(currentAnime.iconScale))
+                    .offset(x: CGFloat(currentAnime.iconOffsetX), y: CGFloat(currentAnime.iconOffsetY))
                     .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
             } else {
@@ -1458,8 +1592,10 @@ struct AnimeArtworkScreen: View {
                 VStack(spacing: 0) {
                     // Banner (no header)
                     bannerView
-                        .allowsHitTesting(false) // バナーのタップを無効化
-                        .zIndex(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showIconAdjustment = true
+                        }
                     
                     // Profile section
                     HStack(spacing: 12) {
@@ -1667,6 +1803,7 @@ struct AnimeArtworkScreen: View {
         .fullScreenCover(isPresented: $showAbout) {
             AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                 .environmentObject(animeManager)
+                .environmentObject(characterManager)
         }
         .sheet(isPresented: $showPixivRedirect) {
             PixivRedirectView(
@@ -2130,6 +2267,18 @@ struct AnimeArtworkScreen: View {
             }
             }
         }
+        .sheet(isPresented: $showIconAdjustment) {
+            IconAdjustmentView(anime: Binding(
+                get: { currentAnime },
+                set: { updatedAnime in
+                    anime = updatedAnime
+                    if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
+                        animes[idx] = updatedAnime
+                    }
+                    animeManager.updateAnime(updatedAnime)
+                }
+            ), animes: $animes)
+        }
     }
     
     private func saveArtwork() {
@@ -2141,6 +2290,10 @@ struct AnimeArtworkScreen: View {
         let newArtwork = Artwork(id: UUID(), characterId: anime.id, imagePath: path, title: photoTitle, tags: tags, createdAt: Date())
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
+        
+        // Add to matching albums
+        addArtworkToMatchingAlbums(newArtwork)
+        
         selectedImage = nil
         photoTitle = ""
         photoTags = ""
@@ -2211,16 +2364,38 @@ struct AnimeArtworkScreen: View {
     private func saveAlbumsToUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
+            // Save directly to UserDefaults to ensure persistence
+            UserDefaults.standard.set(encodedData, forKey: key)
+            UserDefaults.standard.synchronize()
+            print("💾 [ArtworkAlbum] Saved \(albums.count) albums to UserDefaults with key: \(key)")
+        } else {
+            print("❌ [ArtworkAlbum] Failed to encode albums for saving")
         }
     }
     
     private func loadAlbumsFromUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
-        if let data = UserDefaultsHelper.shared.getData(forKey: key),
+        // Load directly from UserDefaults for consistency with saving
+        if let data = UserDefaults.standard.data(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
             albums = decodedAlbums
+            print("💾 [ArtworkAlbum] Loaded \(albums.count) albums from UserDefaults with key: \(key)")
+        } else {
+            albums = []
+            print("💾 [ArtworkAlbum] No albums found or failed to decode. Starting with empty array.")
         }
+    }
+    
+    private func addArtworkToMatchingAlbums(_ artwork: Artwork) {
+        for (index, album) in albums.enumerated() {
+            if artwork.tags.contains(album.tag) {
+                if !albums[index].videos.contains(where: { $0.id == artwork.id }) {
+                    albums[index].videos.append(artwork)
+                    print("📝 [ArtworkAlbum] Added artwork '\(artwork.title)' to album '\(album.tag)'")
+                }
+            }
+        }
+        saveAlbumsToUserDefaults()
     }
     
     private func updateAlbumsAfterArtworkDeletion(deletedArtworkId: UUID) {
@@ -2274,6 +2449,9 @@ struct AnimeArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         
+        // Add to matching albums
+        addArtworkToMatchingAlbums(newArtwork)
+        
         // フォームをリセット
         photoTitle = ""
         photoTags = ""
@@ -2316,8 +2494,9 @@ struct AnimeVideoRowView: View {
                         )
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(video.title)
+                    Text(video.title.formatVideoTitle())
                         .font(.headline)
+                        .multilineTextAlignment(.leading)
                     if !video.tags.isEmpty {
                         Text("#" + video.tags.joined(separator: " #"))
                             .font(.caption)
@@ -2337,6 +2516,7 @@ struct AnimeVideoScreen: View {
     let onClose: () -> Void
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var animeManager: AnimeManager
+    @EnvironmentObject private var characterManager: CharacterManager
     @State private var videos: [MemoryVideo] = []
     @State private var showAddSheet = false
     @State private var selectedVideoURL: URL? = nil
@@ -2390,6 +2570,7 @@ struct AnimeVideoScreen: View {
     @State private var showThumbnailPicker = false
     @State private var editingVideo: MemoryVideo? = nil
     @State private var isShowingFullDescription = false
+    @State private var showIconAdjustment = false
     
     // 最新のアニメ情報を取得
     private var currentAnime: Anime {
@@ -2429,6 +2610,9 @@ struct AnimeVideoScreen: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 60)
+                    .scaleEffect(CGFloat(currentAnime.iconScale))
+                    .offset(x: CGFloat(currentAnime.iconOffsetX), y: CGFloat(currentAnime.iconOffsetY))
                     .frame(maxWidth: .infinity, maxHeight: 60)
                     .clipped()
             } else {
@@ -2440,6 +2624,22 @@ struct AnimeVideoScreen: View {
         .cornerRadius(12)
         .padding(.horizontal, 16)
     }
+    
+    private var profileImageView: some View {
+        Group {
+            if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 80, height: 80)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 80, height: 80)
+            }
+        }
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -2447,43 +2647,30 @@ struct AnimeVideoScreen: View {
                 VStack(spacing: 0) {
                     // Banner (no header)
                     bannerView
-                        .allowsHitTesting(false) // バナーのタップを無効化
-                        .zIndex(1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showIconAdjustment = true
+                        }
                     
                     // Profile section
                     HStack(spacing: 12) {
-                    // Anime icon
-                    if let imageIdentifier = currentAnime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 67, height: 67)
-                            .clipShape(Circle())
-                    } else {
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 67, height: 67)
-                            .overlay(
-                                Image(systemName: "tv")
-                                    .font(.system(size: 33))
-                                    .foregroundColor(.gray)
-                            )
+                        // Anime icon
+                        profileImageView
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(currentAnime.title)
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.black)
+                            Text("@\(currentAnime.title)")
+                                .font(.system(size: 12.7))
+                                .foregroundColor(.black)
+                            Text(String(format: NSLocalizedString("video_count_albums", comment: ""), videos.count, albums.count))
+                                .font(.system(size: 15.4))
+                                .foregroundColor(.gray)
+                        }
+                        
+                        Spacer()
                     }
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(currentAnime.title)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.black)
-                        Text("@\(currentAnime.title)")
-                            .font(.system(size: 12.7))
-                            .foregroundColor(.black)
-                        Text(String(format: NSLocalizedString("video_count_albums", comment: ""), videos.count, albums.count))
-                            .font(.system(size: 15.4))
-                            .foregroundColor(.gray)
-                    }
-                    
-                    Spacer()
-                }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 
@@ -2689,6 +2876,7 @@ struct AnimeVideoScreen: View {
         .fullScreenCover(isPresented: $showAbout) {
             AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                 .environmentObject(animeManager)
+                .environmentObject(characterManager)
         }
         .sheet(isPresented: $showAddSheet) {
             AddVideoView(selectedVideoURL: $selectedVideoURL, videoTitle: $videoTitle, videoTags: $videoTags, selectedThumbnailData: $selectedThumbnailData, onSave: {
@@ -2926,6 +3114,18 @@ struct AnimeVideoScreen: View {
             loadVideos()
             loadVideoAlbumsFromUserDefaults()
         }
+        .sheet(isPresented: $showIconAdjustment) {
+            IconAdjustmentView(anime: Binding(
+                get: { currentAnime },
+                set: { updatedAnime in
+                    anime = updatedAnime
+                    if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
+                        animes[idx] = updatedAnime
+                    }
+                    animeManager.updateAnime(updatedAnime)
+                }
+            ), animes: $animes)
+        }
     }
     
     // MARK: - Helper Functions
@@ -2959,18 +3159,23 @@ struct AnimeVideoScreen: View {
     }
     
     private func saveVideoAlbumsToUserDefaults() {
-        let key = "video_albums_\(anime.id.uuidString)"
-        if let encodedData = try? JSONEncoder().encode(albums) {
-            UserDefaults.standard.set(encodedData, forKey: key)
-        }
+        VideoStorage.shared.saveAlbums(for: anime.id.uuidString, albums: albums)
     }
     
     private func loadVideoAlbumsFromUserDefaults() {
-        let key = "video_albums_\(anime.id.uuidString)"
-        if let data = UserDefaults.standard.data(forKey: key),
-           let decodedAlbums = try? JSONDecoder().decode([Album].self, from: data) {
-            albums = decodedAlbums
+        albums = VideoStorage.shared.loadAlbums(for: anime.id.uuidString)
+    }
+    
+    private func addVideoToMatchingAlbums(_ video: MemoryVideo) {
+        for (index, album) in albums.enumerated() {
+            if video.tags.contains(album.tag) {
+                if !albums[index].videos.contains(where: { $0.id == video.id }) {
+                    albums[index].videos.append(video)
+                    print("📝 [VideoAlbum] Added video '\(video.title)' to album '\(album.tag)'")
+                }
+            }
         }
+        saveVideoAlbumsToUserDefaults()
     }
     
     private func updateAlbumsAfterVideoDeletion(deletedVideoId: UUID) {
@@ -2981,6 +3186,7 @@ struct AnimeVideoScreen: View {
             }
             return Album(tag: album.tag, videos: updatedVideos)
         }
+        saveVideoAlbumsToUserDefaults()
     }
     
     private func deleteVideo(id: UUID) {
@@ -3026,6 +3232,10 @@ struct AnimeVideoScreen: View {
         let newVideo = MemoryVideo(id: UUID(), characterId: anime.id, videoPath: documentsPath, thumbnailData: thumbnailData, title: videoTitle, tags: tags, date: Date(), youtubeURL: nil, youtubeThumbnailURL: nil)
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        
+        // Add to matching albums
+        addVideoToMatchingAlbums(newVideo)
+        
         selectedVideoURL = nil
         videoTitle = ""
         videoTags = ""
@@ -3074,6 +3284,10 @@ struct AnimeVideoScreen: View {
         
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
+        
+        // Add to matching albums
+        addVideoToMatchingAlbums(newVideo)
+        
         selectedThumbnailData = nil
         showAddSheet = false
     }
@@ -3325,10 +3539,11 @@ struct AnimeVideoScreen: View {
                 
                 // タイトルとタグ
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(video.title)
+                    Text(video.title.formatVideoTitle())
                         .font(.system(size: 16.5, weight: .semibold))
                         .foregroundColor(.black)
                         .padding(.vertical, 4)
+                        .multilineTextAlignment(.leading)
                     
                     // ハッシュタグ
                     if let firstTag = video.tags.first {
@@ -3454,6 +3669,9 @@ struct AnimeAboutView: View {
     @State private var newIconImage: UIImage?
     @State private var currentDisplayedIcon: UIImage? = nil
     @State private var showSoundtrackEdit: Bool = false
+    @State private var selectedCharacterIds: Set<UUID> = []
+    @State private var showCharacterSelection = false
+    @EnvironmentObject private var characterManager: CharacterManager
     
     // シート管理用のenum
     enum ActiveSheet: Identifiable {
@@ -3461,6 +3679,7 @@ struct AnimeAboutView: View {
         case iconPicker
         case editSelection
         case iconAdjustment
+        case characterSelection
         
         var id: Int {
             switch self {
@@ -3468,6 +3687,7 @@ struct AnimeAboutView: View {
             case .iconPicker: return 1
             case .editSelection: return 2
             case .iconAdjustment: return 3
+            case .characterSelection: return 4
             }
         }
     }
@@ -3590,7 +3810,7 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("voice_actors", comment: "Voice Actors"), text: $editedVoiceActors, placeholder: NSLocalizedString("max_5_people", comment: "Max 5 people (comma separated)"))
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: NSLocalizedString("characters", comment: "Characters"), text: $editedCharacters, placeholder: NSLocalizedString("max_5_characters", comment: "Max 5 characters (comma separated)"))
+                                characterSelectionRow(label: NSLocalizedString("characters", comment: "Characters"))
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("watch_link", comment: "Watch Link"), text: $editedWatchLink)
                             } else {
@@ -3605,7 +3825,7 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("voice_actors", comment: "Voice Actors"), value: currentAnime.voiceActors.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.voiceActors.joined(separator: ", "))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("characters", comment: "Characters"), value: currentAnime.characters.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.characters.joined(separator: ", "))
+                                characterSelectionRow(label: NSLocalizedString("characters", comment: "Characters"))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("watch_link", comment: "Watch Link"), value: currentAnime.watchLink.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.watchLink)
                             }
@@ -3745,6 +3965,7 @@ struct AnimeAboutView: View {
             editedRating = latestAnime.rating
             editedVoiceActors = latestAnime.voiceActors.joined(separator: ", ")
             editedCharacters = latestAnime.characters.joined(separator: ", ")
+            selectedCharacterIds = Set(latestAnime.characterIds)
             editedWatchLink = latestAnime.watchLink
             
         }
@@ -3838,7 +4059,19 @@ struct AnimeAboutView: View {
                         activeSheet: $activeSheet
                     )
                 case .iconAdjustment:
-                    IconAdjustmentView(anime: $anime, animes: $animes)
+                    IconAdjustmentView(anime: Binding(
+                        get: { currentAnime },
+                        set: { updatedAnime in
+                            anime = updatedAnime
+                            if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
+                                animes[idx] = updatedAnime
+                            }
+                            animeManager.updateAnime(updatedAnime)
+                        }
+                    ), animes: $animes)
+                case .characterSelection:
+                    CharacterSelectionSheet(selectedCharacterIds: $selectedCharacterIds)
+                        .environmentObject(characterManager)
                 }
             }
         }
@@ -3869,6 +4102,126 @@ struct AnimeAboutView: View {
                 .font(.system(size: 16))
                 .foregroundColor(.primary)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+    }
+    
+    private func characterSelectionRow(label: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 16))
+                .foregroundColor(.secondary)
+                .frame(width: 120, alignment: .leading)
+            
+            if isEditingProfile {
+                // 編集モード: キャラクター選択ボタン
+                Button(action: {
+                    activeSheet = .characterSelection
+                }) {
+                    HStack {
+                        if selectedCharacterIds.isEmpty {
+                            Text(NSLocalizedString("select_characters", comment: "Select characters"))
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+                        } else {
+                            // 選択されたキャラクターのアイコンを表示
+                            HStack(spacing: -8) {
+                                ForEach(Array(selectedCharacterIds.prefix(5)), id: \.self) { characterId in
+                                    if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                        if let imageIdentifier = character.imageIdentifier {
+                                            OptimizedFileImage(
+                                                path: imageIdentifier,
+                                                targetSize: CGSize(width: 32, height: 32)
+                                            )
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 32, height: 32)
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: 2)
+                                            )
+                                            .id(imageIdentifier)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.3))
+                                                .frame(width: 32, height: 32)
+                                                .overlay(
+                                                    Image(systemName: "person")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(.gray)
+                                                )
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(Color.white, lineWidth: 2)
+                                                )
+                                        }
+                                    }
+                                }
+                            }
+                            if selectedCharacterIds.count > 5 {
+                                Text("+\(selectedCharacterIds.count - 5)")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                    .padding(.leading, 4)
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
+                }
+            } else {
+                // 表示モード: キャラクターのアイコンと名前を表示
+                if currentAnime.characterIds.isEmpty {
+                    Text(NSLocalizedString("not_set", comment: "Not set"))
+                        .font(.system(size: 16))
+                        .foregroundColor(.primary)
+                } else {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(currentAnime.characterIds, id: \.self) { characterId in
+                                if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                    HStack(spacing: 4) {
+                                        if let imageIdentifier = character.imageIdentifier {
+                                            OptimizedFileImage(
+                                                path: imageIdentifier,
+                                                targetSize: CGSize(width: 24, height: 24)
+                                            )
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 24, height: 24)
+                                            .clipShape(Circle())
+                                            .id(imageIdentifier)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.3))
+                                                .frame(width: 24, height: 24)
+                                                .overlay(
+                                                    Image(systemName: "person")
+                                                        .font(.system(size: 12))
+                                                        .foregroundColor(.gray)
+                                                )
+                                        }
+                                        Text(character.name)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.primary)
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(12)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             Spacer()
         }
         .padding(.horizontal, 20)
@@ -3992,6 +4345,9 @@ struct AnimeAboutView: View {
             .prefix(5)
         updatedAnime.characters = Array(charactersList)
         
+        // 選択されたキャラクターIDを保存
+        updatedAnime.characterIds = Array(selectedCharacterIds)
+        
         // 視聴リンクを保存
         updatedAnime.watchLink = editedWatchLink
         
@@ -4016,20 +4372,23 @@ struct AnimeAboutView: View {
     
     // アイコン保存機能
     private func saveNewIcon() {
-        guard let iconImage = newIconImage,
+        guard let iconImage = newIconImage else { return }
+        
+        // 最新のデータを取得
+        guard let latestAnime = animeManager.animes.first(where: { $0.id == anime.id }),
               let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
         
         // 画像をDocumentsディレクトリに保存
         let fileName = "anime_icon_\(UUID().uuidString).png"
         if let savedPath = saveImageToDocuments(iconImage, fileName: fileName) {
-            var updatedAnime = animes[idx]
+            var updatedAnime = latestAnime
             
             // 古いアイコンを削除
             if let oldPath = updatedAnime.imageIdentifier {
                 try? FileManager.default.removeItem(atPath: oldPath)
             }
             
-            // 新しいアイコンパスを設定
+            // 新しいアイコンパスを設定（backgroundImagePathは最新データから自動的に保持される）
             updatedAnime.imageIdentifier = savedPath
             
             animes[idx] = updatedAnime
@@ -4278,6 +4637,7 @@ struct AnimeDetailView: View {
     var onDismiss: (() -> Void)? = nil
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var animeManager: AnimeManager
+    @EnvironmentObject private var characterManager: CharacterManager
     
     @State private var showArtwork = false
     @State private var showVideo = false
@@ -4294,11 +4654,33 @@ struct AnimeDetailView: View {
     @State private var tempIconImage: UIImage? = nil
     @State private var showEditWatchStatusModal = false
     @State private var editWatchStatuses: Set<WatchStatus> = []
-    @State private var showEditGenresModal = false
     @State private var editGenres: Set<AnimeGenre> = []
+    @State private var editCustomGenres: Set<String> = []
+    @State private var customGenreName = ""
+    @State private var genreModalType: GenreModalType? = nil
+    @State private var showMemberList = false
+    
+    enum GenreModalType: Identifiable {
+        case editGenres
+        case createCustom
+        
+        var id: String {
+            switch self {
+            case .editGenres: return "editGenres"
+            case .createCustom: return "createCustom"
+            }
+        }
+    }
+    @State private var showAddGenreField = false
+    @State private var newGenreName = ""
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
     @State private var currentDisplayedIcon: UIImage? = nil
+    
+    // 最新のアニメ情報を取得
+    private var currentAnime: Anime {
+        animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
+    }
 
     var body: some View {
         ZStack {
@@ -4397,6 +4779,74 @@ struct AnimeDetailView: View {
                             showEditTitleModal = true
                         }
                     
+                    // キャラクターアイコン
+                    if !anime.characterIds.isEmpty {
+                        HStack(spacing: -8) {
+                            // 最初の4つのキャラクターアイコン
+                            ForEach(Array(anime.characterIds.prefix(4)), id: \.self) { characterId in
+                                if let character = characterManager.characters.first(where: { $0.id == characterId }) {
+                                    Button(action: {
+                                        showMemberList = true
+                                    }) {
+                                        if let imageIdentifier = character.imageIdentifier {
+                                            OptimizedFileImage(
+                                                path: imageIdentifier,
+                                                targetSize: CGSize(width: 36, height: 36)
+                                            )
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 36, height: 36)
+                                            .clipShape(Circle())
+                                            .overlay(
+                                                Circle()
+                                                    .stroke(Color.white, lineWidth: 2)
+                                            )
+                                            .shadow(radius: 2)
+                                            .id(imageIdentifier)
+                                        } else {
+                                            Circle()
+                                                .fill(Color.gray.opacity(0.5))
+                                                .frame(width: 36, height: 36)
+                                                .overlay(
+                                                    Circle()
+                                                        .stroke(Color.white, lineWidth: 2)
+                                                )
+                                                .shadow(radius: 2)
+                                        }
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            }
+                            
+                            // 4つ以上のキャラクターがいる場合は総数ボタンを表示
+                            if anime.characterIds.count >= 4 {
+                                Button(action: {
+                                    showMemberList = true
+                                }) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color(red: 0.7, green: 0.85, blue: 0.85))
+                                            .frame(width: 36, height: 36)
+                                        HStack(spacing: 2) {
+                                            Text("\(anime.characterIds.count)")
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(.white)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white, lineWidth: 2)
+                                    )
+                                    .shadow(radius: 2)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.top, 12)
+                    }
+                    
                     // ナビゲーションバー（下部メニュー）
                     HStack {
                         Spacer()
@@ -4472,20 +4922,39 @@ struct AnimeDetailView: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
                             .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
-                        if currentAnime.genres.isEmpty {
+                        if currentAnime.genres.isEmpty && currentAnime.customGenres.isEmpty {
                             Text(NSLocalizedString("not_set", comment: "Not set"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.gray)
                         } else {
-                            HStack(spacing: 8) {
-                                ForEach(currentAnime.genres, id: \.self) { genre in
-                                    Text(genre.displayName)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.purple)
-                                        .cornerRadius(12)
+                            VStack(spacing: 8) {
+                                // デフォルトジャンル
+                                if !currentAnime.genres.isEmpty {
+                                    HStack(spacing: 8) {
+                                        ForEach(currentAnime.genres, id: \.self) { genre in
+                                            Text(genre.displayName)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.purple)
+                                                .cornerRadius(12)
+                                        }
+                                    }
+                                }
+                                // カスタムジャンル
+                                if !currentAnime.customGenres.isEmpty {
+                                    HStack(spacing: 8) {
+                                        ForEach(currentAnime.customGenres, id: \.self) { customGenre in
+                                            Text(customGenre)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 8)
+                                                .padding(.vertical, 4)
+                                                .background(Color.orange)
+                                                .cornerRadius(12)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -4494,7 +4963,8 @@ struct AnimeDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .onTapGesture {
                         editGenres = Set(currentAnime.genres)
-                        showEditGenresModal = true
+                        editCustomGenres = Set(currentAnime.customGenres)
+                        genreModalType = .editGenres
                     }
                     
                     Spacer()
@@ -4507,6 +4977,10 @@ struct AnimeDetailView: View {
                     .fullScreenCover(isPresented: $showAbout) {
                         AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                             .environmentObject(animeManager)
+                    }
+                    .fullScreenCover(isPresented: $showMemberList) {
+                        AnimeMemberListView(anime: anime, onClose: { showMemberList = false })
+                            .environmentObject(characterManager)
                     }
                 }
                 .zIndex(1)
@@ -4724,66 +5198,161 @@ struct AnimeDetailView: View {
             .cornerRadius(16)
             .padding(40)
         }
-        // ジャンル編集モーダル
-        .sheet(isPresented: $showEditGenresModal) {
-            VStack(spacing: 20) {
-                Text(NSLocalizedString("select_genre", comment: "Select genre"))
-                    .font(.headline)
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(AnimeGenre.allCases, id: \.self) { genre in
-                            Button(action: {
-                                if editGenres.contains(genre) {
-                                    editGenres.remove(genre)
-                                } else {
-                                    editGenres.insert(genre)
-                                }
-                            }) {
-                                HStack {
-                                    Text(genre.displayName)
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.black)
-                                    Spacer()
+        // 統一されたジャンルモーダル
+        .sheet(item: $genreModalType) { modalType in
+            switch modalType {
+            case .editGenres:
+                VStack(spacing: 20) {
+                    Text(NSLocalizedString("select_genre", comment: "Select genre"))
+                        .font(.headline)
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            ForEach(AnimeGenre.allCases, id: \.self) { genre in
+                                Button(action: {
                                     if editGenres.contains(genre) {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.purple)
+                                        editGenres.remove(genre)
                                     } else {
-                                        Image(systemName: "circle")
-                                            .foregroundColor(.gray)
+                                        editGenres.insert(genre)
                                     }
+                                }) {
+                                    HStack {
+                                        Text(genre.displayName)
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.black)
+                                        Spacer()
+                                        if editGenres.contains(genre) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.purple)
+                                        } else {
+                                            Image(systemName: "circle")
+                                                .foregroundColor(.gray)
+                                        }
+                                    }
+                                    .padding()
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(editGenres.contains(genre) ? Color.purple.opacity(0.1) : Color(.systemGray6))
+                                    )
                                 }
-                                .padding()
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(editGenres.contains(genre) ? Color.purple.opacity(0.1) : Color(.systemGray6))
-                                )
                             }
                         }
                     }
-                }
-                .frame(maxHeight: 400)
-                
-                HStack(spacing: 20) {
-                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
-                        showEditGenresModal = false
-                    }
-                    .foregroundColor(.red)
+                    .frame(maxHeight: 400)
                     
-                    Button(NSLocalizedString("save", comment: "Save")) {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        updatedAnime.genres = Array(editGenres)
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditGenresModal = false
+                    // 既存のカスタムジャンル表示
+                    if !editCustomGenres.isEmpty {
+                        VStack(spacing: 8) {
+                            Text(NSLocalizedString("custom_genres", comment: "Custom genres"))
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.gray)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            
+                            VStack(spacing: 12) {
+                                ForEach(Array(editCustomGenres), id: \.self) { customGenre in
+                                    Button(action: {
+                                        editCustomGenres.remove(customGenre)
+                                    }) {
+                                        HStack {
+                                            Text(customGenre)
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(.black)
+                                            Spacer()
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .foregroundColor(.purple)
+                                        }
+                                        .padding()
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(Color.purple.opacity(0.1))
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
                     }
-                    .foregroundColor(.blue)
+                    
+                    // カスタムジャンル作成ボタン
+                    Button(action: {
+                        genreModalType = .createCustom
+                    }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.purple)
+                            Text(NSLocalizedString("create_custom_genre", comment: "Create custom genre"))
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.purple)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.purple.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .stroke(Color.purple, lineWidth: 1)
+                                )
+                        )
+                    }
+                    .padding(.horizontal)
+                    
+                    HStack(spacing: 20) {
+                        Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                            genreModalType = nil
+                        }
+                        .foregroundColor(.red)
+                        
+                        Button(NSLocalizedString("save", comment: "Save")) {
+                            guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
+                            var updatedAnime = animes[idx]
+                            updatedAnime.genres = Array(editGenres)
+                            updatedAnime.customGenres = Array(editCustomGenres)
+                            animes[idx] = updatedAnime
+                            animeManager.updateAnime(updatedAnime)
+                            genreModalType = nil
+                        }
+                        .foregroundColor(.blue)
+                    }
                 }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .padding(40)
+                
+            case .createCustom:
+                VStack(spacing: 20) {
+                    Text(NSLocalizedString("create_custom_genre", comment: "Create custom genre"))
+                        .font(.headline)
+                    
+                    TextField(NSLocalizedString("genre_name", comment: "Genre name"), text: $customGenreName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 20) {
+                        Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                            customGenreName = ""
+                            genreModalType = nil
+                        }
+                        .foregroundColor(.red)
+                        
+                        Button(NSLocalizedString("create", comment: "Create")) {
+                            let trimmedName = customGenreName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmedName.isEmpty {
+                                // カスタムジャンルを現在のアニメに追加
+                                editCustomGenres.insert(trimmedName)
+                                customGenreName = ""
+                                genreModalType = .editGenres // ジャンル編集モーダルに戻る
+                            }
+                        }
+                        .foregroundColor(.blue)
+                        .disabled(customGenreName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                }
+                .padding()
+                .background(Color(.systemBackground))
+                .cornerRadius(16)
+                .padding(40)
             }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
         }
         // アイコン編集モーダル
         .sheet(isPresented: $showEditIconModal) {
@@ -4844,21 +5413,25 @@ struct AnimeDetailView: View {
                                     let fileName = "icon_\(UUID().uuidString).png"
                                     let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
                                     
-                                    // 新しいAnimeオブジェクトを作成して更新
-                                    var updatedAnime = anime
-                                    updatedAnime.imageIdentifier = imagePath
-                                    
-                                    // Bindingを通じて更新（これがsetterを呼び出す）
-                                    anime = updatedAnime
-                                    
-                                    // animesリストも更新
-                                    if let idx = animes.firstIndex(where: { $0.id == anime.id }) {
-                                        animes[idx] = updatedAnime
+                                    // 新しいAnimeオブジェクトを作成して更新（backgroundImagePathを保持）
+                                    // 最新のデータから取得
+                                    if let latestAnime = animeManager.animes.first(where: { $0.id == anime.id }) {
+                                        var updatedAnime = latestAnime
+                                        updatedAnime.imageIdentifier = imagePath
+                                        // backgroundImagePathは最新のデータから保持される
+                                        
+                                        // Bindingを通じて更新（これがsetterを呼び出す）
+                                        anime = updatedAnime
+                                        
+                                        // animesリストも更新
+                                        if let idx = animes.firstIndex(where: { $0.id == anime.id }) {
+                                            animes[idx] = updatedAnime
+                                        }
+                                        
+                                        // AnimeManagerも更新してUI全体を更新
+                                        animeManager.updateAnime(updatedAnime)
+                                        animeManager.refreshUI()
                                     }
-                                    
-                                    // AnimeManagerも更新してUI全体を更新
-                                    animeManager.updateAnime(updatedAnime)
-                                    animeManager.refreshUI()
                                     
                                     // アイコン選択完了後にモーダルを閉じる
                                     showEditIconModal = false
@@ -5000,16 +5573,19 @@ struct IconAdjustmentView: View {
             VStack(spacing: 20) {
                 // プレビュー
                 ZStack {
-                    if let imageIdentifier = anime.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: UIScreen.main.bounds.width, height: 200)
-                            .scaleEffect(CGFloat(tempScale))
-                            .offset(x: CGFloat(tempOffsetX), y: CGFloat(tempOffsetY))
-                            .frame(maxWidth: .infinity, maxHeight: 200)
-                            .clipped()
-                            .background(Color.gray.opacity(0.2))
+                    if let imageIdentifier = anime.imageIdentifier {
+                        OptimizedFileImage(
+                            path: imageIdentifier,
+                            targetSize: CGSize(width: UIScreen.main.bounds.width, height: 200)
+                        )
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: UIScreen.main.bounds.width, height: 200)
+                        .scaleEffect(CGFloat(tempScale))
+                        .offset(x: CGFloat(tempOffsetX), y: CGFloat(tempOffsetY))
+                        .frame(maxWidth: .infinity, maxHeight: 200)
+                        .clipped()
+                        .background(Color.gray.opacity(0.2))
+                        .id(imageIdentifier) // Force reload when image changes
                     }
                 }
                 .frame(height: 200)
@@ -5041,10 +5617,10 @@ struct IconAdjustmentView: View {
                         Text(NSLocalizedString("icon_horizontal_position", comment: "Horizontal Position"))
                             .font(.headline)
                         HStack {
-                            Text("-100")
+                            Text("-200")
                                 .font(.caption)
-                            Slider(value: $tempOffsetX, in: -100...100)
-                            Text("100")
+                            Slider(value: $tempOffsetX, in: -200...200)
+                            Text("200")
                                 .font(.caption)
                         }
                         Text(String(format: "%.0f", tempOffsetX))
@@ -5058,10 +5634,10 @@ struct IconAdjustmentView: View {
                         Text(NSLocalizedString("icon_vertical_position", comment: "Vertical Position"))
                             .font(.headline)
                         HStack {
-                            Text("-100")
+                            Text("-200")
                                 .font(.caption)
-                            Slider(value: $tempOffsetY, in: -100...100)
-                            Text("100")
+                            Slider(value: $tempOffsetY, in: -200...200)
+                            Text("200")
                                 .font(.caption)
                         }
                         Text(String(format: "%.0f", tempOffsetY))
@@ -5211,6 +5787,269 @@ struct EditSelectionSheet: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(NSLocalizedString("cancel", comment: "Cancel")) {
                         dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+
+// キャラクター選択シート
+struct CharacterSelectionSheet: View {
+    @Binding var selectedCharacterIds: Set<UUID>
+    @EnvironmentObject var characterManager: CharacterManager
+    @Environment(\.dismiss) var dismiss
+    @State private var searchText = ""
+    
+    var filteredCharacters: [Character] {
+        let charactersWithNames = characterManager.characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        
+        if searchText.isEmpty {
+            return charactersWithNames
+        }
+        return charactersWithNames.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // 検索バー
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.gray)
+                    TextField(NSLocalizedString("search", comment: "Search"), text: $searchText)
+                        .font(.system(size: 16))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                
+                // キャラクターリスト
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(filteredCharacters, id: \.id) { character in
+                            HStack(spacing: 12) {
+                                // チェックボックス
+                                Image(systemName: selectedCharacterIds.contains(character.id) ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(selectedCharacterIds.contains(character.id) ? .blue : .gray)
+                                
+                                // キャラクターアイコン
+                                if let imageIdentifier = character.imageIdentifier {
+                                    OptimizedFileImage(
+                                        path: imageIdentifier,
+                                        targetSize: CGSize(width: 48, height: 48)
+                                    )
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 48, height: 48)
+                                    .clipShape(Circle())
+                                    .id(imageIdentifier)
+                                } else {
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 48, height: 48)
+                                        .overlay(
+                                            Image(systemName: "person")
+                                                .font(.system(size: 24))
+                                                .foregroundColor(.gray)
+                                        )
+                                }
+                                
+                                // キャラクター名
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(character.name)
+                                        .font(.system(size: 17, weight: .medium))
+                                        .foregroundColor(.primary)
+                                    Text("#\(character.tag)")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if selectedCharacterIds.contains(character.id) {
+                                    selectedCharacterIds.remove(character.id)
+                                } else {
+                                    if selectedCharacterIds.count < 10 { // 最大10キャラクターまで
+                                        selectedCharacterIds.insert(character.id)
+                                    }
+                                }
+                            }
+                            
+                            Divider()
+                                .padding(.leading, 16)
+                        }
+                    }
+                }
+                
+                // 選択数表示
+                if !selectedCharacterIds.isEmpty {
+                    HStack {
+                        Text("\(selectedCharacterIds.count) \(NSLocalizedString("characters_selected", comment: "characters selected"))")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray6))
+                }
+            }
+            .navigationTitle(NSLocalizedString("select_characters", comment: "Select characters"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("done", comment: "Done")) {
+                        dismiss()
+                    }
+                    .fontWeight(.bold)
+                }
+            }
+        }
+    }
+}
+
+// アニメメンバーリストビュー
+struct AnimeMemberListView: View {
+    let anime: Anime
+    let onClose: () -> Void
+    @EnvironmentObject var characterManager: CharacterManager
+    @Environment(\.dismiss) var dismiss
+    @State private var navigateToCharacter: Character?
+    
+    var animeCharacters: [Character] {
+        anime.characterIds.compactMap { characterId in
+            characterManager.characters.first(where: { $0.id == characterId })
+        }
+    }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // バナービュー
+                if let imageIdentifier = anime.imageIdentifier {
+                    OptimizedFileImage(
+                        path: imageIdentifier,
+                        targetSize: CGSize(width: UIScreen.main.bounds.width, height: 200)
+                    )
+                    .aspectRatio(contentMode: .fill)
+                    .frame(height: 200)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.5)]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .overlay(
+                        VStack {
+                            Spacer()
+                            Text(anime.title)
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.white)
+                                .shadow(radius: 5)
+                                .padding(.bottom, 20)
+                        }
+                    )
+                }
+                
+                // キャラクターリスト
+                ScrollView {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 16) {
+                        ForEach(animeCharacters, id: \.id) { character in
+                            Button(action: {
+                                navigateToCharacter = character
+                            }) {
+                                VStack(spacing: 8) {
+                                    if let imageIdentifier = character.imageIdentifier {
+                                        OptimizedFileImage(
+                                            path: imageIdentifier,
+                                            targetSize: CGSize(width: 100, height: 100)
+                                        )
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 100, height: 100)
+                                        .clipShape(Circle())
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                        )
+                                        .id(imageIdentifier)
+                                    } else {
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 100, height: 100)
+                                            .overlay(
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 40))
+                                                    .foregroundColor(.gray.opacity(0.5))
+                                            )
+                                    }
+                                    
+                                    Text(character.name)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.primary)
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .frame(width: 100)
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .onTapGesture {
+                                navigateToCharacter = character
+                            }
+                            .navigationDestination(isPresented: Binding(
+                                get: { navigateToCharacter?.id == character.id },
+                                set: { isActive in
+                                    if !isActive {
+                                        navigateToCharacter = nil
+                                    }
+                                }
+                            )) {
+                                CharacterDetailView(
+                                    character: Binding(
+                                        get: { character },
+                                        set: { updatedCharacter in
+                                            if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                                characterManager.characters[index] = updatedCharacter
+                                                characterManager.saveCharacters()
+                                            }
+                                        }
+                                    ),
+                                    characters: $characterManager.characters
+                                )
+                                .environmentObject(characterManager)
+                            }
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .navigationTitle(NSLocalizedString("member_list", comment: "Member List"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
                     }
                 }
             }

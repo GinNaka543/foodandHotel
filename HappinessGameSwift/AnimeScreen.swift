@@ -6011,6 +6011,7 @@ struct AnimeMemberListView: View {
     @EnvironmentObject var characterManager: CharacterManager
     @Environment(\.dismiss) var dismiss
     @State private var navigateToCharacter: Character?
+    @State private var showCharacterDetail = false
     
     var animeCharacters: [Character] {
         anime.characterIds.compactMap { characterId in
@@ -6019,7 +6020,7 @@ struct AnimeMemberListView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // バナービュー
                 if let imageIdentifier = anime.imageIdentifier {
@@ -6059,6 +6060,7 @@ struct AnimeMemberListView: View {
                         ForEach(animeCharacters, id: \.id) { character in
                             Button(action: {
                                 navigateToCharacter = character
+                                showCharacterDetail = true
                             }) {
                                 VStack(spacing: 8) {
                                     if let imageIdentifier = character.imageIdentifier {
@@ -6094,31 +6096,6 @@ struct AnimeMemberListView: View {
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .onTapGesture {
-                                navigateToCharacter = character
-                            }
-                            .navigationDestination(isPresented: Binding(
-                                get: { navigateToCharacter?.id == character.id },
-                                set: { isActive in
-                                    if !isActive {
-                                        navigateToCharacter = nil
-                                    }
-                                }
-                            )) {
-                                CharacterDetailView(
-                                    character: Binding(
-                                        get: { character },
-                                        set: { updatedCharacter in
-                                            if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
-                                                characterManager.characters[index] = updatedCharacter
-                                                characterManager.saveCharacters()
-                                            }
-                                        }
-                                    ),
-                                    characters: $characterManager.characters
-                                )
-                                .environmentObject(characterManager)
-                            }
                         }
                     }
                     .padding(16)
@@ -6131,6 +6108,23 @@ struct AnimeMemberListView: View {
                     Button(action: onClose) {
                         Image(systemName: "xmark")
                     }
+                }
+            }
+            .navigationDestination(isPresented: $showCharacterDetail) {
+                if let character = navigateToCharacter {
+                    CharacterDetailView(
+                        character: Binding(
+                            get: { character },
+                            set: { updatedCharacter in
+                                if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                    characterManager.characters[index] = updatedCharacter
+                                    characterManager.saveCharacters()
+                                }
+                            }
+                        ),
+                        characters: $characterManager.characters
+                    )
+                    .environmentObject(characterManager)
                 }
             }
         }

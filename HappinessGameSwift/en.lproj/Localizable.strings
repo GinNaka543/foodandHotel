@@ -3,6 +3,7 @@
 /* Common */
 "app_name" = "ANICOLLE!";
 "done" = "Done";
+"continue" = "Continue";
 "cancel" = "Cancel";
 "save" = "Save";
 "delete" = "Delete";

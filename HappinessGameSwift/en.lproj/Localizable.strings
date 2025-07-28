@@ -3,6 +3,7 @@
 /* Common */
 "app_name" = "ANICOLLE!";
 "done" = "Done";
+"continue" = "Continue";
 "cancel" = "Cancel";
 "save" = "Save";
 "delete" = "Delete";
@@ -730,6 +731,9 @@
 "trip_days" = "Number of days";
 "days_format" = "%d days";
 "day_range_instruction" = "Can be set from 1 to 30 days";
+"enter_trip_days" = "Enter trip days";
+"custom_days" = "Custom days";
+"decide" = "Decide";
 "timeline" = "Timeline";
 "day_format" = "Day %d";
 "add_spots_to_create_itinerary" = "Add spots to create itinerary";
@@ -741,6 +745,7 @@
 "minutes" = "minutes";
 "transportation_cost" = "How much is the transportation cost?";
 "which_route_optional" = "Which route will you use? (Optional)";
+"route_example" = "e.g. JR Yamanote Line → Tokyo Metro Ginza Line";
 "stay_duration_format" = "Stay duration: %d minutes";
 "spot_name" = "Spot name";
 "stay_time_period" = "Stay time period";
@@ -810,6 +815,18 @@
 "watch_anime" = "Watch Anime";
 "tap_to_watch" = "Tap to watch";
 
+/* Spot Addition Screen */
+"spot_name_example" = "e.g. Kiyomizu Temple";
+"previous_spot_end_time" = "Previous spot end time: %@";
+"transportation_from" = "Transportation - From %@";
+"from_previous_spot" = "from previous spot";
+"select_spot_add_day" = "Select day to add spot";
+"spot_info_day" = "Spot Info - Day %d";
+"spot_edit" = "Edit Spot";
+"spot_info" = "Spot Info";
+"select_date" = "Select Date";
+"delete" = "Delete";
+
 /* Currency */
 "pounds" = "Pounds";
 "dollars" = "Dollars";
@@ -841,6 +858,7 @@
 /* Thumbnail Picker */
 "current_thumbnail" = "Current Thumbnail";
 "upload_image" = "Upload Image";
+"recommended_image_size" = "Recommended image size: 1920×1080 (16:9)";
 "select_from_photo_library" = "Select from Photo Library";
 "thumbnail_adjustment" = "Thumbnail Adjustment";
 "thumbnail_size" = "Size";

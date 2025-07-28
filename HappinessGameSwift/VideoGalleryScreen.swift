@@ -18,6 +18,32 @@ struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
     var youtubeURL: String? // YouTube URL
     var youtubeThumbnailURL: String? // YouTube サムネイルURL
     var viewCount: Int? = 0 // View count
+    
+    // YouTube動画IDを抽出
+    var youtubeVideoId: String {
+        guard let url = youtubeURL else { return "" }
+        return extractYouTubeVideoId(from: url)
+    }
+    
+    private func extractYouTubeVideoId(from url: String) -> String {
+        let patterns = [
+            "(?:youtube\\.com/watch\\?v=|youtu\\.be/)([^&\\n?#]+)",
+            "youtube\\.com/embed/([^&\\n?#]+)",
+            "youtube\\.com/v/([^&\\n?#]+)"
+        ]
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                let range = NSRange(location: 0, length: url.utf16.count)
+                if let match = regex.firstMatch(in: url, options: [], range: range) {
+                    if let videoIdRange = Range(match.range(at: 1), in: url) {
+                        return String(url[videoIdRange])
+                    }
+                }
+            }
+        }
+        return ""
+    }
 }
 
 struct Album: Identifiable, Hashable, Equatable, Codable {
@@ -72,6 +98,7 @@ struct VideoGalleryScreen: View {
     @State private var videoTags: String = ""
     @State private var showAlbum = false
     @State private var showAbout = false
+    @State private var refreshID = UUID() // 強制リフレッシュ用のID
     @State private var showTagInput = false
     @State private var newTag: String = ""
     @State private var filteredTags: [String] = []
@@ -86,7 +113,7 @@ struct VideoGalleryScreen: View {
     @State private var showIconAdjustment = false
     @State private var backgroundObserver: NSObjectProtocol?
     
-    // 最新のキャラクター情報を取得
+    // 最新のキャラクター情報を取得（計算プロパティとして毎回最新情報を取得）
     private var currentCharacter: Character {
         characterManager.characters.first(where: { $0.id == character.id }) ?? character
     }
@@ -161,17 +188,24 @@ struct VideoGalleryScreen: View {
     // バナービュー
     var bannerView: some View {
         Group {
-            if let imageIdentifier = currentCharacter.imageIdentifier {
-                OptimizedFileImage(
-                    path: imageIdentifier,
-                    targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
-                )
-                .aspectRatio(contentMode: .fill)
+            let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
+            if let imageIdentifier = latestCharacter.imageIdentifier {
+                ZStack {
+                    // 背景色（デバッグ用）
+                    Color.gray.opacity(0.1)
+                    
+                    OptimizedFileImage(
+                        path: imageIdentifier,
+                        targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
+                    )
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: (UIScreen.main.bounds.width - 32) * CGFloat(latestCharacter.iconScale), 
+                           height: 60 * CGFloat(latestCharacter.iconScale))
+                    .offset(x: CGFloat(latestCharacter.iconOffsetX), y: CGFloat(latestCharacter.iconOffsetY))
+                }
                 .frame(width: UIScreen.main.bounds.width - 32, height: 60)
-                .scaleEffect(CGFloat(currentCharacter.iconScale))
-                .offset(x: CGFloat(currentCharacter.iconOffsetX), y: CGFloat(currentCharacter.iconOffsetY))
-                .frame(maxWidth: .infinity, maxHeight: 60)
                 .clipped()
+                .id("\(latestCharacter.id)_\(latestCharacter.iconScale)_\(latestCharacter.iconOffsetX)_\(latestCharacter.iconOffsetY)_\(refreshID)") // 位置調整が変更されたときに強制更新
             } else {
                 Rectangle()
                     .fill(Color.gray.opacity(0.3))
@@ -180,6 +214,10 @@ struct VideoGalleryScreen: View {
         }
         .cornerRadius(12)
         .padding(.horizontal, 16)
+        .onTapGesture {
+            print("🔍 [VideoGallery] Banner tapped - Current scale: \(currentCharacter.iconScale), offsetX: \(currentCharacter.iconOffsetX), offsetY: \(currentCharacter.iconOffsetY)")
+            print("🔍 [VideoGallery] Latest character scale: \(characterManager.characters.first(where: { $0.id == character.id })?.iconScale ?? -1)")
+        }
     }
     
     // タブビュー
@@ -221,8 +259,10 @@ struct VideoGalleryScreen: View {
         ZStack {
             if showAlbum {
                 albumView
+                    .id(refreshID) // 強制リフレッシュ用
             } else {
                 videoListView
+                    .id(refreshID) // 強制リフレッシュ用
             }
         }
     }
@@ -442,6 +482,10 @@ struct VideoGalleryScreen: View {
                         updated.thumbnailData = newThumbnailData
                         videos[idx] = updated
                         saveVideosToUserDefaults()
+                        // サムネイル更新を通知
+                        NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
+                        // ビューを強制的にリフレッシュ
+                        refreshID = UUID()
                     }
                 }
             )
@@ -539,6 +583,9 @@ struct VideoGalleryScreen: View {
                         .foregroundColor(.black)
                         .padding(.vertical, 4)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: true, vertical: true)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     
                     // ハッシュタグ
                     if let firstTag = video.tags.first {
@@ -552,7 +599,7 @@ struct VideoGalleryScreen: View {
                         .foregroundColor(.gray)
                         .padding(.vertical, 1)
                 }
-                .frame(alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 3)
                 .padding(.leading, 8)
                 
@@ -598,6 +645,18 @@ struct VideoGalleryScreen: View {
             .padding(.leading, 8)
         }
         .buttonStyle(PlainButtonStyle())
+        .contextMenu {
+            if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                Button {
+                    // サムネイルキャッシュをクリア（簡易版）
+                    if let thumbnailURL = video.youtubeThumbnailURL {
+                        URLCache.shared.removeCachedResponse(for: URLRequest(url: URL(string: thumbnailURL)!))
+                    }
+                } label: {
+                    Label("サムネイルを更新", systemImage: "arrow.clockwise")
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -775,12 +834,14 @@ struct VideoGalleryScreen: View {
                         .onTapGesture {
                             showIconAdjustment = true
                         }
+                        .id("\(currentCharacter.iconScale)_\(currentCharacter.iconOffsetX)_\(currentCharacter.iconOffsetY)") // 追加：変更を反映
                     
                     // Profile section
                     profileSection
                     
                     // Description section
                     descriptionSection
+                        .id(refreshID) // 強制リフレッシュ用
                     
                     // Add button moved here
                     Button(action: { 
@@ -836,11 +897,6 @@ struct VideoGalleryScreen: View {
             
             // Debug: Check for specific key
             let expectedKey = "video_albums_\(character.id.uuidString)"
-            if let data = UserDefaults.standard.data(forKey: expectedKey) {
-                print("📱 [VideoGallery] Key '\(expectedKey)' exists with \(data.count) bytes")
-            } else {
-                print("📱 [VideoGallery] Key '\(expectedKey)' does NOT exist")
-            }
             
             // Debug: Try to load directly if albums are empty
             if albums.isEmpty {
@@ -858,6 +914,14 @@ struct VideoGalleryScreen: View {
                     }
                 }
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDataUpdated"))) { _ in
+            print("🔄 [VideoGallery] Received VideoDataUpdated notification - reloading data")
+            // ビデオデータを再読み込み
+            loadVideos()
+            loadAlbumsFromUserDefaults()
+            // ビューを強制的にリフレッシュ
+            refreshID = UUID()
         }
         .onDisappear {
             print("📱 [VideoGallery] onDisappear - saving albums before view dismisses")
@@ -901,6 +965,10 @@ struct VideoGalleryScreen: View {
                             updated.thumbnailData = newThumbnailData
                             videos[idx] = updated
                             saveVideosToUserDefaults()
+                            // サムネイル更新を通知
+                            NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
+                            // ビューを強制的にリフレッシュ
+                            refreshID = UUID()
                         }
                         activeSheet = nil
                     },
@@ -945,7 +1013,10 @@ struct VideoGalleryScreen: View {
                 )
             }
         }
-        .sheet(isPresented: $showIconAdjustment) {
+        .sheet(isPresented: $showIconAdjustment, onDismiss: {
+            // アイコン位置調整が完了したらビューを強制的にリフレッシュ
+            refreshID = UUID()
+        }) {
             CharacterIconAdjustmentView(
                 character: Binding(
                     get: { currentCharacter },
@@ -1164,6 +1235,10 @@ struct VideoGalleryScreen: View {
                         updated.thumbnailData = newThumbnailData
                         videos[idx] = updated
                         saveVideosToUserDefaults()
+                        // サムネイル更新を通知
+                        NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
+                        // ビューを強制的にリフレッシュ
+                        refreshID = UUID()
                     }
                     showThumbnailPicker = false
                 },
@@ -1468,6 +1543,9 @@ struct VideoGalleryScreen: View {
         videoTags = ""
         selectedThumbnailData = nil
         showAddSheet = false
+        
+        // ビデオデータが更新されたことを通知
+        NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
     }
     
     private func saveVideoToDocuments(from url: URL, fileName: String) -> String {
@@ -1545,8 +1623,8 @@ struct VideoGalleryScreen: View {
             saveVideosToUserDefaults()
             saveAlbumsToUserDefaults()
             
-            // 動画が削除されたことを通知
-            NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
+            // ビデオデータが更新されたことを通知
+            NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
         } else {
         }
     }
@@ -1595,6 +1673,9 @@ struct VideoGalleryScreen: View {
         
         selectedThumbnailData = nil // リセット
         showAddSheet = false
+        
+        // ビデオデータが更新されたことを通知
+        NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
     }
     
     // Add video to albums with matching tags
@@ -1821,6 +1902,9 @@ struct VideoAlbumGridView: View {
                                 .font(.system(size: 16.5, weight: .semibold))
                                 .foregroundColor(.black)
                                 .multilineTextAlignment(.leading)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             Text(video.tags.isEmpty ? "#nakajimaginsei" : "#" + video.tags.joined(separator: " #"))
                                 .font(.system(size: 13.8, weight: .regular))
                                 .foregroundColor(.gray)
@@ -2164,6 +2248,9 @@ struct AlbumVideoListScreen: View {
                                         .foregroundColor(.black)
                                         .padding(.vertical, 4)
                                         .multilineTextAlignment(.leading)
+                                        .lineLimit(2)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                     
                                     // ハッシュタグ
                                     if let firstTag = video.tags.first {
@@ -2520,26 +2607,28 @@ extension String {
         return result
     }
     
-    // Format video titles: 8 characters per line, truncate after 15 characters with ellipsis
+    // Format video titles: force line break at 8 characters
     func formatVideoTitle() -> String {
-        // Count actual characters (not bytes) for proper Japanese text handling
-        let characters = Array(self)
+        // Remove any existing line breaks and whitespace
+        let cleanTitle = self.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        if characters.count <= 8 {
-            // If 8 characters or less, return as is
-            return self
-        } else if characters.count <= 15 {
-            // If 9-15 characters, split into two lines at 8 characters
-            let firstLine = String(characters.prefix(8))
-            let secondLine = String(characters.dropFirst(8))
-            return "\(firstLine)\n\(secondLine)"
+        // If 8 characters or less, return as is
+        if cleanTitle.count <= 8 {
+            return cleanTitle
+        }
+        
+        // Force break at exactly 8 characters
+        let index8 = cleanTitle.index(cleanTitle.startIndex, offsetBy: 8)
+        let firstLine = String(cleanTitle[..<index8])
+        let remaining = String(cleanTitle[index8...])
+        
+        // If second line would be longer than 15 characters, truncate with ellipsis
+        if remaining.count > 15 {
+            let index15 = remaining.index(remaining.startIndex, offsetBy: 15)
+            let secondLine = String(remaining[..<index15]) + "..."
+            return firstLine + "\n" + secondLine
         } else {
-            // If more than 15 characters, truncate to 15 and add ellipsis
-            let truncated = String(characters.prefix(15)) + "..."
-            let truncatedChars = Array(truncated)
-            let firstLine = String(truncatedChars.prefix(8))
-            let secondLine = String(truncatedChars.dropFirst(8))
-            return "\(firstLine)\n\(secondLine)"
+            return firstLine + "\n" + remaining
         }
     }
 }

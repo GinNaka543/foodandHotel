@@ -708,6 +708,9 @@
 "trip_days" = "Nombre de jours";
 "days_format" = "%d jours";
 "day_range_instruction" = "Peut être réglé de 1 à 30 jours";
+"enter_trip_days" = "Entrer le nombre de jours";
+"custom_days" = "Jours personnalisés";
+"decide" = "Décider";
 "timeline" = "Chronologie";
 "day_format" = "Jour %d";
 "add_spots_to_create_itinerary" = "Ajoutez des lieux pour créer l'itinéraire";
@@ -719,6 +722,7 @@
 "minutes" = "minutes";
 "transportation_cost" = "Combien coûte le transport ?";
 "which_route_optional" = "Quelle route utiliserez-vous ? (Optionnel)";
+"route_example" = "ex: Ligne JR Yamanote → Ligne Tokyo Metro Ginza";
 "stay_duration_format" = "Durée du séjour : %d minutes";
 "spot_name" = "Nom du lieu";
 "stay_time_period" = "Période de séjour";
@@ -784,6 +788,19 @@
 "admin_setup_required" = "Configuration admin requise";
 "watch_anime" = "Regarder l'anime";
 "tap_to_watch" = "Appuyer pour regarder";
+
+/* Spot Addition Screen */
+"spot_name_example" = "ex: Temple Kiyomizu";
+"previous_spot_end_time" = "Heure de fin du spot précédent : %@";
+"transportation_from" = "Transport - Depuis %@";
+"from_previous_spot" = "depuis le spot précédent";
+"select_spot_add_day" = "Sélectionner le jour pour ajouter un spot";
+"spot_info_day" = "Info spot - Jour %d";
+"spot_edit" = "Modifier le spot";
+"spot_info" = "Info du spot";
+"select_date" = "Sélectionner une date";
+"delete" = "Supprimer";
+
 "create" = "Créer";
 
 /* Points Purchase Modal */

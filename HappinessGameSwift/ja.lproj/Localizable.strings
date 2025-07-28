@@ -3,6 +3,7 @@
 /* Common */
 "app_name" = "アニコレ！";
 "done" = "完了";
+"continue" = "続ける";
 "cancel" = "キャンセル";
 "save" = "保存";
 "delete" = "削除";
@@ -509,6 +510,9 @@
 "trip_days" = "旅行日数";
 "days_format" = "%d日";
 "day_range_instruction" = "1〜30日間で設定できます";
+"enter_trip_days" = "旅行日数を入力";
+"custom_days" = "カスタム日数";
+"decide" = "決定";
 "delivery_days_format" = "%d日で配達";
 "plan_title" = "プラン名";
 "plan_title_placeholder" = "例：京都聖地巡礼";
@@ -525,6 +529,7 @@
 "how_long_does_it_take" = "所要時間はどのくらいですか？";
 "minutes" = "分";
 "which_route_optional" = "どのルートを使いますか？（任意）";
+"route_example" = "例：JR山手線 → 東京メトロ銀座線";
 "stay_duration_format" = "滞在時間: %d分";
 "spot_name" = "スポット名";
 "stay_time_period" = "滞在時間帯";
@@ -583,6 +588,18 @@
 "admin_setup_required" = "管理者による設定が必要です";
 "watch_anime" = "アニメを観る";
 "tap_to_watch" = "タップして視聴";
+
+/* Spot Addition Screen */
+"spot_name_example" = "例: 清水寺";
+"previous_spot_end_time" = "前のスポットの終了時刻: %@";
+"transportation_from" = "移動手段 - %@から";
+"from_previous_spot" = "前のスポット";
+"select_spot_add_day" = "スポットを追加する日を選択";
+"spot_info_day" = "スポット情報 - Day %d";
+"spot_edit" = "スポット編集";
+"spot_info" = "スポット情報";
+"select_date" = "日付を選択";
+"delete" = "削除";
 
 /* Currency */
 "pounds" = "ポンド";
@@ -660,6 +677,7 @@
 /* Thumbnail Picker */
 "current_thumbnail" = "現在のサムネイル";
 "upload_image" = "画像をアップロード";
+"recommended_image_size" = "推奨画像サイズ: 1920×1080 (16:9)";
 "select_from_photo_library" = "フォトライブラリから選択";
 "thumbnail_adjustment" = "サムネイル調整";
 "thumbnail_size" = "サイズ";

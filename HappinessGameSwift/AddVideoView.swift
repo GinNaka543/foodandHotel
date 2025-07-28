@@ -164,6 +164,12 @@ struct AddVideoView: View {
                             Text(NSLocalizedString("thumbnail_image", comment: "Thumbnail image"))
                                 .font(.headline)
                             
+                            // 推奨サイズの説明を追加
+                            Text(NSLocalizedString("recommended_image_size", comment: "Recommended image size: 1920×1080 (16:9)"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.bottom, 4)
+                            
                             if let thumbnail = customYouTubeThumbnail {
                                 Image(uiImage: thumbnail)
                                     .resizable()
@@ -242,6 +248,11 @@ struct AddVideoView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(NSLocalizedString("select_thumbnail", comment: "Select thumbnail"))
                         .font(.headline)
+                    
+                    // 推奨サイズの説明を追加
+                    Text(NSLocalizedString("recommended_image_size", comment: "Recommended image size: 1920×1080 (16:9)"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                     
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {

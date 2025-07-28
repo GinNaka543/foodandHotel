@@ -89,6 +89,54 @@ final class ImageCache {
         try? FileManager.default.removeItem(at: fileURL)
     }
     
+    // YouTube サムネイル専用のキャッシュクリア機能
+    func clearYouTubeThumbnailCache(for videoId: String) {
+        let baseURL = "https://img.youtube.com/vi/\(videoId)/"
+        let thumbnailURLs = [
+            "\(baseURL)maxresdefault.jpg",
+            "\(baseURL)hqdefault.jpg",
+            "\(baseURL)mqdefault.jpg",
+            "\(baseURL)sddefault.jpg",
+            "\(baseURL)default.jpg"
+        ]
+        
+        for url in thumbnailURLs {
+            removeImage(for: url)
+        }
+    }
+    
+    // 期限切れのYouTubeサムネイルをクリア（1日経過）
+    func clearExpiredYouTubeThumbnails() {
+        ioQueue.async(flags: .barrier) { [weak self] in
+            guard let self = self else { return }
+            
+            do {
+                let fileURLs = try FileManager.default.contentsOfDirectory(
+                    at: self.diskCacheURL,
+                    includingPropertiesForKeys: [.contentAccessDateKey],
+                    options: []
+                )
+                
+                let oneDayAgo = Date().addingTimeInterval(-24 * 60 * 60)
+                
+                for fileURL in fileURLs {
+                    let fileName = fileURL.lastPathComponent
+                    
+                    // YouTube サムネイルファイルを特定
+                    if fileName.contains("img.youtube.com") {
+                        let resourceValues = try? fileURL.resourceValues(forKeys: [.contentAccessDateKey])
+                        if let accessDate = resourceValues?.contentAccessDate,
+                           accessDate < oneDayAgo {
+                            try? FileManager.default.removeItem(at: fileURL)
+                        }
+                    }
+                }
+            } catch {
+                print("Error clearing expired YouTube thumbnails: \(error)")
+            }
+        }
+    }
+    
     func clearMemoryCache() {
         memoryCache.removeAllObjects()
     }

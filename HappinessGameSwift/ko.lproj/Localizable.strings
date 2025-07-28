@@ -707,6 +707,9 @@
 "trip_days" = "여행 일수";
 "days_format" = "%d일간";
 "day_range_instruction" = "1~30일 사이로 설정할 수 있습니다";
+"enter_trip_days" = "여행 일수 입력";
+"custom_days" = "사용자 지정 일수";
+"decide" = "결정";
 "timeline" = "타임라인";
 "day_format" = "%d일째";
 "add_spots_to_create_itinerary" = "장소를 추가하여 여행 일정을 만드세요";
@@ -718,6 +721,7 @@
 "minutes" = "분";
 "transportation_cost" = "교통비는 얼마인가요?";
 "which_route_optional" = "어떤 경로를 사용하시나요? (선택사항)";
+"route_example" = "예: JR 야마노테선 → 도쿄 메트로 긴자선";
 "stay_duration_format" = "체류 시간: %d분";
 "spot_name" = "장소 이름";
 "stay_time_period" = "체류 시간대";
@@ -783,6 +787,19 @@
 "admin_setup_required" = "관리자 설정이 필요합니다";
 "watch_anime" = "애니메이션 보기";
 "tap_to_watch" = "탭하여 시청";
+
+/* Spot Addition Screen */
+"spot_name_example" = "예: 기요미즈데라";
+"previous_spot_end_time" = "이전 장소 종료 시간: %@";
+"transportation_from" = "교통수단 - %@에서";
+"from_previous_spot" = "이전 장소에서";
+"select_spot_add_day" = "장소를 추가할 날짜 선택";
+"spot_info_day" = "장소 정보 - %d일차";
+"spot_edit" = "장소 편집";
+"spot_info" = "장소 정보";
+"select_date" = "날짜 선택";
+"delete" = "삭제";
+
 "create" = "생성";
 
 /* Points Purchase Modal */

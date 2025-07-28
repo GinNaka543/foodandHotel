@@ -77,11 +77,15 @@ class LocalizationManager: ObservableObject {
         }
     }
     
-    func setLanguage(_ language: AppLanguage) {
+    func setLanguage(_ language: AppLanguage, shouldRestart: Bool = true) {
         currentLanguage = language
-        // アプリを再起動
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            exit(0)
+        
+        // 初回起動時はアプリを再起動しない
+        if shouldRestart && UserDefaults.standard.bool(forKey: "hasSelectedLanguage") {
+            // アプリを再起動
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                exit(0)
+            }
         }
     }
 }

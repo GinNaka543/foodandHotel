@@ -281,10 +281,14 @@ struct HappinessGameSwiftApp: App {
     @State private var showSplash = true
     @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
     @State private var hasRequestedTracking = UserDefaults.standard.bool(forKey: "hasRequestedTracking")
+    @State private var hasSelectedLanguage = UserDefaults.standard.bool(forKey: "hasSelectedLanguage")
     
     init() {
         // Initialize memory pressure monitoring
         _ = MemoryPressureManager.shared
+        
+        // Initialize YouTube thumbnail manager (if available)
+        // _ = YouTubeThumbnailManager.shared
         
         #if DEBUG
         // Track app launch performance
@@ -432,7 +436,10 @@ struct HappinessGameSwiftApp: App {
         WindowGroup {
             ZStack {
                 // Main content
-                if !hasSeenFirstLaunch {
+                if !hasSelectedLanguage {
+                    // 言語選択画面（最初に表示）
+                    FirstTimeLanguageSelectionView(hasSelectedLanguage: $hasSelectedLanguage)
+                } else if !hasSeenFirstLaunch {
                     // 初回起動時の説明画面
                     FirstLaunchView(hasSeenFirstLaunch: $hasSeenFirstLaunch)
                 } else if !hasRequestedTracking {
@@ -468,7 +475,7 @@ struct HappinessGameSwiftApp: App {
                 }
                 
                 // Splash screen overlay
-                if showSplash && hasSeenFirstLaunch {
+                if showSplash && hasSelectedLanguage && hasSeenFirstLaunch {
                     SplashScreenView()
                         .transition(.opacity)
                         .zIndex(1)

@@ -403,6 +403,7 @@ struct AnimeScreen: View {
     @State private var bannerTimer: Timer? = nil
     @State private var allYouTubeVideos: [MemoryVideo] = []
     @State private var displayedVideoIds: Set<UUID> = []
+    @State private var refreshID = UUID() // 強制リフレッシュ用のID
     
     // 利用可能なタブを動的に生成
     var availableTabs: [CustomTab] {
@@ -543,6 +544,7 @@ struct AnimeScreen: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(height: 180)
                             .clipped()
+                            .id("\(video.id)_\(video.thumbnailData?.hashValue ?? 0)") // Force view refresh when thumbnail changes
                     } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
                         let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
@@ -577,6 +579,8 @@ struct AnimeScreen: View {
                                     .font(.headline)
                                     .multilineTextAlignment(.leading)
                                     .shadow(color: .black.opacity(0.7), radius: 2)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: true, vertical: true)
                                 if let viewCount = video.viewCount {
                                     Text("\(viewCount.formatted()) views")
                                         .foregroundColor(.white.opacity(0.8))
@@ -735,6 +739,7 @@ struct AnimeScreen: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         bannerView
+                            .id(refreshID) // 強制リフレッシュ用
                         tabView
                             .padding(.top, 0)
                         animeListContents
@@ -766,6 +771,15 @@ struct AnimeScreen: View {
             
             // 動画のローテーションを開始
             startBannerRotation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDataUpdated"))) { _ in
+            // 動画データが更新された時にバナーを更新
+            print("🔄 [AnimeScreen] Received VideoDataUpdated notification - refreshing banner")
+            bannerVideo = nil  // 現在のバナーをクリア
+            displayedVideoIds.removeAll()  // 表示履歴をリセット
+            allYouTubeVideos = []  // 既存の動画リストをクリア
+            loadYouTubeVideos()
+            refreshID = UUID()  // ビューを強制的にリフレッシュ
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             // アプリがフォアグラウンドに戻った時に動画リストを更新
@@ -2501,6 +2515,8 @@ struct AnimeVideoRowView: View {
                     Text(video.title.formatVideoTitle())
                         .font(.headline)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: true, vertical: true)
                     if !video.tags.isEmpty {
                         Text("#" + video.tags.joined(separator: " #"))
                             .font(.caption)
@@ -3557,6 +3573,9 @@ struct AnimeVideoScreen: View {
                         .foregroundColor(.black)
                         .padding(.vertical, 4)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: true, vertical: true)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     
                     // ハッシュタグ
                     if let firstTag = video.tags.first {
@@ -3570,7 +3589,7 @@ struct AnimeVideoScreen: View {
                         .foregroundColor(.gray)
                         .padding(.vertical, 1)
                 }
-                .frame(alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 3)
                 .padding(.leading, 8)
                 
@@ -5028,7 +5047,11 @@ struct AnimeDetailView: View {
                     .fullScreenCover(isPresented: $showArtwork) {
                         AnimeArtworkScreen(anime: $anime, animes: $animes, onClose: { showArtwork = false })
                     }
-                    .fullScreenCover(isPresented: $showVideo) {
+                    .fullScreenCover(isPresented: $showVideo, onDismiss: {
+                        // ビデオページが閉じられた時にバナーを更新
+                        // AnimeScreen用の関数名に修正
+                        showVideo = false
+                    }) {
                         AnimeVideoScreen(anime: $anime, animes: $animes, onClose: { showVideo = false })
                     }
                     .fullScreenCover(isPresented: $showAbout) {
@@ -5988,6 +6011,7 @@ struct AnimeMemberListView: View {
     @EnvironmentObject var characterManager: CharacterManager
     @Environment(\.dismiss) var dismiss
     @State private var navigateToCharacter: Character?
+    @State private var showCharacterDetail = false
     
     var animeCharacters: [Character] {
         anime.characterIds.compactMap { characterId in
@@ -5996,7 +6020,7 @@ struct AnimeMemberListView: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // バナービュー
                 if let imageIdentifier = anime.imageIdentifier {
@@ -6036,6 +6060,7 @@ struct AnimeMemberListView: View {
                         ForEach(animeCharacters, id: \.id) { character in
                             Button(action: {
                                 navigateToCharacter = character
+                                showCharacterDetail = true
                             }) {
                                 VStack(spacing: 8) {
                                     if let imageIdentifier = character.imageIdentifier {
@@ -6071,31 +6096,6 @@ struct AnimeMemberListView: View {
                                 }
                             }
                             .buttonStyle(PlainButtonStyle())
-                            .onTapGesture {
-                                navigateToCharacter = character
-                            }
-                            .navigationDestination(isPresented: Binding(
-                                get: { navigateToCharacter?.id == character.id },
-                                set: { isActive in
-                                    if !isActive {
-                                        navigateToCharacter = nil
-                                    }
-                                }
-                            )) {
-                                CharacterDetailView(
-                                    character: Binding(
-                                        get: { character },
-                                        set: { updatedCharacter in
-                                            if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
-                                                characterManager.characters[index] = updatedCharacter
-                                                characterManager.saveCharacters()
-                                            }
-                                        }
-                                    ),
-                                    characters: $characterManager.characters
-                                )
-                                .environmentObject(characterManager)
-                            }
                         }
                     }
                     .padding(16)
@@ -6108,6 +6108,23 @@ struct AnimeMemberListView: View {
                     Button(action: onClose) {
                         Image(systemName: "xmark")
                     }
+                }
+            }
+            .navigationDestination(isPresented: $showCharacterDetail) {
+                if let character = navigateToCharacter {
+                    CharacterDetailView(
+                        character: Binding(
+                            get: { character },
+                            set: { updatedCharacter in
+                                if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                                    characterManager.characters[index] = updatedCharacter
+                                    characterManager.saveCharacters()
+                                }
+                            }
+                        ),
+                        characters: $characterManager.characters
+                    )
+                    .environmentObject(characterManager)
                 }
             }
         }

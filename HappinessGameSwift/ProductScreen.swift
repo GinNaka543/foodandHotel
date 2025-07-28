@@ -2086,7 +2086,7 @@ struct CategoryInfoSection: View {
     let category: CharacterCategory
     
     var body: some View {
-        Section("カテゴリー情報") {
+        Section(NSLocalizedString("category_info_section", comment: "Category Information")) {
             // カテゴリー名
             TextField(NSLocalizedString("name_label", comment: ""), text: $editedName)
                 .font(.system(size: 16))

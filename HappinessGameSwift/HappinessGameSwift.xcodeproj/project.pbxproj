@@ -113,6 +113,7 @@
 		CCF666012E3537FB00D86A20 /* NetworkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666002E3537FB00D86A20 /* NetworkManager.swift */; };
 		CCF666032E36788700D86A20 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666022E36788700D86A20 /* LanguageDetector.swift */; };
 		CCF666072E36BE8F00D86A20 /* LocalizationTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */; };
+		CCF666092E37B5C400D86A20 /* FirstTimeLanguageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666082E37B5C300D86A20 /* FirstTimeLanguageSelectionView.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -247,6 +248,7 @@
 		CCF666002E3537FB00D86A20 /* NetworkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkManager.swift; sourceTree = "<group>"; };
 		CCF666022E36788700D86A20 /* LanguageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetector.swift; sourceTree = "<group>"; };
 		CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTest.swift; sourceTree = "<group>"; };
+		CCF666082E37B5C300D86A20 /* FirstTimeLanguageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstTimeLanguageSelectionView.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E2D3C4B5A6978901E2D3C4B5 /* TrackingPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingPermissionView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
@@ -311,6 +313,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCF666082E37B5C300D86A20 /* FirstTimeLanguageSelectionView.swift */,
 				CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */,
 				CCF666022E36788700D86A20 /* LanguageDetector.swift */,
 				CCF666002E3537FB00D86A20 /* NetworkManager.swift */,
@@ -565,6 +568,7 @@
 				CC9BB05D2E33DE3F0088E501 /* OptimizationConfig.swift in Sources */,
 				D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */,
 				58B0BEEC55B602A43A48470D /* AddVideoView.swift in Sources */,
+				CCF666092E37B5C400D86A20 /* FirstTimeLanguageSelectionView.swift in Sources */,
 				CC9BB0572E33DBD00088E501 /* VisitPlanDataStorage.swift in Sources */,
 				FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */,
 				86306C4517312F565813E5D7 /* HomeScreen.swift in Sources */,

@@ -18,6 +18,32 @@ struct MemoryVideo: Identifiable, Codable, Equatable, Hashable {
     var youtubeURL: String? // YouTube URL
     var youtubeThumbnailURL: String? // YouTube サムネイルURL
     var viewCount: Int? = 0 // View count
+    
+    // YouTube動画IDを抽出
+    var youtubeVideoId: String {
+        guard let url = youtubeURL else { return "" }
+        return extractYouTubeVideoId(from: url)
+    }
+    
+    private func extractYouTubeVideoId(from url: String) -> String {
+        let patterns = [
+            "(?:youtube\\.com/watch\\?v=|youtu\\.be/)([^&\\n?#]+)",
+            "youtube\\.com/embed/([^&\\n?#]+)",
+            "youtube\\.com/v/([^&\\n?#]+)"
+        ]
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                let range = NSRange(location: 0, length: url.utf16.count)
+                if let match = regex.firstMatch(in: url, options: [], range: range) {
+                    if let videoIdRange = Range(match.range(at: 1), in: url) {
+                        return String(url[videoIdRange])
+                    }
+                }
+            }
+        }
+        return ""
+    }
 }
 
 struct Album: Identifiable, Hashable, Equatable, Codable {
@@ -598,6 +624,18 @@ struct VideoGalleryScreen: View {
             .padding(.leading, 8)
         }
         .buttonStyle(PlainButtonStyle())
+        .contextMenu {
+            if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
+                Button {
+                    // サムネイルキャッシュをクリア（簡易版）
+                    if let thumbnailURL = video.youtubeThumbnailURL {
+                        URLCache.shared.removeCachedResponse(for: URLRequest(url: URL(string: thumbnailURL)!))
+                    }
+                } label: {
+                    Label("サムネイルを更新", systemImage: "arrow.clockwise")
+                }
+            }
+        }
     }
 
     @ViewBuilder

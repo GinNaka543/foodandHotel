@@ -286,6 +286,9 @@ struct HappinessGameSwiftApp: App {
         // Initialize memory pressure monitoring
         _ = MemoryPressureManager.shared
         
+        // Initialize YouTube thumbnail manager (if available)
+        // _ = YouTubeThumbnailManager.shared
+        
         #if DEBUG
         // Track app launch performance
         let launchTracker = PerformanceMonitor.shared.startTracking(.appLaunch)

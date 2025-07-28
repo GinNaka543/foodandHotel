@@ -1,0 +1,123 @@
+import Foundation
+import SwiftUI
+
+// YouTube サムネイル管理クラス
+class YouTubeThumbnailManager: ObservableObject {
+    static let shared = YouTubeThumbnailManager()
+    
+    private init() {
+        // アプリ起動時に期限切れサムネイルをクリア（遅延実行）
+        DispatchQueue.global(qos: .utility).async {
+            ImageCache.shared.clearExpiredYouTubeThumbnails()
+        }
+    }
+    
+    // YouTube動画のサムネイルを強制更新
+    func refreshThumbnail(for videoId: String) {
+        // 既存のキャッシュをクリア
+        ImageCache.shared.clearYouTubeThumbnailCache(for: videoId)
+        
+        // URLCacheもクリア（AsyncImage用）
+        if let url = URL(string: "https://img.youtube.com/vi/\(videoId)/maxresdefault.jpg") {
+            URLCache.shared.removeCachedResponse(for: URLRequest(url: url))
+        }
+        
+        // 通知を送信してUIを更新
+        NotificationCenter.default.post(
+            name: .youtubeThumbnailRefreshed,
+            object: nil,
+            userInfo: ["videoId": videoId]
+        )
+    }
+    
+    // YouTube動画のIDを抽出
+    func extractVideoId(from url: String) -> String {
+        let patterns = [
+            "(?:youtube\\.com/watch\\?v=|youtu\\.be/)([^&\\n?#]+)",
+            "youtube\\.com/embed/([^&\\n?#]+)",
+            "youtube\\.com/v/([^&\\n?#]+)"
+        ]
+        
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
+                let range = NSRange(location: 0, length: url.utf16.count)
+                if let match = regex.firstMatch(in: url, options: [], range: range) {
+                    if let videoIdRange = Range(match.range(at: 1), in: url) {
+                        return String(url[videoIdRange])
+                    }
+                }
+            }
+        }
+        return ""
+    }
+    
+    // サムネイルURLにタイムスタンプを追加してキャッシュを回避
+    func getThumbnailURL(for videoId: String, forceRefresh: Bool = false) -> String {
+        let baseURL = "https://img.youtube.com/vi/\(videoId)/maxresdefault.jpg"
+        
+        if forceRefresh {
+            // クエリパラメータにタイムスタンプを追加してキャッシュを回避
+            let timestamp = Int(Date().timeIntervalSince1970)
+            return "\(baseURL)?t=\(timestamp)"
+        }
+        
+        return baseURL
+    }
+}
+
+// MARK: - カスタム AsyncImage with 更新機能
+struct RefreshableAsyncImage: View {
+    let videoId: String
+    let forceRefresh: Bool
+    
+    @State private var imageURL: String
+    @State private var refreshTrigger = UUID()
+    
+    init(videoId: String, forceRefresh: Bool = false) {
+        self.videoId = videoId
+        self.forceRefresh = forceRefresh
+        self._imageURL = State(initialValue: YouTubeThumbnailManager.shared.getThumbnailURL(for: videoId, forceRefresh: forceRefresh))
+    }
+    
+    var body: some View {
+        AsyncImage(url: URL(string: imageURL)) { image in
+            image
+                .resizable()
+        } placeholder: {
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .overlay(
+                    ProgressView()
+                )
+        }
+        .id(refreshTrigger) // Force refresh when this changes
+        .onReceive(NotificationCenter.default.publisher(for: .youtubeThumbnailRefreshed)) { notification in
+            if let notificationVideoId = notification.userInfo?["videoId"] as? String,
+               notificationVideoId == videoId {
+                // サムネイルが更新された時にURLを更新
+                imageURL = YouTubeThumbnailManager.shared.getThumbnailURL(for: videoId, forceRefresh: true)
+                refreshTrigger = UUID()
+            }
+        }
+    }
+}
+
+// MARK: - Notification Extension
+extension Notification.Name {
+    static let youtubeThumbnailRefreshed = Notification.Name("youtubeThumbnailRefreshed")
+}
+
+// MARK: - MemoryVideo Extension
+extension MemoryVideo {
+    var youtubeVideoId: String {
+        guard let url = youtubeURL else { return "" }
+        return YouTubeThumbnailManager.shared.extractVideoId(from: url)
+    }
+    
+    func refreshThumbnail() {
+        let videoId = youtubeVideoId
+        if !videoId.isEmpty {
+            YouTubeThumbnailManager.shared.refreshThumbnail(for: videoId)
+        }
+    }
+}

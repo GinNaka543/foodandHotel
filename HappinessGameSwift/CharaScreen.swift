@@ -489,7 +489,16 @@ struct CharaScreen: View {
                 let _ = print("🔍 [CharaScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
                 
                 VStack {
-                    if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
+                    // First check for custom thumbnail data
+                    if let thumbnailData = video.thumbnailData,
+                       let thumbnailImage = UIImage(data: thumbnailData) {
+                        let _ = print("🖼️ [CharaScreen] Using custom thumbnail data")
+                        Image(uiImage: thumbnailImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 180)
+                            .clipped()
+                    } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
                         let _ = print("🖼️ [CharaScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
                             image
@@ -505,45 +514,6 @@ struct CharaScreen: View {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 )
-                        }
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
-                        .overlay(
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(video.title.formatVideoTitle())
-                                            .foregroundColor(.white)
-                                            .font(.headline)
-                                            .multilineTextAlignment(.leading)
-                                            .shadow(color: .black.opacity(0.7), radius: 2)
-                                        if let viewCount = video.viewCount {
-                                            Text("\(viewCount.formatted()) views")
-                                                .foregroundColor(.white.opacity(0.8))
-                                                .font(.caption)
-                                                .shadow(color: .black.opacity(0.7), radius: 2)
-                                        }
-                                    }
-                                    Spacer()
-                                    Image(systemName: "play.circle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.title)
-                                        .shadow(color: .black.opacity(0.7), radius: 2)
-                                }
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                            }
-                        )
-                        .onTapGesture {
-                            if let url = URL(string: youtubeURL) {
-                                UIApplication.shared.open(url)
-                            }
                         }
                     } else {
                         // youtubeThumbnailURLが空の場合、URLから自動生成
@@ -565,45 +535,45 @@ struct CharaScreen: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 )
                         }
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
-                        .overlay(
-                            VStack {
-                                Spacer()
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(video.title.formatVideoTitle())
-                                            .foregroundColor(.white)
-                                            .font(.headline)
-                                            .multilineTextAlignment(.leading)
-                                            .shadow(color: .black.opacity(0.7), radius: 2)
-                                        if let viewCount = video.viewCount {
-                                            Text("\(viewCount.formatted()) views")
-                                                .foregroundColor(.white.opacity(0.8))
-                                                .font(.caption)
-                                                .shadow(color: .black.opacity(0.7), radius: 2)
-                                        }
-                                    }
-                                    Spacer()
-                                    Image(systemName: "play.circle.fill")
-                                        .foregroundColor(.white)
-                                        .font(.title)
+                    }
+                }
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                .overlay(
+                    VStack {
+                        Spacer()
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text(video.title.formatVideoTitle())
+                                    .foregroundColor(.white)
+                                    .font(.headline)
+                                    .multilineTextAlignment(.leading)
+                                    .shadow(color: .black.opacity(0.7), radius: 2)
+                                if let viewCount = video.viewCount {
+                                    Text("\(viewCount.formatted()) views")
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .font(.caption)
                                         .shadow(color: .black.opacity(0.7), radius: 2)
                                 }
-                                .padding()
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
                             }
-                        )
-                        .onTapGesture {
-                            if let url = URL(string: youtubeURL) {
-                                UIApplication.shared.open(url)
-                            }
+                            Spacer()
+                            Image(systemName: "play.circle.fill")
+                                .foregroundColor(.white)
+                                .font(.title)
+                                .shadow(color: .black.opacity(0.7), radius: 2)
                         }
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.clear, Color.black.opacity(0.6)]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    }
+                )
+                .onTapGesture {
+                    if let url = URL(string: youtubeURL) {
+                        UIApplication.shared.open(url)
                     }
                 }
                 .padding(.horizontal, 16)

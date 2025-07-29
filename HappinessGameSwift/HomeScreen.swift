@@ -216,10 +216,6 @@ struct HomeScreen: View {
                     
                     Spacer()
                     
-                    // 言語切り替えボタン
-                    LanguageButton()
-                        .padding(.trailing, 8)
-                    
                     // ユーザーアイコン
                     Button(action: {
                         showingProfile = true

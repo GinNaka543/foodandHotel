@@ -112,9 +112,6 @@ struct TermsOfServiceView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    LanguageButton()
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(NSLocalizedString("close", comment: "")) {
                         dismiss()

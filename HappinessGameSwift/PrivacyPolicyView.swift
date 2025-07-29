@@ -144,9 +144,6 @@ struct PrivacyPolicyView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    LanguageButton()
-                }
                 if !isInitialAgreement {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(NSLocalizedString("close", comment: "")) {

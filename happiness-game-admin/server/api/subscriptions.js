@@ -87,6 +87,14 @@ module.exports = async function handler(req, res) {
           }
         }
         
+        // isPremiumUserがtrueの場合、必ずhasPaidもtrueにする
+        if (subscription.isPremiumUser) {
+          subscription.hasPaid = true;
+          if (!subscription.amount) {
+            subscription.amount = 600;
+          }
+        }
+        
         // deviceIdをプライマリIDとして使用
         subscription.userId = subscription.deviceId || doc.id;
         
@@ -153,6 +161,62 @@ module.exports = async function handler(req, res) {
         };
         
         subscriptions.push(subscription);
+      }
+      
+      // premiumUsersコレクションから直接プレミアムユーザーを取得
+      const premiumUsersSnapshot = await db.collection('premiumUsers').get();
+      console.log(`🔥 Found ${premiumUsersSnapshot.size} premium users`);
+      
+      for (const premiumDoc of premiumUsersSnapshot.docs) {
+        const premiumData = premiumDoc.data();
+        const userId = premiumDoc.id;
+        
+        if (!premiumData.isPremium) continue;
+        
+        console.log(`🔥 Processing premium user: ${userId}`);
+        
+        // このユーザーIDに関連するすべてのサブスクリプションを更新
+        let updated = false;
+        subscriptions.forEach((sub, index) => {
+          if (sub.currentUserId === userId) {
+            console.log(`🔥 Updating subscription for device: ${sub.deviceId || sub.userId}`);
+            subscriptions[index].isPremiumUser = true;
+            subscriptions[index].hasPaid = true;
+            subscriptions[index].premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+            if (!subscriptions[index].paymentDate && premiumData.purchaseDate) {
+              subscriptions[index].paymentDate = premiumData.purchaseDate.seconds;
+            }
+            subscriptions[index].amount = 600;
+            updated = true;
+          }
+        });
+        
+        if (!updated) {
+          // 新しいレコードを作成
+          try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              const subscription = {
+                userId: userId,
+                deviceId: userData.deviceId || null,
+                currentUserId: userId,
+                username: userData.username || userData.displayName || '未設定',
+                firstInstallDate: userData.createdAt?.seconds || userData.createdAt || Math.floor(Date.now() / 1000),
+                hasPaid: true,
+                paymentDate: premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null,
+                amount: 600,
+                createdAt: userData.createdAt?.seconds || userData.createdAt || Math.floor(Date.now() / 1000),
+                lastSeenAt: userData.updatedAt?.seconds || userData.lastLoginAt?.seconds || Math.floor(Date.now() / 1000),
+                isPremiumUser: premiumData.isPremium || false,
+                premiumPurchaseDate: premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null
+              };
+              subscriptions.push(subscription);
+            }
+          } catch (error) {
+            console.log(`プレミアムユーザー ${userId} の情報取得エラー:`, error.message);
+          }
+        }
       }
       
       // サブスクリプションレコードがないユーザーも表示
@@ -222,11 +286,78 @@ module.exports = async function handler(req, res) {
         subscriptions.push(subscription);
       }
       
-      // 初回インストール日でソート（新しい順）
-      subscriptions.sort((a, b) => (b.firstInstallDate || 0) - (a.firstInstallDate || 0));
+      // デバッグ用ログ
+      console.log(`🔍 Total records before deduplication: ${subscriptions.length}`);
       
-      console.log(`🔥 Returning ${subscriptions.length} subscription records`);
-      res.json(subscriptions);
+      // 実際のデバイスIDのリストを取得
+      const actualDeviceIds = new Set();
+      subscriptions.forEach(sub => {
+        if (sub.deviceId && sub.deviceId !== 'null' && !sub.deviceId.startsWith('legacy-')) {
+          actualDeviceIds.add(sub.deviceId);
+        }
+      });
+      console.log(`🔍 Actual device IDs found: ${actualDeviceIds.size}`);
+      console.log(`🔍 Device IDs: ${Array.from(actualDeviceIds).join(', ')}`);
+      
+      // 重複を削除（同じユーザーIDで複数のレコードがある場合、最新かつプレミアムユーザーを優先）
+      const uniqueSubscriptions = new Map();
+      
+      // ユーザーIDでグループ化し、最適なレコードを選択
+      subscriptions.forEach(sub => {
+        const key = sub.currentUserId || sub.userId;
+        const existing = uniqueSubscriptions.get(key);
+        
+        if (!existing) {
+          uniqueSubscriptions.set(key, sub);
+        } else {
+          // より良いレコードを選択
+          let shouldReplace = false;
+          
+          // 実際のデバイスIDを持つレコードを優先
+          if (sub.deviceId && !sub.deviceId.startsWith('legacy-') && 
+              (!existing.deviceId || existing.deviceId.startsWith('legacy-'))) {
+            shouldReplace = true;
+          }
+          // プレミアムユーザーを優先
+          else if (sub.isPremiumUser && !existing.isPremiumUser) {
+            shouldReplace = true;
+          }
+          // 支払い済みを優先
+          else if (sub.hasPaid && !existing.hasPaid) {
+            shouldReplace = true;
+          }
+          // より新しいデータを優先
+          else if (sub.lastSeenAt > existing.lastSeenAt) {
+            shouldReplace = true;
+          }
+          
+          if (shouldReplace) {
+            uniqueSubscriptions.set(key, sub);
+          }
+        }
+      });
+      
+      // Map から配列に変換
+      const finalSubscriptions = Array.from(uniqueSubscriptions.values());
+      
+      // 最終チェック：isPremiumUserがtrueなら必ずhasPaidもtrue
+      finalSubscriptions.forEach(sub => {
+        if (sub.isPremiumUser) {
+          sub.hasPaid = true;
+          if (!sub.amount) {
+            sub.amount = 600;
+          }
+        }
+      });
+      
+      // 初回インストール日でソート（新しい順）
+      finalSubscriptions.sort((a, b) => (b.firstInstallDate || 0) - (a.firstInstallDate || 0));
+      
+      console.log(`🔥 Returning ${finalSubscriptions.length} subscription records`);
+      console.log(`🔥 Premium users: ${finalSubscriptions.filter(s => s.isPremiumUser).length}`);
+      console.log(`🔥 Paid users: ${finalSubscriptions.filter(s => s.hasPaid).length}`);
+      
+      res.json(finalSubscriptions);
     } catch (error) {
       console.error('サブスクリプション取得エラー:', error);
       res.status(500).json({ error: error.message });

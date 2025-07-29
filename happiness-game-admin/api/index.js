@@ -636,36 +636,78 @@ app.get('/api/subscriptions/stats', async (req, res) => {
       return res.status(500).json({ error: 'Database not initialized' });
     }
 
-    const subscriptionsSnapshot = await db.collection('device_subscriptions').get();
+    // Get all subscription-related data
+    const deviceSubscriptionsSnapshot = await db.collection('device_subscriptions').get();
+    const subscriptionsSnapshot = await db.collection('subscriptions').get();
+    const usersSnapshot = await db.collection('users').get();
     
     let activeSubscriptions = 0;
     let inactiveSubscriptions = 0;
+    let paidSubscriptions = 0;
+    const uniqueDeviceIds = new Set();
+    const uniqueUserIds = new Set();
     const deviceTypes = {};
     
-    subscriptionsSnapshot.forEach(doc => {
+    // Process device_subscriptions collection
+    deviceSubscriptionsSnapshot.forEach(doc => {
       const data = doc.data();
       
-      // Count active/inactive (assuming active field exists)
-      if (data.active === true) {
+      // Count unique devices
+      if (data.deviceId && data.deviceId !== 'null' && !data.deviceId.startsWith('legacy-')) {
+        uniqueDeviceIds.add(data.deviceId);
+      }
+      
+      // Count unique users
+      if (data.currentUserId) {
+        uniqueUserIds.add(data.currentUserId);
+      }
+      
+      // Count paid subscriptions
+      if (data.hasPaid === true) {
+        paidSubscriptions++;
+      }
+      
+      // Count active/inactive
+      if (data.active === true || data.hasPaid === true) {
         activeSubscriptions++;
       } else {
         inactiveSubscriptions++;
       }
       
-      // Count device types
-      const deviceType = data.deviceType || data.platform || 'unknown';
+      // Count device platforms
+      const deviceType = data.platform || 'iOS'; // Default to iOS
       deviceTypes[deviceType] = (deviceTypes[deviceType] || 0) + 1;
+    });
+    
+    // Also process old subscriptions collection
+    subscriptionsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.userId && !uniqueUserIds.has(data.userId)) {
+        uniqueUserIds.add(data.userId);
+      }
+    });
+    
+    // Count actual unique devices from users collection
+    usersSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.deviceId && data.deviceId !== 'null' && !data.deviceId.startsWith('legacy-')) {
+        uniqueDeviceIds.add(data.deviceId);
+      }
     });
 
     const stats = {
-      total: subscriptionsSnapshot.size,
+      total: Math.max(deviceSubscriptionsSnapshot.size, uniqueUserIds.size),
       active: activeSubscriptions,
       inactive: inactiveSubscriptions,
+      paid: paidSubscriptions,
+      uniqueDevices: uniqueDeviceIds.size,
+      uniqueUsers: uniqueUserIds.size,
       deviceTypes,
       timestamp: new Date().toISOString()
     };
 
     console.log('📊 Subscription stats:', stats);
+    console.log('📊 Unique device IDs:', Array.from(uniqueDeviceIds));
     res.json(stats);
   } catch (error) {
     console.error('❌ Error fetching subscription stats:', error);

@@ -13,19 +13,19 @@ struct AuthSelectionView: View {
                     Image("icon")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 120, height: 120)
-                        .cornerRadius(24)
+                        .frame(width: 84, height: 84)
+                        .cornerRadius(17)
                     
                     Image("ログインロゴ")
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 240)
+                        .frame(height: 168)
                     
                     Text(NSLocalizedString("auth_selection_subtitle", comment: ""))
                         .font(.system(size: 20))
                         .foregroundColor(.gray)
                 }
-                .padding(.top, 100) // ロゴを上部に配置
+                .padding(.top, 130) // ロゴを上部に配置
                 
                 Spacer()
                 

@@ -42,13 +42,13 @@ struct LoginScreenView: View {
                             Image("icon")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(16)
+                                .frame(width: 56, height: 56)
+                                .cornerRadius(11)
                             
                             Image("ログインロゴ")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 150)
+                                .frame(height: 105)
                         }
                         .padding(.top, -100) // 20 - 120 = -100 to move 120px up
                         

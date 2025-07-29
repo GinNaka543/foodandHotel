@@ -280,7 +280,6 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var paymentGatekeeper = PaymentGatekeeper.shared
     @State private var showSplash = true
     @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
-    @State private var hasRequestedTracking = UserDefaults.standard.bool(forKey: "hasRequestedTracking")
     @State private var hasSelectedLanguage = UserDefaults.standard.bool(forKey: "hasSelectedLanguage")
     
     init() {
@@ -442,9 +441,6 @@ struct HappinessGameSwiftApp: App {
                 } else if !hasSeenFirstLaunch {
                     // 初回起動時の説明画面
                     FirstLaunchView(hasSeenFirstLaunch: $hasSeenFirstLaunch)
-                } else if !hasRequestedTracking {
-                    // トラッキング許可画面
-                    TrackingPermissionView(hasRequestedTracking: $hasRequestedTracking)
                 } else if authManager.isLoggedIn {
                     if paymentGatekeeper.isAppLocked {
                         PaymentBlockerView()

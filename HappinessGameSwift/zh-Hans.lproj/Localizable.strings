@@ -574,7 +574,7 @@
 "new_category_creation" = "New Category Creation";
 "new_character_format" = "新建%@";
 "new_product_title" = "New Product";
-"next" = "Next";
+"next" = "下一步";
 "no_albums_anime" = "还没有相册";
 "no_artworks_anime" = "还没有艺术作品";
 "no_banner_image" = "No banner image";
@@ -911,3 +911,21 @@
 "total_duration_hours_minutes" = "共%d小时%d分钟";
 "total_duration_hours" = "共%d小时";
 "total_duration_minutes" = "共%d分钟";
+
+/* Welcome Screen */
+"welcome_to_anireco" = "欢迎来到 ANIRECO";
+"welcome_description" = "记录和管理您\n喜爱的角色和动漫";
+"swipe_to_continue" = "滑动继续";
+"important_notice" = "重要提示";
+"first_2_months_free" = "前2个月免费";
+"after_2_months_600yen" = "2个月后600日元";
+"trial_period_about" = "关于试用期";
+"trial_period_description_1" = "此应用程序前2个月免费使用。";
+"trial_period_description_2" = "2个月后，需要支付600日元才能继续使用。";
+"payment_methods" = "可以使用积分或信用卡支付。";
+"lets_start" = "让我们开始吧！";
+"create_account_start" = "创建账户并\n开始使用应用";
+"agree_to_privacy_policy" = "同意隐私政策";
+"start_app" = "开始使用应用";
+"read_privacy_policy" = "阅读隐私政策";
+"privacy_agreement_note" = "同意隐私政策后，您就可以开始使用应用";

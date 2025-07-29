@@ -4,6 +4,8 @@
 "app_name" = "アニコレ！";
 "done" = "完了";
 "continue" = "続ける";
+"next" = "次へ";
+"back" = "戻る";
 "cancel" = "キャンセル";
 "save" = "保存";
 "delete" = "削除";
@@ -757,3 +759,21 @@
 "total_duration_hours_minutes" = "計%d時間%d分";
 "total_duration_hours" = "計%d時間";
 "total_duration_minutes" = "計%d分";
+
+/* Welcome Screen */
+"welcome_to_anireco" = "アニレコへようこそ";
+"welcome_description" = "好きなキャラクターやアニメを\n記録して管理しましょう";
+"swipe_to_continue" = "スワイプして続ける";
+"important_notice" = "重要なお知らせ";
+"first_2_months_free" = "最初の2ヶ月間は無料";
+"after_2_months_600yen" = "2ヶ月後から600円";
+"trial_period_about" = "お試し期間について";
+"trial_period_description_1" = "このアプリは最初の2ヶ月間は無料でご利用いただけます。";
+"trial_period_description_2" = "2ヶ月経過後、継続利用には600円が必要となります。";
+"payment_methods" = "支払いはポイントまたはクレジットカードで可能です。";
+"lets_start" = "始めましょう！";
+"create_account_start" = "アカウントを作成して\nアプリを始めましょう";
+"agree_to_privacy_policy" = "プライバシーポリシーに同意する";
+"start_app" = "アプリを始める";
+"read_privacy_policy" = "プライバシーポリシーを読む";
+"privacy_agreement_note" = "プライバシーポリシーに同意することで、アプリの利用を開始できます";

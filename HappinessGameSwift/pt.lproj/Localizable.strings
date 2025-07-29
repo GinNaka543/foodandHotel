@@ -573,7 +573,7 @@
 "new_category_creation" = "New Category Creation";
 "new_character_format" = "Novo %@";
 "new_product_title" = "New Product";
-"next" = "Next";
+"next" = "Próximo";
 "no_albums_anime" = "Ainda não há álbuns";
 "no_artworks_anime" = "Ainda não há obras de arte";
 "no_banner_image" = "No banner image";
@@ -910,3 +910,21 @@
 "total_duration_hours_minutes" = "Total %d horas %d minutos";
 "total_duration_hours" = "Total %d horas";
 "total_duration_minutes" = "Total %d minutos";
+
+/* Welcome Screen */
+"welcome_to_anireco" = "Bem-vindo ao ANIRECO";
+"welcome_description" = "Registre e gerencie seus\npersonagens e animes favoritos";
+"swipe_to_continue" = "Deslize para continuar";
+"important_notice" = "Aviso importante";
+"first_2_months_free" = "Primeiros 2 meses grátis";
+"after_2_months_600yen" = "600 ienes após 2 meses";
+"trial_period_about" = "Sobre o período de teste";
+"trial_period_description_1" = "Este aplicativo é gratuito nos primeiros 2 meses.";
+"trial_period_description_2" = "Após 2 meses, são necessários 600 ienes para continuar.";
+"payment_methods" = "O pagamento pode ser feito com pontos ou cartão de crédito.";
+"lets_start" = "Vamos começar!";
+"create_account_start" = "Crie uma conta e\ncomece a usar o aplicativo";
+"agree_to_privacy_policy" = "Concordar com a Política de Privacidade";
+"start_app" = "Iniciar o aplicativo";
+"read_privacy_policy" = "Ler Política de Privacidade";
+"privacy_agreement_note" = "Ao concordar com a Política de Privacidade, você pode começar a usar o aplicativo";

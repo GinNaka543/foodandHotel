@@ -574,7 +574,7 @@
 "new_category_creation" = "New Category Creation";
 "new_character_format" = "새 %@";
 "new_product_title" = "New Product";
-"next" = "Next";
+"next" = "다음";
 "no_albums_anime" = "아직 앨범이 없습니다";
 "no_artworks_anime" = "아직 아트워크가 없습니다";
 "no_banner_image" = "No banner image";
@@ -911,3 +911,21 @@
 "total_duration_hours_minutes" = "총 %d시간 %d분";
 "total_duration_hours" = "총 %d시간";
 "total_duration_minutes" = "총 %d분";
+
+/* Welcome Screen */
+"welcome_to_anireco" = "ANIRECO에 오신 것을 환영합니다";
+"welcome_description" = "좋아하는 캐릭터와 애니메이션을\n기록하고 관리하세요";
+"swipe_to_continue" = "계속하려면 스와이프";
+"important_notice" = "중요 공지";
+"first_2_months_free" = "첫 2개월 무료";
+"after_2_months_600yen" = "2개월 후 600엔";
+"trial_period_about" = "무료 체험 기간 안내";
+"trial_period_description_1" = "이 앱은 첫 2개월 동안 무료로 사용할 수 있습니다.";
+"trial_period_description_2" = "2개월 후 계속 사용하려면 600엔이 필요합니다.";
+"payment_methods" = "포인트 또는 신용카드로 결제할 수 있습니다.";
+"lets_start" = "시작해봅시다!";
+"create_account_start" = "계정을 만들고\n앱 사용을 시작하세요";
+"agree_to_privacy_policy" = "개인정보 처리방침에 동의";
+"start_app" = "앱 시작하기";
+"read_privacy_policy" = "개인정보 처리방침 읽기";
+"privacy_agreement_note" = "개인정보 처리방침에 동의하면 앱을 사용할 수 있습니다";

@@ -1785,6 +1785,7 @@ struct AboutView: View {
                                     .onChange(of: profileDescription) { saveCharacter() }
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
+                                    .autocorrectionDisabled(true)
                             }
                             .background(Color.white)
                             .overlay(
@@ -2987,6 +2988,8 @@ struct EditTitleTagBackgroundView: View {
                         .foregroundColor(.gray)
                     TextField(NSLocalizedString("character_name", comment: ""), text: $editedName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.never)
                 }
                 .padding(.horizontal)
                 
@@ -2997,6 +3000,8 @@ struct EditTitleTagBackgroundView: View {
                         .foregroundColor(.gray)
                     TextField("#" + NSLocalizedString("tag", comment: ""), text: $editedTag)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.never)
                 }
                 .padding(.horizontal)
                 

@@ -274,12 +274,12 @@ struct VideoPlayerScreen: View {
                                                             .lineLimit(2)
                                                             .multilineTextAlignment(.leading)
                                                         
-                                                        Text(formatTitle(character?.name ?? anime?.title ?? NSLocalizedString("app_name", comment: "ANICOLLE"), isVideoThumbnail: false))
+                                                        Text(character?.name ?? anime?.title ?? NSLocalizedString("app_name", comment: "ANICOLLE"))
                                                             .font(.system(size: 12))
                                                             .foregroundColor(.gray)
-                                                            .lineLimit(2)
-                                                            .multilineTextAlignment(.leading)
-                                                            .frame(maxWidth: 150, alignment: .leading)
+                                                            .lineLimit(1)
+                                                            .minimumScaleFactor(0.8)
+                                                            .frame(alignment: .leading)
                                                         
                                                         Text(String(format: NSLocalizedString("view_count_time_ago", comment: "%@ views • %@"), formatViewCount(relatedVideo.viewCount ?? 0), timeAgo(from: relatedVideo.date)))
                                                             .font(.system(size: 12))
@@ -925,12 +925,12 @@ private struct VideoInfoView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(formatTitle(character?.name ?? anime?.title ?? "Unknown", isVideoThumbnail: false))
+                    Text(character?.name ?? anime?.title ?? "Unknown")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: 150, alignment: .leading)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(alignment: .leading)
                     
                     Text(String(format: NSLocalizedString("total_video_views", comment: "Total video views %@ times"), formatViewCount(totalViewCount)))
                         .font(.system(size: 12))

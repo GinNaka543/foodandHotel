@@ -60,6 +60,14 @@ function SubscriptionManagement() {
     });
   };
 
+  const getPremiumStatusBadge = (sub) => {
+    if (sub.isPremiumUser) {
+      return <span className="badge badge-premium">プレミアム</span>;
+    } else {
+      return <span className="badge badge-regular">一般</span>;
+    }
+  };
+
   const getStatusBadge = (sub) => {
     if (sub.hasPaid) {
       return <span className="badge badge-success">支払い済み</span>;
@@ -148,6 +156,7 @@ function SubscriptionManagement() {
               <tr>
                 <th>デバイスID</th>
                 <th>現在のユーザー</th>
+                <th>プレミアム</th>
                 <th>初回インストール日</th>
                 <th>経過日数</th>
                 <th>支払いまで</th>
@@ -165,6 +174,7 @@ function SubscriptionManagement() {
                     {sub.deviceId ? sub.deviceId.substring(0, 12) + '...' : '未設定'}
                   </td>
                   <td>{sub.username || '未設定'}</td>
+                  <td>{getPremiumStatusBadge(sub)}</td>
                   <td>{formatDate(sub.firstInstallDate)}</td>
                   <td>{sub.daysSinceInstall}日</td>
                   <td>{getDaysDisplay(sub)}</td>
@@ -234,6 +244,17 @@ function SubscriptionManagement() {
         
         .badge-info {
           background-color: #17a2b8;
+          color: white;
+        }
+        
+        .badge-premium {
+          background-color: #ffd700;
+          color: #333;
+          font-weight: bold;
+        }
+        
+        .badge-regular {
+          background-color: #6c757d;
           color: white;
         }
         

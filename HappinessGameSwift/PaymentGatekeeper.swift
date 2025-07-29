@@ -36,19 +36,24 @@ class PaymentGatekeeper: ObservableObject {
         }
     }
     
-    // プレミアムユーザーかどうか（ユーザーIDに紐付けない）
+    // プレミアムユーザーかどうか（Firebaseから同期）
     private var isPremiumUser: Bool {
         get {
-            // デバイス単位で管理
-            return UserDefaults.standard.bool(forKey: "devicePremiumStatus")
+            // ユーザーIDがある場合はFirebaseから同期、ない場合はローカルのみ
+            return UserDefaults.standard.bool(forKey: "isPremiumUser")
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: "devicePremiumStatus")
+            UserDefaults.standard.set(newValue, forKey: "isPremiumUser")
         }
     }
     
-    // 支払い状態をチェック
+    // 支払い状態をチェック（Firebase同期あり）
     func checkPaymentStatus() {
+        // ユーザーIDがある場合はFirebaseからプレミアムステータスを同期
+        if let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty {
+            syncPremiumStatusFromFirebase(userId: userId)
+        }
+        
         // 既にプレミアムユーザーの場合は何もしない
         if isPremiumUser {
             isAppLocked = false
@@ -75,6 +80,41 @@ class PaymentGatekeeper: ObservableObject {
         }
     }
     
+    // Firebaseからプレミアムステータスを同期
+    private func syncPremiumStatusFromFirebase(userId: String) {
+        FirebaseManager.shared.loadPremiumUserStatus(userId: userId) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                
+                switch result {
+                case .success(let (isPremium, purchaseDate)):
+                    #if DEBUG
+                    print("✅ Premium status synced from Firebase: isPremium=\(isPremium)")
+                    #endif
+                    
+                    // ローカルのプレミアムステータスを更新
+                    self.isPremiumUser = isPremium
+                    
+                    if isPremium, let purchaseDate = purchaseDate {
+                        UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
+                    }
+                    
+                    // UIを更新
+                    if isPremium {
+                        self.isAppLocked = false
+                        self.shouldShowPaymentRequired = false
+                    }
+                    
+                case .failure(let error):
+                    #if DEBUG
+                    print("❌ Failed to sync premium status from Firebase: \(error)")
+                    #endif
+                    // Firebaseからの取得に失敗した場合はローカルの情報を使用
+                }
+            }
+        }
+    }
+    
     // 定期的にチェック
     private func startPeriodicCheck() {
         checkTimer?.invalidate()
@@ -83,14 +123,32 @@ class PaymentGatekeeper: ObservableObject {
         }
     }
     
-    // 購入完了時に呼ぶ
+    // 購入完了時に呼ぶ（Firebase同期あり）
     func markAsPremium() {
         isPremiumUser = true
         isAppLocked = false
         shouldShowPaymentRequired = false
         
-        // ユーザーIDに関係なく、デバイスに紐付ける
-        UserDefaults.standard.set(Date(), forKey: "devicePremiumPurchaseDate")
+        let purchaseDate = Date()
+        UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
+        
+        // Firebaseにも保存
+        if let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty {
+            FirebaseManager.shared.savePremiumUserStatus(
+                userId: userId,
+                isPremium: true,
+                purchaseDate: purchaseDate
+            ) { result in
+                #if DEBUG
+                switch result {
+                case .success():
+                    print("✅ Premium status marked and saved to Firebase successfully")
+                case .failure(let error):
+                    print("❌ Failed to save premium status to Firebase: \(error)")
+                }
+                #endif
+            }
+        }
     }
     
     // 残り日数を取得
@@ -124,9 +182,43 @@ class PaymentGatekeeper: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "devicePremiumStatus")
         UserDefaults.standard.removeObject(forKey: "devicePremiumPurchaseDate")
         UserDefaults.standard.removeObject(forKey: "isPremiumUser")
+        UserDefaults.standard.removeObject(forKey: "premiumPurchaseDate")
         isPremiumUser = false
         _ = installDate // 新しい日付を設定
         checkPaymentStatus()
+    }
+    
+    // ユーザーログイン時にFirebaseからプレミアムステータスを同期
+    func syncPremiumStatusOnLogin(userId: String) {
+        FirebaseManager.shared.loadPremiumUserStatus(userId: userId) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                
+                switch result {
+                case .success(let (isPremium, purchaseDate)):
+                    #if DEBUG
+                    print("✅ Premium status synced on login: isPremium=\(isPremium)")
+                    #endif
+                    
+                    // ローカルのプレミアムステータスを更新
+                    self.isPremiumUser = isPremium
+                    
+                    if isPremium, let purchaseDate = purchaseDate {
+                        UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
+                    }
+                    
+                    // 支払い状態を再チェック
+                    self.checkPaymentStatus()
+                    
+                case .failure(let error):
+                    #if DEBUG
+                    print("❌ Failed to sync premium status on login: \(error)")
+                    #endif
+                    // Firebaseからの取得に失敗した場合はローカルの情報を使用
+                    self.checkPaymentStatus()
+                }
+            }
+        }
     }
     #endif
 }

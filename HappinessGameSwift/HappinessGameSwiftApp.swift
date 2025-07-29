@@ -278,11 +278,15 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var productManager = ProductManager()
     @StateObject private var authManager = AuthenticationManager()
     @StateObject private var paymentGatekeeper = PaymentGatekeeper.shared
+    @StateObject private var localizationManager = LocalizationManager.shared
     @State private var showSplash = true
     @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
     @State private var hasSelectedLanguage = UserDefaults.standard.bool(forKey: "hasSelectedLanguage")
     
     init() {
+        // Initialize localization manager first to ensure proper language loading
+        _ = LocalizationManager.shared
+        
         // Initialize memory pressure monitoring
         _ = MemoryPressureManager.shared
         
@@ -438,13 +442,16 @@ struct HappinessGameSwiftApp: App {
                 if !hasSelectedLanguage {
                     // 言語選択画面（最初に表示）
                     FirstTimeLanguageSelectionView(hasSelectedLanguage: $hasSelectedLanguage)
+                        .environmentObject(localizationManager)
                 } else if !hasSeenFirstLaunch {
                     // 初回起動時の説明画面
                     FirstLaunchView(hasSeenFirstLaunch: $hasSeenFirstLaunch)
+                        .environmentObject(localizationManager)
                 } else if authManager.isLoggedIn {
                     if paymentGatekeeper.isAppLocked {
                         PaymentBlockerView()
                             .environmentObject(paymentGatekeeper)
+                            .environmentObject(localizationManager)
                     } else {
                         MainContainerView()
                             .environmentObject(mainTab)
@@ -453,6 +460,7 @@ struct HappinessGameSwiftApp: App {
                             .environmentObject(productManager)
                             .environmentObject(authManager)
                             .environmentObject(paymentGatekeeper)
+                            .environmentObject(localizationManager)
                             .onAppear {
                                 // 開発用: サンプル画像を自動生成
                                 createSampleImagesIfNeeded()
@@ -493,6 +501,7 @@ struct HappinessGameSwiftApp: App {
                     }
                 } else {
                     AuthSelectionView(authManager: authManager)
+                        .environmentObject(localizationManager)
                 }
                 
                 // Splash screen overlay

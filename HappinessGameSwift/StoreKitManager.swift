@@ -28,6 +28,7 @@ class StoreKitManager: NSObject, ObservableObject {
         #if DEBUG
         print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
         print("Product IDs: \(productIds)")
+        print("Environment: \(Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" ? "Sandbox" : "Production")")
         #endif
         
         // 支払いキューのオブザーバーとして登録
@@ -157,9 +158,41 @@ class StoreKitManager: NSObject, ObservableObject {
     
     // MARK: - プレミアム購入処理
     private func handlePremiumPurchase() {
-        // プレミアムユーザーフラグを設定
+        let purchaseDate = Date()
+        
+        // ローカルにプレミアムユーザーフラグを設定
         UserDefaults.standard.set(true, forKey: "isPremiumUser")
-        UserDefaults.standard.set(Date(), forKey: "premiumPurchaseDate")
+        UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
+        
+        // Firebaseにプレミアム情報を保存
+        if let userId = UserDefaults.standard.string(forKey: "userId"), !userId.isEmpty {
+            // ユーザーのプレミアムステータスを保存
+            FirebaseManager.shared.savePremiumUserStatus(
+                userId: userId,
+                isPremium: true,
+                purchaseDate: purchaseDate
+            ) { result in
+                switch result {
+                case .success():
+                    #if DEBUG
+                    print("✅ Premium status saved to Firebase successfully")
+                    #endif
+                case .failure(let error):
+                    #if DEBUG
+                    print("❌ Failed to save premium status to Firebase: \(error)")
+                    #endif
+                }
+            }
+            
+            // 購入記録を保存
+            FirebaseManager.shared.savePremiumPurchaseRecord(
+                userId: userId,
+                productId: "com.nakajima.HappinessGameSwift.premium.2months",
+                transactionId: nil // StoreKitから取得できる場合は追加
+            ) { _ in
+                // Purchase record saved
+            }
+        }
         
         // 購入明細書を保存
         let receipt = PurchaseReceipt(
@@ -170,6 +203,9 @@ class StoreKitManager: NSObject, ObservableObject {
             description: NSLocalizedString("premium_upgrade_lifetime", comment: "Premium Upgrade (Lifetime License)")
         )
         PurchaseReceiptManager.shared.addReceipt(receipt)
+        
+        // PaymentGatekeeperにプレミアムステータスを設定
+        PaymentGatekeeper.shared.markAsPremium()
         
         self.purchaseCompletionHandler?(.success("com.nakajima.HappinessGameSwift.premium.2months"))
         self.purchaseCompletionHandler = nil
@@ -189,14 +225,32 @@ extension StoreKitManager: SKProductsRequestDelegate {
             }
             
             #if DEBUG
+            print("=== StoreKit Product Response ===")
+            print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")")
             print("Loaded \(self.products.count) products from App Store")
-            for product in self.products {
-                print("Product: \(product.localizedTitle) - \(product.price)")
+            
+            if self.products.isEmpty {
+                print("❌ No products loaded. Check App Store Connect configuration.")
+            } else {
+                print("✅ Valid products:")
+                for product in self.products {
+                    print("  - \(product.productIdentifier): \(product.localizedTitle) - \(product.price)")
+                }
             }
             
             if !response.invalidProductIdentifiers.isEmpty {
-                print("Invalid product identifiers: \(response.invalidProductIdentifiers)")
+                print("❌ Invalid product identifiers:")
+                for invalidId in response.invalidProductIdentifiers {
+                    print("  - \(invalidId)")
+                }
+                print("These product IDs must be created in App Store Connect first.")
+                
+                // Set error message for user
+                if self.products.isEmpty {
+                    self.errorMessage = "商品が見つかりません。App Store Connectの設定を確認してください。"
+                }
             }
+            print("================================")
             #endif
             
             self.isLoading = false

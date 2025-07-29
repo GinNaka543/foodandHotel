@@ -113,6 +113,7 @@
 		CCF666032E36788700D86A20 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666022E36788700D86A20 /* LanguageDetector.swift */; };
 		CCF666072E36BE8F00D86A20 /* LocalizationTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */; };
 		CCF666092E37B5C400D86A20 /* FirstTimeLanguageSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF666082E37B5C300D86A20 /* FirstTimeLanguageSelectionView.swift */; };
+		CCF6660C2E38F4D600D86A20 /* AdminLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF6660B2E38F4D600D86A20 /* AdminLoginView.swift */; };
 		D1B9C9F29727157E4DBD332E /* AddPhotoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */; };
 		FA3262585B91F244852CBDD6 /* HappinessGameSwiftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */; };
 		LISTPAGESCREEN_BUILD_REF /* ListPageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = LISTPAGESCREEN_FILE_REF /* ListPageScreen.swift */; };
@@ -248,6 +249,7 @@
 		CCF666022E36788700D86A20 /* LanguageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetector.swift; sourceTree = "<group>"; };
 		CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalizationTest.swift; sourceTree = "<group>"; };
 		CCF666082E37B5C300D86A20 /* FirstTimeLanguageSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstTimeLanguageSelectionView.swift; sourceTree = "<group>"; };
+		CCF6660B2E38F4D600D86A20 /* AdminLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminLoginView.swift; sourceTree = "<group>"; };
 		D3C4B5A697890123D3C4B5A6 /* PrivacyPolicyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyPolicyView.swift; sourceTree = "<group>"; };
 		E359E895A1128E20519BC48B /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = PhotosUI.framework; sourceTree = "<group>"; };
 		F1E2D3C4B5A69780F1E2D3C4 /* FirstLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchView.swift; sourceTree = "<group>"; };
@@ -311,6 +313,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCF6660B2E38F4D600D86A20 /* AdminLoginView.swift */,
 				CCF666082E37B5C300D86A20 /* FirstTimeLanguageSelectionView.swift */,
 				CCF666052E36BE8E00D86A20 /* LocalizationTest.swift */,
 				CCF666022E36788700D86A20 /* LanguageDetector.swift */,
@@ -582,6 +585,7 @@
 				CC20AABA2E26E68D005F4C2A /* AuthSelectionView.swift in Sources */,
 				C3C8E480920840E6B38DD715 /* MemoryScreen.swift in Sources */,
 				CCF665FD2E34CDF700D86A20 /* PremiumUpgradeView.swift in Sources */,
+				CCF6660C2E38F4D600D86A20 /* AdminLoginView.swift in Sources */,
 				CC20AB042E26E6C1005F4C2A /* VisitPlanningScreen.swift in Sources */,
 				CC20AB062E26E6C1005F4C2A /* TargetedAdBannerView.swift in Sources */,
 				CC20AB072E26E6C1005F4C2A /* ThumbnailPickerView.swift in Sources */,

@@ -48,12 +48,28 @@ module.exports = async function handler(req, res) {
         const subscription = { ...doc.data() };
         processedDevices.add(doc.id);
         
-        // currentUserIdを使用してユーザー名を取得
+        // currentUserIdを使用してユーザー名とプレミアムステータスを取得
         if (subscription.currentUserId) {
           try {
             const userDoc = await db.collection('users').doc(subscription.currentUserId).get();
             if (userDoc.exists) {
-              subscription.username = userDoc.data().username || userDoc.data().displayName || '未設定';
+              const userData = userDoc.data();
+              subscription.username = userData.username || userData.displayName || '未設定';
+              
+              // プレミアムユーザー情報を取得
+              try {
+                const premiumDoc = await db.collection('premiumUsers').doc(subscription.currentUserId).get();
+                if (premiumDoc.exists) {
+                  const premiumData = premiumDoc.data();
+                  subscription.isPremiumUser = premiumData.isPremium || false;
+                  subscription.premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+                } else {
+                  subscription.isPremiumUser = false;
+                }
+              } catch (premiumError) {
+                console.log(`プレミアムユーザー情報取得エラー ${subscription.currentUserId}:`, premiumError.message);
+                subscription.isPremiumUser = false;
+              }
             }
           } catch (error) {
             console.log(`ユーザー ${subscription.currentUserId} の情報取得エラー:`, error.message);
@@ -76,7 +92,7 @@ module.exports = async function handler(req, res) {
           continue;
         }
         
-        // ユーザー名を取得
+        // ユーザー名とプレミアムステータスを取得
         const userId = oldSub.userId || doc.id;
         try {
           const userDoc = await db.collection('users').doc(userId).get();
@@ -84,6 +100,21 @@ module.exports = async function handler(req, res) {
             const userData = userDoc.data();
             oldSub.username = userData.username || userData.displayName || '未設定';
             oldSub.deviceId = userData.deviceId || 'legacy-' + userId.substring(0, 8);
+            
+            // プレミアムユーザー情報を取得
+            try {
+              const premiumDoc = await db.collection('premiumUsers').doc(userId).get();
+              if (premiumDoc.exists) {
+                const premiumData = premiumDoc.data();
+                oldSub.isPremiumUser = premiumData.isPremium || false;
+                oldSub.premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+              } else {
+                oldSub.isPremiumUser = false;
+              }
+            } catch (premiumError) {
+              console.log(`プレミアムユーザー情報取得エラー ${userId}:`, premiumError.message);
+              oldSub.isPremiumUser = false;
+            }
           }
         } catch (error) {
           console.log(`ユーザー ${userId} の情報取得エラー:`, error.message);
@@ -100,7 +131,9 @@ module.exports = async function handler(req, res) {
           paymentDate: oldSub.paymentDate,
           amount: oldSub.amount,
           createdAt: oldSub.createdAt,
-          lastSeenAt: oldSub.updatedAt || oldSub.createdAt
+          lastSeenAt: oldSub.updatedAt || oldSub.createdAt,
+          isPremiumUser: oldSub.isPremiumUser || false,
+          premiumPurchaseDate: oldSub.premiumPurchaseDate || null
         };
         
         subscriptions.push(subscription);
@@ -138,6 +171,20 @@ module.exports = async function handler(req, res) {
           lastSeenAt = userData.lastLoginAt.seconds;
         }
         
+        // プレミアムユーザー情報を取得
+        let isPremiumUser = false;
+        let premiumPurchaseDate = null;
+        try {
+          const premiumDoc = await db.collection('premiumUsers').doc(userId).get();
+          if (premiumDoc.exists) {
+            const premiumData = premiumDoc.data();
+            isPremiumUser = premiumData.isPremium || false;
+            premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+          }
+        } catch (premiumError) {
+          console.log(`プレミアムユーザー情報取得エラー ${userId}:`, premiumError.message);
+        }
+        
         const subscription = {
           userId: userId,
           deviceId: userData.deviceId || null,
@@ -148,7 +195,9 @@ module.exports = async function handler(req, res) {
           paymentDate: userData.subscriptionDate?.seconds || userData.subscriptionDate || null,
           amount: userData.hasPaidSubscription ? 500 : null,
           createdAt,
-          lastSeenAt
+          lastSeenAt,
+          isPremiumUser,
+          premiumPurchaseDate
         };
         
         subscriptions.push(subscription);

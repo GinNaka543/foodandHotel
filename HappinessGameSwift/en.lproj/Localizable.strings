@@ -51,8 +51,8 @@
 "terms_article_7_content" = "1. The copyright of content (text, images, videos, audio, etc.) provided within the App belongs to the operator or legitimate rights holders.\n2. Users may not use the App's content beyond the scope of personal use.";
 "terms_article_8_title" = "Article 8 (Disclaimer)";
 "terms_article_8_content" = "1. While every effort is made to ensure the accuracy of information posted on the App, the operator does not guarantee the accuracy, usefulness, or timeliness of the App's information.\n2. The operator assumes no responsibility for any damages incurred by users through the use of the App.";
-"terms_article_9_title" = "Article 9 (Collection and Sharing of Information)";
-"terms_article_9_content" = "1. The App may collect text information about users' favorite anime and voice actor characters registered by users, and use it to improve services and provide sharing functions with other users.\n2. By using the App, users are deemed to have consented to the above information collection and sharing.\n3. Other personal information will be handled appropriately in accordance with the separately established Privacy Policy.";
+"terms_article_9_title" = "Article 9 (Collection of Information)";
+"terms_article_9_content" = "1. The App may collect text information about users' favorite anime and voice actor characters registered by users, and use it to improve services.\n2. By using the App, users are deemed to have consented to the above information collection.\n3. Collected information will not be shared with other users.\n4. Other personal information will be handled appropriately in accordance with the separately established Privacy Policy.";
 "terms_article_10_title" = "Article 10 (Usage Method)";
 "terms_article_10_content" = "When changing devices, user text information will be saved, but images will not be saved. After logging in on a new device, images will need to be uploaded again.";
 "terms_article_11_title" = "Article 11 (Privacy Policy)";

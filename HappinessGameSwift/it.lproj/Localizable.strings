@@ -67,7 +67,7 @@
 /* Privacy Policy */
 "privacy_policy_title" = "Informativa sulla Privacy";
 "privacy_info_we_collect_title" = "1. Informazioni che Raccogliamo";
-"privacy_info_we_collect_content" = "L'app \"ANICOLLE!\" raccoglie le seguenti informazioni:\n\n• Informazioni di registrazione utente (nome utente, ID utente)\n• Contenuti creati all'interno dell'app (registrazioni di personaggi, anime)\n• Informazioni sul dispositivo (ID dispositivo, versione OS)\n• Utilizzo dell'app (orari di accesso, frequenza di utilizzo delle funzionalità)\n• Informazioni di pagamento (informazioni di pagamento tramite Stripe, ma i numeri di carta di credito non vengono memorizzati)\n\nNota: Non raccogliamo indirizzi email";
+"privacy_info_we_collect_content" = "L'app \"ANICOLLE!\" raccoglie le seguenti informazioni:\n\n• Informazioni di registrazione utente (nome utente, ID utente)\n• Contenuti creati all'interno dell'app (registrazioni di personaggi, anime)\n• Informazioni sul dispositivo (ID dispositivo, versione OS)\n• Utilizzo dell'app (orari di accesso, frequenza di utilizzo delle funzionalità)\n• Informazioni di pagamento (i pagamenti vengono elaborati tramite Apple, le informazioni di pagamento dettagliate sono gestite da Apple)\n\nNota: Non raccogliamo indirizzi email";
 "privacy_purpose_title" = "2. Scopo dell'Utilizzo delle Informazioni";
 "privacy_purpose_content" = "Le informazioni raccolte vengono utilizzate solo per i seguenti scopi:\n\n• Fornire le funzionalità di base dell'app\n• Autenticazione utente e gestione account\n• Gestione pagamenti e punti\n• Backup delle informazioni di personaggi e anime (per il recupero dati)\n• Miglioramento dell'app e supporto clienti\n• Rispondere a requisiti legali\n\nNota: Le informazioni su personaggi e anime che registri vengono archiviate sui server esclusivamente per scopi di backup, consentendo il recupero dei dati in caso di guasto o sostituzione del dispositivo.";
 "privacy_data_storage_title" = "3. Archiviazione e Gestione dei Dati";
@@ -935,7 +935,7 @@
 "trial_period_about" = "Informazioni sul periodo di prova";
 "trial_period_description_1" = "Questa app è gratuita per i primi 2 mesi.";
 "trial_period_description_2" = "Dopo 2 mesi, sono necessari 600 yen per continuare.";
-"payment_methods" = "Il pagamento può essere effettuato con punti o carta di credito.";
+"payment_methods" = "Il pagamento può essere effettuato con punti o acquisto in-app Apple.";
 "lets_start" = "Iniziamo!";
 "create_account_start" = "Crea un account e\ninizia a usare l'app";
 "agree_to_privacy_policy" = "Accetta l'Informativa sulla Privacy";

@@ -67,7 +67,7 @@
 /* Privacy Policy */
 "privacy_policy_title" = "隐私政策";
 "privacy_info_we_collect_title" = "1. 我们收集的信息";
-"privacy_info_we_collect_content" = "应用程序\"ANICOLLE!\"收集以下信息：\n\n• 用户注册信息（用户名、用户ID）\n• 应用内创建的内容（角色、动漫记录）\n• 设备信息（设备ID、操作系统版本）\n• 应用使用情况（登录时间、功能使用频率）\n• 支付信息（通过Stripe的支付信息，但不存储信用卡号）\n\n注意：我们不收集电子邮件地址";
+"privacy_info_we_collect_content" = "应用程序\"ANICOLLE!\"收集以下信息：\n\n• 用户注册信息（用户名、用户ID）\n• 应用内创建的内容（角色、动漫记录）\n• 设备信息（设备ID、操作系统版本）\n• 应用使用情况（登录时间、功能使用频率）\n• 支付信息（通过Apple处理支付，详细的支付信息由Apple管理）\n\n注意：我们不收集电子邮件地址";
 "privacy_purpose_title" = "2. 信息使用目的";
 "privacy_purpose_content" = "收集的信息仅用于以下目的：\n\n• 提供基本应用功能\n• 用户身份验证和账户管理\n• 支付和积分管理\n• 备份角色和动漫信息（用于数据恢复）\n• 应用改进和客户支持\n• 响应法律要求\n\n注意：您注册的角色和动漫信息仅出于备份目的存储在服务器上，允许在设备故障或更换时恢复数据。";
 "privacy_data_storage_title" = "3. 数据存储和管理";
@@ -935,7 +935,7 @@
 "trial_period_about" = "关于试用期";
 "trial_period_description_1" = "此应用程序前2个月免费使用。";
 "trial_period_description_2" = "2个月后，需要支付600日元才能继续使用。";
-"payment_methods" = "可以使用积分或信用卡支付。";
+"payment_methods" = "可以使用积分或Apple应用内购买支付。";
 "lets_start" = "让我们开始吧！";
 "create_account_start" = "创建账户并\n开始使用应用";
 "agree_to_privacy_policy" = "同意隐私政策";

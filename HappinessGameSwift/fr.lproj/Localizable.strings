@@ -67,7 +67,7 @@
 /* Privacy Policy */
 "privacy_policy_title" = "Politique de Confidentialité";
 "privacy_info_we_collect_title" = "1. Informations que Nous Collectons";
-"privacy_info_we_collect_content" = "L'application \"ANICOLLE!\" collecte les informations suivantes :\n\n• Informations d'inscription des utilisateurs (nom d'utilisateur, ID utilisateur)\n• Contenu créé dans l'application (enregistrements de personnages, anime)\n• Informations sur l'appareil (ID de l'appareil, version du système d'exploitation)\n• Utilisation de l'application (heures de connexion, fréquence d'utilisation des fonctionnalités)\n• Informations de paiement (informations de paiement via Stripe, mais les numéros de carte de crédit ne sont pas stockés)\n\nNote : Nous ne collectons pas les adresses e-mail";
+"privacy_info_we_collect_content" = "L'application \"ANICOLLE!\" collecte les informations suivantes :\n\n• Informations d'inscription des utilisateurs (nom d'utilisateur, ID utilisateur)\n• Contenu créé dans l'application (enregistrements de personnages, anime)\n• Informations sur l'appareil (ID de l'appareil, version du système d'exploitation)\n• Utilisation de l'application (heures de connexion, fréquence d'utilisation des fonctionnalités)\n• Informations de paiement (les paiements sont traités via Apple, les informations de paiement détaillées sont gérées par Apple)\n\nNote : Nous ne collectons pas les adresses e-mail";
 "privacy_purpose_title" = "2. Objectif de l'Utilisation des Informations";
 "privacy_purpose_content" = "Les informations collectées sont utilisées uniquement aux fins suivantes :\n\n• Fournir les fonctionnalités de base de l'application\n• Authentification des utilisateurs et gestion des comptes\n• Gestion des paiements et des points\n• Sauvegarde des informations de personnages et d'anime (pour la récupération de données)\n• Amélioration de l'application et support client\n• Répondre aux exigences légales\n\nNote : Les informations de personnages et d'anime que vous enregistrez sont stockées sur des serveurs uniquement à des fins de sauvegarde, permettant la récupération de données en cas de panne ou de remplacement d'appareil.";
 "privacy_data_storage_title" = "3. Stockage et Gestion des Données";
@@ -936,7 +936,7 @@
 "trial_period_about" = "À propos de la période d'essai";
 "trial_period_description_1" = "Cette application est gratuite pendant les 2 premiers mois.";
 "trial_period_description_2" = "Après 2 mois, 600 yens sont nécessaires pour continuer.";
-"payment_methods" = "Le paiement peut être effectué avec des points ou une carte de crédit.";
+"payment_methods" = "Le paiement peut être effectué avec des points ou un achat intégré Apple.";
 "lets_start" = "Commençons !";
 "create_account_start" = "Créez un compte et\ncommencez à utiliser l'application";
 "agree_to_privacy_policy" = "Accepter la politique de confidentialité";

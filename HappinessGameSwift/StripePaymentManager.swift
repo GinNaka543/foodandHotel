@@ -137,7 +137,7 @@ class StripePaymentManager: NSObject, ObservableObject {
         
         // PaymentSheet設定
         var configuration = PaymentSheet.Configuration()
-        configuration.merchantDisplayName = "アニレコ"
+        configuration.merchantDisplayName = "アニコレ"
         configuration.applePay = PaymentSheet.ApplePayConfiguration(
             merchantId: "merchant.com.anireco", 
             merchantCountryCode: "JP"
@@ -216,7 +216,7 @@ class StripePaymentManager: NSObject, ObservableObject {
             "userId": userId,
             "pointAmount": package.points,
             "type": "point_purchase",
-            "statement_descriptor": "アニレコポイント購入"
+            "statement_descriptor": "アニコレポイント購入"
         ]
         
         do {

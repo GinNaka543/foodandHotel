@@ -1,4 +1,4 @@
-# Production Readiness Checklist for HappinessGameSwift (アニレコ)
+# Production Readiness Checklist for HappinessGameSwift (アニコレ)
 
 ## ✅ Completed Tasks
 

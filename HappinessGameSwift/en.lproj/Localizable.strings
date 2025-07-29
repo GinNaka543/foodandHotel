@@ -64,11 +64,11 @@
 "privacy_policy" = "Privacy Policy";
 "privacy_policy_title" = "Privacy Policy";
 "privacy_info_we_collect_title" = "1. Information We Collect";
-"privacy_info_we_collect_content" = "The App \"ANICOLLE!\" collects the following information:\n\n• User registration information (username, user ID)\n• Content created within the app (character, anime records)\n• Device information (device ID, OS version)\n• App usage (login times, feature usage frequency)\n• Payment information (payment info through Stripe, but credit card numbers are not stored)\n\nNote: We do not collect email addresses";
+"privacy_info_we_collect_content" = "The App \"ANICOLLE!\" collects the following information:\n\n• User registration information (username, user ID)\n• Content created within the app (character, anime records)\n• Device information (device ID, OS version)\n• App usage (login times, feature usage frequency)\n• Payment information (payments processed through Apple, detailed payment information is managed by Apple)\n\nNote: We do not collect email addresses";
 "privacy_purpose_title" = "2. Purpose of Information Use";
 "privacy_purpose_content" = "The collected information is used only for the following purposes:\n\n• Providing basic app functionality\n• User authentication and account management\n• Payment and point management\n• Backing up character and anime information (for data recovery)\n• App improvement and customer support\n• Responding to legal requirements\n\nNote: Character and anime information you register is stored on servers solely for backup purposes, allowing data recovery in case of device failure or replacement.";
 "privacy_data_storage_title" = "3. Data Storage and Management";
-"privacy_data_storage_content" = "• User-created content (character, anime information) is securely stored on Firebase servers for backup purposes\n• This system allows data recovery without loss in the following cases:\n  - Device failure or loss\n  - App reinstallation\n  - Device replacement\n• Authentication information, point information, and payment information are also managed on Firebase servers\n• All communications are encrypted with HTTPS\n• Users can delete their data at any time\n• Backup data is stored linked to user accounts and cannot be accessed by other users";
+"privacy_data_storage_content" = "• User-created content (character, anime information) is securely stored on Firebase servers for backup purposes\n• This system allows data recovery without loss in the following cases:\n  - Device failure or loss\n  - App reinstallation\n  - Device replacement\n• Authentication information and point information are managed on Firebase servers\n• Payment information is securely processed through Apple's In-App Purchase system\n• All communications are encrypted with HTTPS\n• Users can delete their data at any time\n• Backup data is stored linked to user accounts and cannot be accessed by other users";
 "privacy_disclosure_title" = "4. Information Disclosure to Third Parties";
 "privacy_disclosure_content" = "We do not provide users' personal information to third parties except in the following cases:\n\n• When user consent is obtained\n• When disclosure is required by law\n• When necessary to protect life, body, or property";
 "privacy_security_title" = "5. Security";
@@ -978,7 +978,7 @@
 "trial_period_about" = "About the trial period";
 "trial_period_description_1" = "This app is free to use for the first 40 days.";
 "trial_period_description_2" = "After 40 days, 600 yen is required for continued use.";
-"payment_methods" = "Payment can be made with points or credit card.";
+"payment_methods" = "Payment can be made with points or Apple In-App Purchase.";
 "lets_start" = "Let's get started!";
 "create_account_start" = "Create an account and\nstart using the app";
 "agree_to_privacy_policy" = "Agree to Privacy Policy";

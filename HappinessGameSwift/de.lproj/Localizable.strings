@@ -67,7 +67,7 @@
 /* Privacy Policy */
 "privacy_policy_title" = "Datenschutzrichtlinie";
 "privacy_info_we_collect_title" = "1. Informationen, die wir sammeln";
-"privacy_info_we_collect_content" = "Die App \"ANICOLLE!\" sammelt folgende Informationen:\n\n• Benutzer-Registrierungsinformationen (Benutzername, Benutzer-ID)\n• In der App erstellte Inhalte (Charaktere, Anime-Aufzeichnungen)\n• Geräteinformationen (Geräte-ID, OS-Version)\n• App-Nutzung (Anmeldezeiten, Häufigkeit der Funktionsnutzung)\n• Zahlungsinformationen (Zahlungsinformationen über Stripe, aber Kreditkartennummern werden nicht gespeichert)\n\nHinweis: Wir sammeln keine E-Mail-Adressen";
+"privacy_info_we_collect_content" = "Die App \"ANICOLLE!\" sammelt folgende Informationen:\n\n• Benutzer-Registrierungsinformationen (Benutzername, Benutzer-ID)\n• In der App erstellte Inhalte (Charaktere, Anime-Aufzeichnungen)\n• Geräteinformationen (Geräte-ID, OS-Version)\n• App-Nutzung (Anmeldezeiten, Häufigkeit der Funktionsnutzung)\n• Zahlungsinformationen (Zahlungen werden über Apple abgewickelt, detaillierte Zahlungsinformationen werden von Apple verwaltet)\n\nHinweis: Wir sammeln keine E-Mail-Adressen";
 "privacy_purpose_title" = "2. Zweck der Informationsnutzung";
 "privacy_purpose_content" = "Die gesammelten Informationen werden nur für folgende Zwecke verwendet:\n\n• Bereitstellung grundlegender App-Funktionen\n• Benutzerauthentifizierung und Kontoverwaltung\n• Zahlungs- und Punkteverwaltung\n• Sicherung von Charakter- und Anime-Informationen (zur Datenwiederherstellung)\n• App-Verbesserung und Kundensupport\n• Erfüllung rechtlicher Anforderungen\n\nHinweis: Von Ihnen registrierte Charakter- und Anime-Informationen werden ausschließlich zu Sicherungszwecken auf Servern gespeichert, um eine Datenwiederherstellung bei Geräteausfall oder -wechsel zu ermöglichen.";
 "privacy_data_storage_title" = "3. Datenspeicherung und -verwaltung";
@@ -1019,7 +1019,7 @@ Gute Arbeit";
 "trial_period_about" = "Über die Testphase";
 "trial_period_description_1" = "Diese App ist in den ersten 2 Monaten kostenlos.";
 "trial_period_description_2" = "Nach 2 Monaten sind 600 Yen erforderlich, um fortzufahren.";
-"payment_methods" = "Die Zahlung kann mit Punkten oder Kreditkarte erfolgen.";
+"payment_methods" = "Die Zahlung kann mit Punkten oder Apple In-App-Kauf erfolgen.";
 "lets_start" = "Lassen Sie uns beginnen!";
 "create_account_start" = "Erstellen Sie ein Konto und\nbeginnen Sie mit der App";
 "agree_to_privacy_policy" = "Datenschutzrichtlinie zustimmen";

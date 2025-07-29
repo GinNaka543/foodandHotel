@@ -67,7 +67,7 @@
 /* Privacy Policy */
 "privacy_policy_title" = "개인정보 처리방침";
 "privacy_info_we_collect_title" = "1. 수집하는 정보";
-"privacy_info_we_collect_content" = "앱 \"ANICOLLE!\"는 다음 정보를 수집합니다:\n\n• 사용자 등록 정보(사용자명, 사용자 ID)\n• 앱 내에서 생성된 콘텐츠(캐릭터, 애니메이션 기록)\n• 기기 정보(기기 ID, OS 버전)\n• 앱 사용 현황(로그인 시간, 기능 사용 빈도)\n• 결제 정보(Stripe를 통한 결제 정보, 단 신용카드 번호는 저장하지 않음)\n\n참고: 이메일 주소는 수집하지 않습니다";
+"privacy_info_we_collect_content" = "앱 \"ANICOLLE!\"는 다음 정보를 수집합니다:\n\n• 사용자 등록 정보(사용자명, 사용자 ID)\n• 앱 내에서 생성된 콘텐츠(캐릭터, 애니메이션 기록)\n• 기기 정보(기기 ID, OS 버전)\n• 앱 사용 현황(로그인 시간, 기능 사용 빈도)\n• 결제 정보(Apple을 통해 결제가 처리되며, 상세한 결제 정보는 Apple이 관리합니다)\n\n참고: 이메일 주소는 수집하지 않습니다";
 "privacy_purpose_title" = "2. 정보 이용 목적";
 "privacy_purpose_content" = "수집된 정보는 다음 목적으로만 사용됩니다:\n\n• 기본 앱 기능 제공\n• 사용자 인증 및 계정 관리\n• 결제 및 포인트 관리\n• 캐릭터 및 애니메이션 정보 백업(데이터 복구용)\n• 앱 개선 및 고객 지원\n• 법적 요구사항 대응\n\n참고: 등록하신 캐릭터 및 애니메이션 정보는 오직 백업 목적으로만 서버에 저장되며, 기기 고장이나 교체 시 데이터 복구를 가능하게 합니다.";
 "privacy_data_storage_title" = "3. 데이터 저장 및 관리";
@@ -935,7 +935,7 @@
 "trial_period_about" = "무료 체험 기간 안내";
 "trial_period_description_1" = "이 앱은 첫 2개월 동안 무료로 사용할 수 있습니다.";
 "trial_period_description_2" = "2개월 후 계속 사용하려면 600엔이 필요합니다.";
-"payment_methods" = "포인트 또는 신용카드로 결제할 수 있습니다.";
+"payment_methods" = "포인트 또는 Apple 인앱 구매로 결제할 수 있습니다.";
 "lets_start" = "시작해봅시다!";
 "create_account_start" = "계정을 만들고\n앱 사용을 시작하세요";
 "agree_to_privacy_policy" = "개인정보 처리방침에 동의";

@@ -67,7 +67,7 @@
 /* Privacy Policy */
 "privacy_policy_title" = "Política de Privacidade";
 "privacy_info_we_collect_title" = "1. Informações que Coletamos";
-"privacy_info_we_collect_content" = "O aplicativo \"ANICOLLE!\" coleta as seguintes informações:\n\n• Informações de registro do usuário (nome de usuário, ID do usuário)\n• Conteúdo criado dentro do aplicativo (registros de personagens, anime)\n• Informações do dispositivo (ID do dispositivo, versão do SO)\n• Uso do aplicativo (horários de login, frequência de uso de recursos)\n• Informações de pagamento (informações de pagamento através do Stripe, mas números de cartão de crédito não são armazenados)\n\nNota: Não coletamos endereços de e-mail";
+"privacy_info_we_collect_content" = "O aplicativo \"ANICOLLE!\" coleta as seguintes informações:\n\n• Informações de registro do usuário (nome de usuário, ID do usuário)\n• Conteúdo criado dentro do aplicativo (registros de personagens, anime)\n• Informações do dispositivo (ID do dispositivo, versão do SO)\n• Uso do aplicativo (horários de login, frequência de uso de recursos)\n• Informações de pagamento (pagamentos são processados através da Apple, informações detalhadas de pagamento são gerenciadas pela Apple)\n\nNota: Não coletamos endereços de e-mail";
 "privacy_purpose_title" = "2. Propósito do Uso das Informações";
 "privacy_purpose_content" = "As informações coletadas são usadas apenas para os seguintes propósitos:\n\n• Fornecer funcionalidade básica do aplicativo\n• Autenticação de usuário e gerenciamento de conta\n• Gerenciamento de pagamentos e pontos\n• Backup de informações de personagens e anime (para recuperação de dados)\n• Melhoria do aplicativo e suporte ao cliente\n• Responder a requisitos legais\n\nNota: As informações de personagens e anime que você registra são armazenadas em servidores apenas para fins de backup, permitindo a recuperação de dados em caso de falha ou substituição do dispositivo.";
 "privacy_data_storage_title" = "3. Armazenamento e Gerenciamento de Dados";
@@ -934,7 +934,7 @@
 "trial_period_about" = "Sobre o período de teste";
 "trial_period_description_1" = "Este aplicativo é gratuito nos primeiros 2 meses.";
 "trial_period_description_2" = "Após 2 meses, são necessários 600 ienes para continuar.";
-"payment_methods" = "O pagamento pode ser feito com pontos ou cartão de crédito.";
+"payment_methods" = "O pagamento pode ser feito com pontos ou compra no aplicativo da Apple.";
 "lets_start" = "Vamos começar!";
 "create_account_start" = "Crie uma conta e\ncomece a usar o aplicativo";
 "agree_to_privacy_policy" = "Concordar com a Política de Privacidade";

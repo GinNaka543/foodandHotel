@@ -32,6 +32,16 @@ class AnimeManager: ObservableObject {
         ) { _ in
             self.loadAnimes()
         }
+        
+        // データ同期通知を監視
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("UserDataSynced"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("📱 [AnimeManager] User data synced notification received")
+            self.loadAnimes()
+        }
     }
     
     func loadAnimes() {
@@ -47,19 +57,29 @@ class AnimeManager: ObservableObject {
         if let data = try? JSONEncoder().encode(animes) {
             UserDefaultsHelper.shared.setData(data, forKey: "animes")
             
-            // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
+            // Firebaseに直接アニメデータを保存
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
+                // ユーザープロファイルの更新
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        break
-                    case .failure(_):
-                        break
+                        print("✅ User profile saved to Firebase")
+                    case .failure(let error):
+                        print("❌ Failed to save user profile: \(error)")
                     }
+                }
+            } else {
+                // currentUserProfileが存在しない場合でも、ユーザーIDがあればアニメを保存
+                if let userId = UserDefaults.standard.string(forKey: "userId") {
+                    print("🔥 Saving animes directly with userId: \(userId)")
+                    FirebaseManager.shared.saveUserContentData(userId: userId)
+                } else {
+                    print("⚠️ No user ID found - animes saved locally only")
                 }
             }
         } else {
+            print("❌ Failed to encode animes")
         }
     }
     
@@ -69,6 +89,11 @@ class AnimeManager: ObservableObject {
             saveAnimes()
             DispatchQueue.main.async {
                 self.objectWillChange.send()
+            }
+            
+            // Firebase に保存
+            if let userId = UserDefaults.standard.string(forKey: "userId") {
+                FirebaseManager.shared.saveUserContentData(userId: userId)
             }
         } else {
         }
@@ -81,6 +106,11 @@ class AnimeManager: ObservableObject {
             saveAnimes()
             DispatchQueue.main.async {
                 self.objectWillChange.send()
+            }
+            
+            // Firebase に保存
+            if let userId = UserDefaults.standard.string(forKey: "userId") {
+                FirebaseManager.shared.saveUserContentData(userId: userId)
             }
         }
     }
@@ -502,9 +532,6 @@ struct AnimeScreen: View {
                     .foregroundColor(.black)
             }
             Spacer()
-            // 言語切り替えボタン
-            LanguageButton()
-                .padding(.trailing, 8)
             Button(action: { showAddSheet = true }) {
                 Text(NSLocalizedString("add_anime", comment: ""))
                     .font(.system(size: 16, weight: .semibold))
@@ -5061,6 +5088,7 @@ struct AnimeDetailView: View {
                     .fullScreenCover(isPresented: $showMemberList) {
                         AnimeMemberListView(anime: anime, onClose: { showMemberList = false })
                             .environmentObject(characterManager)
+                            .environmentObject(animeManager)
                     }
                 }
                 .zIndex(1)
@@ -6009,9 +6037,13 @@ struct AnimeMemberListView: View {
     let anime: Anime
     let onClose: () -> Void
     @EnvironmentObject var characterManager: CharacterManager
+    @EnvironmentObject var animeManager: AnimeManager
     @Environment(\.dismiss) var dismiss
     @State private var navigateToCharacter: Character?
     @State private var showCharacterDetail = false
+    @State private var searchText = ""
+    @State private var isEditMode = false
+    @State private var editingCharacterIds: [UUID] = []
     
     var animeCharacters: [Character] {
         anime.characterIds.compactMap { characterId in
@@ -6019,113 +6051,295 @@ struct AnimeMemberListView: View {
         }
     }
     
+    var filteredCharacters: [Character] {
+        if searchText.isEmpty {
+            return editingCharacterIds.isEmpty ? animeCharacters : editingCharacterIds.compactMap { id in
+                animeCharacters.first(where: { $0.id == id })
+            }
+        }
+        let filtered = animeCharacters.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        return editingCharacterIds.isEmpty ? filtered : editingCharacterIds.compactMap { id in
+            filtered.first(where: { $0.id == id })
+        }
+    }
+    
+    // 検索バー
+    var searchBar: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.gray)
+                .font(.system(size: 14))
+            TextField(NSLocalizedString("search_by_name", comment: "Search by name"), text: $searchText)
+                .textFieldStyle(PlainTextFieldStyle())
+                .font(.system(size: 14))
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color(.systemGray5))
+        .cornerRadius(8)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .padding(.bottom, 16)
+    }
+    
+    // メンバー数表示
+    var memberCountView: some View {
+        HStack {
+            Text("Members \(animeCharacters.count)")
+                .font(.system(size: 20, weight: .bold))
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+    }
+    
+    // キャラクターリスト
+    var characterListView: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(filteredCharacters, id: \.id) { character in
+                    characterRow(character: character)
+                }
+            }
+            .padding(.vertical, 8)
+        }
+    }
+    
+    // キャラクター行
+    func characterRow(character: Character) -> some View {
+        Button(action: {
+            if !isEditMode {
+                navigateToCharacter = character
+                showCharacterDetail = true
+            }
+        }) {
+            HStack(spacing: 16) {
+                characterImage(character: character)
+                characterInfo(character: character)
+                Spacer()
+                
+                if isEditMode {
+                    Image(systemName: "line.horizontal.3")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 20))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .onDrag {
+            if isEditMode {
+                return NSItemProvider(object: character.id.uuidString as NSString)
+            }
+            return NSItemProvider()
+        }
+        .onDrop(of: [.text], delegate: CharacterDropDelegate(
+            character: character,
+            characters: editingCharacterIds.isEmpty ? animeCharacters.map { $0.id } : editingCharacterIds,
+            onReorder: { reorderedIds in
+                editingCharacterIds = reorderedIds
+            }
+        ))
+    }
+    
+    // キャラクター画像
+    func characterImage(character: Character) -> some View {
+        Group {
+            if let imageIdentifier = character.imageIdentifier {
+                OptimizedFileImage(
+                    path: imageIdentifier,
+                    targetSize: CGSize(width: 60, height: 60)
+                )
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 60, height: 60)
+                .clipShape(Circle())
+                .overlay(
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
+                .id(imageIdentifier)
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 60, height: 60)
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.gray.opacity(0.5))
+                    )
+            }
+        }
+    }
+    
+    // キャラクター情報
+    func characterInfo(character: Character) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(character.name)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            if !character.tag.isEmpty {
+                Text(character.tag)
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+            
+            characterDetailsRow(character: character)
+        }
+    }
+    
+    // キャラクター詳細情報行
+    func characterDetailsRow(character: Character) -> some View {
+        HStack(spacing: 8) {
+            // 誕生日
+            HStack(spacing: 2) {
+                Image(systemName: "gift")
+                    .font(.system(size: 10))
+                Text(DateFormatter.monthDayEnglish.string(from: character.birthday))
+                    .font(.system(size: 11))
+            }
+            .foregroundColor(.gray)
+            
+            // 年齢
+            if !character.age.isEmpty {
+                Text("\(character.age)歳")
+                    .font(.system(size: 11))
+                    .foregroundColor(.gray)
+            }
+            
+            // 声優
+            if !character.voiceActor.isEmpty {
+                HStack(spacing: 2) {
+                    Image(systemName: "mic")
+                        .font(.system(size: 10))
+                    Text(character.voiceActor)
+                        .font(.system(size: 11))
+                }
+                .foregroundColor(.gray)
+            }
+        }
+    }
+    
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // バナービュー
-                if let imageIdentifier = anime.imageIdentifier {
-                    OptimizedFileImage(
-                        path: imageIdentifier,
-                        targetSize: CGSize(width: UIScreen.main.bounds.width, height: 200)
-                    )
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 200)
-                    .clipped()
-                    .overlay(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.5)]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .overlay(
-                        VStack {
-                            Spacer()
-                            Text(anime.title)
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(.white)
-                                .shadow(radius: 5)
-                                .padding(.bottom, 20)
-                        }
-                    )
+            mainContent
+                .navigationTitle(anime.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar(content: toolbarContent)
+                .navigationDestination(isPresented: $showCharacterDetail) {
+                    characterDetailDestination
                 }
+        }
+    }
+    
+    // メインコンテンツ
+    var mainContent: some View {
+        VStack(spacing: 0) {
+            searchBar
+            memberCountView
+            characterListView
+        }
+        .background(Color(.systemGray6))
+    }
+    
+    // ツールバーコンテンツ
+    @ToolbarContentBuilder
+    func toolbarContent() -> some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button(action: onClose) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20))
+                    .foregroundColor(.black)
+            }
+        }
+        
+        ToolbarItem(placement: .navigationBarTrailing) {
+            editButton
+        }
+    }
+    
+    // 編集ボタン
+    var editButton: some View {
+        Button(action: toggleEditMode) {
+            Text(isEditMode ? NSLocalizedString("done", comment: "Done") : NSLocalizedString("edit", comment: "Edit"))
+                .font(.system(size: 17))
+                .foregroundColor(.black)
+        }
+    }
+    
+    // 編集モード切り替え
+    func toggleEditMode() {
+        if isEditMode {
+            saveEditedOrder()
+        } else {
+            editingCharacterIds = animeCharacters.map { $0.id }
+        }
+        isEditMode.toggle()
+    }
+    
+    // 編集順序を保存
+    func saveEditedOrder() {
+        guard !editingCharacterIds.isEmpty else { return }
+        
+        if let animeIndex = animeManager.animes.firstIndex(where: { $0.id == anime.id }) {
+            var updatedAnime = anime
+            updatedAnime.characterIds = editingCharacterIds
+            animeManager.animes[animeIndex] = updatedAnime
+            animeManager.saveAnimes()
+        }
+        editingCharacterIds = []
+    }
+    
+    // キャラクター詳細画面
+    @ViewBuilder
+    var characterDetailDestination: some View {
+        if let character = navigateToCharacter {
+            CharacterDetailView(
+                character: Binding(
+                    get: { character },
+                    set: { updatedCharacter in
+                        if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
+                            characterManager.characters[index] = updatedCharacter
+                            characterManager.saveCharacters()
+                        }
+                    }
+                ),
+                characters: $characterManager.characters
+            )
+            .environmentObject(characterManager)
+        }
+    }
+}
+
+// キャラクタードロップデリゲート
+struct CharacterDropDelegate: DropDelegate {
+    let character: Character
+    var characters: [UUID]
+    let onReorder: ([UUID]) -> Void
+    
+    func performDrop(info: DropInfo) -> Bool {
+        return true
+    }
+    
+    func dropEntered(info: DropInfo) {
+        guard let draggedItem = info.itemProviders(for: [.text]).first else { return }
+        
+        draggedItem.loadItem(forTypeIdentifier: "public.text", options: nil) { (item, error) in
+            guard let data = item as? Data,
+                  let idString = String(data: data, encoding: .utf8),
+                  let draggedId = UUID(uuidString: idString) else { return }
+            
+            DispatchQueue.main.async {
+                guard let fromIndex = characters.firstIndex(of: draggedId),
+                      let toIndex = characters.firstIndex(of: character.id),
+                      fromIndex != toIndex else { return }
                 
-                // キャラクターリスト
-                ScrollView {
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 16) {
-                        ForEach(animeCharacters, id: \.id) { character in
-                            Button(action: {
-                                navigateToCharacter = character
-                                showCharacterDetail = true
-                            }) {
-                                VStack(spacing: 8) {
-                                    if let imageIdentifier = character.imageIdentifier {
-                                        OptimizedFileImage(
-                                            path: imageIdentifier,
-                                            targetSize: CGSize(width: 100, height: 100)
-                                        )
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 100, height: 100)
-                                        .clipShape(Circle())
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                        )
-                                        .id(imageIdentifier)
-                                    } else {
-                                        Circle()
-                                            .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 100, height: 100)
-                                            .overlay(
-                                                Image(systemName: "person.fill")
-                                                    .font(.system(size: 40))
-                                                    .foregroundColor(.gray.opacity(0.5))
-                                            )
-                                    }
-                                    
-                                    Text(character.name)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.primary)
-                                        .lineLimit(2)
-                                        .multilineTextAlignment(.center)
-                                        .frame(width: 100)
-                                }
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                    .padding(16)
-                }
-            }
-            .navigationTitle(NSLocalizedString("member_list", comment: "Member List"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: onClose) {
-                        Image(systemName: "xmark")
-                    }
-                }
-            }
-            .navigationDestination(isPresented: $showCharacterDetail) {
-                if let character = navigateToCharacter {
-                    CharacterDetailView(
-                        character: Binding(
-                            get: { character },
-                            set: { updatedCharacter in
-                                if let index = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
-                                    characterManager.characters[index] = updatedCharacter
-                                    characterManager.saveCharacters()
-                                }
-                            }
-                        ),
-                        characters: $characterManager.characters
-                    )
-                    .environmentObject(characterManager)
-                }
+                var newCharacters = characters
+                newCharacters.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
+                onReorder(newCharacters)
             }
         }
     }

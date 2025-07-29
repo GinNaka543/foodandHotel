@@ -288,7 +288,7 @@ public struct VisitScreen: View {
                         }
                     } else {
                         VStack(alignment: .trailing, spacing: 2) {
-                            Text(plan.duration)
+                            Text(formatPlanDuration(plan.duration))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.blue)
                             Text(String(format: NSLocalizedString("spots_count", comment: "%d spots"), plan.spots.count))
@@ -407,9 +407,6 @@ public struct VisitScreen: View {
                             .foregroundColor(.black)
                     }
                     Spacer()
-                    // 言語切り替えボタン
-                    LanguageButton()
-                        .padding(.trailing, 8)
                     // Amazon風検索バー（常時表示）
                     HStack(spacing: 0) {
                         HStack {
@@ -1001,6 +998,16 @@ public struct VisitScreen: View {
         if !purchasedPlanIds.contains(planId) {
             purchasedPlanIds.append(planId)
             UserDefaults.standard.set(purchasedPlanIds, forKey: "purchasedPlanIds_\(currentUserId)")
+            
+            // Firebaseにも同期
+            firebaseManager.savePurchasedPlanIds(userId: currentUserId, planIds: purchasedPlanIds) { result in
+                switch result {
+                case .success:
+                    print("✅ Purchased plan IDs synced to Firebase")
+                case .failure(let error):
+                    print("❌ Failed to sync purchased plan IDs: \(error)")
+                }
+            }
         }
     }
     
@@ -1013,28 +1020,26 @@ public struct VisitScreen: View {
     
     // Firebaseから購入済みプランを読み込む
     func loadPurchasedPlansFromFirebase() {
+        print("📱 Loading purchased plans from Firebase...")
         
-        // Firestoreから購入記録を取得
-        firebaseManager.database.collection("planPurchases")
-            .whereField("userId", isEqualTo: currentUserId)
-            .getDocuments { snapshot, error in
-                if error != nil {
-                    return
-                }
+        // 購入済みプランの同期を実行
+        firebaseManager.syncPurchasedPlans(userId: currentUserId) { result in
+            switch result {
+            case .success:
+                print("✅ Successfully synced purchased plans")
                 
-                let purchaseRecords = snapshot?.documents ?? []
-                
-                // 購入したプランのIDを取得
-                let purchasedPlanIds = purchaseRecords.compactMap { doc in
-                    doc.data()["planId"] as? String
-                }
-                
+                // 同期後、ローカルの購入済みプランIDを取得
+                let purchasedPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(self.currentUserId)") ?? []
                 
                 // 購入したプランをFirebaseから取得してローカルに保存
                 for planId in purchasedPlanIds {
                     self.downloadAndSavePurchasedPlan(planId: planId)
                 }
+                
+            case .failure(let error):
+                print("❌ Failed to sync purchased plans: \(error)")
             }
+        }
     }
     
     // 購入済みプランをFirebaseからダウンロードしてローカルに保存
@@ -1059,6 +1064,47 @@ public struct VisitScreen: View {
                 self.savePurchasedPlan(plan)
             } else {
             }
+        }
+    }
+    
+    // Helper function to format plan duration for localization
+    func formatPlanDuration(_ duration: String) -> String {
+        // Parse Japanese duration format (e.g., "4時間", "2時間30分", "30分")
+        let pattern = #"(?:(\d+)時間)?(?:(\d+)分)?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []),
+              let match = regex.firstMatch(in: duration, options: [], range: NSRange(location: 0, length: duration.count)) else {
+            return duration // Return original if parsing fails
+        }
+        
+        var hours = 0
+        var minutes = 0
+        
+        // Extract hours
+        if match.range(at: 1).location != NSNotFound {
+            let hoursRange = Range(match.range(at: 1), in: duration)!
+            hours = Int(duration[hoursRange]) ?? 0
+        }
+        
+        // Extract minutes
+        if match.range(at: 2).location != NSNotFound {
+            let minutesRange = Range(match.range(at: 2), in: duration)!
+            minutes = Int(duration[minutesRange]) ?? 0
+        }
+        
+        // Format using localized strings
+        if hours > 0 && minutes > 0 {
+            return String(format: NSLocalizedString("total_duration_hours_minutes", comment: "Total %d hours %d minutes"), hours, minutes)
+        } else if hours > 0 {
+            return String(format: NSLocalizedString("total_duration_hours", comment: "Total %d hours"), hours)
+        } else if minutes > 0 {
+            return String(format: NSLocalizedString("total_duration_minutes", comment: "Total %d minutes"), minutes)
+        } else {
+            // If the duration contains "計" at the beginning, try to parse it
+            if duration.hasPrefix("計") {
+                let cleanDuration = String(duration.dropFirst())
+                return formatPlanDuration(cleanDuration)
+            }
+            return duration
         }
     }
 }

@@ -1085,49 +1085,66 @@ struct VideoGalleryScreen: View {
     
     // タイトル編集シート
     func editTitleSheet(video: MemoryVideo) -> some View {
-        VStack(spacing: 24) {
-            Text(NSLocalizedString("edit_title", comment: "Edit title"))
-                .font(.headline)
-                .padding(.top, 24)
-            
-            TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .font(.system(size: 18))
-                .padding(.horizontal, 24)
-            
-            HStack(spacing: 24) {
-                Button(action: {
-                    activeSheet = nil
-                }) {
-                    Text(NSLocalizedString("cancel", comment: "Cancel"))
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
-                }
+        ScrollView {
+            VStack(spacing: 0) {
+                // ヘッダー
+                Text(NSLocalizedString("edit_title", comment: "Edit title"))
+                    .font(.system(size: 20, weight: .semibold))
+                    .padding(.top, 32)
+                    .padding(.bottom, 32)
                 
-                Button(action: {
-                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                        var updated = videos[idx]
-                        updated.title = editText
-                        videos[idx] = updated
-                        saveVideosToUserDefaults()
+                // テキストフィールド
+                TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .font(.system(size: 18))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 40)
+                
+                // ボタン
+                HStack(spacing: 16) {
+                    Button(action: {
+                        activeSheet = nil
+                    }) {
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray6))
+                            )
                     }
-                    activeSheet = nil
-                }) {
-                    Text(NSLocalizedString("save", comment: "Save"))
-                        .foregroundColor(.white)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.black)
-                        .cornerRadius(10)
+                    
+                    Button(action: {
+                        if let idx = videos.firstIndex(where: { $0.id == video.id }) {
+                            var updated = videos[idx]
+                            updated.title = editText
+                            videos[idx] = updated
+                            saveVideosToUserDefaults()
+                        }
+                        activeSheet = nil
+                    }) {
+                        Text(NSLocalizedString("save", comment: "Save"))
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.black)
+                            )
+                    }
                 }
+                .padding(.horizontal, 24)
+                
+                // Bottom spacer for keyboard
+                Spacer()
+                    .frame(height: 100)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
         }
+        .background(Color(.systemBackground))
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .background(Color.white)
         .cornerRadius(20)
         .shadow(radius: 16)
@@ -2395,48 +2412,65 @@ struct AlbumVideoListScreen: View {
     
     // タイトル編集シート
     func editTitleSheet(video: MemoryVideo) -> some View {
-        VStack(spacing: 24) {
-            Text(NSLocalizedString("edit_title", comment: "Edit title"))
-                .font(.headline)
-                .padding(.top, 24)
-            
-            TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .font(.system(size: 18))
-                .padding(.horizontal, 24)
-            
-            HStack(spacing: 24) {
-                Button(action: {
-                    activeSheet = nil
-                }) {
-                    Text(NSLocalizedString("cancel", comment: "Cancel"))
-                        .foregroundColor(.red)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
-                }
+        ScrollView {
+            VStack(spacing: 0) {
+                // ヘッダー
+                Text(NSLocalizedString("edit_title", comment: "Edit title"))
+                    .font(.system(size: 20, weight: .semibold))
+                    .padding(.top, 32)
+                    .padding(.bottom, 32)
                 
-                Button(action: {
-                    if let idx = localVideos.firstIndex(where: { $0.id == video.id }) {
-                        var updated = localVideos[idx]
-                        updated.title = editText
-                        localVideos[idx] = updated
+                // テキストフィールド
+                TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .font(.system(size: 18))
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 40)
+                
+                // ボタン
+                HStack(spacing: 16) {
+                    Button(action: {
+                        activeSheet = nil
+                    }) {
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray6))
+                            )
                     }
-                    activeSheet = nil
-                }) {
-                    Text(NSLocalizedString("save", comment: "Save"))
-                        .foregroundColor(.white)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.black)
-                        .cornerRadius(10)
+                    
+                    Button(action: {
+                        if let idx = localVideos.firstIndex(where: { $0.id == video.id }) {
+                            var updated = localVideos[idx]
+                            updated.title = editText
+                            localVideos[idx] = updated
+                        }
+                        activeSheet = nil
+                    }) {
+                        Text(NSLocalizedString("save", comment: "Save"))
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.black)
+                            )
+                    }
                 }
+                .padding(.horizontal, 24)
+                
+                // Bottom spacer for keyboard
+                Spacer()
+                    .frame(height: 100)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
         }
+        .background(Color(.systemBackground))
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .background(Color.white)
         .cornerRadius(20)
         .shadow(radius: 16)

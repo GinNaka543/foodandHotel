@@ -513,10 +513,12 @@ struct VisitPlanningScreen: View {
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
         
-        if hours > 0 {
-            return "\(hours)時間\(minutes)分"
+        if hours > 0 && minutes > 0 {
+            return String(format: NSLocalizedString("total_duration_hours_minutes", comment: "Total %d hours %d minutes"), hours, minutes)
+        } else if hours > 0 {
+            return String(format: NSLocalizedString("total_duration_hours", comment: "Total %d hours"), hours)
         } else {
-            return "\(minutes)分"
+            return String(format: NSLocalizedString("total_duration_minutes", comment: "Total %d minutes"), minutes)
         }
     }
     
@@ -901,7 +903,7 @@ struct TimelineItem: View {
                 }
                 
                 HStack {
-                    Label("\(spot.stayDuration)分", systemImage: "clock")
+                    Label(String(format: NSLocalizedString("duration_minutes", comment: "%d minutes"), spot.stayDuration), systemImage: "clock")
                         .font(.system(size: 13))
                         .foregroundColor(.blue)
                     
@@ -947,7 +949,7 @@ struct TransportView: View {
                         Text(transport.method)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.orange)
-                        Text("・ \(transport.duration)分")
+                        Text("・ " + String(format: NSLocalizedString("duration_minutes", comment: "%d minutes"), transport.duration))
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                         if transport.cost > 0 {

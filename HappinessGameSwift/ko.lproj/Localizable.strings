@@ -15,6 +15,7 @@
 
 /* Language */
 "language_title" = "언어";
+"language" = "언어";
 
 /* Tab Bar */
 "home" = "홈";
@@ -28,7 +29,61 @@
 "product" = "Product";
 /* Terms and Privacy */
 "terms_of_service" = "이용약관";
+"terms_of_service_title" = "이용약관";
+"terms_last_updated" = "최종 업데이트: 2025년 7월 23일";
+"terms_article_1_title" = "제1조 (이용약관의 적용)";
+"terms_article_1_content" = "본 이용약관(이하 \"약관\")은 ANICOLLE!(이하 \"앱\")의 사용자(이하 \"사용자\")와 운영자 간의 앱 사용 조건을 규정합니다.";
+"terms_article_2_title" = "제2조 (사용자 등록)";
+"terms_article_2_content" = "1. 사용자는 본 약관에 동의한 후 정해진 방법에 따라 사용 등록을 해야 합니다.\n2. 등록 시 허위 정보를 제공한 경우 등록이 취소될 수 있습니다.";
+"terms_article_3_title" = "제3조 (사용자 ID 및 비밀번호 관리)";
+"terms_article_3_content" = "1. 사용자는 앱의 사용자 ID와 비밀번호를 본인의 책임 하에 적절히 관리해야 합니다.\n2. 운영자는 제3자의 사용자 ID 및 비밀번호 사용으로 인한 손해에 대해 책임을 지지 않습니다.";
+"terms_article_4_title" = "제4조 (이용료)";
+"terms_article_4_content" = "1. 앱은 최초 등록일로부터 2개월간 무료로 사용할 수 있습니다.\n2. 무료 기간 종료 후 앱을 계속 사용하려면 600엔(세금 포함)의 이용료가 필요합니다.\n3. 이용료를 지불하지 않으면 앱의 일부 또는 전체 기능이 제한될 수 있습니다.\n4. 한 번 지불된 이용료는 어떤 이유로든 환불되지 않습니다.";
+"terms_article_5_title" = "제5조 (금지 행위)";
+"terms_article_5_content" = "사용자는 앱 사용 시 다음 행위를 해서는 안 됩니다:\n• 법령 또는 공공질서 및 선량한 풍속에 위반하는 행위\n• 범죄 행위와 관련된 행위\n• 앱 운영을 방해할 수 있는 행위\n• 다른 사용자의 개인정보를 수집하거나 축적하는 행위\n• 무단 접근 또는 그 시도 행위\n• 다른 사용자를 사칭하는 행위\n• 앱과 관련하여 반사회적 세력에 직간접적으로 이익을 제공하는 행위";
+"terms_article_6_title" = "제6조 (앱 서비스 중단)";
+"terms_article_6_content" = "운영자는 다음 상황이 발생했다고 판단하는 경우 사용자에게 사전 통지 없이 앱 서비스의 전부 또는 일부를 중단하거나 중지할 수 있습니다:\n• 앱 관련 컴퓨터 시스템의 유지보수, 점검 또는 업데이트를 수행할 때\n• 지진, 번개, 화재, 정전 또는 자연재해 등의 불가항력으로 앱 제공이 어려워질 때\n• 사고로 인해 컴퓨터 또는 통신 회선이 중단될 때";
+"terms_article_7_title" = "제7조 (저작권)";
+"terms_article_7_content" = "1. 앱 내에서 제공되는 콘텐츠(텍스트, 이미지, 동영상, 오디오 등)의 저작권은 운영자 또는 정당한 권리자에게 속합니다.\n2. 사용자는 개인 사용 범위를 벗어나 앱의 콘텐츠를 사용할 수 없습니다.";
+"terms_article_8_title" = "제8조 (면책 조항)";
+"terms_article_8_content" = "1. 앱에 게시된 정보의 정확성을 보장하기 위해 모든 노력을 기울이지만, 운영자는 앱 정보의 정확성, 유용성 또는 적시성을 보장하지 않습니다.\n2. 운영자는 사용자가 앱을 사용함으로써 발생한 손해에 대해 책임을 지지 않습니다.";
+"terms_article_9_title" = "제9조 (정보 수집 및 공유)";
+"terms_article_9_content" = "1. 앱은 사용자가 등록한 좋아하는 애니메이션 및 성우 캐릭터에 대한 텍스트 정보를 수집하여 서비스 개선 및 다른 사용자와의 공유 기능에 사용할 수 있습니다.\n2. 앱을 사용함으로써 사용자는 위의 정보 수집 및 공유에 동의한 것으로 간주됩니다.\n3. 기타 개인정보는 별도로 정한 개인정보 처리방침에 따라 적절히 처리됩니다.";
+"terms_article_10_title" = "제10조 (사용 방법)";
+"terms_article_10_content" = "기기를 변경할 때 사용자 텍스트 정보는 저장되지만 이미지는 저장되지 않습니다. 새 기기에서 로그인한 후 이미지를 다시 업로드해야 합니다.";
+"terms_article_11_title" = "제11조 (개인정보 처리방침)";
+"terms_article_11_content" = "앱 사용을 통해 얻은 개인정보는 별도로 정한 개인정보 처리방침에 따라 적절히 처리됩니다.";
+"terms_article_12_title" = "제12조 (이용약관 변경)";
+"terms_article_12_content" = "운영자는 필요하다고 판단될 때 사용자에게 통지하지 않고 본 약관을 변경할 수 있습니다. 개정된 약관은 앱 내에 게시될 때 효력이 발생합니다.";
+"terms_article_13_title" = "제13조 (준거법 및 관할 법원)";
+"terms_article_13_content" = "1. 본 약관은 일본 법률에 따라 해석됩니다.\n2. 앱과 관련하여 발생하는 분쟁은 운영자 본사 소재지를 관할하는 법원의 전속 관할로 합니다.";
 "privacy_policy" = "개인정보 처리방침";
+
+/* Privacy Policy */
+"privacy_policy_title" = "개인정보 처리방침";
+"privacy_info_we_collect_title" = "1. 수집하는 정보";
+"privacy_info_we_collect_content" = "앱 \"ANICOLLE!\"는 다음 정보를 수집합니다:\n\n• 사용자 등록 정보(사용자명, 사용자 ID)\n• 앱 내에서 생성된 콘텐츠(캐릭터, 애니메이션 기록)\n• 기기 정보(기기 ID, OS 버전)\n• 앱 사용 현황(로그인 시간, 기능 사용 빈도)\n• 결제 정보(Stripe를 통한 결제 정보, 단 신용카드 번호는 저장하지 않음)\n\n참고: 이메일 주소는 수집하지 않습니다";
+"privacy_purpose_title" = "2. 정보 이용 목적";
+"privacy_purpose_content" = "수집된 정보는 다음 목적으로만 사용됩니다:\n\n• 기본 앱 기능 제공\n• 사용자 인증 및 계정 관리\n• 결제 및 포인트 관리\n• 캐릭터 및 애니메이션 정보 백업(데이터 복구용)\n• 앱 개선 및 고객 지원\n• 법적 요구사항 대응\n\n참고: 등록하신 캐릭터 및 애니메이션 정보는 오직 백업 목적으로만 서버에 저장되며, 기기 고장이나 교체 시 데이터 복구를 가능하게 합니다.";
+"privacy_data_storage_title" = "3. 데이터 저장 및 관리";
+"privacy_data_storage_content" = "• 사용자가 생성한 콘텐츠(캐릭터, 애니메이션 정보)는 백업을 위해 Firebase 서버에 안전하게 저장됩니다\n• 이 시스템은 다음과 같은 경우에 데이터 손실 없이 복구할 수 있게 합니다:\n  - 기기 고장 또는 분실\n  - 앱 재설치\n  - 기기 교체\n• 인증 정보, 포인트 정보, 결제 정보도 Firebase 서버에서 관리됩니다\n• 모든 통신은 HTTPS로 암호화됩니다\n• 사용자는 언제든지 자신의 데이터를 삭제할 수 있습니다\n• 백업 데이터는 사용자 계정과 연결되어 저장되며 다른 사용자가 접근할 수 없습니다";
+"privacy_disclosure_title" = "4. 제3자에 대한 정보 제공";
+"privacy_disclosure_content" = "다음의 경우를 제외하고는 사용자의 개인정보를 제3자에게 제공하지 않습니다:\n\n• 사용자의 동의를 얻은 경우\n• 법률에 의해 공개가 요구되는 경우\n• 생명, 신체 또는 재산 보호를 위해 필요한 경우";
+"privacy_security_title" = "5. 보안";
+"privacy_security_content" = "사용자 정보를 적절히 보호하기 위해 다음과 같은 조치를 시행합니다:\n\n• HTTPS 통신을 통한 암호화\n• Firebase Authentication을 통한 안전한 인증\n• 적절한 API 키 관리\n• 정기적인 보안 업데이트";
+"privacy_cookies_title" = "6. 쿠키 및 추적";
+"privacy_cookies_content" = "• 이 앱은 사용자 경험 개선을 위한 쿠키를 사용하지 않습니다\n• 광고 목적의 추적을 하지 않습니다\n• 앱 사용 통계는 익명화된 형태로 수집됩니다\n• 수집된 캐릭터 및 애니메이션 정보는 백업 및 복구 이외의 목적으로 사용되지 않습니다";
+"privacy_backup_title" = "7. 데이터 백업 및 복구";
+"privacy_backup_content" = "소중한 데이터를 보호하기 위해 다음과 같은 백업 기능을 제공합니다:\n\n• 자동 백업: 캐릭터 및 애니메이션 등록 또는 편집 시 자동으로 서버에 저장\n• 데이터 복구: 로그인 시 백업 데이터에서 자동 복구\n• 백업 목적:\n  - 기기 고장이나 분실 시 데이터 보호\n  - 앱 삭제 후 재설치 시 데이터 복구\n  - 기기 변경 시 데이터 이전\n\n중요: 이 백업 데이터는 오직 사용자의 데이터 보호를 위해서만 사용되며, 다른 목적(마케팅, 분석, 제3자 제공 등)으로는 절대 사용되지 않습니다.";
+"privacy_children_title" = "8. 아동의 개인정보";
+"privacy_children_content" = "이 앱은 13세 미만의 아동을 대상으로 하지 않습니다. 13세 미만은 사용 전 부모의 동의를 받아야 합니다.";
+"privacy_changes_title" = "9. 개인정보 처리방침 변경";
+"privacy_changes_content" = "필요에 따라 개인정보 처리방침을 변경할 수 있습니다. 중요한 변경사항이 있을 경우 앱 내에서 사용자에게 알려드립니다.";
+"privacy_contact_title" = "10. 문의하기";
+"privacy_contact_content" = "개인정보 관련 문의사항은 다음으로 연락해 주세요:\n\n이메일: fneko543@gmail.com";
+"privacy_last_updated" = "최종 업데이트: 2025년 7월 24일";
+"privacy_agree_and_start" = "동의하고 앱 사용 시작";
+"privacy_agree_description" = "개인정보 처리방침에 동의하면 앱을 사용할 수 있습니다";
 
 /* Premium */
 "premium_upgrade_title" = "프리미엄 업그레이드";
@@ -428,7 +483,6 @@
 "character_name" = "캐릭터 이름";
 "character_ranking_management" = "Character Ranking Management";
 "ranking_selection" = "랭킹 선택";
-"characters" = "Characters";
 "collapse" = "Collapse";
 "complete_button" = "Complete";
 "copy" = "Copy";
@@ -520,7 +574,7 @@
 "new_category_creation" = "New Category Creation";
 "new_character_format" = "새 %@";
 "new_product_title" = "New Product";
-"next" = "Next";
+"next" = "다음";
 "no_albums_anime" = "아직 앨범이 없습니다";
 "no_artworks_anime" = "아직 아트워크가 없습니다";
 "no_banner_image" = "No banner image";
@@ -635,7 +689,6 @@
 "visit_tab_original" = "Original";
 "visit_tab_purchased" = "Purchased";
 "voice_actor" = "성우";
-"voice_actors" = "Voice Actors";
 "watch_again" = "Watch Again";
 "watch_anime" = "Watch Anime";
 "watching" = "Watching";
@@ -841,3 +894,48 @@
 "reset" = "리셋";
 "reset_all" = "모두 리셋";
 "select_from_video" = "비디오에서 선택";
+
+/* Media Player */
+"see_more_dots" = "...더 보기";
+"edit_image" = "이미지 편집";
+"views_times" = "%@회";
+"view_count_format" = "%@회 조회";
+"related_images" = "관련 이미지";
+"delete_image_confirm_title" = "이 이미지를 삭제하시겠습니까?";
+"delete_image_confirm_message" = "이 이미지는 영구적으로 삭제됩니다.";
+"delete_image" = "이미지 삭제";
+"tags" = "태그";
+
+/* Time Duration */
+"duration_minutes" = "%d분";
+"total_duration_hours_minutes" = "총 %d시간 %d분";
+"total_duration_hours" = "총 %d시간";
+"total_duration_minutes" = "총 %d분";
+
+/* Welcome Screen */
+"welcome_to_anireco" = "ANIRECO에 오신 것을 환영합니다";
+"welcome_description" = "좋아하는 캐릭터와 애니메이션을\n기록하고 관리하세요";
+"swipe_to_continue" = "계속하려면 스와이프";
+"important_notice" = "중요 공지";
+"first_2_months_free" = "첫 2개월 무료";
+"after_2_months_600yen" = "2개월 후 600엔";
+"trial_period_about" = "무료 체험 기간 안내";
+"trial_period_description_1" = "이 앱은 첫 2개월 동안 무료로 사용할 수 있습니다.";
+"trial_period_description_2" = "2개월 후 계속 사용하려면 600엔이 필요합니다.";
+"payment_methods" = "포인트 또는 신용카드로 결제할 수 있습니다.";
+"lets_start" = "시작해봅시다!";
+"create_account_start" = "계정을 만들고\n앱 사용을 시작하세요";
+"agree_to_privacy_policy" = "개인정보 처리방침에 동의";
+"start_app" = "앱 시작하기";
+"read_privacy_policy" = "개인정보 처리방침 읽기";
+"privacy_agreement_note" = "개인정보 처리방침에 동의하면 앱을 사용할 수 있습니다";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "나만의 최애 갤러리!";
+"login_button" = "로그인";
+"register_button" = "회원가입";
+
+/* Login Screen Details */
+"no_account_yet" = "계정이 없으신가요? 여기를 클릭하세요";
+"forgot_id_username" = "ID와 사용자명을 잊으셨다면";
+"recreate_account_message" = "다시 계정을 만들어 주세요.\n계정을 만들면 기록이 복원됩니다.";

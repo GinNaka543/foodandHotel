@@ -39,6 +39,7 @@ struct VideoPlayerScreen: View {
     @State private var showFullscreen = false
     @State private var showExpandButton = false
     @State private var showThumbnailPicker = false
+    @State private var shouldScrollToPlayer = false
     // フルスクリーン用
     @State private var fullscreenShowControls = true
     @State private var fullscreenPlayer: AVPlayer? = nil
@@ -86,8 +87,6 @@ struct VideoPlayerScreen: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let player = self.player {
                     player.play()
-                    if let currentItem = player.currentItem {
-                    }
                 } else {
                 }
             }
@@ -155,58 +154,36 @@ struct VideoPlayerScreen: View {
                 VStack(spacing: 0) {
                     // ヘッダー
                     HStack(spacing: 12) {
-                        // ログインロゴ（左端に配置）
-                        if let logoImage = UIImage(named: "ログインロゴ") {
+                        // White logo（左端に配置）
+                        if let logoImage = UIImage(named: "whitelogo") {
                             Image(uiImage: logoImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(height: 50)
+                                .frame(height: 38)
                         }
                         
                         Spacer()
-                        
-                        // 検索バー（表示時）
-                        if showSearchBar {
-                            TextField(NSLocalizedString("search", comment: "Search"), text: $searchText, onCommit: {
-                                filterVideos()
-                            })
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
-                            .frame(maxWidth: 200)
-                        }
-                        
-                        // 虫眼鏡アイコン
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showSearchBar.toggle()
-                                if !showSearchBar {
-                                    searchText = ""
-                                    filterVideos()
-                                }
-                            }
-                        }) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(.white)
-                                .font(.system(size: 20))
-                        }
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 6)
                     .background(Color.black)
                     
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            // 動画プレイヤー部分
-                        if let player = player {
+                    ScrollViewReader { scrollProxy in
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                // 動画プレイヤー部分
+                            if let player = player {
                             VideoPlayer(player: player)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                                 .background(Color.black)
                                 .onAppear {
                                 }
+                                .id("player")
                         } else {
                             Rectangle()
                                 .fill(Color.black)
                                 .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
+                                .id("player")
                                 .overlay(
                                     Text(NSLocalizedString("initializing_player", comment: "Initializing player..."))
                                         .foregroundColor(.white)
@@ -268,7 +245,7 @@ struct VideoPlayerScreen: View {
                                                 }
                                                 
                                                 // アイコンとタイトル・タグ
-                                                HStack(alignment: .top, spacing: 12) {
+                                                HStack(alignment: .center, spacing: 12) {
                                                     // Character or Anime icon
                                                     if let character = character, let imageIdentifier = character.imageIdentifier,
                                                        let uiImage = loadImageFromPath(imageIdentifier) {
@@ -291,21 +268,25 @@ struct VideoPlayerScreen: View {
                                                     }
                                                     
                                                     VStack(alignment: .leading, spacing: 2) {
-                                                        Text(relatedVideo.title)
+                                                        Text(formatTitle(relatedVideo.title, isVideoThumbnail: true))
                                                             .font(.system(size: 16.5, weight: .semibold))
                                                             .foregroundColor(.black)
                                                             .lineLimit(2)
+                                                            .multilineTextAlignment(.leading)
                                                         
-                                                        Text(character?.name ?? anime?.title ?? NSLocalizedString("app_name", comment: "ANICOLLE"))
+                                                        Text(formatTitle(character?.name ?? anime?.title ?? NSLocalizedString("app_name", comment: "ANICOLLE"), isVideoThumbnail: false))
                                                             .font(.system(size: 12))
                                                             .foregroundColor(.gray)
+                                                            .lineLimit(2)
+                                                            .multilineTextAlignment(.leading)
+                                                            .frame(maxWidth: 150, alignment: .leading)
                                                         
                                                         Text(String(format: NSLocalizedString("view_count_time_ago", comment: "%@ views • %@"), formatViewCount(relatedVideo.viewCount ?? 0), timeAgo(from: relatedVideo.date)))
                                                             .font(.system(size: 12))
                                                             .foregroundColor(.gray)
                                                     }
                                                     
-                                                    Spacer()
+                                                    Spacer(minLength: 0)
                                                 }
                                                 .padding(.horizontal, 16)
                                             }
@@ -318,6 +299,15 @@ struct VideoPlayerScreen: View {
                         }
                     }
                 }
+                .onChange(of: shouldScrollToPlayer) { shouldScroll in
+                    if shouldScroll {
+                        withAnimation(.easeInOut(duration: 0.5)) {
+                            scrollProxy.scrollTo("player", anchor: .top)
+                        }
+                        shouldScrollToPlayer = false
+                    }
+                }
+                    }
                 }
                 
                 // 画面全体の右下に戻るボタン（固定位置）
@@ -456,7 +446,7 @@ extension VideoPlayerScreen {
             if let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
                 do {
                     let contents = try FileManager.default.contentsOfDirectory(at: documentsDirectory, includingPropertiesForKeys: nil)
-                    for url in contents {
+                    for _ in contents {
                     }
                 } catch {
                 }
@@ -481,14 +471,14 @@ extension VideoPlayerScreen {
             self.player = newPlayer
             
             // プレイヤーの準備状態を確認
-            if let error = playerItem.error {
+            if playerItem.error != nil {
             }
             
             // アセットのプロパティをロード
             let asset = playerItem.asset
             Task {
                 do {
-                    let isPlayable = try await asset.load(.isPlayable)
+                    let _ = try await asset.load(.isPlayable)
                 } catch {
                 }
             }
@@ -559,6 +549,9 @@ extension VideoPlayerScreen {
         // 現在の動画を停止
         player?.pause()
         player = nil
+        
+        // プレイヤーまでスクロール
+        shouldScrollToPlayer = true
         
         // 新しい動画のプレイヤーを設定
         if let videoURL = loadVideoURLFromPath(newVideo.videoPath) {
@@ -797,6 +790,36 @@ extension VideoPlayerScreen {
         }
     }
     
+    private func formatTitle(_ title: String, isVideoThumbnail: Bool = false) -> String {
+        if isVideoThumbnail {
+            // For video/image titles: break at 17 chars, truncate after 33
+            if title.count <= 17 {
+                return title
+            } else if title.count <= 33 {
+                let firstLine = String(title.prefix(17))
+                let secondLine = String(title.dropFirst(17))
+                return firstLine + "\n" + secondLine
+            } else {
+                let firstLine = String(title.prefix(17))
+                let secondLine = String(title.dropFirst(17).prefix(16)) + "..."
+                return firstLine + "\n" + secondLine
+            }
+        } else {
+            // For other titles: break at 9 chars, truncate after 17
+            if title.count <= 9 {
+                return title
+            } else if title.count <= 17 {
+                let firstLine = String(title.prefix(9))
+                let secondLine = String(title.dropFirst(9))
+                return firstLine + "\n" + secondLine
+            } else {
+                let firstLine = String(title.prefix(9))
+                let secondLine = String(title.dropFirst(9).prefix(8)) + "..."
+                return firstLine + "\n" + secondLine
+            }
+        }
+    }
+    
     private func getRelatedVideos() -> [MemoryVideo] {
         let videos = searchText.isEmpty ? allVideos : filteredVideos
         return videos.filter { $0.id != video.id }
@@ -821,14 +844,46 @@ private struct VideoInfoView: View {
         }
     }
     
+    private func formatTitle(_ title: String, isVideoThumbnail: Bool = false) -> String {
+        if isVideoThumbnail {
+            // For video/image titles: break at 17 chars, truncate after 33
+            if title.count <= 17 {
+                return title
+            } else if title.count <= 33 {
+                let firstLine = String(title.prefix(17))
+                let secondLine = String(title.dropFirst(17))
+                return firstLine + "\n" + secondLine
+            } else {
+                let firstLine = String(title.prefix(17))
+                let secondLine = String(title.dropFirst(17).prefix(16)) + "..."
+                return firstLine + "\n" + secondLine
+            }
+        } else {
+            // For other titles: break at 9 chars, truncate after 17
+            if title.count <= 9 {
+                return title
+            } else if title.count <= 17 {
+                let firstLine = String(title.prefix(9))
+                let secondLine = String(title.dropFirst(9))
+                return firstLine + "\n" + secondLine
+            } else {
+                let firstLine = String(title.prefix(9))
+                let secondLine = String(title.dropFirst(9).prefix(8)) + "..."
+                return firstLine + "\n" + secondLine
+            }
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Title and view info
             VStack(alignment: .leading, spacing: 8) {
-                Text(video.title)
+                Text(formatTitle(video.title, isVideoThumbnail: true))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
                     .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 
                 HStack(spacing: 4) {
                     Text(String(format: NSLocalizedString("views_count", comment: "%@ views"), formatViewCount(video.viewCount ?? 0)))
@@ -843,7 +898,7 @@ private struct VideoInfoView: View {
             }
             
             // Channel/Character info
-            HStack(spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
                 // Character or Anime icon
                 if let character = character, let imageIdentifier = character.imageIdentifier,
                    let uiImage = loadImageFromPath(imageIdentifier) {
@@ -870,16 +925,19 @@ private struct VideoInfoView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(character?.name ?? anime?.title ?? "Unknown")
+                    Text(formatTitle(character?.name ?? anime?.title ?? "Unknown", isVideoThumbnail: false))
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: 150, alignment: .leading)
                     
                     Text(String(format: NSLocalizedString("total_video_views", comment: "Total video views %@ times"), formatViewCount(totalViewCount)))
                         .font(.system(size: 12))
                         .foregroundColor(.gray)
                 }
                 
-                Spacer()
+                Spacer(minLength: 0)
                 
                 Button(action: showMenuSheet) {
                     Text(NSLocalizedString("edit", comment: "Edit"))
@@ -1043,7 +1101,7 @@ struct FullScreenVideoPlayer: View {
                 }
             if showControls {
                 Button(action: { onDismiss() }) {
-                    Text("戻る")
+                    Text(NSLocalizedString("back", comment: "Back"))
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)

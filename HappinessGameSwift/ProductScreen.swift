@@ -122,10 +122,6 @@ struct ProductScreen: View {
                 
                 Spacer()
                 
-                // 言語切り替えボタン
-                LanguageButton()
-                    .padding(.trailing, 8)
-                
                 // 商品を追加ボタン
                 Button(action: {
                     showCategorySelection = true

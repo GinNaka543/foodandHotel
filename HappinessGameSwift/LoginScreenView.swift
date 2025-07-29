@@ -42,13 +42,13 @@ struct LoginScreenView: View {
                             Image("icon")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(16)
+                                .frame(width: 56, height: 56)
+                                .cornerRadius(11)
                             
                             Image("ログインロゴ")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(height: 150)
+                                .frame(height: 105)
                         }
                         .padding(.top, -100) // 20 - 120 = -100 to move 120px up
                         
@@ -56,11 +56,11 @@ struct LoginScreenView: View {
                         VStack(spacing: 24) {
                             // ユーザー名
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("ユーザー名")
+                                Text(NSLocalizedString("username", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                 
-                                TextField("ユーザー名を入力", text: $username)
+                                TextField(NSLocalizedString("enter_username", comment: ""), text: $username)
                                     .font(.system(size: 16))
                                     .padding()
                                     .background(Color(.systemGray6))
@@ -70,16 +70,21 @@ struct LoginScreenView: View {
                             
                             // ユーザーID
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("ユーザーID")
+                                Text(NSLocalizedString("user_id", comment: ""))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                 
-                                TextField("ユーザーIDを入力", text: $userId)
+                                TextField(NSLocalizedString("enter_user_id", comment: ""), text: $userId)
                                     .font(.system(size: 16))
                                     .padding()
                                     .background(Color(.systemGray6))
                                     .cornerRadius(8)
                                     .autocapitalization(.none)
+                                
+                                Text(NSLocalizedString("user_id_help", comment: "You can check your User ID from Profile Edit on the home page"))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.leading)
                             }
                         }
                         .padding(.horizontal, 32)
@@ -92,7 +97,7 @@ struct LoginScreenView: View {
                                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                         .scaleEffect(0.8)
                                 }
-                                Text("ログイン")
+                                Text(NSLocalizedString("login_button", comment: ""))
                                     .font(.system(size: 17, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -113,18 +118,18 @@ struct LoginScreenView: View {
                             dismiss()
                             // 選択画面に戻る
                         }) {
-                            Text("アカウントをお持ちでない方はこちら")
+                            Text(NSLocalizedString("no_account_yet", comment: ""))
                                 .font(.system(size: 14))
                                 .foregroundColor(.blue)
                         }
                         
                         // アカウント復元の説明
                         VStack(spacing: 8) {
-                            Text("IDとユーザー名を忘れた場合")
+                            Text(NSLocalizedString("forgot_id_username", comment: ""))
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.orange)
                             
-                            Text("もう一度アカウントを作成してください。\nアカウントを作成すると履歴が復元されます。")
+                            Text(NSLocalizedString("recreate_account_message", comment: ""))
                                 .font(.system(size: 12))
                                 .foregroundColor(.gray)
                                 .multilineTextAlignment(.center)
@@ -139,7 +144,7 @@ struct LoginScreenView: View {
                         Button(action: {
                             showingTermsOfService = true
                         }) {
-                            Text("利用規約")
+                            Text(NSLocalizedString("terms_of_service", comment: ""))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                                 .underline()
@@ -171,15 +176,43 @@ struct LoginScreenView: View {
                 case .success(let isValid):
                     if isValid {
                         saveUserData(username: username, userId: userId)
-                        authManager.login()
-                        dismiss()
+                        
+                        // Firebaseからユーザーデータを同期
+                        FirebaseManager.shared.syncUserContentFromFirebase(userId: userId) { syncResult in
+                            switch syncResult {
+                            case .success:
+                                print("ユーザーデータの同期が完了しました")
+                                
+                                // 購入済みプランも同期
+                                FirebaseManager.shared.syncPurchasedPlans(userId: userId) { planSyncResult in
+                                    DispatchQueue.main.async {
+                                        switch planSyncResult {
+                                        case .success:
+                                            print("購入済みプランの同期が完了しました")
+                                        case .failure(let error):
+                                            print("購入済みプランの同期エラー: \(error)")
+                                        }
+                                        
+                                        authManager.login()
+                                        dismiss()
+                                    }
+                                }
+                                
+                            case .failure(let error):
+                                print("ユーザーデータの同期エラー: \(error)")
+                                DispatchQueue.main.async {
+                                    authManager.login()
+                                    dismiss()
+                                }
+                            }
+                        }
                     } else {
-                        alertTitle = "ログイン失敗"
-                        alertMessage = "ユーザー名またはユーザーIDが正しくありません"
+                        alertTitle = NSLocalizedString("login_failed", comment: "")
+                        alertMessage = NSLocalizedString("invalid_credentials", comment: "")
                         showingAlert = true
                     }
                 case .failure(let error):
-                    alertTitle = "エラー"
+                    alertTitle = NSLocalizedString("error", comment: "")
                     alertMessage = error.localizedDescription
                     showingAlert = true
                 }

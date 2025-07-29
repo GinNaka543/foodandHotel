@@ -38,9 +38,6 @@ struct FirstTimeLanguageSelectionView: View {
                             localizationManager.setLanguage(language, shouldRestart: false)
                         }) {
                             HStack {
-                                Text(language.flag)
-                                    .font(.title)
-                                
                                 Text(language.displayName)
                                     .font(.headline)
                                     .foregroundColor(.primary)

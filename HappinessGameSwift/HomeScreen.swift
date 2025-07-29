@@ -5,8 +5,9 @@ import PhotosUI
 extension DateFormatter {
     static let japaneseDate: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年M月d日"
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
+        formatter.locale = Locale.current
         return formatter
     }()
 }
@@ -215,10 +216,6 @@ struct HomeScreen: View {
                     .buttonStyle(PlainButtonStyle())
                     
                     Spacer()
-                    
-                    // 言語切り替えボタン
-                    LanguageButton()
-                        .padding(.trailing, 8)
                     
                     // ユーザーアイコン
                     Button(action: {
@@ -1501,6 +1498,7 @@ struct UserProfileScreenTemp: View {
     @State private var animeQuote: String = ""
     @State private var showingLogoutConfirmation = false
     @State private var showingPurchaseHistory = false
+    @State private var showCopiedFeedback = false
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -1668,7 +1666,7 @@ struct UserProfileScreenTemp: View {
                                     HStack {
                                         Image(systemName: "doc.text")
                                             .foregroundColor(.purple)
-                                        Text("購入履歴")
+                                        Text(NSLocalizedString("purchase_history", comment: "Purchase history"))
                                             .font(.system(size: 16))
                                             .foregroundColor(.purple)
                                         Spacer()
@@ -1704,7 +1702,7 @@ struct UserProfileScreenTemp: View {
                                 // ユーザーID表示
                                 if let userId = UserDefaults.standard.string(forKey: "userId") {
                                     HStack {
-                                        Text("ユーザーID:")
+                                        Text(NSLocalizedString("user_id", comment: "User ID"))
                                             .font(.system(size: 12))
                                             .foregroundColor(.gray)
                                         Text(userId)
@@ -1713,12 +1711,19 @@ struct UserProfileScreenTemp: View {
                                         Spacer()
                                         Button(action: {
                                             UIPasteboard.general.string = userId
-                                            // コピー成功のフィードバック
+                                            showCopiedFeedback = true
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                                showCopiedFeedback = false
+                                            }
                                         }) {
-                                            Image(systemName: "doc.on.doc")
-                                                .font(.system(size: 12))
+                                            Image(systemName: showCopiedFeedback ? "checkmark" : "doc.on.doc")
+                                                .font(.system(size: 14))
                                                 .foregroundColor(.blue)
+                                                .padding(8)
+                                                .background(Color.gray.opacity(0.1))
+                                                .cornerRadius(6)
                                         }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.bottom, 16)
@@ -1768,6 +1773,28 @@ struct UserProfileScreenTemp: View {
                 }
             )
         }
+        .overlay(
+            // Copied feedback overlay
+            VStack {
+                if showCopiedFeedback {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.white)
+                        Text(NSLocalizedString("copied", comment: "Copied"))
+                            .foregroundColor(.white)
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.8))
+                    .cornerRadius(20)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .animation(.easeInOut(duration: 0.3), value: showCopiedFeedback)
+                }
+                Spacer()
+            }
+            .padding(.top, 50)
+        )
     }
     
     private func loadCurrentProfile() {
@@ -1913,7 +1940,12 @@ struct LogoutConfirmationView: View {
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(copiedUserId ? .green : .blue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(6)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding()
                         .background(Color.gray.opacity(0.1))
@@ -1947,7 +1979,12 @@ struct LogoutConfirmationView: View {
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(copiedUsername ? .green : .blue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(6)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding()
                         .background(Color.gray.opacity(0.1))

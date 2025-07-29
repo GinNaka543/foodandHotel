@@ -139,6 +139,7 @@ function Users() {
             <thead>
               <tr>
                 <th>ユーザー名</th>
+                <th>ポイント</th>
                 <th>お気に入りアニメ</th>
                 <th>お気に入りキャラクター</th>
                 <th>お気に入り声優</th>
@@ -149,23 +150,24 @@ function Users() {
               {users.map(user => (
                 <tr key={user.id}>
                   <td><div className="scroll-x-cell">{user.username || '未設定'}</div></td>
+                  <td><div className="scroll-x-cell">{user.points || 0} pt</div></td>
                   <td>
                     <div className="scroll-x-cell">
-                      {(user.favoriteAnimes || []).map(anime => (
+                      {(user.favorites?.anime || []).map(anime => (
                         <span key={anime} className="tag">{anime}</span>
                       ))}
                     </div>
                   </td>
                   <td>
                     <div className="scroll-x-cell">
-                      {(user.favoriteCharacters || []).map(character => (
+                      {(user.favorites?.characters || []).map(character => (
                         <span key={character} className="tag">{character}</span>
                       ))}
                     </div>
                   </td>
                   <td>
                     <div className="scroll-x-cell">
-                      {(user.favoriteVoiceActors || []).map(voiceActor => (
+                      {(user.favorites?.voiceActors || []).map(voiceActor => (
                         <span key={voiceActor} className="tag">{voiceActor}</span>
                       ))}
                     </div>

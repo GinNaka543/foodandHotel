@@ -5,6 +5,7 @@ struct FirstLaunchView: View {
     @State private var currentPage = 0
     @State private var showPrivacyPolicy = false
     @State private var hasAgreedToPrivacy = false
+    @StateObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         ZStack {
@@ -32,15 +33,15 @@ struct FirstLaunchView: View {
                 
                 TabView(selection: $currentPage) {
                     // ページ1: ようこそ
-                    WelcomePage()
+                    WelcomePage(currentPage: $currentPage)
                         .tag(0)
                     
                     // ページ2: 料金説明
-                    PricingPage()
+                    PricingPage(currentPage: $currentPage)
                         .tag(1)
                     
                     // ページ3: 開始
-                    StartPage(hasSeenFirstLaunch: $hasSeenFirstLaunch)
+                    StartPage(hasSeenFirstLaunch: $hasSeenFirstLaunch, currentPage: $currentPage)
                         .tag(2)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
@@ -50,6 +51,8 @@ struct FirstLaunchView: View {
 }
 
 struct WelcomePage: View {
+    @Binding var currentPage: Int
+    
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
@@ -60,12 +63,12 @@ struct WelcomePage: View {
                 .frame(width: 150, height: 150)
                 .shadow(radius: 10)
             
-            Text("アニレコへようこそ")
+            Text(NSLocalizedString("welcome_to_anireco", comment: ""))
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
             
-            Text("好きなキャラクターやアニメを\n記録して管理しましょう")
+            Text(NSLocalizedString("welcome_description", comment: ""))
                 .font(.title3)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white.opacity(0.9))
@@ -73,11 +76,28 @@ struct WelcomePage: View {
             
             Spacer()
             
-            HStack {
-                Text("スワイプして続ける")
-                    .foregroundColor(.white.opacity(0.7))
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.white.opacity(0.7))
+            VStack(spacing: 15) {
+                HStack {
+                    Text(NSLocalizedString("swipe_to_continue", comment: ""))
+                        .foregroundColor(.white.opacity(0.7))
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                
+                Button(action: {
+                    withAnimation {
+                        currentPage = 1
+                    }
+                }) {
+                    Text(NSLocalizedString("next", comment: ""))
+                        .font(.headline)
+                        .foregroundColor(.purple)
+                        .frame(width: 120)
+                        .padding()
+                        .background(Color.white)
+                        .cornerRadius(25)
+                        .shadow(radius: 5)
+                }
             }
             .padding(.bottom, 50)
         }
@@ -85,6 +105,8 @@ struct WelcomePage: View {
 }
 
 struct PricingPage: View {
+    @Binding var currentPage: Int
+    
     var body: some View {
         VStack(spacing: 30) {
             Spacer()
@@ -94,7 +116,7 @@ struct PricingPage: View {
                 .foregroundColor(.white)
                 .shadow(radius: 10)
             
-            Text("重要なお知らせ")
+            Text(NSLocalizedString("important_notice", comment: ""))
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
@@ -103,7 +125,7 @@ struct PricingPage: View {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.green)
-                    Text("最初の2ヶ月間は無料")
+                    Text(NSLocalizedString("first_2_months_free", comment: ""))
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -112,7 +134,7 @@ struct PricingPage: View {
                 HStack {
                     Image(systemName: "calendar.badge.clock")
                         .foregroundColor(.yellow)
-                    Text("2ヶ月後から600円")
+                    Text(NSLocalizedString("after_2_months_600yen", comment: ""))
                         .font(.title3)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -122,21 +144,21 @@ struct PricingPage: View {
             
             // 詳細説明
             VStack(spacing: 10) {
-                Text("お試し期間について")
+                Text(NSLocalizedString("trial_period_about", comment: ""))
                     .font(.headline)
                     .foregroundColor(.white)
                 
-                Text("このアプリは最初の2ヶ月間は無料でご利用いただけます。")
+                Text(NSLocalizedString("trial_period_description_1", comment: ""))
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.white.opacity(0.9))
                 
-                Text("2ヶ月経過後、継続利用には600円が必要となります。")
+                Text(NSLocalizedString("trial_period_description_2", comment: ""))
                     .font(.body)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.white.opacity(0.9))
                 
-                Text("支払いはポイントまたはクレジットカードで可能です。")
+                Text(NSLocalizedString("payment_methods", comment: ""))
                     .font(.caption)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.white.opacity(0.8))
@@ -149,11 +171,45 @@ struct PricingPage: View {
             
             Spacer()
             
-            HStack {
-                Text("スワイプして続ける")
-                    .foregroundColor(.white.opacity(0.7))
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.white.opacity(0.7))
+            VStack(spacing: 15) {
+                HStack {
+                    Text(NSLocalizedString("swipe_to_continue", comment: ""))
+                        .foregroundColor(.white.opacity(0.7))
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                
+                HStack(spacing: 20) {
+                    Button(action: {
+                        withAnimation {
+                            currentPage = 0
+                        }
+                    }) {
+                        Text(NSLocalizedString("back", comment: ""))
+                            .font(.headline)
+                            .foregroundColor(.purple)
+                            .frame(width: 100)
+                            .padding()
+                            .background(Color.white.opacity(0.8))
+                            .cornerRadius(25)
+                            .shadow(radius: 5)
+                    }
+                    
+                    Button(action: {
+                        withAnimation {
+                            currentPage = 2
+                        }
+                    }) {
+                        Text(NSLocalizedString("next", comment: ""))
+                            .font(.headline)
+                            .foregroundColor(.purple)
+                            .frame(width: 100)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(25)
+                            .shadow(radius: 5)
+                    }
+                }
             }
             .padding(.bottom, 50)
         }
@@ -162,6 +218,7 @@ struct PricingPage: View {
 
 struct StartPage: View {
     @Binding var hasSeenFirstLaunch: Bool
+    @Binding var currentPage: Int
     @State private var showPrivacyPolicy = false
     @State private var hasAgreedToPrivacy = UserDefaults.standard.bool(forKey: "hasAgreedToPrivacyPolicy")
     
@@ -174,12 +231,12 @@ struct StartPage: View {
                 .foregroundColor(.white)
                 .shadow(radius: 10)
             
-            Text("始めましょう！")
+            Text(NSLocalizedString("lets_start", comment: ""))
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
             
-            Text("アカウントを作成して\nアプリを始めましょう")
+            Text(NSLocalizedString("create_account_start", comment: ""))
                 .font(.title3)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white.opacity(0.9))
@@ -196,7 +253,7 @@ struct StartPage: View {
                         HStack {
                             Image(systemName: hasAgreedToPrivacy ? "checkmark.square.fill" : "square")
                                 .foregroundColor(.white)
-                            Text("プライバシーポリシーに同意する")
+                            Text(NSLocalizedString("agree_to_privacy_policy", comment: ""))
                                 .font(.body)
                                 .foregroundColor(.white)
                         }
@@ -212,7 +269,7 @@ struct StartPage: View {
                         showPrivacyPolicy = true
                     }
                 }) {
-                    Text("アプリを始める")
+                    Text(NSLocalizedString("start_app", comment: ""))
                         .font(.headline)
                         .foregroundColor(.purple)
                         .frame(maxWidth: .infinity)
@@ -226,19 +283,36 @@ struct StartPage: View {
                 Button(action: {
                     showPrivacyPolicy = true
                 }) {
-                    Text("プライバシーポリシーを読む")
+                    Text(NSLocalizedString("read_privacy_policy", comment: ""))
                         .font(.caption)
                         .foregroundColor(.white)
                         .underline()
                 }
             }
             
-            Text("プライバシーポリシーに同意することで、アプリの利用を開始できます")
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-                .padding(.bottom, 50)
+            VStack(spacing: 15) {
+                Text(NSLocalizedString("privacy_agreement_note", comment: ""))
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                
+                Button(action: {
+                    withAnimation {
+                        currentPage = 1
+                    }
+                }) {
+                    Text(NSLocalizedString("back", comment: ""))
+                        .font(.headline)
+                        .foregroundColor(.purple)
+                        .frame(width: 100)
+                        .padding()
+                        .background(Color.white.opacity(0.8))
+                        .cornerRadius(25)
+                        .shadow(radius: 5)
+                }
+            }
+            .padding(.bottom, 50)
         }
         .fullScreenCover(isPresented: $showPrivacyPolicy) {
             PrivacyPolicyView(hasAgreed: $hasAgreedToPrivacy, isInitialAgreement: true)

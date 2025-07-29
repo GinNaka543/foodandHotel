@@ -119,35 +119,62 @@ struct PurchaseReceipt: Codable, Identifiable {
     let receiptNumber: String
     
     enum PurchaseTransactionType: String, Codable, CaseIterable {
-        case pointPurchase = "ポイント購入"
-        case planPurchase = "プラン購入"
-        case subscription = "月額課金"
-        case premiumUpgrade = "プレミアムアップグレード"
+        case pointPurchase = "point_purchase"
+        case planPurchase = "plan_purchase"
+        case subscription = "subscription"
+        case premiumUpgrade = "premium_upgrade"
         
         var displayName: String {
-            return self.rawValue
+            switch self {
+            case .pointPurchase:
+                return NSLocalizedString("transaction_type_point_purchase", comment: "Point Purchase")
+            case .planPurchase:
+                return NSLocalizedString("transaction_type_plan_purchase", comment: "Plan Purchase")
+            case .subscription:
+                return NSLocalizedString("transaction_type_subscription", comment: "Subscription")
+            case .premiumUpgrade:
+                return NSLocalizedString("transaction_type_premium_upgrade", comment: "Premium Upgrade")
+            }
         }
     }
     
     enum PaymentMethod: String, Codable, CaseIterable {
-        case creditCard = "クレジットカード"
-        case applePay = "Apple Pay"
-        case googlePay = "Google Pay"
-        case points = "ポイント"
+        case creditCard = "credit_card"
+        case applePay = "apple_pay"
+        case googlePay = "google_pay"
+        case points = "points"
         
         var displayName: String {
-            return self.rawValue
+            switch self {
+            case .creditCard:
+                return NSLocalizedString("payment_method_credit_card", comment: "Credit Card")
+            case .applePay:
+                return NSLocalizedString("payment_method_apple_pay", comment: "Apple Pay")
+            case .googlePay:
+                return NSLocalizedString("payment_method_google_pay", comment: "Google Pay")
+            case .points:
+                return NSLocalizedString("payment_method_points", comment: "Points")
+            }
         }
     }
     
     enum PurchaseStatus: String, Codable {
-        case completed = "完了"
-        case pending = "処理中"
-        case failed = "失敗"
-        case refunded = "返金済み"
+        case completed = "completed"
+        case pending = "pending"
+        case failed = "failed"
+        case refunded = "refunded"
         
         var displayName: String {
-            return self.rawValue
+            switch self {
+            case .completed:
+                return NSLocalizedString("purchase_status_completed", comment: "Completed")
+            case .pending:
+                return NSLocalizedString("purchase_status_pending", comment: "Pending")
+            case .failed:
+                return NSLocalizedString("purchase_status_failed", comment: "Failed")
+            case .refunded:
+                return NSLocalizedString("purchase_status_refunded", comment: "Refunded")
+            }
         }
     }
     

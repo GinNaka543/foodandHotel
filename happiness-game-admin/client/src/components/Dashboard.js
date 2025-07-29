@@ -5,6 +5,8 @@ function Dashboard() {
   const [statistics, setStatistics] = useState({
     totalUsers: 0,
     totalAds: 0,
+    totalSubscriptions: 0,
+    totalPoints: 0,
     animeStats: {},
     characterStats: {},
     voiceActorStats: {},
@@ -158,36 +160,41 @@ function Dashboard() {
         {subscriptionStats && (
           <>
             <div className="stat-card">
-              <h3>支払い済みユーザー</h3>
-              <div className="value">{subscriptionStats.paidUsers}</div>
-              <div className="sub-value">収益: ¥{subscriptionStats.totalRevenue.toLocaleString()}</div>
+              <h3>総サブスクリプション</h3>
+              <div className="value">{subscriptionStats.total || 0}</div>
+              <div className="sub-value">デバイス登録数</div>
             </div>
             
             <div className="stat-card">
-              <h3>試用期間中</h3>
-              <div className="value">{subscriptionStats.trialUsers}</div>
-              <div className="sub-value">期限切れ: {subscriptionStats.expiredUsers}</div>
+              <h3>アクティブ</h3>
+              <div className="value">{subscriptionStats.active || 0}</div>
+              <div className="sub-value">稼働中のサブスクリプション</div>
             </div>
             
             <div className="stat-card">
-              <h3>期限間近</h3>
-              <div className="value" style={{ color: subscriptionStats.expiringIn7Days > 0 ? '#ff9800' : '#4caf50' }}>
-                {subscriptionStats.expiringIn7Days}
+              <h3>非アクティブ</h3>
+              <div className="value" style={{ color: subscriptionStats.inactive > 0 ? '#ff9800' : '#4caf50' }}>
+                {subscriptionStats.inactive || 0}
               </div>
-              <div className="sub-value">7日以内</div>
+              <div className="sub-value">停止中のサブスクリプション</div>
             </div>
             
             <div className="stat-card">
-              <h3>課金率</h3>
-              <div className="value">{subscriptionStats.conversionRate}%</div>
-              <div className="sub-value">全{subscriptionStats.totalUsers}ユーザー中</div>
+              <h3>デバイス種類</h3>
+              <div className="value">{Object.keys(subscriptionStats.deviceTypes || {}).length}</div>
+              <div className="sub-value">登録デバイス種類数</div>
             </div>
           </>
         )}
         
         <div className="stat-card">
-          <h3>登録アニメ数</h3>
-          <div className="value">{Object.keys(statistics.animeStats).length}</div>
+          <h3>総ポイント</h3>
+          <div className="value">{statistics.totalPoints || 0}</div>
+        </div>
+        
+        <div className="stat-card">
+          <h3>総サブスクリプション</h3>
+          <div className="value">{statistics.totalSubscriptions || 0}</div>
         </div>
       </div>
 
@@ -202,8 +209,8 @@ function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {getTop10List(statistics.animeStats).length > 0 ? (
-              getTop10List(statistics.animeStats).map(([anime, count], index) => (
+            {getTop10List(statistics.animeStats || {}).length > 0 ? (
+              getTop10List(statistics.animeStats || {}).map(([anime, count], index) => (
                 <tr key={anime}>
                   <td>{index + 1}</td>
                   <td>{anime}</td>
@@ -232,8 +239,8 @@ function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {getTop10List(statistics.characterStats).length > 0 ? (
-              getTop10List(statistics.characterStats).map(([character, count], index) => (
+            {getTop10List(statistics.characterStats || {}).length > 0 ? (
+              getTop10List(statistics.characterStats || {}).map(([character, count], index) => (
                 <tr key={character}>
                   <td>{index + 1}</td>
                   <td>{character}</td>
@@ -262,8 +269,8 @@ function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {getTop10List(statistics.voiceActorStats).length > 0 ? (
-              getTop10List(statistics.voiceActorStats).map(([voiceActor, count], index) => (
+            {getTop10List(statistics.voiceActorStats || {}).length > 0 ? (
+              getTop10List(statistics.voiceActorStats || {}).map(([voiceActor, count], index) => (
                 <tr key={voiceActor}>
                   <td>{index + 1}</td>
                   <td>{voiceActor}</td>
@@ -292,8 +299,8 @@ function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {getTop10List(statistics.hashtagStats).length > 0 ? (
-              getTop10List(statistics.hashtagStats).map(([hashtag, count], index) => (
+            {getTop10List(statistics.hashtagStats || {}).length > 0 ? (
+              getTop10List(statistics.hashtagStats || {}).map(([hashtag, count], index) => (
                 <tr key={hashtag}>
                   <td>{index + 1}</td>
                   <td>{hashtag}</td>

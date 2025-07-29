@@ -13,19 +13,19 @@ struct AuthSelectionView: View {
                     Image("icon")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 120, height: 120)
-                        .cornerRadius(24)
+                        .frame(width: 84, height: 84)
+                        .cornerRadius(17)
                     
                     Image("ログインロゴ")
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 240)
+                        .frame(height: 168)
                     
-                    Text("僕だけの推しギャラリー！")
+                    Text(NSLocalizedString("auth_selection_subtitle", comment: ""))
                         .font(.system(size: 20))
                         .foregroundColor(.gray)
                 }
-                .padding(.top, 100) // ロゴを上部に配置
+                .padding(.top, 130) // ロゴを上部に配置
                 
                 Spacer()
                 
@@ -35,7 +35,7 @@ struct AuthSelectionView: View {
                     Button(action: {
                         showLoginView = true
                     }) {
-                        Text("ログイン")
+                        Text(NSLocalizedString("login_button", comment: ""))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -48,7 +48,7 @@ struct AuthSelectionView: View {
                     Button(action: {
                         showRegisterView = true
                     }) {
-                        Text("新規登録")
+                        Text(NSLocalizedString("register_button", comment: ""))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.purple)
                             .frame(maxWidth: .infinity)

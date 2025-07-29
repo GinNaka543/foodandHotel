@@ -117,11 +117,14 @@ class FirebaseManager: ObservableObject {
     }
     
     // ユーザーが登録したキャラクターとアニメデータを保存
-    private func saveUserContentData(userId: String) {
+    func saveUserContentData(userId: String) {
+        print("🔥 [Firebase] saveUserContentData called for userId: \(userId)")
         
         // キャラクターデータを保存
-        if let charactersData = UserDefaults.standard.data(forKey: "characters"),
+        if let charactersData = UserDefaultsHelper.shared.getData(forKey: "characters"),
            let characters = try? JSONDecoder().decode([Character].self, from: charactersData) {
+            
+            print("🔥 [Firebase] Found \(characters.count) characters to save")
             
             // Collect voice actors
             var voiceActors = Set<String>()
@@ -135,14 +138,22 @@ class FirebaseManager: ObservableObject {
                     "characterId": character.id.uuidString,
                     "name": character.name,
                     "tag": character.tag,
+                    "birthday": Timestamp(date: character.birthday),
+                    "age": character.age,
+                    "favoriteFood": character.favoriteFood,
                     "voiceActor": character.voiceActor,
+                    "cupSize": character.cupSize,
                     "anime": "", // character.anime is not available in current Character struct
                     "createdAt": Timestamp(date: Date()), // character.createdAt is not available
                     "updatedAt": Timestamp(date: Date())  // character.updatedAt is not available
                 ]
                 
-                characterRef.setData(characterData, merge: true) { _ in
-                    // Character data saved
+                characterRef.setData(characterData, merge: true) { error in
+                    if let error = error {
+                        print("❌ [Firebase] Error saving character: \(error)")
+                    } else {
+                        print("✅ [Firebase] Character saved: \(character.name)")
+                    }
                 }
             }
             
@@ -166,19 +177,20 @@ class FirebaseManager: ObservableObject {
                         "updatedAt": Timestamp(date: Date())
                     ]
                     
-                    voiceActorRef.setData(voiceActorData, merge: true) { error in
-                        if let error = error {
-                        } else {
-                        }
+                    voiceActorRef.setData(voiceActorData, merge: true) { _ in
+                        // Voice actor data saved
                     }
                 }
             }
         } else {
+            print("⚠️ [Firebase] No characters found to save")
         }
         
         // アニメデータを保存
-        if let animesData = UserDefaults.standard.data(forKey: "animes"),
+        if let animesData = UserDefaultsHelper.shared.getData(forKey: "animes"),
            let animes = try? JSONDecoder().decode([Anime].self, from: animesData) {
+            
+            print("🔥 [Firebase] Found \(animes.count) animes to save")
             
             for anime in animes {
                 let animeRef = db.collection("userAnimes").document("\(userId)_\(anime.id)")
@@ -187,15 +199,21 @@ class FirebaseManager: ObservableObject {
                     "animeId": anime.id.uuidString,
                     "title": anime.title,
                     "hashtag": anime.hashtag,
+                    "releaseDate": Timestamp(date: anime.releaseDate),
                     "createdAt": Timestamp(date: Date()), // anime.createdAt may not be available
                     "updatedAt": Timestamp(date: Date())  // anime.updatedAt may not be available
                 ]
                 
-                animeRef.setData(animeData, merge: true) { _ in
-                    // Anime data saved
+                animeRef.setData(animeData, merge: true) { error in
+                    if let error = error {
+                        print("❌ [Firebase] Error saving anime: \(error)")
+                    } else {
+                        print("✅ [Firebase] Anime saved: \(anime.title)")
+                    }
                 }
             }
         } else {
+            print("⚠️ [Firebase] No animes found to save")
         }
     }
     
@@ -486,8 +504,10 @@ class FirebaseManager: ObservableObject {
         adRef.updateData([
             "impressions": FieldValue.increment(Int64(1))
         ]) { error in
-            if let error = error {
+            if error != nil {
+                // Error recording impression
             } else {
+                // Impression recorded
             }
         }
     }
@@ -631,6 +651,245 @@ class FirebaseManager: ObservableObject {
         }
     }
     
+    // MARK: - User Data Sync Functions
+    
+    // ユーザーのキャラクターデータをFirebaseから取得
+    func loadUserCharacters(userId: String, completion: @escaping (Result<[Character], Error>) -> Void) {
+        print("📱 Loading characters for userId: \(userId)")
+        
+        db.collection("userCharacters")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments(completion: { snapshot, error in
+                if let error = error {
+                    print("❌ Error loading characters: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ No character documents found")
+                    completion(.success([]))
+                    return
+                }
+                
+                print("✅ Found \(documents.count) character documents")
+                
+                var characters: [Character] = []
+                
+                for doc in documents {
+                    let data = doc.data()
+                    
+                    guard let characterIdString = data["characterId"] as? String,
+                          let characterId = UUID(uuidString: characterIdString),
+                          let name = data["name"] as? String,
+                          let tag = data["tag"] as? String else {
+                        continue
+                    }
+                    
+                    let voiceActor = data["voiceActor"] as? String ?? ""
+                    let birthday = (data["birthday"] as? Timestamp)?.dateValue() ?? Date()
+                    let age = data["age"] as? String ?? ""
+                    let favoriteFood = data["favoriteFood"] as? String ?? ""
+                    let cupSize = data["cupSize"] as? String ?? ""
+                    
+                    let character = Character(
+                        id: characterId,
+                        imageIdentifier: nil,
+                        name: name,
+                        tag: tag,
+                        birthday: birthday,
+                        favoriteFood: favoriteFood,
+                        age: age,
+                        voiceActor: voiceActor,
+                        cupSize: cupSize,
+                        seichi: "",
+                        height: ""
+                    )
+                    
+                    characters.append(character)
+                }
+                
+                completion(.success(characters))
+            })
+    }
+    
+    // ユーザーのアニメデータをFirebaseから取得
+    func loadUserAnimes(userId: String, completion: @escaping (Result<[Anime], Error>) -> Void) {
+        print("📱 Loading animes for userId: \(userId)")
+        
+        db.collection("userAnimes")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments(completion: { snapshot, error in
+                if let error = error {
+                    print("❌ Error loading animes: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ No anime documents found")
+                    completion(.success([]))
+                    return
+                }
+                
+                print("✅ Found \(documents.count) anime documents")
+                
+                var animes: [Anime] = []
+                
+                for doc in documents {
+                    let data = doc.data()
+                    
+                    guard let animeIdString = data["animeId"] as? String,
+                          let animeId = UUID(uuidString: animeIdString),
+                          let title = data["title"] as? String,
+                          let hashtag = data["hashtag"] as? String else {
+                        continue
+                    }
+                    
+                    let releaseDate = (data["releaseDate"] as? Timestamp)?.dateValue() ?? Date()
+                    
+                    let anime = Anime(
+                        id: animeId,
+                        imageIdentifier: nil,
+                        backgroundImagePath: nil,
+                        title: title,
+                        hashtag: hashtag,
+                        releaseDate: releaseDate
+                    )
+                    
+                    animes.append(anime)
+                }
+                
+                completion(.success(animes))
+            })
+    }
+    
+    // ユーザーのすべてのコンテンツデータをFirebaseから同期
+    func syncUserContentFromFirebase(userId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let group = DispatchGroup()
+        var syncError: Error?
+        
+        // キャラクターデータを取得
+        group.enter()
+        loadUserCharacters(userId: userId) { result in
+            switch result {
+            case .success(let characters):
+                print("✅ Successfully loaded \(characters.count) characters")
+                if !characters.isEmpty {
+                    // 既存のローカルデータを取得して画像情報を保持
+                    var existingCharacters: [UUID: Character] = [:]
+                    if let existingData = UserDefaultsHelper.shared.getData(forKey: "characters"),
+                       let existing = try? JSONDecoder().decode([Character].self, from: existingData) {
+                        for char in existing {
+                            existingCharacters[char.id] = char
+                        }
+                        print("📷 Found \(existing.count) existing characters with potential image data")
+                    }
+                    
+                    // Firebaseから取得したキャラクターに既存の画像情報をマージ
+                    var mergedCharacters: [Character] = []
+                    for var character in characters {
+                        if let existingChar = existingCharacters[character.id],
+                           let existingImage = existingChar.imageIdentifier {
+                            // 既存の画像情報を保持
+                            character.imageIdentifier = existingImage
+                            print("📷 Preserved image for character: \(character.name)")
+                        }
+                        mergedCharacters.append(character)
+                    }
+                    
+                    // マージしたデータを保存
+                    if let encoded = try? JSONEncoder().encode(mergedCharacters) {
+                        UserDefaultsHelper.shared.setData(encoded, forKey: "characters")
+                        print("💾 Saved \(mergedCharacters.count) characters to UserDefaults (with preserved images)")
+                    }
+                } else {
+                    print("⚠️ No characters to save")
+                }
+            case .failure(let error):
+                syncError = error
+            }
+            group.leave()
+        }
+        
+        // アニメデータを取得
+        group.enter()
+        loadUserAnimes(userId: userId) { result in
+            switch result {
+            case .success(let animes):
+                print("✅ Successfully loaded \(animes.count) animes")
+                if !animes.isEmpty {
+                    // 既存のローカルデータを取得して画像情報を保持
+                    var existingAnimes: [UUID: Anime] = [:]
+                    if let existingData = UserDefaultsHelper.shared.getData(forKey: "animes"),
+                       let existing = try? JSONDecoder().decode([Anime].self, from: existingData) {
+                        for anime in existing {
+                            existingAnimes[anime.id] = anime
+                        }
+                        print("📷 Found \(existing.count) existing animes with potential image data")
+                    }
+                    
+                    // Firebaseから取得したアニメに既存の画像情報をマージ
+                    var mergedAnimes: [Anime] = []
+                    for var anime in animes {
+                        if let existingAnime = existingAnimes[anime.id] {
+                            // 既存の画像情報を保持
+                            if let existingImage = existingAnime.imageIdentifier {
+                                anime.imageIdentifier = existingImage
+                                print("📷 Preserved main image for anime: \(anime.title)")
+                            }
+                            if let existingBgImage = existingAnime.backgroundImagePath {
+                                anime.backgroundImagePath = existingBgImage
+                                print("📷 Preserved background image for anime: \(anime.title)")
+                            }
+                        }
+                        mergedAnimes.append(anime)
+                    }
+                    
+                    // マージしたデータを保存
+                    if let encoded = try? JSONEncoder().encode(mergedAnimes) {
+                        UserDefaultsHelper.shared.setData(encoded, forKey: "animes")
+                        print("💾 Saved \(mergedAnimes.count) animes to UserDefaults (with preserved images)")
+                    }
+                } else {
+                    print("⚠️ No animes to save")
+                }
+            case .failure(let error):
+                syncError = error
+            }
+            group.leave()
+        }
+        
+        // すべての処理が完了したら
+        group.notify(queue: .main) {
+            if let error = syncError {
+                completion(.failure(error))
+            } else {
+                // データ更新の通知を送信
+                NotificationCenter.default.post(name: Notification.Name("UserDataSynced"), object: nil)
+                completion(.success(()))
+            }
+        }
+    }
+    
+    // ユーザーが購入したプランを取得
+    func fetchUserPurchasedPlans(userId: String, completion: @escaping (Result<[String], Error>) -> Void) {
+        db.collection("planPurchases")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                let planIds = snapshot?.documents.compactMap { document in
+                    document.data()["planId"] as? String
+                } ?? []
+                
+                completion(.success(planIds))
+            }
+    }
+    
     // ユーザーがプランを購入済みかチェック
     func checkPlanPurchased(userId: String, planId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         
@@ -648,7 +907,8 @@ class FirebaseManager: ObservableObject {
                 let isPurchased = documentsCount > 0
                 
                 if isPurchased {
-                    for doc in snapshot?.documents ?? [] {
+                    for _ in snapshot?.documents ?? [] {
+                        // Document exists
                     }
                 }
                 
@@ -977,6 +1237,168 @@ class FirebaseManager: ObservableObject {
                     }
                 }
                 
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+    
+    // MARK: - Purchased Plans Management
+    
+    // ユーザーの購入済みプランIDリストを取得
+    func fetchUserPurchasedPlanIds(userId: String, completion: @escaping (Result<[String], Error>) -> Void) {
+        print("📱 Fetching purchased plan IDs for userId: \(userId)")
+        
+        db.collection("planPurchases")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("❌ Error fetching purchased plans: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                let planIds = snapshot?.documents.compactMap { doc in
+                    doc.data()["planId"] as? String
+                } ?? []
+                
+                print("✅ Found \(planIds.count) purchased plans")
+                completion(.success(planIds))
+            }
+    }
+    
+    // ユーザーの購入済みプランIDをFirebaseに保存
+    func savePurchasedPlanIds(userId: String, planIds: [String], completion: @escaping (Result<Void, Error>) -> Void) {
+        print("🔥 Saving \(planIds.count) purchased plan IDs for userId: \(userId)")
+        
+        let userPurchasesRef = db.collection("userPurchasedPlans").document(userId)
+        userPurchasesRef.setData([
+            "userId": userId,
+            "planIds": planIds,
+            "updatedAt": FieldValue.serverTimestamp()
+        ], merge: true) { error in
+            if let error = error {
+                print("❌ Error saving purchased plan IDs: \(error)")
+                completion(.failure(error))
+            } else {
+                print("✅ Successfully saved purchased plan IDs")
+                completion(.success(()))
+            }
+        }
+    }
+    
+    // 購入済みプランの詳細データを取得してローカルに保存
+    private func fetchAndSavePurchasedPlanDetails(userId: String, planIds: [String], completion: @escaping (Result<Void, Error>) -> Void) {
+        guard !planIds.isEmpty else {
+            completion(.success(()))
+            return
+        }
+        
+        let dispatchGroup = DispatchGroup()
+        var fetchedPlans: [VisitPlanModel] = []
+        var hasError = false
+        
+        for planId in planIds {
+            dispatchGroup.enter()
+            
+            db.collection("visitPlans").document(planId).getDocument { snapshot, error in
+                defer { dispatchGroup.leave() }
+                
+                if let error = error {
+                    print("❌ Error fetching plan \(planId): \(error)")
+                    hasError = true
+                    return
+                }
+                
+                guard let document = snapshot, document.exists,
+                      let data = document.data(),
+                      let plan = VisitPlanModel(dictionary: data) else {
+                    print("⚠️ Could not parse plan \(planId)")
+                    return
+                }
+                
+                fetchedPlans.append(plan)
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            if !fetchedPlans.isEmpty {
+                // 既存の保存済みプランを読み込み
+                var savedPlans: [VisitPlanData] = []
+                if let savedData = UserDefaults.standard.data(forKey: "savedPlans"),
+                   let decodedPlans = try? JSONDecoder().decode([VisitPlanData].self, from: savedData) {
+                    savedPlans = decodedPlans
+                }
+                
+                // 新しく取得したプランを追加（重複を避ける）
+                for plan in fetchedPlans {
+                    let visitPlanData = VisitPlanData(
+                        id: UUID(uuidString: plan.id) ?? UUID(),
+                        animeName: plan.animeName,
+                        title: plan.title,
+                        duration: plan.duration,
+                        spots: plan.spots,
+                        thumbnailData: nil,
+                        thumbnailUrl: plan.thumbnailUrl,
+                        createdDate: plan.createdDate,
+                        startTime: plan.startTime,
+                        numberOfDays: plan.numberOfDays,
+                        isPurchased: true,
+                        streamingUrls: plan.streamingUrls
+                    )
+                    
+                    // 既に同じプランが保存されていないかチェック
+                    if !savedPlans.contains(where: { $0.id.uuidString == plan.id }) {
+                        savedPlans.append(visitPlanData)
+                    }
+                }
+                
+                // 更新されたプランリストを保存
+                if let encodedData = try? JSONEncoder().encode(savedPlans) {
+                    UserDefaults.standard.set(encodedData, forKey: "savedPlans")
+                    print("✅ Saved \(fetchedPlans.count) purchased plans to local storage")
+                }
+            }
+            
+            completion(hasError ? .failure(NSError(domain: "FirebaseManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Some plans could not be fetched"])) : .success(()))
+        }
+    }
+    
+    // 購入済みプランの同期（ローカルとFirebase）
+    func syncPurchasedPlans(userId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        // ローカルの購入済みプランIDを取得
+        let localPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(userId)") ?? []
+        
+        // Firebaseから購入済みプランIDを取得
+        fetchUserPurchasedPlanIds(userId: userId) { [weak self] result in
+            switch result {
+            case .success(let firebasePlanIds):
+                // ローカルとFirebaseのプランIDをマージ
+                let allPlanIds = Array(Set(localPlanIds + firebasePlanIds))
+                
+                // マージしたリストをローカルに保存
+                UserDefaults.standard.set(allPlanIds, forKey: "purchasedPlanIds_\(userId)")
+                
+                // 購入済みプランの詳細データを取得してローカルに保存
+                self?.fetchAndSavePurchasedPlanDetails(userId: userId, planIds: allPlanIds) { detailsResult in
+                    switch detailsResult {
+                    case .success:
+                        // マージしたリストをFirebaseに保存
+                        self?.savePurchasedPlanIds(userId: userId, planIds: allPlanIds) { saveResult in
+                            switch saveResult {
+                            case .success:
+                                print("✅ Successfully synced purchased plans")
+                                completion(.success(()))
+                            case .failure(let error):
+                                completion(.failure(error))
+                            }
+                        }
+                    case .failure(let error):
+                        print("⚠️ Failed to fetch plan details, but continuing: \(error)")
+                        // 詳細データの取得に失敗してもIDの同期は成功として扱う
+                        completion(.success(()))
+                    }
+                }
             case .failure(let error):
                 completion(.failure(error))
             }

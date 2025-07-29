@@ -36,19 +36,33 @@ class CharacterManager: ObservableObject {
         if let data = try? JSONEncoder().encode(characters) {
             UserDefaultsHelper.shared.setData(data, forKey: "characters")
             
-            // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
+            // Firebaseに直接キャラクターデータを保存
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
+                // ユーザープロファイルの更新
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        break
-                    case .failure(_):
-                        break
+                        print("✅ User profile saved to Firebase")
+                    case .failure(let error):
+                        print("❌ Failed to save user profile: \(error)")
+                    }
+                }
+            } else {
+                // currentUserProfileが存在しない場合でも、ユーザーIDがあればキャラクターを保存
+                if let userId = UserDefaults.standard.string(forKey: "userId") {
+                    print("🔥 Saving characters directly with userId: \(userId)")
+                    FirebaseManager.shared.saveUserContentData(userId: userId)
+                } else {
+                    print("⚠️ No user ID found - characters saved locally only")
+                    print("📝 Characters saved: \(characters.count) items")
+                    for (index, character) in characters.enumerated() {
+                        print("  \(index + 1). \(character.name) (ID: \(character.id))")
                     }
                 }
             }
         } else {
+            print("❌ Failed to encode characters")
         }
     }
     
@@ -314,9 +328,6 @@ struct CharaScreen: View {
                                 .foregroundColor(.black)
                         }
                         Spacer()
-                        // 言語切り替えボタン
-                        LanguageButton()
-                            .padding(.trailing, 8)
                         // 右上＋ボタン
                         Button(action: { showAddSheet = true }) {
                             Text(NSLocalizedString("add_character", comment: ""))
@@ -1001,16 +1012,16 @@ struct AddCharacterSheet: View {
                                 Spacer()
                                 
                                 HStack(spacing: 4) {
-                                    Picker(selection: $selectedMonth, label: Text(NSLocalizedString("month", comment: ""))) {
+                                    Picker(selection: $selectedMonth, label: Text("")) {
                                         ForEach(1...12, id: \.self) { month in
-                                            Text("\(month)" + NSLocalizedString("month", comment: "")).tag(month)
+                                            Text(monthName(month)).tag(month)
                                         }
                                     }
                                     .pickerStyle(MenuPickerStyle())
                                     
-                                    Picker(selection: $selectedDay, label: Text(NSLocalizedString("day", comment: ""))) {
+                                    Picker(selection: $selectedDay, label: Text("")) {
                                         ForEach(1...daysInMonth(selectedMonth), id: \.self) { day in
-                                            Text("\(day)" + NSLocalizedString("day", comment: "")).tag(day)
+                                            Text("\(day)").tag(day)
                                         }
                                     }
                                     .pickerStyle(MenuPickerStyle())
@@ -1038,6 +1049,17 @@ struct AddCharacterSheet: View {
         let dateComponents = DateComponents(year: 2000, month: month)
         let date = calendar.date(from: dateComponents) ?? Date()
         return calendar.range(of: .day, in: .month, for: date)?.count ?? 30
+    }
+    
+    // 月名を返す
+    private func monthName(_ month: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        let monthNames = formatter.monthSymbols ?? []
+        if month > 0 && month <= monthNames.count {
+            return monthNames[month - 1]
+        }
+        return "\(month)"
     }
 }
 

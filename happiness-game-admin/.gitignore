@@ -70,3 +70,4 @@ logs/
 admin-panel/node_modules/
 happiness-game-admin/client/node_modules/
 happiness-game-admin/server/node_modules/
+.vercel

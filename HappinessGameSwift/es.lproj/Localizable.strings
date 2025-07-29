@@ -15,6 +15,7 @@
 
 /* Language */
 "language_title" = "Idioma";
+"language" = "Idioma";
 
 /* Tab Bar */
 "home" = "Inicio";
@@ -28,7 +29,61 @@
 "product" = "Product";
 /* Terms and Privacy */
 "terms_of_service" = "Términos de servicio";
+"terms_of_service_title" = "Términos de Servicio";
+"terms_last_updated" = "Última actualización: 23 de julio de 2025";
+"terms_article_1_title" = "Artículo 1 (Aplicación de los Términos de Servicio)";
+"terms_article_1_content" = "Estos Términos de Servicio (en adelante, \"Términos\") establecen las condiciones para el uso de ANICOLLE! (en adelante, \"la Aplicación\") entre los usuarios de la Aplicación (en adelante, \"Usuarios\") y el operador.";
+"terms_article_2_title" = "Artículo 2 (Registro de Usuario)";
+"terms_article_2_content" = "1. Los usuarios deberán registrarse de acuerdo con el método prescrito después de aceptar estos Términos.\n2. Si se proporciona información falsa durante el registro, el registro puede ser cancelado.";
+"terms_article_3_title" = "Artículo 3 (Gestión de ID de Usuario y Contraseña)";
+"terms_article_3_content" = "1. Los usuarios gestionarán adecuadamente su ID de usuario y contraseña para la Aplicación bajo su propia responsabilidad.\n2. El operador no asume ninguna responsabilidad por los daños resultantes del uso de IDs de usuario y contraseñas por terceros.";
+"terms_article_4_title" = "Artículo 4 (Tarifas de Uso)";
+"terms_article_4_content" = "1. La Aplicación se puede usar de forma gratuita durante 2 meses desde el registro inicial.\n2. Después de que finalice el período gratuito, se requiere una tarifa de uso de 600 yenes (impuestos incluidos) para continuar usando la Aplicación.\n3. Si no se paga la tarifa de uso, algunas o todas las funciones de la Aplicación pueden estar restringidas.\n4. Las tarifas de uso una vez pagadas no serán reembolsadas por ningún motivo.";
+"terms_article_5_title" = "Artículo 5 (Actividades Prohibidas)";
+"terms_article_5_content" = "Los usuarios no participarán en las siguientes actividades al usar la Aplicación:\n• Actividades que violen las leyes o el orden público y la moral\n• Actividades relacionadas con actos criminales\n• Actividades que puedan interferir con la operación de la Aplicación\n• Actividades que recopilen o acumulen información personal sobre otros usuarios\n• Actividades que involucren acceso no autorizado o intentos del mismo\n• Actividades que suplanten a otros usuarios\n• Actividades que proporcionen beneficios directa o indirectamente a fuerzas antisociales en relación con la Aplicación";
+"terms_article_6_title" = "Artículo 6 (Suspensión de los Servicios de la Aplicación)";
+"terms_article_6_content" = "El operador puede suspender o interrumpir todos o parte de los servicios de la Aplicación sin previo aviso a los usuarios si se considera que existen las siguientes circunstancias:\n• Al realizar mantenimiento, inspección o actualizaciones del sistema informático relacionado con la Aplicación\n• Cuando se vuelve difícil proporcionar la Aplicación debido a fuerza mayor como terremotos, rayos, incendios, cortes de energía o desastres naturales\n• Cuando las computadoras o líneas de comunicación se detienen debido a accidentes";
+"terms_article_7_title" = "Artículo 7 (Derechos de Autor)";
+"terms_article_7_content" = "1. Los derechos de autor del contenido (texto, imágenes, videos, audio, etc.) proporcionado dentro de la Aplicación pertenecen al operador o a los titulares legítimos de derechos.\n2. Los usuarios no pueden usar el contenido de la Aplicación más allá del alcance del uso personal.";
+"terms_article_8_title" = "Artículo 8 (Descargo de Responsabilidad)";
+"terms_article_8_content" = "1. Aunque se hace todo lo posible para garantizar la precisión de la información publicada en la Aplicación, el operador no garantiza la precisión, utilidad o puntualidad de la información de la Aplicación.\n2. El operador no asume ninguna responsabilidad por los daños incurridos por los usuarios a través del uso de la Aplicación.";
+"terms_article_9_title" = "Artículo 9 (Recopilación y Compartición de Información)";
+"terms_article_9_content" = "1. La Aplicación puede recopilar información de texto sobre los personajes favoritos de anime y actores de voz registrados por los usuarios, y usarla para mejorar los servicios y proporcionar funciones de compartición con otros usuarios.\n2. Al usar la Aplicación, se considera que los usuarios han consentido la recopilación y compartición de información anterior.\n3. Otra información personal se manejará adecuadamente de acuerdo con la Política de Privacidad establecida por separado.";
+"terms_article_10_title" = "Artículo 10 (Método de Uso)";
+"terms_article_10_content" = "Al cambiar de dispositivo, la información de texto del usuario se guardará, pero las imágenes no se guardarán. Después de iniciar sesión en un nuevo dispositivo, las imágenes deberán cargarse nuevamente.";
+"terms_article_11_title" = "Artículo 11 (Política de Privacidad)";
+"terms_article_11_content" = "La información personal obtenida a través del uso de la Aplicación se manejará adecuadamente de acuerdo con la Política de Privacidad establecida por separado.";
+"terms_article_12_title" = "Artículo 12 (Cambios en los Términos de Servicio)";
+"terms_article_12_content" = "El operador puede cambiar estos Términos sin notificar a los usuarios cuando lo considere necesario. Los Términos revisados entrarán en vigor cuando se publiquen dentro de la Aplicación.";
+"terms_article_13_title" = "Artículo 13 (Ley Aplicable y Jurisdicción)";
+"terms_article_13_content" = "1. Estos Términos se regirán por la ley japonesa.\n2. Cualquier disputa que surja en relación con la Aplicación estará sujeta a la jurisdicción exclusiva del tribunal que tenga jurisdicción sobre la ubicación de la oficina central del operador.";
 "privacy_policy" = "Política de privacidad";
+
+/* Privacy Policy */
+"privacy_policy_title" = "Política de Privacidad";
+"privacy_info_we_collect_title" = "1. Información que Recopilamos";
+"privacy_info_we_collect_content" = "La aplicación \"ANICOLLE!\" recopila la siguiente información:\n\n• Información de registro de usuario (nombre de usuario, ID de usuario)\n• Contenido creado dentro de la aplicación (registros de personajes, anime)\n• Información del dispositivo (ID del dispositivo, versión del SO)\n• Uso de la aplicación (tiempos de inicio de sesión, frecuencia de uso de funciones)\n• Información de pago (información de pago a través de Stripe, pero no se almacenan números de tarjeta de crédito)\n\nNota: No recopilamos direcciones de correo electrónico";
+"privacy_purpose_title" = "2. Propósito del Uso de la Información";
+"privacy_purpose_content" = "La información recopilada se utiliza solo para los siguientes propósitos:\n\n• Proporcionar funcionalidad básica de la aplicación\n• Autenticación de usuario y gestión de cuentas\n• Gestión de pagos y puntos\n• Copia de seguridad de información de personajes y anime (para recuperación de datos)\n• Mejora de la aplicación y soporte al cliente\n• Responder a requisitos legales\n\nNota: La información de personajes y anime que registre se almacena en servidores únicamente con fines de copia de seguridad, permitiendo la recuperación de datos en caso de fallo o reemplazo del dispositivo.";
+"privacy_data_storage_title" = "3. Almacenamiento y Gestión de Datos";
+"privacy_data_storage_content" = "• El contenido creado por el usuario (información de personajes, anime) se almacena de forma segura en servidores Firebase para fines de copia de seguridad\n• Este sistema permite la recuperación de datos sin pérdida en los siguientes casos:\n  - Fallo o pérdida del dispositivo\n  - Reinstalación de la aplicación\n  - Reemplazo del dispositivo\n• La información de autenticación, puntos y pagos también se gestiona en servidores Firebase\n• Todas las comunicaciones están encriptadas con HTTPS\n• Los usuarios pueden eliminar sus datos en cualquier momento\n• Los datos de copia de seguridad se almacenan vinculados a las cuentas de usuario y no pueden ser accedidos por otros usuarios";
+"privacy_disclosure_title" = "4. Divulgación de Información a Terceros";
+"privacy_disclosure_content" = "No proporcionamos información personal de los usuarios a terceros excepto en los siguientes casos:\n\n• Cuando se obtiene el consentimiento del usuario\n• Cuando la divulgación es requerida por ley\n• Cuando es necesario para proteger la vida, el cuerpo o la propiedad";
+"privacy_security_title" = "5. Seguridad";
+"privacy_security_content" = "Implementamos las siguientes medidas para proteger adecuadamente la información del usuario:\n\n• Encriptación a través de comunicación HTTPS\n• Autenticación segura con Firebase Authentication\n• Gestión adecuada de claves API\n• Actualizaciones de seguridad regulares";
+"privacy_cookies_title" = "6. Cookies y Seguimiento";
+"privacy_cookies_content" = "• Esta aplicación no utiliza cookies para mejorar la experiencia del usuario\n• No realizamos seguimiento con fines publicitarios\n• Las estadísticas de uso de la aplicación se recopilan de forma anónima\n• La información de personajes y anime recopilada no se utiliza para fines distintos a la copia de seguridad y recuperación";
+"privacy_backup_title" = "7. Copia de Seguridad y Recuperación de Datos";
+"privacy_backup_content" = "Proporcionamos las siguientes funciones de copia de seguridad para proteger sus valiosos datos:\n\n• Copia de seguridad automática: Se guarda automáticamente en los servidores al registrar o editar personajes y anime\n• Recuperación de datos: Se restaura automáticamente desde los datos de copia de seguridad al iniciar sesión\n• Propósito de la copia de seguridad:\n  - Protección de datos en caso de fallo o pérdida del dispositivo\n  - Recuperación de datos cuando se elimina y reinstala la aplicación\n  - Migración de datos al cambiar de dispositivo\n\nImportante: Estos datos de copia de seguridad se utilizan únicamente para proteger sus datos y nunca se utilizan para otros fines (marketing, análisis, provisión a terceros, etc.).";
+"privacy_children_title" = "8. Privacidad de los Niños";
+"privacy_children_content" = "Esta aplicación no está destinada a niños menores de 13 años. Los menores de 13 años deben obtener el consentimiento de sus padres antes de usar la aplicación.";
+"privacy_changes_title" = "9. Cambios en la Política de Privacidad";
+"privacy_changes_content" = "Podemos cambiar nuestra política de privacidad según sea necesario. En caso de cambios significativos, notificaremos a los usuarios dentro de la aplicación.";
+"privacy_contact_title" = "10. Contáctenos";
+"privacy_contact_content" = "Para consultas relacionadas con la privacidad, contáctenos en:\n\nCorreo electrónico: fneko543@gmail.com";
+"privacy_last_updated" = "Última actualización: 24 de julio de 2025";
+"privacy_agree_and_start" = "Aceptar y Comenzar a Usar la Aplicación";
+"privacy_agree_description" = "Al aceptar la Política de Privacidad, puede comenzar a usar la aplicación";
 
 /* Premium */
 "premium_upgrade_title" = "Actualizar a Premium";
@@ -426,7 +481,6 @@
 "character_name" = "Nombre del personaje";
 "character_ranking_management" = "Character Ranking Management";
 "ranking_selection" = "Selección de ranking";
-"characters" = "Characters";
 "collapse" = "Collapse";
 "complete_button" = "Complete";
 "copy" = "Copy";
@@ -518,7 +572,7 @@
 "new_category_creation" = "New Category Creation";
 "new_character_format" = "Nuevo %@";
 "new_product_title" = "New Product";
-"next" = "Next";
+"next" = "Siguiente";
 "no_albums_anime" = "Aún no hay álbumes";
 "no_artworks_anime" = "Aún no hay obras de arte";
 "no_banner_image" = "No banner image";
@@ -633,7 +687,6 @@
 "visit_tab_original" = "Original";
 "visit_tab_purchased" = "Purchased";
 "voice_actor" = "Actor de voz";
-"voice_actors" = "Voice Actors";
 "watch_again" = "Watch Again";
 "watch_anime" = "Watch Anime";
 "watching" = "Watching";
@@ -892,3 +945,48 @@
 "reset" = "Restablecer";
 "reset_all" = "Restablecer todo";
 "select_from_video" = "Seleccionar del video";
+
+/* Media Player */
+"see_more_dots" = "...Ver más";
+"edit_image" = "Editar imagen";
+"views_times" = "%@ veces";
+"view_count_format" = "%@ vistas";
+"related_images" = "Imágenes relacionadas";
+"delete_image_confirm_title" = "¿Eliminar esta imagen?";
+"delete_image_confirm_message" = "Esta imagen se eliminará permanentemente.";
+"delete_image" = "Eliminar imagen";
+"tags" = "Etiquetas";
+
+/* Time Duration */
+"duration_minutes" = "%d minutos";
+"total_duration_hours_minutes" = "Total %d horas %d minutos";
+"total_duration_hours" = "Total %d horas";
+"total_duration_minutes" = "Total %d minutos";
+
+/* Welcome Screen */
+"welcome_to_anireco" = "Bienvenido a ANIRECO";
+"welcome_description" = "Registra y gestiona tus\npersonajes y animes favoritos";
+"swipe_to_continue" = "Desliza para continuar";
+"important_notice" = "Aviso importante";
+"first_2_months_free" = "Primeros 2 meses gratis";
+"after_2_months_600yen" = "600 yenes después de 2 meses";
+"trial_period_about" = "Acerca del período de prueba";
+"trial_period_description_1" = "Esta aplicación es gratis durante los primeros 2 meses.";
+"trial_period_description_2" = "Después de 2 meses, se requieren 600 yenes para continuar.";
+"payment_methods" = "El pago se puede realizar con puntos o tarjeta de crédito.";
+"lets_start" = "¡Empecemos!";
+"create_account_start" = "Crea una cuenta y\ncomienza a usar la aplicación";
+"agree_to_privacy_policy" = "Aceptar la Política de Privacidad";
+"start_app" = "Iniciar la aplicación";
+"read_privacy_policy" = "Leer Política de Privacidad";
+"privacy_agreement_note" = "Al aceptar la Política de Privacidad, puedes comenzar a usar la aplicación";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "¡Mi galería personal de favoritos!";
+"login_button" = "Iniciar sesión";
+"register_button" = "Registrarse";
+
+/* Login Screen Details */
+"no_account_yet" = "¿No tienes una cuenta? Haz clic aquí";
+"forgot_id_username" = "Si olvidaste tu ID y nombre de usuario";
+"recreate_account_message" = "Por favor, crea una cuenta nuevamente.\nTu historial se restaurará cuando crees una cuenta.";

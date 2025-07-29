@@ -500,9 +500,38 @@ struct VisitScreen_iPad: View {
                     streamingUrls: plan.streamingUrls
                 )
             }
+            
+            // 購入済みプランの処理を追加
+            let purchasedPlansData = plans.filter { $0.isPurchased }
+            purchasedPlans = purchasedPlansData.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+                VisitPlanModel(
+                    id: plan.id.uuidString,
+                    userId: currentUserId,
+                    animeName: plan.animeName,
+                    title: plan.title,
+                    description: "",
+                    duration: plan.duration,
+                    spots: plan.spots,
+                    thumbnailUrl: plan.thumbnailUrl,
+                    price: 0, // 既に購入済みなので価格は0
+                    budget: 0,
+                    createdDate: plan.createdDate,
+                    startTime: plan.startTime,
+                    numberOfDays: plan.numberOfDays,
+                    totalCost: plan.totalCost,
+                    isPublic: false,
+                    purchasedBy: [currentUserId],
+                    createdAt: plan.createdDate,
+                    updatedAt: plan.createdDate,
+                    isDraft: plan.isDraft,
+                    isConfirmed: nil,
+                    streamingUrls: plan.streamingUrls
+                )
+            }
         } catch {
             savedPlans = []
             userOriginalPlans = []
+            purchasedPlans = []
         }
     }
     

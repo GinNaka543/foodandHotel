@@ -35,6 +35,7 @@ struct VisitScreen_iPad: View {
     @State private var searchText = ""
     @State private var activeSearchText = ""
     @State private var showingPlanningScreen = false
+    @State private var showingSidebar = true
     
     var body: some View {
         mainView
@@ -42,10 +43,13 @@ struct VisitScreen_iPad: View {
     
     private var mainView: some View {
         NavigationView {
-            sidebarView
+            if showingSidebar {
+                sidebarView
+            }
             mainContentView
         }
         .navigationViewStyle(DoubleColumnNavigationViewStyle())
+        .navigationBarTitleDisplayMode(.inline)
     }
     
     private var sidebarView: some View {
@@ -192,6 +196,23 @@ struct VisitScreen_iPad: View {
                 }
             }
             .background(Color(.systemGray6))
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingSidebar.toggle()
+                        }
+                    }) {
+                        Text("メニュー")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.black)
+                            .cornerRadius(8)
+                    }
+                }
+            }
             
             // オールタブの時に右下に固定ボタンを表示
             if selectedTab == .all {
@@ -500,9 +521,38 @@ struct VisitScreen_iPad: View {
                     streamingUrls: plan.streamingUrls
                 )
             }
+            
+            // 購入済みプランの処理を追加
+            let purchasedPlansData = plans.filter { $0.isPurchased }
+            purchasedPlans = purchasedPlansData.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+                VisitPlanModel(
+                    id: plan.id.uuidString,
+                    userId: currentUserId,
+                    animeName: plan.animeName,
+                    title: plan.title,
+                    description: "",
+                    duration: plan.duration,
+                    spots: plan.spots,
+                    thumbnailUrl: plan.thumbnailUrl,
+                    price: 0, // 既に購入済みなので価格は0
+                    budget: 0,
+                    createdDate: plan.createdDate,
+                    startTime: plan.startTime,
+                    numberOfDays: plan.numberOfDays,
+                    totalCost: plan.totalCost,
+                    isPublic: false,
+                    purchasedBy: [currentUserId],
+                    createdAt: plan.createdDate,
+                    updatedAt: plan.createdDate,
+                    isDraft: plan.isDraft,
+                    isConfirmed: nil,
+                    streamingUrls: plan.streamingUrls
+                )
+            }
         } catch {
             savedPlans = []
             userOriginalPlans = []
+            purchasedPlans = []
         }
     }
     

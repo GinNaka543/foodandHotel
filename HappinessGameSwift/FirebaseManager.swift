@@ -872,6 +872,24 @@ class FirebaseManager: ObservableObject {
         }
     }
     
+    // ユーザーが購入したプランを取得
+    func fetchUserPurchasedPlans(userId: String, completion: @escaping (Result<[String], Error>) -> Void) {
+        db.collection("planPurchases")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                let planIds = snapshot?.documents.compactMap { document in
+                    document.data()["planId"] as? String
+                } ?? []
+                
+                completion(.success(planIds))
+            }
+    }
+    
     // ユーザーがプランを購入済みかチェック
     func checkPlanPurchased(userId: String, planId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         
@@ -1269,6 +1287,83 @@ class FirebaseManager: ObservableObject {
         }
     }
     
+    // 購入済みプランの詳細データを取得してローカルに保存
+    private func fetchAndSavePurchasedPlanDetails(userId: String, planIds: [String], completion: @escaping (Result<Void, Error>) -> Void) {
+        guard !planIds.isEmpty else {
+            completion(.success(()))
+            return
+        }
+        
+        let dispatchGroup = DispatchGroup()
+        var fetchedPlans: [VisitPlanModel] = []
+        var hasError = false
+        
+        for planId in planIds {
+            dispatchGroup.enter()
+            
+            db.collection("visitPlans").document(planId).getDocument { snapshot, error in
+                defer { dispatchGroup.leave() }
+                
+                if let error = error {
+                    print("❌ Error fetching plan \(planId): \(error)")
+                    hasError = true
+                    return
+                }
+                
+                guard let document = snapshot, document.exists,
+                      let data = document.data(),
+                      let plan = VisitPlanModel(dictionary: data) else {
+                    print("⚠️ Could not parse plan \(planId)")
+                    return
+                }
+                
+                fetchedPlans.append(plan)
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            if !fetchedPlans.isEmpty {
+                // 既存の保存済みプランを読み込み
+                var savedPlans: [VisitPlanData] = []
+                if let savedData = UserDefaults.standard.data(forKey: "savedPlans"),
+                   let decodedPlans = try? JSONDecoder().decode([VisitPlanData].self, from: savedData) {
+                    savedPlans = decodedPlans
+                }
+                
+                // 新しく取得したプランを追加（重複を避ける）
+                for plan in fetchedPlans {
+                    let visitPlanData = VisitPlanData(
+                        id: UUID(uuidString: plan.id) ?? UUID(),
+                        animeName: plan.animeName,
+                        title: plan.title,
+                        duration: plan.duration,
+                        spots: plan.spots,
+                        thumbnailData: nil,
+                        thumbnailUrl: plan.thumbnailUrl,
+                        createdDate: plan.createdDate,
+                        startTime: plan.startTime,
+                        numberOfDays: plan.numberOfDays,
+                        isPurchased: true,
+                        streamingUrls: plan.streamingUrls
+                    )
+                    
+                    // 既に同じプランが保存されていないかチェック
+                    if !savedPlans.contains(where: { $0.id.uuidString == plan.id }) {
+                        savedPlans.append(visitPlanData)
+                    }
+                }
+                
+                // 更新されたプランリストを保存
+                if let encodedData = try? JSONEncoder().encode(savedPlans) {
+                    UserDefaults.standard.set(encodedData, forKey: "savedPlans")
+                    print("✅ Saved \(fetchedPlans.count) purchased plans to local storage")
+                }
+            }
+            
+            completion(hasError ? .failure(NSError(domain: "FirebaseManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Some plans could not be fetched"])) : .success(()))
+        }
+    }
+    
     // 購入済みプランの同期（ローカルとFirebase）
     func syncPurchasedPlans(userId: String, completion: @escaping (Result<Void, Error>) -> Void) {
         // ローカルの購入済みプランIDを取得
@@ -1284,14 +1379,24 @@ class FirebaseManager: ObservableObject {
                 // マージしたリストをローカルに保存
                 UserDefaults.standard.set(allPlanIds, forKey: "purchasedPlanIds_\(userId)")
                 
-                // マージしたリストをFirebaseに保存
-                self?.savePurchasedPlanIds(userId: userId, planIds: allPlanIds) { saveResult in
-                    switch saveResult {
+                // 購入済みプランの詳細データを取得してローカルに保存
+                self?.fetchAndSavePurchasedPlanDetails(userId: userId, planIds: allPlanIds) { detailsResult in
+                    switch detailsResult {
                     case .success:
-                        print("✅ Successfully synced purchased plans")
-                        completion(.success(()))
+                        // マージしたリストをFirebaseに保存
+                        self?.savePurchasedPlanIds(userId: userId, planIds: allPlanIds) { saveResult in
+                            switch saveResult {
+                            case .success:
+                                print("✅ Successfully synced purchased plans")
+                                completion(.success(()))
+                            case .failure(let error):
+                                completion(.failure(error))
+                            }
+                        }
                     case .failure(let error):
-                        completion(.failure(error))
+                        print("⚠️ Failed to fetch plan details, but continuing: \(error)")
+                        // 詳細データの取得に失敗してもIDの同期は成功として扱う
+                        completion(.success(()))
                     }
                 }
             case .failure(let error):

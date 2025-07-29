@@ -313,23 +313,24 @@ struct VideoGalleryScreen: View {
                         }) {
                             ZStack {
                                 // 背景画像
-                                if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData {
-                                    OptimizedThumbnailView(
-                                        imageData: thumbnailData,
-                                        size: CGSize(width: UIScreen.main.bounds.width - 40, height: 180)
-                                    )
+                                if let firstVideo = album.videos.first, let thumbnailData = firstVideo.thumbnailData, 
+                                   let uiImage = UIImage(data: thumbnailData) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: UIScreen.main.bounds.width - 40, height: 180)
                                         .clipped()
                                 } else if let firstVideo = album.videos.first, let youtubeThumbnailURL = firstVideo.youtubeThumbnailURL {
                                     AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
                                         image
                                             .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(height: 180)
+                                            .scaledToFill()
+                                            .frame(width: UIScreen.main.bounds.width - 40, height: 180)
                                             .clipped()
                                     } placeholder: {
                                         Rectangle()
                                             .fill(Color.gray.opacity(0.3))
-                                            .frame(height: 180)
+                                            .frame(width: UIScreen.main.bounds.width - 40, height: 180)
                                             .overlay(ProgressView())
                                     }
                                 } else {
@@ -550,12 +551,14 @@ struct VideoGalleryScreen: View {
             HStack(alignment: .top, spacing: 8) {
                 // サムネイル
                 if let thumbnailData = video.thumbnailData {
-                    OptimizedThumbnailView(
-                        imageData: thumbnailData,
-                        size: CGSize(width: 165, height: 90)
-                    )
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .clipped()
+                    if let uiImage = UIImage(data: thumbnailData) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 165, height: 90)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .clipped()
+                    }
                 } else if let youtubeThumbnailURL = video.youtubeThumbnailURL {
                     AsyncImage(url: URL(string: youtubeThumbnailURL)) { image in
                         image
@@ -642,8 +645,8 @@ struct VideoGalleryScreen: View {
                 .contentShape(Rectangle())
                 .padding(.trailing, 8)
             }
-            .padding(.leading, 8)
         }
+        .padding(.horizontal, 8)
         .buttonStyle(PlainButtonStyle())
         .contextMenu {
             if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
@@ -2266,8 +2269,8 @@ struct AlbumVideoListScreen: View {
                                         .padding(.vertical, 4)
                                         .multilineTextAlignment(.leading)
                                         .lineLimit(2)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .fixedSize(horizontal: true, vertical: true)
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                                     
                                     // ハッシュタグ
                                     if let firstTag = video.tags.first {
@@ -2280,6 +2283,7 @@ struct AlbumVideoListScreen: View {
                                         .font(.system(size: 13.8, weight: .regular))
                                         .foregroundColor(.gray)
                                         .padding(.vertical, 1)
+                                        .fixedSize(horizontal: true, vertical: false)
                                 }
                                 .frame(alignment: .leading)
                                 .padding(.top, 3)
@@ -2321,8 +2325,8 @@ struct AlbumVideoListScreen: View {
                                 .frame(height: 50)
                                 .padding(.trailing, 16)
                             }
-                            .padding(.leading, 8)
                         }
+                        .padding(.horizontal, 8)
                         .buttonStyle(PlainButtonStyle())
                     }
                 }

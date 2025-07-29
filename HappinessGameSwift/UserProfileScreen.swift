@@ -86,6 +86,8 @@ struct UserProfileScreen: View {
                                 .multilineTextAlignment(.center)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .frame(maxWidth: 250)
+                                .autocorrectionDisabled(true)
+                                .textInputAutocapitalization(.never)
                         } else {
                             Text(profileManager.currentUser.username.isEmpty ? "ユーザー名未設定" : profileManager.currentUser.username)
                                 .font(.system(size: 24, weight: .semibold))

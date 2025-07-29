@@ -205,7 +205,7 @@ struct ArtworkPlayerScreen: View {
                                    let uiImage = UIImage(data: customThumbnailData) {
                                     Image(uiImage: uiImage)
                                         .resizable()
-                                        .aspectRatio(contentMode: .fill)
+                                        .scaledToFill()
                                         .frame(width: geometry.size.width, height: geometry.size.width * 9.0 / 16.0)
                                         .clipped()
                                 } else {
@@ -283,29 +283,31 @@ struct ArtworkPlayerScreen: View {
                                             }) {
                                                 VStack(alignment: .leading, spacing: 8) {
                                                     // サムネイル
-                                                    if let imagePath = relatedArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
-                                                        Image(uiImage: uiImage)
-                                                            .resizable()
-                                                            .scaledToFill()
-                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
-                                                            .clipped()
-                                                    } else if let pixivURL = relatedArtwork.pixivURL {
-                                                        if let customThumbnailData = relatedArtwork.customThumbnailData,
-                                                           let uiImage = UIImage(data: customThumbnailData) {
+                                                    ZStack {
+                                                        if let imagePath = relatedArtwork.imagePath, let uiImage = loadImageFromPath(imagePath) {
                                                             Image(uiImage: uiImage)
                                                                 .resizable()
                                                                 .scaledToFill()
                                                                 .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                                 .clipped()
+                                                        } else if let pixivURL = relatedArtwork.pixivURL {
+                                                            if let customThumbnailData = relatedArtwork.customThumbnailData,
+                                                               let uiImage = UIImage(data: customThumbnailData) {
+                                                                Image(uiImage: uiImage)
+                                                                    .resizable()
+                                                                    .scaledToFill()
+                                                                    .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
+                                                                    .clipped()
+                                                            } else {
+                                                                PixivThumbnailView(pixivURL: pixivURL)
+                                                                    .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
+                                                                    .clipped()
+                                                            }
                                                         } else {
-                                                            PixivThumbnailView(pixivURL: pixivURL)
+                                                            Rectangle()
+                                                                .fill(Color.gray.opacity(0.3))
                                                                 .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
-                                                                .clipped()
                                                         }
-                                                    } else {
-                                                        Rectangle()
-                                                            .fill(Color.gray.opacity(0.3))
-                                                            .frame(width: UIScreen.main.bounds.width, height: UIDevice.current.userInterfaceIdiom == .pad ? 400 : 200)
                                                     }
                                                     
                                                     // アイコンとタイトル・タグ
@@ -338,12 +340,12 @@ struct ArtworkPlayerScreen: View {
                                                                 .lineLimit(2)
                                                                 .multilineTextAlignment(.leading)
                                                             
-                                                            Text(formatTitle(character?.name ?? anime?.title ?? "アニメコレクター", isVideoThumbnail: false))
+                                                            Text(character?.name ?? anime?.title ?? "アニメコレクター")
                                                                 .font(.system(size: 12))
                                                                 .foregroundColor(.gray)
-                                                                .lineLimit(2)
-                                                                .multilineTextAlignment(.leading)
-                                                                .frame(maxWidth: 150, alignment: .leading)
+                                                                .lineLimit(1)
+                                                                .minimumScaleFactor(0.8)
+                                                                .frame(alignment: .leading)
                                                             
                                                             Text(String(format: NSLocalizedString("views_times", comment: "%@ views"), formatViewCount(relatedArtwork.viewCount ?? 0)) + " · \(timeAgo(from: relatedArtwork.createdAt))")
                                                                 .font(.system(size: 12))
@@ -710,12 +712,12 @@ private struct ArtworkInfoView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(formatTitle(character?.name ?? anime?.title ?? "アニメコレクター", isVideoThumbnail: false))
+                    Text(character?.name ?? anime?.title ?? "アニメコレクター")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.black)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: 150, alignment: .leading)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(alignment: .leading)
                         .onAppear {
                         }
                 }

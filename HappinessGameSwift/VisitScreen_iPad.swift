@@ -35,7 +35,6 @@ struct VisitScreen_iPad: View {
     @State private var searchText = ""
     @State private var activeSearchText = ""
     @State private var showingPlanningScreen = false
-    @State private var showingSidebar = true
     
     var body: some View {
         mainView
@@ -43,13 +42,10 @@ struct VisitScreen_iPad: View {
     
     private var mainView: some View {
         NavigationView {
-            if showingSidebar {
-                sidebarView
-            }
+            sidebarView
             mainContentView
         }
         .navigationViewStyle(DoubleColumnNavigationViewStyle())
-        .navigationBarTitleDisplayMode(.inline)
     }
     
     private var sidebarView: some View {
@@ -196,23 +192,6 @@ struct VisitScreen_iPad: View {
                 }
             }
             .background(Color(.systemGray6))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showingSidebar.toggle()
-                        }
-                    }) {
-                        Text("メニュー")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Color.black)
-                            .cornerRadius(8)
-                    }
-                }
-            }
             
             // オールタブの時に右下に固定ボタンを表示
             if selectedTab == .all {

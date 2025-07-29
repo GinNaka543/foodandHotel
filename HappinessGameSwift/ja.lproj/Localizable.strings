@@ -777,3 +777,13 @@
 "start_app" = "アプリを始める";
 "read_privacy_policy" = "プライバシーポリシーを読む";
 "privacy_agreement_note" = "プライバシーポリシーに同意することで、アプリの利用を開始できます";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "僕だけの推しギャラリー！";
+"login_button" = "ログイン";
+"register_button" = "新規登録";
+
+/* Login Screen Details */
+"no_account_yet" = "アカウントをお持ちでない方はこちら";
+"forgot_id_username" = "IDとユーザー名を忘れた場合";
+"recreate_account_message" = "もう一度アカウントを作成してください。\nアカウントを作成すると履歴が復元されます。";

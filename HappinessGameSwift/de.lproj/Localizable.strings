@@ -1013,3 +1013,13 @@ Gute Arbeit";
 "start_app" = "App starten";
 "read_privacy_policy" = "Datenschutzrichtlinie lesen";
 "privacy_agreement_note" = "Durch Zustimmung zur Datenschutzrichtlinie können Sie die App nutzen";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "Meine persönliche Lieblingsgalerie!";
+"login_button" = "Anmelden";
+"register_button" = "Registrieren";
+
+/* Login Screen Details */
+"no_account_yet" = "Noch kein Konto? Hier klicken";
+"forgot_id_username" = "Falls Sie Ihre ID und Ihren Benutzernamen vergessen haben";
+"recreate_account_message" = "Bitte erstellen Sie erneut ein Konto.\nIhre Historie wird wiederhergestellt, wenn Sie ein Konto erstellen.";

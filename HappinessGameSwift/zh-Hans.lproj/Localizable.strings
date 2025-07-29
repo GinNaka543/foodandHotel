@@ -929,3 +929,13 @@
 "start_app" = "开始使用应用";
 "read_privacy_policy" = "阅读隐私政策";
 "privacy_agreement_note" = "同意隐私政策后，您就可以开始使用应用";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "我的专属收藏库！";
+"login_button" = "登录";
+"register_button" = "注册";
+
+/* Login Screen Details */
+"no_account_yet" = "还没有账号？点击这里";
+"forgot_id_username" = "如果您忘记了ID和用户名";
+"recreate_account_message" = "请重新创建账号。\n创建账号后您的历史记录将被恢复。";

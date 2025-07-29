@@ -958,3 +958,13 @@
 "start_app" = "Start the App";
 "read_privacy_policy" = "Read Privacy Policy";
 "privacy_agreement_note" = "By agreeing to the Privacy Policy, you can start using the app";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "My personal gallery of favorites!";
+"login_button" = "Login";
+"register_button" = "Sign Up";
+
+/* Login Screen Details */
+"no_account_yet" = "Don't have an account? Click here";
+"forgot_id_username" = "If you forgot your ID and username";
+"recreate_account_message" = "Please create an account again.\nYour history will be restored when you create an account.";

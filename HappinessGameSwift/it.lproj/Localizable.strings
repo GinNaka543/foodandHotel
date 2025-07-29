@@ -929,3 +929,13 @@
 "start_app" = "Avvia l'app";
 "read_privacy_policy" = "Leggi l'Informativa sulla Privacy";
 "privacy_agreement_note" = "Accettando l'Informativa sulla Privacy, puoi iniziare a usare l'app";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "La mia galleria personale dei preferiti!";
+"login_button" = "Accedi";
+"register_button" = "Registrati";
+
+/* Login Screen Details */
+"no_account_yet" = "Non hai un account? Clicca qui";
+"forgot_id_username" = "Se hai dimenticato il tuo ID e nome utente";
+"recreate_account_message" = "Per favore crea di nuovo un account.\nLa tua cronologia verrà ripristinata quando crei un account.";

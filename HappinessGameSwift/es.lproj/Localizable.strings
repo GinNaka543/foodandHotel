@@ -980,3 +980,13 @@
 "start_app" = "Iniciar la aplicación";
 "read_privacy_policy" = "Leer Política de Privacidad";
 "privacy_agreement_note" = "Al aceptar la Política de Privacidad, puedes comenzar a usar la aplicación";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "¡Mi galería personal de favoritos!";
+"login_button" = "Iniciar sesión";
+"register_button" = "Registrarse";
+
+/* Login Screen Details */
+"no_account_yet" = "¿No tienes una cuenta? Haz clic aquí";
+"forgot_id_username" = "Si olvidaste tu ID y nombre de usuario";
+"recreate_account_message" = "Por favor, crea una cuenta nuevamente.\nTu historial se restaurará cuando crees una cuenta.";

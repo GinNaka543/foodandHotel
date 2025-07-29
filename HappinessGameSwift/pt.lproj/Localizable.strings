@@ -928,3 +928,13 @@
 "start_app" = "Iniciar o aplicativo";
 "read_privacy_policy" = "Ler Política de Privacidade";
 "privacy_agreement_note" = "Ao concordar com a Política de Privacidade, você pode começar a usar o aplicativo";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "Minha galeria pessoal de favoritos!";
+"login_button" = "Entrar";
+"register_button" = "Cadastrar-se";
+
+/* Login Screen Details */
+"no_account_yet" = "Não tem uma conta? Clique aqui";
+"forgot_id_username" = "Se você esqueceu seu ID e nome de usuário";
+"recreate_account_message" = "Por favor, crie uma conta novamente.\nSeu histórico será restaurado quando você criar uma conta.";

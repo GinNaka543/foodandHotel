@@ -930,3 +930,13 @@
 "start_app" = "Démarrer l'application";
 "read_privacy_policy" = "Lire la politique de confidentialité";
 "privacy_agreement_note" = "En acceptant la politique de confidentialité, vous pouvez commencer à utiliser l'application";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "Ma galerie personnelle de favoris !";
+"login_button" = "Connexion";
+"register_button" = "S'inscrire";
+
+/* Login Screen Details */
+"no_account_yet" = "Vous n'avez pas de compte ? Cliquez ici";
+"forgot_id_username" = "Si vous avez oublié votre ID et nom d'utilisateur";
+"recreate_account_message" = "Veuillez créer un compte à nouveau.\nVotre historique sera restauré lorsque vous créerez un compte.";

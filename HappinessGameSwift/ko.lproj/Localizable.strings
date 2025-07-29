@@ -929,3 +929,13 @@
 "start_app" = "앱 시작하기";
 "read_privacy_policy" = "개인정보 처리방침 읽기";
 "privacy_agreement_note" = "개인정보 처리방침에 동의하면 앱을 사용할 수 있습니다";
+
+/* Auth Selection Screen */
+"auth_selection_subtitle" = "나만의 최애 갤러리!";
+"login_button" = "로그인";
+"register_button" = "회원가입";
+
+/* Login Screen Details */
+"no_account_yet" = "계정이 없으신가요? 여기를 클릭하세요";
+"forgot_id_username" = "ID와 사용자명을 잊으셨다면";
+"recreate_account_message" = "다시 계정을 만들어 주세요.\n계정을 만들면 기록이 복원됩니다.";

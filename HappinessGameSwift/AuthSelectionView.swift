@@ -21,7 +21,7 @@ struct AuthSelectionView: View {
                         .scaledToFit()
                         .frame(height: 240)
                     
-                    Text("僕だけの推しギャラリー！")
+                    Text(NSLocalizedString("auth_selection_subtitle", comment: ""))
                         .font(.system(size: 20))
                         .foregroundColor(.gray)
                 }
@@ -35,7 +35,7 @@ struct AuthSelectionView: View {
                     Button(action: {
                         showLoginView = true
                     }) {
-                        Text("ログイン")
+                        Text(NSLocalizedString("login_button", comment: ""))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -48,7 +48,7 @@ struct AuthSelectionView: View {
                     Button(action: {
                         showRegisterView = true
                     }) {
-                        Text("新規登録")
+                        Text(NSLocalizedString("register_button", comment: ""))
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.purple)
                             .frame(maxWidth: .infinity)

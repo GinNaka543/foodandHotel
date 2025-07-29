@@ -4,6 +4,7 @@ struct NavigationMenuView: View {
     @Binding var isPresented: Bool
     @EnvironmentObject var mainTab: MainTabSelection
     @State private var showingLanguageSelection = false
+    @State private var showingAdminLogin = false
     var onShowCharacterOrder: (() -> Void)?
     var onShowAnimeOrder: (() -> Void)?
     var onShowTermsOfService: (() -> Void)?
@@ -125,6 +126,19 @@ struct NavigationMenuView: View {
                         ) {
                             showingLanguageSelection = true
                         }
+                        
+                        Divider()
+                            .padding(.vertical, 8)
+                        
+                        // 管理者ログイン
+                        NavigationMenuItem(
+                            title: "管理者ログイン"
+                        ) {
+                            isPresented = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                showingAdminLogin = true
+                            }
+                        }
                     }
                     .padding(.top, 8)
                     
@@ -181,6 +195,9 @@ struct NavigationMenuView: View {
         }
         .sheet(isPresented: $showingLanguageSelection) {
             LanguageSelectionView()
+        }
+        .sheet(isPresented: $showingAdminLogin) {
+            AdminLoginView()
         }
     }
 }

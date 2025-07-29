@@ -16,6 +16,11 @@
 /* Language */
 "language_title" = "언어";
 "language" = "언어";
+"changing_language" = "언어 변경 중...";
+"restart_required" = "재시작 필요";
+"restart_message" = "언어 변경을 적용하려면 앱을 재시작해야 합니다.";
+"restart_now" = "지금 재시작";
+"restart_later" = "나중에";
 
 /* Tab Bar */
 "home" = "홈";
@@ -543,7 +548,7 @@
 "favorite_food" = "좋아하는 음식";
 "first_product_required" = "첫 번째 제품 (필수)";
 "free" = "Free";
-"from_youtube" = "From YouTube";
+"from_youtube" = "YouTube에서";
 "go_back" = "Back";
 "hashtag" = "해시태그";
 "hidden_label" = "Hidden";
@@ -609,11 +614,11 @@
 "rank_format" = "Rank %d";
 "rating" = "평가";
 "really_delete" = "Really delete?";
-"register_anime_video" = "Register a video";
+"register_anime_video" = "비디오 등록";
+"register_from_youtube" = "YouTube에서";
 "register_favorite_anime" = "좋아하는 애니메이션 등록";
 "register_favorite_character_anime_products" = "좋아하는 캐릭터와 애니메이션의\n제품을 등록 및 관리";
-"register_from_youtube" = "From YouTube";
-"register_video" = "Register a video";
+"register_video" = "비디오 등록";
 "register_wishlist_items" = "위시리스트 아이템 등록";
 "registered_products" = "Registered Products";
 "same_tag_albums" = "동일한 #으로 시리즈별로 나눌 수 있습니다";
@@ -655,7 +660,7 @@
 "soundtrack" = "Soundtrack";
 "specify_product_owner" = "이 제품의 소유자를 지정하세요";
 "spots_count" = "%d spots";
-"tag" = "태그";
+"tag" = "출연 애니메이션";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";

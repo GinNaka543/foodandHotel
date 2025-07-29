@@ -81,15 +81,20 @@ class LocalizationManager: ObservableObject {
         Bundle.setLanguage(currentLanguage.rawValue)
     }
     
-    func setLanguage(_ language: AppLanguage, shouldRestart: Bool = true) {
+    func setLanguage(_ language: AppLanguage, shouldRestart: Bool = true, completion: (() -> Void)? = nil) {
         currentLanguage = language
         
         // 初回起動時はアプリを再起動しない
         if shouldRestart && UserDefaults.standard.bool(forKey: "hasSelectedLanguage") {
-            // アプリを再起動
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                exit(0)
+            // アプリを再起動する代わりに、アプリ全体を更新
+            NotificationCenter.default.post(name: Notification.Name("LanguageDidChange"), object: nil)
+            
+            // 少し遅延を入れてから完了を通知
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                completion?()
             }
+        } else {
+            completion?()
         }
     }
 }

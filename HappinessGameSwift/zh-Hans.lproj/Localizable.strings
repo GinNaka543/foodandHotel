@@ -16,6 +16,11 @@
 /* Language */
 "language_title" = "语言";
 "language" = "语言";
+"changing_language" = "正在更改语言...";
+"restart_required" = "需要重启";
+"restart_message" = "要应用语言更改，需要重新启动应用程序。";
+"restart_now" = "立即重启";
+"restart_later" = "稍后";
 
 /* Tab Bar */
 "home" = "主页";
@@ -543,7 +548,7 @@
 "favorite_food" = "喜欢的食物";
 "first_product_required" = "第一个产品（必填）";
 "free" = "Free";
-"from_youtube" = "From YouTube";
+"from_youtube" = "来自YouTube";
 "go_back" = "Back";
 "hashtag" = "标签";
 "hidden_label" = "Hidden";
@@ -609,11 +614,11 @@
 "rank_format" = "Rank %d";
 "rating" = "评分";
 "really_delete" = "Really delete?";
-"register_anime_video" = "Register a video";
+"register_anime_video" = "注册视频";
+"register_from_youtube" = "从YouTube";
 "register_favorite_anime" = "注册您喜爱的动漫";
 "register_favorite_character_anime_products" = "注册和管理您喜爱的\n角色和动漫产品";
-"register_from_youtube" = "From YouTube";
-"register_video" = "Register a video";
+"register_video" = "注册视频";
 "register_wishlist_items" = "注册愿望清单项目";
 "registered_products" = "Registered Products";
 "same_tag_albums" = "可以使用相同的#为每个系列分开";
@@ -655,7 +660,7 @@
 "soundtrack" = "Soundtrack";
 "specify_product_owner" = "请指定此产品的所有者";
 "spots_count" = "%d spots";
-"tag" = "标签";
+"tag" = "出演动画";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";

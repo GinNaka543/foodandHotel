@@ -16,6 +16,11 @@
 /* Language */
 "language_title" = "Sprache";
 "language" = "Sprache";
+"changing_language" = "Sprache wird geändert...";
+"restart_required" = "Neustart erforderlich";
+"restart_message" = "Um die Sprachänderung anzuwenden, muss die App neu gestartet werden.";
+"restart_now" = "Jetzt neu starten";
+"restart_later" = "Später";
 
 /* Tab Bar */
 "home" = "Startseite";
@@ -569,7 +574,7 @@
 "favorite_food" = "Lieblingsessen";
 "first_product_required" = "Erstes Produkt (erforderlich)";
 "free" = "Free";
-"from_youtube" = "From YouTube";
+"from_youtube" = "Von YouTube";
 "go_back" = "Back";
 "hashtag" = "Hashtag";
 "hidden_label" = "Hidden";
@@ -633,11 +638,11 @@
 "rank_format" = "Rank %d";
 "rating" = "Bewertung";
 "really_delete" = "Really delete?";
-"register_anime_video" = "Register a video";
+"register_anime_video" = "Ein Video registrieren";
+"register_from_youtube" = "Von YouTube";
 "register_favorite_anime" = "Registrieren Sie Ihren Lieblings-Anime";
 "register_favorite_character_anime_products" = "Registrieren und verwalten Sie Produkte\nIhrer Lieblings-Charaktere und Animes";
-"register_from_youtube" = "From YouTube";
-"register_video" = "Register a video";
+"register_video" = "Ein Video registrieren";
 "register_wishlist_items" = "Wunschlistenartikel registrieren";
 "registered_products" = "Registered Products";
 "same_tag_albums" = "Sie können Serien mit demselben # trennen";
@@ -680,7 +685,7 @@
 "specify_product_owner" = "Geben Sie den Besitzer dieses Produkts an";
 "spots_count" = "%d spots";
 "status" = "Status";
-"tag" = "Tag";
+"tag" = "Auftritts-Anime";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";

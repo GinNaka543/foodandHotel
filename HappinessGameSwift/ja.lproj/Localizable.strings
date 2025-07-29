@@ -19,6 +19,11 @@
 /* Language */
 "language_title" = "言語";
 "language" = "言語";
+"changing_language" = "言語を変更中...";
+"restart_required" = "再起動が必要です";
+"restart_message" = "言語の変更を適用するには、アプリを再起動する必要があります。";
+"restart_now" = "今すぐ再起動";
+"restart_later" = "後で";
 
 /* Tab Bar */
 "home" = "ホーム";
@@ -317,7 +322,7 @@
 "about" = "アバウト";
 "profile" = "プロフィール";
 "name" = "名前";
-"tag" = "タグ";
+"tag" = "出演アニメ";
 "age" = "年齢";
 "favorite_food" = "好きな食べ物";
 "voice_actor" = "声優";
@@ -806,3 +811,6 @@
 "no_account_yet" = "アカウントをお持ちでない方はこちら";
 "forgot_id_username" = "IDとユーザー名を忘れた場合";
 "recreate_account_message" = "もう一度アカウントを作成してください。\nアカウントを作成すると履歴が復元されます。";
+"register_from_youtube" = "YouTubeから登録しよう";
+"from_youtube" = "YouTubeから";
+"register_video" = "動画を登録";

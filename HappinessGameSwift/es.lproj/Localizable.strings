@@ -16,6 +16,11 @@
 /* Language */
 "language_title" = "Idioma";
 "language" = "Idioma";
+"changing_language" = "Cambiando idioma...";
+"restart_required" = "Reinicio necesario";
+"restart_message" = "Para aplicar el cambio de idioma, la aplicación debe reiniciarse.";
+"restart_now" = "Reiniciar ahora";
+"restart_later" = "Más tarde";
 
 /* Tab Bar */
 "home" = "Inicio";
@@ -541,7 +546,7 @@
 "favorite_food" = "Comida favorita";
 "first_product_required" = "Primer producto (requerido)";
 "free" = "Free";
-"from_youtube" = "From YouTube";
+"from_youtube" = "Desde YouTube";
 "go_back" = "Back";
 "hashtag" = "Etiqueta";
 "hidden_label" = "Hidden";
@@ -607,11 +612,11 @@
 "rank_format" = "Rank %d";
 "rating" = "Calificación";
 "really_delete" = "Really delete?";
-"register_anime_video" = "Register a video";
+"register_anime_video" = "Registrar un video";
+"register_from_youtube" = "Desde YouTube";
 "register_favorite_anime" = "Registra tu anime favorito";
 "register_favorite_character_anime_products" = "Registra y gestiona productos\nde tus personajes y animes favoritos";
-"register_from_youtube" = "From YouTube";
-"register_video" = "Register a video";
+"register_video" = "Registrar un video";
 "register_wishlist_items" = "Registrar artículos de lista de deseos";
 "registered_products" = "Registered Products";
 "same_tag_albums" = "Puedes separar series con el mismo #";
@@ -653,7 +658,7 @@
 "soundtrack" = "Soundtrack";
 "specify_product_owner" = "Especifique el propietario de este producto";
 "spots_count" = "%d spots";
-"tag" = "Etiqueta";
+"tag" = "Anime de aparición";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";

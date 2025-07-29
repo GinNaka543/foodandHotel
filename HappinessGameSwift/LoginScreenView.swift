@@ -194,7 +194,20 @@ struct LoginScreenView: View {
                                         }
                                         
                                         // プレミアムステータスをFirebaseから同期
-                                        PaymentGatekeeper.shared.syncPremiumStatusOnLogin(userId: userId)
+                                        FirebaseManager.shared.loadPremiumUserStatus(userId: userId) { result in
+                                            DispatchQueue.main.async {
+                                                switch result {
+                                                case .success(let (isPremium, purchaseDate)):
+                                                    if isPremium, let purchaseDate = purchaseDate {
+                                                        UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
+                                                        UserDefaults.standard.set(true, forKey: "isPremiumUser")
+                                                    }
+                                                    PaymentGatekeeper.shared.checkPaymentStatus()
+                                                case .failure:
+                                                    PaymentGatekeeper.shared.checkPaymentStatus()
+                                                }
+                                            }
+                                        }
                                         
                                         authManager.login()
                                         dismiss()

@@ -22,13 +22,15 @@ class UserDefaultsHelper {
         let userKey = keyForUser(key)
         UserDefaults.standard.set(data, forKey: userKey)
         // 即座に同期して確実に保存
-        UserDefaults.standard.synchronize()
+        let success = UserDefaults.standard.synchronize()
+        print("💾 [UserDefaultsHelper] Saved data for key '\(key)' (userKey: '\(userKey)'), size: \(data?.count ?? 0) bytes, sync success: \(success)")
     }
     
     // データの読み込み
     func getData(forKey key: String) -> Data? {
         let userKey = keyForUser(key)
         let data = UserDefaults.standard.data(forKey: userKey)
+        print("📖 [UserDefaultsHelper] Loading data for key '\(key)' (userKey: '\(userKey)'), size: \(data?.count ?? 0) bytes, found: \(data != nil)")
         return data
     }
     

@@ -200,6 +200,10 @@ class FirebaseManager: ObservableObject {
                     "title": anime.title,
                     "hashtag": anime.hashtag,
                     "releaseDate": Timestamp(date: anime.releaseDate),
+                    "characterIds": anime.characterIds.map { $0.uuidString }, // キャラクターIDリストを保存
+                    "rating": anime.rating,
+                    "voiceActors": anime.voiceActors,
+                    "watchLink": anime.watchLink,
                     "createdAt": Timestamp(date: Date()), // anime.createdAt may not be available
                     "updatedAt": Timestamp(date: Date())  // anime.updatedAt may not be available
                 ]
@@ -748,13 +752,31 @@ class FirebaseManager: ObservableObject {
                     
                     let releaseDate = (data["releaseDate"] as? Timestamp)?.dateValue() ?? Date()
                     
+                    // キャラクターIDリストを読み込む
+                    let characterIdStrings = data["characterIds"] as? [String] ?? []
+                    let characterIds = characterIdStrings.compactMap { UUID(uuidString: $0) }
+                    
+                    // その他のフィールドも読み込む
+                    let rating = data["rating"] as? Double ?? 0.0
+                    let voiceActors = data["voiceActors"] as? [String] ?? []
+                    let watchLink = data["watchLink"] as? String ?? ""
+                    
                     let anime = Anime(
                         id: animeId,
                         imageIdentifier: nil,
                         backgroundImagePath: nil,
                         title: title,
                         hashtag: hashtag,
-                        releaseDate: releaseDate
+                        releaseDate: releaseDate,
+                        customFields: nil,
+                        watchStatus: .none,
+                        watchStatuses: [],
+                        order: 0,
+                        rating: rating,
+                        voiceActors: voiceActors,
+                        characters: [],
+                        characterIds: characterIds,
+                        watchLink: watchLink
                     )
                     
                     animes.append(anime)
@@ -841,6 +863,13 @@ class FirebaseManager: ObservableObject {
                             if let existingBgImage = existingAnime.backgroundImagePath {
                                 anime.backgroundImagePath = existingBgImage
                                 print("📷 Preserved background image for anime: \(anime.title)")
+                            }
+                            // 既存のキャラクターIDを保持（Firebaseから取得したものとマージ）
+                            if !existingAnime.characterIds.isEmpty {
+                                // 既存のキャラクターIDとFirebaseのキャラクターIDをマージ（重複を排除）
+                                let combinedIds = Set(anime.characterIds + existingAnime.characterIds)
+                                anime.characterIds = Array(combinedIds)
+                                print("📝 Preserved/merged \(anime.characterIds.count) character IDs for anime: \(anime.title)")
                             }
                         }
                         mergedAnimes.append(anime)

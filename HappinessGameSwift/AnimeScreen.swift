@@ -45,39 +45,40 @@ class AnimeManager: ObservableObject {
     }
     
     func loadAnimes() {
+        print("📖 [AnimeManager] loadAnimes called")
         if let data = UserDefaultsHelper.shared.getData(forKey: "animes"),
            let decoded = try? JSONDecoder().decode([Anime].self, from: data) {
             animes = decoded
+            print("✅ [AnimeManager] Loaded \(animes.count) animes from UserDefaults")
+            
+            // 各アニメのキャラクターIDをログ出力
+            for anime in animes {
+                if !anime.characterIds.isEmpty {
+                    print("📖 Anime '\(anime.title)' has \(anime.characterIds.count) character IDs: \(anime.characterIds)")
+                }
+            }
         } else {
             animes = []
+            print("⚠️ [AnimeManager] No animes found in UserDefaults")
         }
     }
     
     func saveAnimes() {
+        print("📝 [AnimeManager] saveAnimes called with \(animes.count) animes")
+        
+        // 各アニメのキャラクターIDをログ出力
+        for anime in animes {
+            if !anime.characterIds.isEmpty {
+                print("📝 Anime '\(anime.title)' has \(anime.characterIds.count) character IDs")
+            }
+        }
+        
         if let data = try? JSONEncoder().encode(animes) {
             UserDefaultsHelper.shared.setData(data, forKey: "animes")
+            print("✅ [AnimeManager] Animes saved to UserDefaults")
             
-            // Firebaseに直接アニメデータを保存
-            if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
-               let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
-                // ユーザープロファイルの更新
-                FirebaseManager.shared.saveUserProfile(userProfile) { result in
-                    switch result {
-                    case .success():
-                        print("✅ User profile saved to Firebase")
-                    case .failure(let error):
-                        print("❌ Failed to save user profile: \(error)")
-                    }
-                }
-            } else {
-                // currentUserProfileが存在しない場合でも、ユーザーIDがあればアニメを保存
-                if let userId = UserDefaults.standard.string(forKey: "userId") {
-                    print("🔥 Saving animes directly with userId: \(userId)")
-                    FirebaseManager.shared.saveUserContentData(userId: userId)
-                } else {
-                    print("⚠️ No user ID found - animes saved locally only")
-                }
-            }
+            // Firebaseへの保存は行わない（ローカルのみ）
+            print("💾 Animes saved locally only (Firebase sync disabled)")
         } else {
             print("❌ Failed to encode animes")
         }
@@ -91,10 +92,7 @@ class AnimeManager: ObservableObject {
                 self.objectWillChange.send()
             }
             
-            // Firebase に保存
-            if let userId = UserDefaults.standard.string(forKey: "userId") {
-                FirebaseManager.shared.saveUserContentData(userId: userId)
-            }
+            // Firebase への保存は行わない（ローカルのみ）
         } else {
         }
     }
@@ -108,10 +106,7 @@ class AnimeManager: ObservableObject {
                 self.objectWillChange.send()
             }
             
-            // Firebase に保存
-            if let userId = UserDefaults.standard.string(forKey: "userId") {
-                FirebaseManager.shared.saveUserContentData(userId: userId)
-            }
+            // Firebase への保存は行わない（ローカルのみ）
         }
     }
     
@@ -1845,7 +1840,21 @@ struct AnimeArtworkScreen: View {
             loadArtworks()
             loadAlbumsFromUserDefaults()
         }
-        .fullScreenCover(isPresented: $showAbout) {
+        .fullScreenCover(isPresented: $showAbout, onDismiss: {
+            // アバウトページから戻った時に最新のデータを反映
+            // まずアニメデータを再読み込み
+            animeManager.loadAnimes()
+            
+            if let latestAnime = animeManager.animes.first(where: { $0.id == anime.id }) {
+                anime = latestAnime
+                
+                // UIを強制的に更新
+                DispatchQueue.main.async {
+                    animeManager.objectWillChange.send()
+                    characterManager.objectWillChange.send()
+                }
+            }
+        }) {
             AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                 .environmentObject(animeManager)
                 .environmentObject(characterManager)
@@ -2920,7 +2929,21 @@ struct AnimeVideoScreen: View {
             loadVideos()
             loadVideoAlbumsFromUserDefaults()
         }
-        .fullScreenCover(isPresented: $showAbout) {
+        .fullScreenCover(isPresented: $showAbout, onDismiss: {
+            // アバウトページから戻った時に最新のデータを反映
+            // まずアニメデータを再読み込み
+            animeManager.loadAnimes()
+            
+            if let latestAnime = animeManager.animes.first(where: { $0.id == anime.id }) {
+                anime = latestAnime
+                
+                // UIを強制的に更新
+                DispatchQueue.main.async {
+                    animeManager.objectWillChange.send()
+                    characterManager.objectWillChange.send()
+                }
+            }
+        }) {
             AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                 .environmentObject(animeManager)
                 .environmentObject(characterManager)
@@ -4041,6 +4064,9 @@ struct AnimeAboutView: View {
                         saveAnime()
                         isEditingProfile = false
                         isEditingDescription = false
+                        
+                        // 即座にUserDefaultsに永続化
+                        animeManager.saveAnimes()
                     } else {
                         // 編集選択モーダルを表示
                         activeSheet = .editSelection
@@ -4081,7 +4107,8 @@ struct AnimeAboutView: View {
             }
         )
         .onDisappear {
-            saveAnime()
+            // ビューが消える時に音楽を停止
+            SoundtrackManager.shared.stopPlayback()
         }
         .sheet(item: $activeSheet) { item in
                 switch item {
@@ -4423,6 +4450,9 @@ struct AnimeAboutView: View {
     private func saveAnime() {
         guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
         
+        print("📝 [AnimeAboutView] saveAnime called")
+        print("📝 Selected character IDs: \(selectedCharacterIds)")
+        
         // 編集中の場合は編集内容を保存
         var updatedAnime = animes[idx]
         
@@ -4450,6 +4480,7 @@ struct AnimeAboutView: View {
         
         // 選択されたキャラクターIDを保存
         updatedAnime.characterIds = Array(selectedCharacterIds)
+        print("📝 Updated anime with character IDs: \(updatedAnime.characterIds)")
         
         // 視聴リンクを保存
         updatedAnime.watchLink = editedWatchLink
@@ -4471,6 +4502,11 @@ struct AnimeAboutView: View {
         
         // Bindingも更新
         anime = updatedAnime
+        
+        // 即座に保存して永続化
+        animeManager.saveAnimes()
+        
+        print("✅ [AnimeAboutView] Anime saved with \(updatedAnime.characterIds.count) character IDs")
     }
     
     // アイコン保存機能
@@ -5081,9 +5117,28 @@ struct AnimeDetailView: View {
                     }) {
                         AnimeVideoScreen(anime: $anime, animes: $animes, onClose: { showVideo = false })
                     }
-                    .fullScreenCover(isPresented: $showAbout) {
+                    .fullScreenCover(isPresented: $showAbout, onDismiss: {
+                        // アバウトページから戻った時に最新のデータを反映
+                        // まずアニメデータを再読み込み
+                        animeManager.loadAnimes()
+                        
+                        if let latestAnime = animeManager.animes.first(where: { $0.id == anime.id }) {
+                            anime = latestAnime
+                            // アイコンも更新
+                            if let imageIdentifier = latestAnime.imageIdentifier {
+                                currentDisplayedIcon = loadImageFromPath(imageIdentifier)
+                            }
+                            
+                            // UIを強制的に更新
+                            DispatchQueue.main.async {
+                                animeManager.objectWillChange.send()
+                                characterManager.objectWillChange.send()
+                            }
+                        }
+                    }) {
                         AnimeAboutView(anime: $anime, animes: $animes, onClose: { showAbout = false })
                             .environmentObject(animeManager)
+                            .environmentObject(characterManager)
                     }
                     .fullScreenCover(isPresented: $showMemberList) {
                         AnimeMemberListView(anime: anime, onClose: { showMemberList = false })

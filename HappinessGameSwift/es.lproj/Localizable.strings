@@ -93,6 +93,14 @@
 /* Premium */
 "premium_upgrade_title" = "Actualizar a Premium";
 "free_trial_ended" = "El período de prueba ha terminado";
+"free_trial_ended_message" = "El período de prueba gratuito ha terminado";
+"unlimited_anime_registration" = "Registro ilimitado de anime";
+"access_all_features" = "Acceso a todas las funciones";
+"regular_updates" = "Actualizaciones regulares";
+"support_developer" = "Apoyar al desarrollador";
+"processing" = "Procesando...";
+"product_not_found" = "Producto no encontrado";
+"error" = "Error";
 "premium_features_unlimited" = "Registro ilimitado de anime";
 "premium_features_all_access" = "Acceso a todas las funciones";
 "premium_features_updates" = "Actualizaciones regulares";

@@ -5,6 +5,8 @@ function SubscriptionManagement() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all'); // all, paid, unpaid, expiring
+  const [testMode, setTestMode] = useState(false);
+  const [testDays, setTestDays] = useState(60);
 
   useEffect(() => {
     fetchSubscriptions();
@@ -18,7 +20,7 @@ function SubscriptionManagement() {
         const firstInstallDate = new Date(sub.firstInstallDate * 1000);
         const now = new Date();
         const daysSinceInstall = Math.floor((now - firstInstallDate) / (1000 * 60 * 60 * 24));
-        const daysUntilPayment = Math.max(0, 60 - daysSinceInstall); // 60 days for production
+        const daysUntilPayment = Math.max(0, testDays - daysSinceInstall); // 60 days for production
         
         return {
           ...sub,
@@ -118,6 +120,36 @@ function SubscriptionManagement() {
     }
   };
 
+  const updateInstallDate = async (userId, daysAgo) => {
+    try {
+      const newDate = Math.floor(Date.now() / 1000) - (daysAgo * 24 * 60 * 60);
+      
+      // ローカルで即座に更新
+      setSubscriptions(prevSubs => 
+        prevSubs.map(sub => {
+          if (sub.currentUserId === userId || sub.userId === userId) {
+            const daysSinceInstall = daysAgo;
+            const daysUntilPayment = Math.max(0, testDays - daysSinceInstall);
+            return {
+              ...sub,
+              firstInstallDate: newDate,
+              daysSinceInstall,
+              daysUntilPayment,
+              requiresPaymentSoon: daysUntilPayment <= 7 && !sub.hasPaid,
+              requiresPaymentNow: daysUntilPayment === 0 && !sub.hasPaid
+            };
+          }
+          return sub;
+        })
+      );
+      
+      alert(`ユーザー ${userId} のインストール日を${daysAgo}日前に変更しました`);
+    } catch (error) {
+      console.error('Error updating install date:', error);
+      alert('インストール日の更新に失敗しました');
+    }
+  };
+
   return (
     <div className="subscription-management">
       <h2>サブスクリプション管理</h2>
@@ -152,6 +184,55 @@ function SubscriptionManagement() {
         <button className="btn" onClick={fetchSubscriptions}>
           更新
         </button>
+      </div>
+
+      <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+        <h4 style={{ marginBottom: '0.5rem' }}>テストモード</h4>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={testMode}
+              onChange={(e) => setTestMode(e.target.checked)}
+            />
+            テストモード有効
+          </label>
+          {testMode && (
+            <>
+              <label>
+                試用期間日数:
+                <input
+                  type="number"
+                  value={testDays}
+                  onChange={(e) => setTestDays(parseInt(e.target.value) || 60)}
+                  style={{ marginLeft: '0.5rem', width: '60px' }}
+                />
+              </label>
+              <button
+                className="btn btn-sm"
+                onClick={() => {
+                  const userId = prompt('ユーザーIDを入力してください');
+                  if (userId) {
+                    const daysAgo = prompt('何日前にインストールしたことにしますか？（例: 58）');
+                    if (daysAgo) {
+                      updateInstallDate(userId, parseInt(daysAgo));
+                    }
+                  }
+                }}
+              >
+                インストール日を変更
+              </button>
+              <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+                <strong>テストシナリオ例:</strong>
+                <ul style={{ margin: '0.25rem 0 0 1.5rem', paddingLeft: 0 }}>
+                  <li>58日前: 「まもなく支払い」状態になります</li>
+                  <li>60日前: 「期限切れ」状態になります（支払い必要）</li>
+                  <li>61日前: 既に期限切れの状態になります</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {loading ? (

@@ -93,6 +93,14 @@
 /* Premium */
 "premium_upgrade_title" = "Auf Premium upgraden";
 "free_trial_ended" = "Kostenlose Testversion beendet";
+"free_trial_ended_message" = "Die kostenlose Testphase ist beendet";
+"unlimited_anime_registration" = "Unbegrenzte Anime-Registrierung";
+"access_all_features" = "Zugriff auf alle Funktionen";
+"regular_updates" = "Regelmäßige Updates";
+"support_developer" = "Entwickler unterstützen";
+"processing" = "Verarbeitung...";
+"product_not_found" = "Produkt nicht gefunden";
+"error" = "Fehler";
 "premium_features_unlimited" = "Unbegrenzte Anime-Registrierung";
 "premium_features_all_access" = "Zugriff auf alle Funktionen";
 "premium_features_updates" = "Regelmäßige Updates";

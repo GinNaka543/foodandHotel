@@ -97,6 +97,16 @@
 /* Premium */
 "premium_upgrade_title" = "プレミアムプランへのアップグレード";
 "free_trial_ended" = "無料期間が終了しました";
+"premium_upgrade_title" = "プレミアムプランへのアップグレード";
+"free_trial_ended_message" = "無料期間が終了しました";
+"unlimited_anime_registration" = "無制限のアニメ登録";
+"access_all_features" = "すべての機能へのアクセス";
+"regular_updates" = "定期的なアップデート";
+"support_developer" = "開発者をサポート";
+"processing" = "処理中...";
+"later" = "後で";
+"product_not_found" = "商品が見つかりません";
+"error" = "エラー";
 "premium_features_unlimited" = "無制限のアニメ登録";
 "premium_features_all_access" = "すべての機能へのアクセス";
 "premium_features_updates" = "定期的なアップデート";

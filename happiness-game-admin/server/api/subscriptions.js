@@ -38,199 +38,25 @@ module.exports = async function handler(req, res) {
     try {
       console.log('🔥 /api/subscriptions endpoint called');
       
-      // デバイスベースのサブスクリプションデータを取得
-      const deviceSubscriptionsSnapshot = await db.collection('device_subscriptions').get();
       const subscriptions = [];
-      const processedDevices = new Set();
+      const processedUserIds = new Set();
       
-      // device_subscriptionsからデータを処理
-      for (const doc of deviceSubscriptionsSnapshot.docs) {
-        const subscription = { ...doc.data() };
-        processedDevices.add(doc.id);
-        
-        // currentUserIdを使用してユーザー名とプレミアムステータスを取得
-        if (subscription.currentUserId) {
-          try {
-            const userDoc = await db.collection('users').doc(subscription.currentUserId).get();
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              subscription.username = userData.username || userData.displayName || '未設定';
-              
-              // プレミアムユーザー情報を取得
-              try {
-                const premiumDoc = await db.collection('premiumUsers').doc(subscription.currentUserId).get();
-                if (premiumDoc.exists) {
-                  const premiumData = premiumDoc.data();
-                  subscription.isPremiumUser = premiumData.isPremium || false;
-                  subscription.premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
-                  
-                  // プレミアムユーザーの場合はhasPaidをtrueに設定
-                  if (premiumData.isPremium) {
-                    subscription.hasPaid = true;
-                    if (!subscription.paymentDate && premiumData.purchaseDate) {
-                      subscription.paymentDate = premiumData.purchaseDate.seconds;
-                    }
-                    if (!subscription.amount) {
-                      subscription.amount = 600;
-                    }
-                  }
-                } else {
-                  subscription.isPremiumUser = false;
-                }
-              } catch (premiumError) {
-                console.log(`プレミアムユーザー情報取得エラー ${subscription.currentUserId}:`, premiumError.message);
-                subscription.isPremiumUser = false;
-              }
-            }
-          } catch (error) {
-            console.log(`ユーザー ${subscription.currentUserId} の情報取得エラー:`, error.message);
-          }
-        }
-        
-        // isPremiumUserがtrueの場合、必ずhasPaidもtrueにする
-        if (subscription.isPremiumUser) {
-          subscription.hasPaid = true;
-          if (!subscription.amount) {
-            subscription.amount = 600;
-          }
-        }
-        
-        // deviceIdをプライマリIDとして使用
-        subscription.userId = subscription.deviceId || doc.id;
-        
-        subscriptions.push(subscription);
-      }
-      
-      // 移行期間のため、古いsubscriptionsコレクションからもデータを取得
-      const oldSubscriptionsSnapshot = await db.collection('subscriptions').get();
-      for (const doc of oldSubscriptionsSnapshot.docs) {
-        const oldSub = doc.data();
-        
-        // deviceIdが既に処理されている場合はスキップ
-        if (oldSub.deviceId && processedDevices.has(oldSub.deviceId)) {
-          continue;
-        }
-        
-        // ユーザー名とプレミアムステータスを取得
-        const userId = oldSub.userId || doc.id;
-        try {
-          const userDoc = await db.collection('users').doc(userId).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            oldSub.username = userData.username || userData.displayName || '未設定';
-            oldSub.deviceId = userData.deviceId || 'legacy-' + userId.substring(0, 8);
-            
-            // プレミアムユーザー情報を取得
-            try {
-              const premiumDoc = await db.collection('premiumUsers').doc(userId).get();
-              if (premiumDoc.exists) {
-                const premiumData = premiumDoc.data();
-                oldSub.isPremiumUser = premiumData.isPremium || false;
-                oldSub.premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
-                
-                // プレミアムユーザーの場合はhasPaidをtrueに設定
-                if (premiumData.isPremium) {
-                  oldSub.hasPaid = true;
-                }
-              } else {
-                oldSub.isPremiumUser = false;
-              }
-            } catch (premiumError) {
-              console.log(`プレミアムユーザー情報取得エラー ${userId}:`, premiumError.message);
-              oldSub.isPremiumUser = false;
-            }
-          }
-        } catch (error) {
-          console.log(`ユーザー ${userId} の情報取得エラー:`, error.message);
-        }
-        
-        // 古いデータもdeviceIdベースの形式に変換
-        const subscription = {
-          userId: oldSub.deviceId || userId,
-          deviceId: oldSub.deviceId || null,
-          currentUserId: userId,
-          username: oldSub.username || '未設定',
-          firstInstallDate: oldSub.firstInstallDate || oldSub.createdAt,
-          hasPaid: oldSub.hasPaid || false,
-          paymentDate: oldSub.paymentDate,
-          amount: oldSub.amount,
-          createdAt: oldSub.createdAt,
-          lastSeenAt: oldSub.updatedAt || oldSub.createdAt,
-          isPremiumUser: oldSub.isPremiumUser || false,
-          premiumPurchaseDate: oldSub.premiumPurchaseDate || null
-        };
-        
-        subscriptions.push(subscription);
-      }
-      
-      // premiumUsersコレクションから直接プレミアムユーザーを取得
-      const premiumUsersSnapshot = await db.collection('premiumUsers').get();
-      console.log(`🔥 Found ${premiumUsersSnapshot.size} premium users`);
-      
-      for (const premiumDoc of premiumUsersSnapshot.docs) {
-        const premiumData = premiumDoc.data();
-        const userId = premiumDoc.id;
-        
-        if (!premiumData.isPremium) continue;
-        
-        console.log(`🔥 Processing premium user: ${userId}`);
-        
-        // このユーザーIDに関連するすべてのサブスクリプションを更新
-        let updated = false;
-        subscriptions.forEach((sub, index) => {
-          if (sub.currentUserId === userId) {
-            console.log(`🔥 Updating subscription for device: ${sub.deviceId || sub.userId}`);
-            subscriptions[index].isPremiumUser = true;
-            subscriptions[index].hasPaid = true;
-            subscriptions[index].premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
-            if (!subscriptions[index].paymentDate && premiumData.purchaseDate) {
-              subscriptions[index].paymentDate = premiumData.purchaseDate.seconds;
-            }
-            subscriptions[index].amount = 600;
-            updated = true;
-          }
-        });
-        
-        if (!updated) {
-          // 新しいレコードを作成
-          try {
-            const userDoc = await db.collection('users').doc(userId).get();
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              const subscription = {
-                userId: userId,
-                deviceId: userData.deviceId || null,
-                currentUserId: userId,
-                username: userData.username || userData.displayName || '未設定',
-                firstInstallDate: userData.createdAt?.seconds || userData.createdAt || Math.floor(Date.now() / 1000),
-                hasPaid: true,
-                paymentDate: premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null,
-                amount: 600,
-                createdAt: userData.createdAt?.seconds || userData.createdAt || Math.floor(Date.now() / 1000),
-                lastSeenAt: userData.updatedAt?.seconds || userData.lastLoginAt?.seconds || Math.floor(Date.now() / 1000),
-                isPremiumUser: premiumData.isPremium || false,
-                premiumPurchaseDate: premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null
-              };
-              subscriptions.push(subscription);
-            }
-          } catch (error) {
-            console.log(`プレミアムユーザー ${userId} の情報取得エラー:`, error.message);
-          }
-        }
-      }
-      
-      // サブスクリプションレコードがないユーザーも表示
+      // まずusersコレクションから全ユーザーを取得
       const usersSnapshot = await db.collection('users').get();
-      const processedUserIds = new Set(subscriptions.map(s => s.currentUserId || s.userId));
+      console.log(`🔥 Found ${usersSnapshot.size} users in users collection`);
       
+      // 各ユーザーの情報を処理
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         const userId = userDoc.id;
         
-        if (processedUserIds.has(userId)) {
-          continue;
-        }
+        console.log(`🔍 Processing user ${userId}:`, {
+          username: userData.username,
+          hasPaidSubscription: userData.hasPaidSubscription,
+          deviceId: userData.deviceId
+        });
         
+        // 初回インストール日時を取得
         let firstInstallDate = Math.floor(Date.now() / 1000) - 86400;
         let createdAt = firstInstallDate;
         let lastSeenAt = Math.floor(Date.now() / 1000);
@@ -260,6 +86,7 @@ module.exports = async function handler(req, res) {
             const premiumData = premiumDoc.data();
             isPremiumUser = premiumData.isPremium || false;
             premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+            console.log(`🔍 Premium status for ${userId}: ${isPremiumUser}`);
           }
         } catch (premiumError) {
           console.log(`プレミアムユーザー情報取得エラー ${userId}:`, premiumError.message);
@@ -270,7 +97,7 @@ module.exports = async function handler(req, res) {
         
         const subscription = {
           userId: userId,
-          deviceId: userData.deviceId || null,
+          deviceId: userData.deviceId || userId,  // deviceIdがない場合はuserIdを使用
           currentUserId: userId,
           username: userData.username || userData.displayName || '未設定',
           firstInstallDate,
@@ -284,80 +111,47 @@ module.exports = async function handler(req, res) {
         };
         
         subscriptions.push(subscription);
+        processedUserIds.add(userId);
       }
       
-      // デバッグ用ログ
-      console.log(`🔍 Total records before deduplication: ${subscriptions.length}`);
-      
-      // 実際のデバイスIDのリストを取得
-      const actualDeviceIds = new Set();
-      subscriptions.forEach(sub => {
-        if (sub.deviceId && sub.deviceId !== 'null' && !sub.deviceId.startsWith('legacy-')) {
-          actualDeviceIds.add(sub.deviceId);
-        }
-      });
-      console.log(`🔍 Actual device IDs found: ${actualDeviceIds.size}`);
-      console.log(`🔍 Device IDs: ${Array.from(actualDeviceIds).join(', ')}`);
-      
-      // 重複を削除（同じユーザーIDで複数のレコードがある場合、最新かつプレミアムユーザーを優先）
-      const uniqueSubscriptions = new Map();
-      
-      // ユーザーIDでグループ化し、最適なレコードを選択
-      subscriptions.forEach(sub => {
-        const key = sub.currentUserId || sub.userId;
-        const existing = uniqueSubscriptions.get(key);
+      // device_subscriptionsコレクションがある場合は追加で取得（エラーは無視）
+      try {
+        const deviceSubscriptionsSnapshot = await db.collection('device_subscriptions').get();
+        console.log(`🔥 Found ${deviceSubscriptionsSnapshot.size} device_subscriptions`);
         
-        if (!existing) {
-          uniqueSubscriptions.set(key, sub);
-        } else {
-          // より良いレコードを選択
-          let shouldReplace = false;
+        for (const doc of deviceSubscriptionsSnapshot.docs) {
+          const deviceData = doc.data();
+          const deviceId = doc.id;
           
-          // 実際のデバイスIDを持つレコードを優先
-          if (sub.deviceId && !sub.deviceId.startsWith('legacy-') && 
-              (!existing.deviceId || existing.deviceId.startsWith('legacy-'))) {
-            shouldReplace = true;
-          }
-          // プレミアムユーザーを優先
-          else if (sub.isPremiumUser && !existing.isPremiumUser) {
-            shouldReplace = true;
-          }
-          // 支払い済みを優先
-          else if (sub.hasPaid && !existing.hasPaid) {
-            shouldReplace = true;
-          }
-          // より新しいデータを優先
-          else if (sub.lastSeenAt > existing.lastSeenAt) {
-            shouldReplace = true;
+          // 既に処理済みのユーザーはスキップ
+          if (deviceData.currentUserId && processedUserIds.has(deviceData.currentUserId)) {
+            continue;
           }
           
-          if (shouldReplace) {
-            uniqueSubscriptions.set(key, sub);
+          // デバイス情報から新しいサブスクリプションレコードを作成
+          if (deviceData.currentUserId) {
+            const existingIndex = subscriptions.findIndex(s => s.currentUserId === deviceData.currentUserId);
+            if (existingIndex >= 0) {
+              // 既存のレコードを更新
+              subscriptions[existingIndex].deviceId = deviceId;
+              if (deviceData.hasPaid) {
+                subscriptions[existingIndex].hasPaid = true;
+              }
+            }
           }
         }
-      });
-      
-      // Map から配列に変換
-      const finalSubscriptions = Array.from(uniqueSubscriptions.values());
-      
-      // 最終チェック：isPremiumUserがtrueなら必ずhasPaidもtrue
-      finalSubscriptions.forEach(sub => {
-        if (sub.isPremiumUser) {
-          sub.hasPaid = true;
-          if (!sub.amount) {
-            sub.amount = 600;
-          }
-        }
-      });
+      } catch (deviceError) {
+        console.log('device_subscriptions取得エラー（無視）:', deviceError.message);
+      }
       
       // 初回インストール日でソート（新しい順）
-      finalSubscriptions.sort((a, b) => (b.firstInstallDate || 0) - (a.firstInstallDate || 0));
+      subscriptions.sort((a, b) => (b.firstInstallDate || 0) - (a.firstInstallDate || 0));
       
-      console.log(`🔥 Returning ${finalSubscriptions.length} subscription records`);
-      console.log(`🔥 Premium users: ${finalSubscriptions.filter(s => s.isPremiumUser).length}`);
-      console.log(`🔥 Paid users: ${finalSubscriptions.filter(s => s.hasPaid).length}`);
+      console.log(`🔥 Returning ${subscriptions.length} subscription records`);
+      console.log(`🔥 Premium users: ${subscriptions.filter(s => s.isPremiumUser).length}`);
+      console.log(`🔥 Paid users: ${subscriptions.filter(s => s.hasPaid).length}`);
       
-      res.json(finalSubscriptions);
+      res.json(subscriptions);
     } catch (error) {
       console.error('サブスクリプション取得エラー:', error);
       res.status(500).json({ error: error.message });

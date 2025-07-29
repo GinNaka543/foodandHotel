@@ -179,16 +179,31 @@ struct LoginScreenView: View {
                         
                         // Firebaseからユーザーデータを同期
                         FirebaseManager.shared.syncUserContentFromFirebase(userId: userId) { syncResult in
-                            DispatchQueue.main.async {
-                                switch syncResult {
-                                case .success:
-                                    print("ユーザーデータの同期が完了しました")
-                                case .failure(let error):
-                                    print("ユーザーデータの同期エラー: \(error)")
+                            switch syncResult {
+                            case .success:
+                                print("ユーザーデータの同期が完了しました")
+                                
+                                // 購入済みプランも同期
+                                FirebaseManager.shared.syncPurchasedPlans(userId: userId) { planSyncResult in
+                                    DispatchQueue.main.async {
+                                        switch planSyncResult {
+                                        case .success:
+                                            print("購入済みプランの同期が完了しました")
+                                        case .failure(let error):
+                                            print("購入済みプランの同期エラー: \(error)")
+                                        }
+                                        
+                                        authManager.login()
+                                        dismiss()
+                                    }
                                 }
                                 
-                                authManager.login()
-                                dismiss()
+                            case .failure(let error):
+                                print("ユーザーデータの同期エラー: \(error)")
+                                DispatchQueue.main.async {
+                                    authManager.login()
+                                    dismiss()
+                                }
                             }
                         }
                     } else {

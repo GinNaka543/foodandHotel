@@ -36,19 +36,33 @@ class CharacterManager: ObservableObject {
         if let data = try? JSONEncoder().encode(characters) {
             UserDefaultsHelper.shared.setData(data, forKey: "characters")
             
-            // Firebaseにも同期（現在のユーザープロファイルが存在する場合）
+            // Firebaseに直接キャラクターデータを保存
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
+                // ユーザープロファイルの更新
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        break
-                    case .failure(_):
-                        break
+                        print("✅ User profile saved to Firebase")
+                    case .failure(let error):
+                        print("❌ Failed to save user profile: \(error)")
+                    }
+                }
+            } else {
+                // currentUserProfileが存在しない場合でも、ユーザーIDがあればキャラクターを保存
+                if let userId = UserDefaults.standard.string(forKey: "userId") {
+                    print("🔥 Saving characters directly with userId: \(userId)")
+                    FirebaseManager.shared.saveUserContentData(userId: userId)
+                } else {
+                    print("⚠️ No user ID found - characters saved locally only")
+                    print("📝 Characters saved: \(characters.count) items")
+                    for (index, character) in characters.enumerated() {
+                        print("  \(index + 1). \(character.name) (ID: \(character.id))")
                     }
                 }
             }
         } else {
+            print("❌ Failed to encode characters")
         }
     }
     

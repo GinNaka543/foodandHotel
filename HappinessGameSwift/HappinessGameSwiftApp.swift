@@ -457,10 +457,35 @@ struct HappinessGameSwiftApp: App {
                                 // 開発用: サンプル画像を自動生成
                                 createSampleImagesIfNeeded()
                                 // ユーザーIDを確認
-                                if UserDefaults.standard.string(forKey: "userId") != nil {
+                                if let userId = UserDefaults.standard.string(forKey: "userId") {
+                                    print("🔐 User logged in with ID: \(userId)")
                                     // 既存データの移行を実行
                                     UserDefaultsHelper.shared.migrateDataIfNeeded()
-                                    // データを再読み込み
+                                    
+                                    // Firebaseからデータを同期
+                                    print("🔄 Syncing data from Firebase...")
+                                    FirebaseManager.shared.syncUserContentFromFirebase(userId: userId) { result in
+                                        switch result {
+                                        case .success:
+                                            print("✅ Firebase sync completed")
+                                            // データを再読み込み
+                                            characterManager.loadCharacters()
+                                            animeManager.loadAnimes()
+                                        case .failure(let error):
+                                            print("❌ Firebase sync failed: \(error)")
+                                            // エラーでもローカルデータを読み込む
+                                            characterManager.loadCharacters()
+                                            animeManager.loadAnimes()
+                                        }
+                                    }
+                                    
+                                    // 購入済みプランも同期
+                                    FirebaseManager.shared.syncPurchasedPlans(userId: userId) { _ in
+                                        print("✅ Purchased plans sync completed")
+                                    }
+                                } else {
+                                    print("⚠️ No user logged in")
+                                    // ログインしていなくてもローカルデータを読み込む
                                     characterManager.loadCharacters()
                                     animeManager.loadAnimes()
                                 }

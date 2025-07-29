@@ -19,9 +19,6 @@ class UserDefaultsHelper {
     
     // データの保存
     func setData(_ data: Data?, forKey key: String) {
-        guard let userId = currentUserId else { 
-            return 
-        }
         let userKey = keyForUser(key)
         UserDefaults.standard.set(data, forKey: userKey)
         // 即座に同期して確実に保存
@@ -30,9 +27,6 @@ class UserDefaultsHelper {
     
     // データの読み込み
     func getData(forKey key: String) -> Data? {
-        guard let userId = currentUserId else { 
-            return nil 
-        }
         let userKey = keyForUser(key)
         let data = UserDefaults.standard.data(forKey: userKey)
         return data
@@ -40,28 +34,24 @@ class UserDefaultsHelper {
     
     // 文字列の保存
     func setString(_ string: String?, forKey key: String) {
-        guard let userId = currentUserId else { return }
         let userKey = keyForUser(key)
         UserDefaults.standard.set(string, forKey: userKey)
     }
     
     // 文字列の読み込み
     func getString(forKey key: String) -> String? {
-        guard let userId = currentUserId else { return nil }
         let userKey = keyForUser(key)
         return UserDefaults.standard.string(forKey: userKey)
     }
     
     // Bool値の保存
     func setBool(_ bool: Bool, forKey key: String) {
-        guard let userId = currentUserId else { return }
         let userKey = keyForUser(key)
         UserDefaults.standard.set(bool, forKey: userKey)
     }
     
     // Bool値の読み込み
     func getBool(forKey key: String) -> Bool {
-        guard let userId = currentUserId else { return false }
         let userKey = keyForUser(key)
         return UserDefaults.standard.bool(forKey: userKey)
     }

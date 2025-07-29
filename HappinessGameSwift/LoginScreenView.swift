@@ -80,6 +80,11 @@ struct LoginScreenView: View {
                                     .background(Color(.systemGray6))
                                     .cornerRadius(8)
                                     .autocapitalization(.none)
+                                
+                                Text(NSLocalizedString("user_id_help", comment: "You can check your User ID from Profile Edit on the home page"))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.gray)
+                                    .multilineTextAlignment(.leading)
                             }
                         }
                         .padding(.horizontal, 32)
@@ -171,8 +176,21 @@ struct LoginScreenView: View {
                 case .success(let isValid):
                     if isValid {
                         saveUserData(username: username, userId: userId)
-                        authManager.login()
-                        dismiss()
+                        
+                        // Firebaseからユーザーデータを同期
+                        FirebaseManager.shared.syncUserContentFromFirebase(userId: userId) { syncResult in
+                            DispatchQueue.main.async {
+                                switch syncResult {
+                                case .success:
+                                    print("ユーザーデータの同期が完了しました")
+                                case .failure(let error):
+                                    print("ユーザーデータの同期エラー: \(error)")
+                                }
+                                
+                                authManager.login()
+                                dismiss()
+                            }
+                        }
                     } else {
                         alertTitle = NSLocalizedString("login_failed", comment: "")
                         alertMessage = NSLocalizedString("invalid_credentials", comment: "")

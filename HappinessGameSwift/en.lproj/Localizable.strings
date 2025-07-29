@@ -258,14 +258,14 @@
 "earned_points" = "Earned Points";
 "electronic_receipt_note" = "This is an electronic receipt";
 "receipt" = "Receipt";
-"important_logout_notice" = "Important: Check before logout";
+"important_logout_notice" = "Important: Confirm Before Logout";
 "save_info_below" = "Please save the following information";
-"cannot_recover_without_info" = "Account cannot be recovered without this information";
+"cannot_recover_without_info" = "Without this information, you cannot restore your account";
 "user_id_not_found" = "ID not found";
 "username_not_set" = "Not set";
 "copied" = "Copied";
 "copy" = "Copy";
-"take_screenshot_or_memo" = "Please take a screenshot or save to memo";
+"take_screenshot_or_memo" = "Take a screenshot or save to notes";
 "cannot_access_after_logout" = "You cannot access your account without this information after logout";
 
 /* Points */
@@ -304,6 +304,24 @@
 "status" = "Status";
 "date" = "Date";
 "receipt_number" = "Receipt Number";
+
+/* Transaction Types */
+"transaction_type_point_purchase" = "Point Purchase";
+"transaction_type_plan_purchase" = "Plan Purchase";
+"transaction_type_subscription" = "Subscription";
+"transaction_type_premium_upgrade" = "Premium Upgrade";
+
+/* Payment Methods */
+"payment_method_credit_card" = "Credit Card";
+"payment_method_apple_pay" = "Apple Pay";
+"payment_method_google_pay" = "Google Pay";
+"payment_method_points" = "Points";
+
+/* Purchase Status */
+"purchase_status_completed" = "Completed";
+"purchase_status_pending" = "Pending";
+"purchase_status_failed" = "Failed";
+"purchase_status_refunded" = "Refunded";
 
 /* Errors */
 "error_product_not_found" = "Product not found";
@@ -477,6 +495,7 @@
 "enter_username" = "Enter username";
 "user_id" = "User ID";
 "enter_user_id" = "Enter user ID";
+"user_id_help" = "You can check your User ID from Profile Edit on the home page";
 "your_user_id_save" = "Your User ID (Please save it)";
 "copied" = "Copied";
 "user_id_copied" = "User ID copied to clipboard";

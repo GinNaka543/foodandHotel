@@ -69,9 +69,21 @@ struct Character: Identifiable, Codable, Equatable {
 // MARK: - Character Manager
 class CharacterManager: ObservableObject {
     @Published var characters: [Character] = []
-    private let userDefaultsKey = "savedCharacters"
+    private let userDefaultsKey = "characters"  // Firebase と同じキーに統一
     
     init() {
+        loadCharacters()
+        // データ同期通知を監視
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(onUserDataSynced),
+            name: Notification.Name("UserDataSynced"),
+            object: nil
+        )
+    }
+    
+    @objc private func onUserDataSynced() {
+        print("📱 [CharacterManager] User data synced notification received")
         loadCharacters()
     }
     
@@ -91,12 +103,22 @@ class CharacterManager: ObservableObject {
     func addCharacter(_ character: Character) {
         characters.append(character)
         saveCharacters()
+        
+        // Firebase に保存
+        if let userId = UserDefaults.standard.string(forKey: "userId") {
+            FirebaseManager.shared.saveUserContentData(userId: userId)
+        }
     }
     
     func updateCharacter(_ character: Character) {
         if let index = characters.firstIndex(where: { $0.id == character.id }) {
             characters[index] = character
             saveCharacters()
+            
+            // Firebase に保存
+            if let userId = UserDefaults.standard.string(forKey: "userId") {
+                FirebaseManager.shared.saveUserContentData(userId: userId)
+            }
         }
     }
     

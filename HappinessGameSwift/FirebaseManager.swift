@@ -117,11 +117,14 @@ class FirebaseManager: ObservableObject {
     }
     
     // ユーザーが登録したキャラクターとアニメデータを保存
-    private func saveUserContentData(userId: String) {
+    func saveUserContentData(userId: String) {
+        print("🔥 [Firebase] saveUserContentData called for userId: \(userId)")
         
         // キャラクターデータを保存
         if let charactersData = UserDefaults.standard.data(forKey: "characters"),
            let characters = try? JSONDecoder().decode([Character].self, from: charactersData) {
+            
+            print("🔥 [Firebase] Found \(characters.count) characters to save")
             
             // Collect voice actors
             var voiceActors = Set<String>()
@@ -141,8 +144,12 @@ class FirebaseManager: ObservableObject {
                     "updatedAt": Timestamp(date: Date())  // character.updatedAt is not available
                 ]
                 
-                characterRef.setData(characterData, merge: true) { _ in
-                    // Character data saved
+                characterRef.setData(characterData, merge: true) { error in
+                    if let error = error {
+                        print("❌ [Firebase] Error saving character: \(error)")
+                    } else {
+                        print("✅ [Firebase] Character saved: \(character.name)")
+                    }
                 }
             }
             
@@ -166,10 +173,8 @@ class FirebaseManager: ObservableObject {
                         "updatedAt": Timestamp(date: Date())
                     ]
                     
-                    voiceActorRef.setData(voiceActorData, merge: true) { error in
-                        if let error = error {
-                        } else {
-                        }
+                    voiceActorRef.setData(voiceActorData, merge: true) { _ in
+                        // Voice actor data saved
                     }
                 }
             }
@@ -179,6 +184,8 @@ class FirebaseManager: ObservableObject {
         // アニメデータを保存
         if let animesData = UserDefaults.standard.data(forKey: "animes"),
            let animes = try? JSONDecoder().decode([Anime].self, from: animesData) {
+            
+            print("🔥 [Firebase] Found \(animes.count) animes to save")
             
             for anime in animes {
                 let animeRef = db.collection("userAnimes").document("\(userId)_\(anime.id)")
@@ -191,8 +198,12 @@ class FirebaseManager: ObservableObject {
                     "updatedAt": Timestamp(date: Date())  // anime.updatedAt may not be available
                 ]
                 
-                animeRef.setData(animeData, merge: true) { _ in
-                    // Anime data saved
+                animeRef.setData(animeData, merge: true) { error in
+                    if let error = error {
+                        print("❌ [Firebase] Error saving anime: \(error)")
+                    } else {
+                        print("✅ [Firebase] Anime saved: \(anime.title)")
+                    }
                 }
             }
         } else {
@@ -486,8 +497,10 @@ class FirebaseManager: ObservableObject {
         adRef.updateData([
             "impressions": FieldValue.increment(Int64(1))
         ]) { error in
-            if let error = error {
+            if error != nil {
+                // Error recording impression
             } else {
+                // Impression recorded
             }
         }
     }
@@ -631,6 +644,171 @@ class FirebaseManager: ObservableObject {
         }
     }
     
+    // MARK: - User Data Sync Functions
+    
+    // ユーザーのキャラクターデータをFirebaseから取得
+    func loadUserCharacters(userId: String, completion: @escaping (Result<[Character], Error>) -> Void) {
+        print("📱 Loading characters for userId: \(userId)")
+        
+        db.collection("userCharacters")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments(completion: { snapshot, error in
+                if let error = error {
+                    print("❌ Error loading characters: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ No character documents found")
+                    completion(.success([]))
+                    return
+                }
+                
+                print("✅ Found \(documents.count) character documents")
+                
+                var characters: [Character] = []
+                
+                for doc in documents {
+                    let data = doc.data()
+                    
+                    guard let characterIdString = data["characterId"] as? String,
+                          let characterId = UUID(uuidString: characterIdString),
+                          let name = data["name"] as? String,
+                          let tag = data["tag"] as? String else {
+                        continue
+                    }
+                    
+                    let voiceActor = data["voiceActor"] as? String ?? ""
+                    
+                    let character = Character(
+                        id: characterId,
+                        imageIdentifier: nil,
+                        name: name,
+                        tag: tag,
+                        birthday: Date(),
+                        age: "",
+                        voiceActor: voiceActor,
+                        cupSize: "",
+                        seichi: "",
+                        height: ""
+                    )
+                    
+                    characters.append(character)
+                }
+                
+                completion(.success(characters))
+            })
+    }
+    
+    // ユーザーのアニメデータをFirebaseから取得
+    func loadUserAnimes(userId: String, completion: @escaping (Result<[Anime], Error>) -> Void) {
+        print("📱 Loading animes for userId: \(userId)")
+        
+        db.collection("userAnimes")
+            .whereField("userId", isEqualTo: userId)
+            .getDocuments(completion: { snapshot, error in
+                if let error = error {
+                    print("❌ Error loading animes: \(error)")
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents else {
+                    print("⚠️ No anime documents found")
+                    completion(.success([]))
+                    return
+                }
+                
+                print("✅ Found \(documents.count) anime documents")
+                
+                var animes: [Anime] = []
+                
+                for doc in documents {
+                    let data = doc.data()
+                    
+                    guard let animeIdString = data["animeId"] as? String,
+                          let animeId = UUID(uuidString: animeIdString),
+                          let title = data["title"] as? String,
+                          let hashtag = data["hashtag"] as? String else {
+                        continue
+                    }
+                    
+                    let anime = Anime(
+                        id: animeId,
+                        imageIdentifier: nil,
+                        backgroundImagePath: nil,
+                        title: title,
+                        hashtag: hashtag,
+                        releaseDate: Date()
+                    )
+                    
+                    animes.append(anime)
+                }
+                
+                completion(.success(animes))
+            })
+    }
+    
+    // ユーザーのすべてのコンテンツデータをFirebaseから同期
+    func syncUserContentFromFirebase(userId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        let group = DispatchGroup()
+        var syncError: Error?
+        
+        // キャラクターデータを取得
+        group.enter()
+        loadUserCharacters(userId: userId) { result in
+            switch result {
+            case .success(let characters):
+                print("✅ Successfully loaded \(characters.count) characters")
+                if !characters.isEmpty {
+                    // UserDefaultsに保存
+                    if let encoded = try? JSONEncoder().encode(characters) {
+                        UserDefaults.standard.set(encoded, forKey: "characters")
+                        print("💾 Saved \(characters.count) characters to UserDefaults")
+                    }
+                } else {
+                    print("⚠️ No characters to save")
+                }
+            case .failure(let error):
+                syncError = error
+            }
+            group.leave()
+        }
+        
+        // アニメデータを取得
+        group.enter()
+        loadUserAnimes(userId: userId) { result in
+            switch result {
+            case .success(let animes):
+                print("✅ Successfully loaded \(animes.count) animes")
+                if !animes.isEmpty {
+                    // UserDefaultsに保存
+                    if let encoded = try? JSONEncoder().encode(animes) {
+                        UserDefaults.standard.set(encoded, forKey: "animes")
+                        print("💾 Saved \(animes.count) animes to UserDefaults")
+                    }
+                } else {
+                    print("⚠️ No animes to save")
+                }
+            case .failure(let error):
+                syncError = error
+            }
+            group.leave()
+        }
+        
+        // すべての処理が完了したら
+        group.notify(queue: .main) {
+            if let error = syncError {
+                completion(.failure(error))
+            } else {
+                // データ更新の通知を送信
+                NotificationCenter.default.post(name: Notification.Name("UserDataSynced"), object: nil)
+                completion(.success(()))
+            }
+        }
+    }
+    
     // ユーザーがプランを購入済みかチェック
     func checkPlanPurchased(userId: String, planId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         
@@ -648,7 +826,8 @@ class FirebaseManager: ObservableObject {
                 let isPurchased = documentsCount > 0
                 
                 if isPurchased {
-                    for doc in snapshot?.documents ?? [] {
+                    for _ in snapshot?.documents ?? [] {
+                        // Document exists
                     }
                 }
                 

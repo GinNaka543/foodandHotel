@@ -32,6 +32,16 @@ class AnimeManager: ObservableObject {
         ) { _ in
             self.loadAnimes()
         }
+        
+        // データ同期通知を監視
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("UserDataSynced"),
+            object: nil,
+            queue: .main
+        ) { _ in
+            print("📱 [AnimeManager] User data synced notification received")
+            self.loadAnimes()
+        }
     }
     
     func loadAnimes() {
@@ -70,6 +80,11 @@ class AnimeManager: ObservableObject {
             DispatchQueue.main.async {
                 self.objectWillChange.send()
             }
+            
+            // Firebase に保存
+            if let userId = UserDefaults.standard.string(forKey: "userId") {
+                FirebaseManager.shared.saveUserContentData(userId: userId)
+            }
         } else {
         }
     }
@@ -81,6 +96,11 @@ class AnimeManager: ObservableObject {
             saveAnimes()
             DispatchQueue.main.async {
                 self.objectWillChange.send()
+            }
+            
+            // Firebase に保存
+            if let userId = UserDefaults.standard.string(forKey: "userId") {
+                FirebaseManager.shared.saveUserContentData(userId: userId)
             }
         }
     }

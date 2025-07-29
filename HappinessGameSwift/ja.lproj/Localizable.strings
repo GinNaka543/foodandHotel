@@ -374,6 +374,24 @@
 "date" = "日付";
 "receipt_number" = "明細書番号";
 
+/* Transaction Types */
+"transaction_type_point_purchase" = "ポイント購入";
+"transaction_type_plan_purchase" = "プラン購入";
+"transaction_type_subscription" = "月額課金";
+"transaction_type_premium_upgrade" = "プレミアムアップグレード";
+
+/* Payment Methods */
+"payment_method_credit_card" = "クレジットカード";
+"payment_method_apple_pay" = "Apple Pay";
+"payment_method_google_pay" = "Google Pay";
+"payment_method_points" = "ポイント";
+
+/* Purchase Status */
+"purchase_status_completed" = "完了";
+"purchase_status_pending" = "処理中";
+"purchase_status_failed" = "失敗";
+"purchase_status_refunded" = "返金済み";
+
 /* Errors */
 "error_product_not_found" = "商品が見つかりません";
 "error_purchase_failed" = "購入に失敗しました";
@@ -466,6 +484,7 @@
 "enter_username" = "ユーザー名を入力";
 "user_id" = "ユーザーID";
 "enter_user_id" = "ユーザーIDを入力";
+"user_id_help" = "ユーザーIDはホームページのプロフィール編集から確認できます";
 "your_user_id_save" = "あなたのユーザーID（必ず保存してください）";
 "copied" = "コピーしました";
 "user_id_copied" = "ユーザーIDをクリップボードにコピーしました";

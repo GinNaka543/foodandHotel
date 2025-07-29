@@ -166,7 +166,12 @@ struct ProfileLogoutConfirmationView: View {
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(copiedUserId ? .green : .blue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(6)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding()
                         .background(Color.gray.opacity(0.1))
@@ -200,7 +205,12 @@ struct ProfileLogoutConfirmationView: View {
                                         .font(.system(size: 14))
                                 }
                                 .foregroundColor(copiedUsername ? .green : .blue)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.gray.opacity(0.1))
+                                .cornerRadius(6)
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         .padding()
                         .background(Color.gray.opacity(0.1))

@@ -998,16 +998,16 @@ struct AddCharacterSheet: View {
                                 Spacer()
                                 
                                 HStack(spacing: 4) {
-                                    Picker(selection: $selectedMonth, label: Text(NSLocalizedString("month", comment: ""))) {
+                                    Picker(selection: $selectedMonth, label: Text("")) {
                                         ForEach(1...12, id: \.self) { month in
-                                            Text("\(month)" + NSLocalizedString("month", comment: "")).tag(month)
+                                            Text(monthName(month)).tag(month)
                                         }
                                     }
                                     .pickerStyle(MenuPickerStyle())
                                     
-                                    Picker(selection: $selectedDay, label: Text(NSLocalizedString("day", comment: ""))) {
+                                    Picker(selection: $selectedDay, label: Text("")) {
                                         ForEach(1...daysInMonth(selectedMonth), id: \.self) { day in
-                                            Text("\(day)" + NSLocalizedString("day", comment: "")).tag(day)
+                                            Text("\(day)").tag(day)
                                         }
                                     }
                                     .pickerStyle(MenuPickerStyle())
@@ -1035,6 +1035,17 @@ struct AddCharacterSheet: View {
         let dateComponents = DateComponents(year: 2000, month: month)
         let date = calendar.date(from: dateComponents) ?? Date()
         return calendar.range(of: .day, in: .month, for: date)?.count ?? 30
+    }
+    
+    // 月名を返す
+    private func monthName(_ month: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US")
+        let monthNames = formatter.monthSymbols ?? []
+        if month > 0 && month <= monthNames.count {
+            return monthNames[month - 1]
+        }
+        return "\(month)"
     }
 }
 

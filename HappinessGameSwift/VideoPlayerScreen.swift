@@ -1090,28 +1090,129 @@ private struct YouTubeVideoView: View {
 struct FullScreenVideoPlayer: View {
     var player: AVPlayer?
     var onDismiss: () -> Void
-    @State private var showControls = true
+    
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Color.black.ignoresSafeArea()
-            VideoPlayer(player: player)
-                .edgesIgnoringSafeArea(.all)
-                .onTapGesture {
-                    withAnimation { showControls.toggle() }
-                }
-            if showControls {
-                Button(action: { onDismiss() }) {
-                    Text(NSLocalizedString("back", comment: "Back"))
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(Color.black.opacity(0.8))
-                        .cornerRadius(20)
-                }
-                .padding(.trailing, 24)
-                .padding(.top, 24)
-            }
+        FullScreenVideoPlayerRepresentable(player: player, onDismiss: onDismiss)
+            .edgesIgnoringSafeArea(.all)
+    }
+}
+
+// UIViewControllerRepresentableを使用して回転をサポート
+struct FullScreenVideoPlayerRepresentable: UIViewControllerRepresentable {
+    let player: AVPlayer?
+    let onDismiss: () -> Void
+    
+    func makeUIViewController(context: Context) -> FullScreenVideoViewController {
+        let controller = FullScreenVideoViewController()
+        controller.player = player
+        controller.onDismiss = onDismiss
+        return controller
+    }
+    
+    func updateUIViewController(_ uiViewController: FullScreenVideoViewController, context: Context) {
+        // 必要に応じて更新
+    }
+}
+
+// カスタムビューコントローラー
+class FullScreenVideoViewController: UIViewController {
+    var player: AVPlayer?
+    var playerLayer: AVPlayerLayer?
+    var onDismiss: (() -> Void)?
+    private var showControls = true
+    private var backButton: UIButton!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.backgroundColor = .black
+        
+        // プレイヤーレイヤーをセットアップ
+        if let player = player {
+            playerLayer = AVPlayerLayer(player: player)
+            playerLayer?.videoGravity = .resizeAspect
+            playerLayer?.frame = view.bounds
+            view.layer.insertSublayer(playerLayer!, at: 0)
+        }
+        
+        // 戻るボタンを追加
+        setupBackButton()
+        
+        // タップジェスチャーを追加
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        // 回転を有効にする
+        AppDelegate.orientationLock = .all
+        
+        // 既に横向きの場合は維持、縦向きの場合は自動回転を促す
+        if UIDevice.current.orientation.isPortrait {
+            UIDevice.current.setValue(UIInterfaceOrientation.landscapeRight.rawValue, forKey: "orientation")
         }
     }
-} 
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        // 縦向きに戻す
+        AppDelegate.orientationLock = .portrait
+        UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        playerLayer?.frame = view.bounds
+        
+        // ボタンの位置を更新
+        let isLandscape = view.bounds.width > view.bounds.height
+        if isLandscape {
+            backButton.frame = CGRect(x: view.bounds.width - 150, y: 40, width: 120, height: 44)
+        } else {
+            backButton.frame = CGRect(x: view.bounds.width - 150, y: 60, width: 120, height: 44)
+        }
+    }
+    
+    private func setupBackButton() {
+        backButton = UIButton(type: .system)
+        backButton.setTitle(NSLocalizedString("back", comment: "Back"), for: .normal)
+        backButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
+        backButton.setTitleColor(.white, for: .normal)
+        backButton.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        backButton.layer.cornerRadius = 20
+        backButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 24, bottom: 8, right: 24)
+        backButton.addTarget(self, action: #selector(dismissFullScreen), for: .touchUpInside)
+        
+        view.addSubview(backButton)
+        backButton.frame = CGRect(x: view.bounds.width - 150, y: 60, width: 120, height: 44)
+    }
+    
+    @objc private func handleTap() {
+        showControls.toggle()
+        UIView.animate(withDuration: 0.3) {
+            self.backButton.alpha = self.showControls ? 1.0 : 0.0
+        }
+    }
+    
+    @objc private func dismissFullScreen() {
+        onDismiss?()
+    }
+    
+    // 回転をサポート
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .all
+    }
+    
+    override var shouldAutorotate: Bool {
+        return true
+    }
+    
+    override var prefersStatusBarHidden: Bool {
+        return true
+    }
+}
+
+// AppDelegateはHappinessGameSwiftApp.swiftで定義済み 

@@ -1422,31 +1422,11 @@ PODS:
   - nanopb/encode (3.30910.0)
   - PromisesObjC (2.4.0)
   - RecaptchaInterop (101.0.0)
-  - StripeApplePay (24.16.2):
-    - StripeCore (= 24.16.2)
-  - StripeCore (24.16.2)
-  - StripePayments (24.16.2):
-    - StripeCore (= 24.16.2)
-    - StripePayments/Stripe3DS2 (= 24.16.2)
-  - StripePayments/Stripe3DS2 (24.16.2):
-    - StripeCore (= 24.16.2)
-  - StripePaymentSheet (24.16.2):
-    - StripeApplePay (= 24.16.2)
-    - StripeCore (= 24.16.2)
-    - StripePayments (= 24.16.2)
-    - StripePaymentsUI (= 24.16.2)
-  - StripePaymentsUI (24.16.2):
-    - StripeCore (= 24.16.2)
-    - StripePayments (= 24.16.2)
-    - StripeUICore (= 24.16.2)
-  - StripeUICore (24.16.2):
-    - StripeCore (= 24.16.2)
 
 DEPENDENCIES:
   - Firebase/Auth
   - Firebase/Core
   - Firebase/Firestore
-  - StripePaymentSheet
 
 SPEC REPOS:
   trunk:
@@ -1474,12 +1454,6 @@ SPEC REPOS:
     - nanopb
     - PromisesObjC
     - RecaptchaInterop
-    - StripeApplePay
-    - StripeCore
-    - StripePayments
-    - StripePaymentSheet
-    - StripePaymentsUI
-    - StripeUICore
 
 SPEC CHECKSUMS:
   abseil: a05cc83bf02079535e17169a73c5be5ba47f714b
@@ -1506,13 +1480,7 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  StripeApplePay: 66dc43ec1284904a2cf4c5a0906f86296d23afbd
-  StripeCore: f3a62397cecaf4da1827bcf07de7312ec1f3b96e
-  StripePayments: b3e7817d821ceedd469008d17d94a1494ff1b624
-  StripePaymentSheet: f4f5b71cef665f05a185c29b2d4b59e7dd8c117d
-  StripePaymentsUI: d489e73bf790da1c74e642021475b1a09a4a4500
-  StripeUICore: 723e5024c83acb5ba5e71335e110a471b182a74d
 
-PODFILE CHECKSUM: cbf9de6cb63d505e729180e618b9c95273d95463
+PODFILE CHECKSUM: a18cfd61eb9ceeaf1d752dd4c7da3d4171667047
 
 COCOAPODS: 1.16.2

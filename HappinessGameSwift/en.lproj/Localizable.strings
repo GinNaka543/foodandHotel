@@ -973,11 +973,11 @@
 "welcome_description" = "Record and manage your\nfavorite characters and anime";
 "swipe_to_continue" = "Swipe to continue";
 "important_notice" = "Important Notice";
-"first_2_months_free" = "First 2 months free";
-"after_2_months_600yen" = "600 yen after 2 months";
+"first_2_months_free" = "First 40 days free";
+"after_2_months_600yen" = "600 yen after 40 days";
 "trial_period_about" = "About the trial period";
-"trial_period_description_1" = "This app is free to use for the first 2 months.";
-"trial_period_description_2" = "After 2 months, 600 yen is required for continued use.";
+"trial_period_description_1" = "This app is free to use for the first 40 days.";
+"trial_period_description_2" = "After 40 days, 600 yen is required for continued use.";
 "payment_methods" = "Payment can be made with points or credit card.";
 "lets_start" = "Let's get started!";
 "create_account_start" = "Create an account and\nstart using the app";

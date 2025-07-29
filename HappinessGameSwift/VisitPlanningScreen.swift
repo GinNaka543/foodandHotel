@@ -29,7 +29,7 @@ struct VisitPlanningScreen: View {
     @State private var showingPaymentSheet = false
     @State private var showingPublishDialog = false
     @StateObject private var firebaseManager = FirebaseManager.shared
-    @StateObject private var stripeManager = StripePaymentManager.shared
+    // @StateObject private var stripeManager = StripePaymentManager.shared // Stripe削除済み
     @StateObject private var githubManager = GitHubImageManager.shared
     
     // 編集中の下書きデータ

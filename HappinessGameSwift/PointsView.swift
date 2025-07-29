@@ -3,7 +3,7 @@ import SwiftUI
 struct PointsView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var firebaseManager = FirebaseManager.shared
-    @StateObject private var stripeManager = StripePaymentManager.shared
+    // @StateObject private var stripeManager = StripePaymentManager.shared // Stripe削除済み
     @State private var userPoints: UserPointsModel?
     @State private var pointTransactions: [PointTransactionModel] = []
     @State private var showingPurchaseSheet = false

@@ -76,11 +76,9 @@
 		CC20AB072E26E6C1005F4C2A /* ThumbnailPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFC2E26E6C1005F4C2A /* ThumbnailPickerView.swift */; };
 		CC20AB082E26E6C1005F4C2A /* SimpleAdBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF82E26E6C1005F4C2A /* SimpleAdBannerView.swift */; };
 		CC20AB092E26E6C1005F4C2A /* PublishPlanDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF52E26E6C1005F4C2A /* PublishPlanDialog.swift */; };
-		CC20AB0A2E26E6C1005F4C2A /* StripePaymentManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF92E26E6C1005F4C2A /* StripePaymentManager.swift */; };
 		CC20AB0B2E26E6C1005F4C2A /* UserProfileScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFE2E26E6C1005F4C2A /* UserProfileScreen.swift */; };
 		CC20AB0C2E26E6C1005F4C2A /* VideoPlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFF2E26E6C1005F4C2A /* VideoPlayerScreen.swift */; };
 		CC20AB0D2E26E6C1005F4C2A /* VisitTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB032E26E6C1005F4C2A /* VisitTypes.swift */; };
-		CC20AB0E2E26E6C1005F4C2A /* StripePaymentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAFA2E26E6C1005F4C2A /* StripePaymentSheet.swift */; };
 		CC20AB0F2E26E6C1005F4C2A /* VisitGameScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB002E26E6C1005F4C2A /* VisitGameScreen.swift */; };
 		CC20AB102E26E6C1005F4C2A /* VisitPlanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AB012E26E6C1005F4C2A /* VisitPlanModel.swift */; };
 		CC20AB112E26E6C1005F4C2A /* RegisterScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */; };
@@ -202,8 +200,6 @@
 		CC20AAF52E26E6C1005F4C2A /* PublishPlanDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PublishPlanDialog.swift; sourceTree = "<group>"; };
 		CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterScreenView.swift; sourceTree = "<group>"; };
 		CC20AAF82E26E6C1005F4C2A /* SimpleAdBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleAdBannerView.swift; sourceTree = "<group>"; };
-		CC20AAF92E26E6C1005F4C2A /* StripePaymentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePaymentManager.swift; sourceTree = "<group>"; };
-		CC20AAFA2E26E6C1005F4C2A /* StripePaymentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripePaymentSheet.swift; sourceTree = "<group>"; };
 		CC20AAFB2E26E6C1005F4C2A /* TargetedAdBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetedAdBannerView.swift; sourceTree = "<group>"; };
 		CC20AAFC2E26E6C1005F4C2A /* ThumbnailPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThumbnailPickerView.swift; sourceTree = "<group>"; };
 		CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPointsModel.swift; sourceTree = "<group>"; };
@@ -355,8 +351,6 @@
 				CC20AAF52E26E6C1005F4C2A /* PublishPlanDialog.swift */,
 				CC20AAF62E26E6C1005F4C2A /* RegisterScreenView.swift */,
 				CC20AAF82E26E6C1005F4C2A /* SimpleAdBannerView.swift */,
-				CC20AAF92E26E6C1005F4C2A /* StripePaymentManager.swift */,
-				CC20AAFA2E26E6C1005F4C2A /* StripePaymentSheet.swift */,
 				CC20AAFB2E26E6C1005F4C2A /* TargetedAdBannerView.swift */,
 				CC20AAFC2E26E6C1005F4C2A /* ThumbnailPickerView.swift */,
 				CC20AAFD2E26E6C1005F4C2A /* UserPointsModel.swift */,
@@ -591,13 +585,11 @@
 				CC20AB072E26E6C1005F4C2A /* ThumbnailPickerView.swift in Sources */,
 				CC20AB082E26E6C1005F4C2A /* SimpleAdBannerView.swift in Sources */,
 				CC20AB092E26E6C1005F4C2A /* PublishPlanDialog.swift in Sources */,
-				CC20AB0A2E26E6C1005F4C2A /* StripePaymentManager.swift in Sources */,
 				CC1BB3842E28144D006EE695 /* PlanConfirmationView.swift in Sources */,
 				CC20AB0B2E26E6C1005F4C2A /* UserProfileScreen.swift in Sources */,
 				CC20AB0C2E26E6C1005F4C2A /* VideoPlayerScreen.swift in Sources */,
 				CCF665F72E34CDA200D86A20 /* LanguageSelectionView.swift in Sources */,
 				CC20AB0D2E26E6C1005F4C2A /* VisitTypes.swift in Sources */,
-				CC20AB0E2E26E6C1005F4C2A /* StripePaymentSheet.swift in Sources */,
 				CC20AB0F2E26E6C1005F4C2A /* VisitGameScreen.swift in Sources */,
 				CC9BB06A2E33E8370088E501 /* ImageOptimizer.swift in Sources */,
 				CC20AB102E26E6C1005F4C2A /* VisitPlanModel.swift in Sources */,
@@ -777,7 +769,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 86452XMRK8;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -803,7 +795,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
 				PRODUCT_NAME = "ANICOLLE!";
 				SDKROOT = iphoneos;
@@ -887,7 +879,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 86452XMRK8;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -913,7 +905,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
 				PRODUCT_NAME = "ANICOLLE!";
 				SDKROOT = iphoneos;

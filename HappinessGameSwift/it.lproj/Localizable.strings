@@ -29,7 +29,61 @@
 "product" = "Product";
 /* Terms and Privacy */
 "terms_of_service" = "Termini di servizio";
+"terms_of_service_title" = "Termini di Servizio";
+"terms_last_updated" = "Ultimo aggiornamento: 23 luglio 2025";
+"terms_article_1_title" = "Articolo 1 (Applicazione dei Termini di Servizio)";
+"terms_article_1_content" = "Questi Termini di Servizio (di seguito denominati \"Termini\") stabiliscono le condizioni per l'uso di ANICOLLE! (di seguito denominata \"l'App\") tra gli utenti dell'App (di seguito denominati \"Utenti\") e l'operatore.";
+"terms_article_2_title" = "Articolo 2 (Registrazione Utente)";
+"terms_article_2_content" = "1. Gli utenti devono registrarsi secondo il metodo prescritto dopo aver accettato questi Termini.\n2. Se vengono fornite informazioni false durante la registrazione, la registrazione può essere cancellata.";
+"terms_article_3_title" = "Articolo 3 (Gestione di ID Utente e Password)";
+"terms_article_3_content" = "1. Gli utenti devono gestire adeguatamente il proprio ID utente e la password per l'App sotto la propria responsabilità.\n2. L'operatore non si assume alcuna responsabilità per eventuali danni derivanti dall'uso di ID utente e password da parte di terzi.";
+"terms_article_4_title" = "Articolo 4 (Tariffe di Utilizzo)";
+"terms_article_4_content" = "1. L'App può essere utilizzata gratuitamente per 2 mesi dalla registrazione iniziale.\n2. Dopo la scadenza del periodo gratuito, è richiesta una tariffa di utilizzo di 600 yen (tasse incluse) per continuare a utilizzare l'App.\n3. Se la tariffa di utilizzo non viene pagata, alcune o tutte le funzioni dell'App potrebbero essere limitate.\n4. Le tariffe di utilizzo una volta pagate non saranno rimborsate per nessun motivo.";
+"terms_article_5_title" = "Articolo 5 (Attività Vietate)";
+"terms_article_5_content" = "Gli utenti non devono intraprendere le seguenti attività quando utilizzano l'App:\n• Attività che violano le leggi o l'ordine pubblico e la morale\n• Attività legate ad atti criminali\n• Attività che potrebbero interferire con il funzionamento dell'App\n• Attività che raccolgono o accumulano informazioni personali su altri utenti\n• Attività che comportano accesso non autorizzato o tentativi di esso\n• Attività che impersonano altri utenti\n• Attività che forniscono direttamente o indirettamente benefici a forze antisociali in relazione all'App";
+"terms_article_6_title" = "Articolo 6 (Sospensione dei Servizi dell'App)";
+"terms_article_6_content" = "L'operatore può sospendere o interrompere tutti o parte dei servizi dell'App senza preavviso agli utenti se si ritiene che esistano le seguenti circostanze:\n• Durante la manutenzione, l'ispezione o gli aggiornamenti del sistema informatico relativo all'App\n• Quando diventa difficile fornire l'App a causa di forza maggiore come terremoti, fulmini, incendi, interruzioni di corrente o disastri naturali\n• Quando i computer o le linee di comunicazione vengono interrotti a causa di incidenti";
+"terms_article_7_title" = "Articolo 7 (Diritti d'Autore)";
+"terms_article_7_content" = "1. I diritti d'autore dei contenuti (testo, immagini, video, audio, ecc.) forniti all'interno dell'App appartengono all'operatore o ai legittimi titolari dei diritti.\n2. Gli utenti non possono utilizzare i contenuti dell'App oltre l'ambito dell'uso personale.";
+"terms_article_8_title" = "Articolo 8 (Disclaimer)";
+"terms_article_8_content" = "1. Sebbene venga fatto ogni sforzo per garantire l'accuratezza delle informazioni pubblicate sull'App, l'operatore non garantisce l'accuratezza, l'utilità o la tempestività delle informazioni dell'App.\n2. L'operatore non si assume alcuna responsabilità per eventuali danni subiti dagli utenti attraverso l'uso dell'App.";
+"terms_article_9_title" = "Articolo 9 (Raccolta e Condivisione delle Informazioni)";
+"terms_article_9_content" = "1. L'App può raccogliere informazioni testuali sui personaggi anime e doppiatori preferiti registrati dagli utenti e utilizzarle per migliorare i servizi e fornire funzioni di condivisione con altri utenti.\n2. Utilizzando l'App, gli utenti si considerano consenzienti alla raccolta e condivisione delle informazioni di cui sopra.\n3. Altre informazioni personali saranno gestite in modo appropriato in conformità con l'Informativa sulla Privacy stabilita separatamente.";
+"terms_article_10_title" = "Articolo 10 (Metodo di Utilizzo)";
+"terms_article_10_content" = "Quando si cambia dispositivo, le informazioni testuali dell'utente verranno salvate, ma le immagini non verranno salvate. Dopo aver effettuato l'accesso su un nuovo dispositivo, le immagini dovranno essere caricate nuovamente.";
+"terms_article_11_title" = "Articolo 11 (Informativa sulla Privacy)";
+"terms_article_11_content" = "Le informazioni personali ottenute attraverso l'uso dell'App saranno gestite in modo appropriato in conformità con l'Informativa sulla Privacy stabilita separatamente.";
+"terms_article_12_title" = "Articolo 12 (Modifiche ai Termini di Servizio)";
+"terms_article_12_content" = "L'operatore può modificare questi Termini senza notificare gli utenti quando lo ritiene necessario. I Termini rivisti entreranno in vigore quando pubblicati all'interno dell'App.";
+"terms_article_13_title" = "Articolo 13 (Legge Applicabile e Giurisdizione)";
+"terms_article_13_content" = "1. Questi Termini saranno regolati dalla legge giapponese.\n2. Qualsiasi controversia derivante in relazione all'App sarà soggetta alla giurisdizione esclusiva del tribunale competente per la sede dell'ufficio principale dell'operatore.";
 "privacy_policy" = "Informativa sulla privacy";
+
+/* Privacy Policy */
+"privacy_policy_title" = "Informativa sulla Privacy";
+"privacy_info_we_collect_title" = "1. Informazioni che Raccogliamo";
+"privacy_info_we_collect_content" = "L'app \"ANICOLLE!\" raccoglie le seguenti informazioni:\n\n• Informazioni di registrazione utente (nome utente, ID utente)\n• Contenuti creati all'interno dell'app (registrazioni di personaggi, anime)\n• Informazioni sul dispositivo (ID dispositivo, versione OS)\n• Utilizzo dell'app (orari di accesso, frequenza di utilizzo delle funzionalità)\n• Informazioni di pagamento (informazioni di pagamento tramite Stripe, ma i numeri di carta di credito non vengono memorizzati)\n\nNota: Non raccogliamo indirizzi email";
+"privacy_purpose_title" = "2. Scopo dell'Utilizzo delle Informazioni";
+"privacy_purpose_content" = "Le informazioni raccolte vengono utilizzate solo per i seguenti scopi:\n\n• Fornire le funzionalità di base dell'app\n• Autenticazione utente e gestione account\n• Gestione pagamenti e punti\n• Backup delle informazioni di personaggi e anime (per il recupero dati)\n• Miglioramento dell'app e supporto clienti\n• Rispondere a requisiti legali\n\nNota: Le informazioni su personaggi e anime che registri vengono archiviate sui server esclusivamente per scopi di backup, consentendo il recupero dei dati in caso di guasto o sostituzione del dispositivo.";
+"privacy_data_storage_title" = "3. Archiviazione e Gestione dei Dati";
+"privacy_data_storage_content" = "• I contenuti creati dall'utente (informazioni su personaggi, anime) vengono archiviati in modo sicuro sui server Firebase per scopi di backup\n• Questo sistema consente il recupero dei dati senza perdite nei seguenti casi:\n  - Guasto o perdita del dispositivo\n  - Reinstallazione dell'app\n  - Sostituzione del dispositivo\n• Le informazioni di autenticazione, punti e pagamento sono anch'esse gestite sui server Firebase\n• Tutte le comunicazioni sono crittografate con HTTPS\n• Gli utenti possono eliminare i propri dati in qualsiasi momento\n• I dati di backup sono archiviati collegati agli account utente e non possono essere accessibili da altri utenti";
+"privacy_disclosure_title" = "4. Divulgazione di Informazioni a Terzi";
+"privacy_disclosure_content" = "Non forniamo le informazioni personali degli utenti a terzi tranne nei seguenti casi:\n\n• Quando si ottiene il consenso dell'utente\n• Quando la divulgazione è richiesta per legge\n• Quando necessario per proteggere vita, corpo o proprietà";
+"privacy_security_title" = "5. Sicurezza";
+"privacy_security_content" = "Implementiamo le seguenti misure per proteggere adeguatamente le informazioni degli utenti:\n\n• Crittografia tramite comunicazione HTTPS\n• Autenticazione sicura con Firebase Authentication\n• Gestione appropriata delle chiavi API\n• Aggiornamenti di sicurezza regolari";
+"privacy_cookies_title" = "6. Cookie e Tracciamento";
+"privacy_cookies_content" = "• Questa app non utilizza cookie per migliorare l'esperienza utente\n• Non effettuiamo tracciamento per scopi pubblicitari\n• Le statistiche di utilizzo dell'app vengono raccolte in forma anonima\n• Le informazioni su personaggi e anime raccolte non vengono utilizzate per scopi diversi dal backup e recupero";
+"privacy_backup_title" = "7. Backup e Recupero Dati";
+"privacy_backup_content" = "Forniamo le seguenti funzionalità di backup per proteggere i tuoi dati preziosi:\n\n• Backup automatico: Salvataggio automatico sui server durante la registrazione o modifica di personaggi e anime\n• Recupero dati: Ripristino automatico dai dati di backup al login\n• Scopo del backup:\n  - Protezione dati in caso di guasto o perdita del dispositivo\n  - Recupero dati quando l'app viene eliminata e reinstallata\n  - Migrazione dati quando si cambia dispositivo\n\nImportante: Questi dati di backup vengono utilizzati esclusivamente per proteggere i tuoi dati e non vengono mai utilizzati per altri scopi (marketing, analisi, fornitura a terzi, ecc.).";
+"privacy_children_title" = "8. Privacy dei Minori";
+"privacy_children_content" = "Questa app non è destinata a bambini di età inferiore ai 13 anni. Chi ha meno di 13 anni dovrebbe ottenere il consenso dei genitori prima dell'uso.";
+"privacy_changes_title" = "9. Modifiche all'Informativa sulla Privacy";
+"privacy_changes_content" = "Potremmo modificare la nostra informativa sulla privacy secondo necessità. In caso di modifiche significative, informeremo gli utenti all'interno dell'app.";
+"privacy_contact_title" = "10. Contattaci";
+"privacy_contact_content" = "Per domande relative alla privacy, contattaci a:\n\nEmail: fneko543@gmail.com";
+"privacy_last_updated" = "Ultimo aggiornamento: 24 luglio 2025";
+"privacy_agree_and_start" = "Accetta e Inizia a Usare l'App";
+"privacy_agree_description" = "Accettando l'Informativa sulla Privacy, puoi iniziare a usare l'app";
 
 /* Premium */
 "premium_upgrade_title" = "Passa a Premium";

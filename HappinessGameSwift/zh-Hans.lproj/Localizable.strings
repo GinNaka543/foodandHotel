@@ -29,7 +29,61 @@
 "product" = "Product";
 /* Terms and Privacy */
 "terms_of_service" = "服务条款";
+"terms_of_service_title" = "服务条款";
+"terms_last_updated" = "最后更新：2025年7月23日";
+"terms_article_1_title" = "第1条（服务条款的适用）";
+"terms_article_1_content" = "本服务条款（以下简称\"条款\"）规定了ANICOLLE!（以下简称\"本应用\"）的用户（以下简称\"用户\"）与运营方之间使用本应用的条件。";
+"terms_article_2_title" = "第2条（用户注册）";
+"terms_article_2_content" = "1. 用户同意本条款后，应按照规定方法进行使用注册。\n2. 如果在注册时提供虚假信息，注册可能会被取消。";
+"terms_article_3_title" = "第3条（用户ID和密码的管理）";
+"terms_article_3_content" = "1. 用户应自行负责妥善管理本应用的用户ID和密码。\n2. 运营方对因第三方使用用户ID和密码而造成的任何损害不承担责任。";
+"terms_article_4_title" = "第4条（使用费用）";
+"terms_article_4_content" = "1. 本应用从初次注册起可免费使用2个月。\n2. 免费期结束后，继续使用本应用需要支付600日元（含税）的使用费。\n3. 如果不支付使用费，本应用的部分或全部功能可能会受到限制。\n4. 已支付的使用费无论任何理由均不予退还。";
+"terms_article_5_title" = "第5条（禁止行为）";
+"terms_article_5_content" = "用户在使用本应用时不得从事以下行为：\n• 违反法律法规或公序良俗的行为\n• 与犯罪行为相关的行为\n• 可能干扰本应用运营的行为\n• 收集或积累其他用户个人信息的行为\n• 未经授权访问或尝试访问的行为\n• 冒充其他用户的行为\n• 与本应用相关直接或间接向反社会势力提供利益的行为";
+"terms_article_6_title" = "第6条（应用服务的暂停）";
+"terms_article_6_content" = "运营方在认为存在以下情况时，可以不事先通知用户而暂停或中断本应用服务的全部或部分：\n• 对与本应用相关的计算机系统进行维护、检查或更新时\n• 因地震、雷电、火灾、停电或自然灾害等不可抗力导致难以提供本应用时\n• 因事故导致计算机或通信线路停止时";
+"terms_article_7_title" = "第7条（著作权）";
+"terms_article_7_content" = "1. 本应用内提供的内容（文字、图像、视频、音频等）的著作权归运营方或合法权利人所有。\n2. 用户不得超出个人使用范围使用本应用的内容。";
+"terms_article_8_title" = "第8条（免责声明）";
+"terms_article_8_content" = "1. 虽然我们会尽力确保本应用发布信息的准确性，但运营方不保证本应用信息的准确性、有用性或时效性。\n2. 运营方对用户通过使用本应用而产生的任何损害不承担责任。";
+"terms_article_9_title" = "第9条（信息的收集和共享）";
+"terms_article_9_content" = "1. 本应用可能会收集用户注册的关于喜欢的动漫和声优角色的文字信息，并用于改进服务和与其他用户的共享功能。\n2. 使用本应用即视为同意上述信息的收集和共享。\n3. 其他个人信息将根据另行制定的隐私政策妥善处理。";
+"terms_article_10_title" = "第10条（使用方法）";
+"terms_article_10_content" = "更换设备时，用户文字信息将被保存，但图像不会被保存。在新设备上登录后，需要重新上传图像。";
+"terms_article_11_title" = "第11条（隐私政策）";
+"terms_article_11_content" = "通过使用本应用获得的个人信息将根据另行制定的隐私政策妥善处理。";
+"terms_article_12_title" = "第12条（服务条款的变更）";
+"terms_article_12_content" = "运营方在认为必要时可以不通知用户而变更本条款。修订后的条款在本应用内发布时生效。";
+"terms_article_13_title" = "第13条（准据法和管辖法院）";
+"terms_article_13_content" = "1. 本条款以日本法为准据法。\n2. 与本应用相关的任何争议应由运营方总部所在地的管辖法院专属管辖。";
 "privacy_policy" = "隐私政策";
+
+/* Privacy Policy */
+"privacy_policy_title" = "隐私政策";
+"privacy_info_we_collect_title" = "1. 我们收集的信息";
+"privacy_info_we_collect_content" = "应用程序\"ANICOLLE!\"收集以下信息：\n\n• 用户注册信息（用户名、用户ID）\n• 应用内创建的内容（角色、动漫记录）\n• 设备信息（设备ID、操作系统版本）\n• 应用使用情况（登录时间、功能使用频率）\n• 支付信息（通过Stripe的支付信息，但不存储信用卡号）\n\n注意：我们不收集电子邮件地址";
+"privacy_purpose_title" = "2. 信息使用目的";
+"privacy_purpose_content" = "收集的信息仅用于以下目的：\n\n• 提供基本应用功能\n• 用户身份验证和账户管理\n• 支付和积分管理\n• 备份角色和动漫信息（用于数据恢复）\n• 应用改进和客户支持\n• 响应法律要求\n\n注意：您注册的角色和动漫信息仅出于备份目的存储在服务器上，允许在设备故障或更换时恢复数据。";
+"privacy_data_storage_title" = "3. 数据存储和管理";
+"privacy_data_storage_content" = "• 用户创建的内容（角色、动漫信息）安全地存储在Firebase服务器上用于备份\n• 此系统允许在以下情况下恢复数据而不丢失：\n  - 设备故障或丢失\n  - 应用重新安装\n  - 设备更换\n• 身份验证信息、积分信息和支付信息也在Firebase服务器上管理\n• 所有通信都使用HTTPS加密\n• 用户可以随时删除他们的数据\n• 备份数据与用户账户关联存储，其他用户无法访问";
+"privacy_disclosure_title" = "4. 向第三方披露信息";
+"privacy_disclosure_content" = "除以下情况外，我们不会向第三方提供用户的个人信息：\n\n• 获得用户同意时\n• 法律要求披露时\n• 保护生命、身体或财产所必需时";
+"privacy_security_title" = "5. 安全性";
+"privacy_security_content" = "我们实施以下措施来妥善保护用户信息：\n\n• 通过HTTPS通信加密\n• 使用Firebase Authentication进行安全身份验证\n• 妥善的API密钥管理\n• 定期安全更新";
+"privacy_cookies_title" = "6. Cookie和跟踪";
+"privacy_cookies_content" = "• 此应用不使用cookie来改善用户体验\n• 我们不进行广告目的的跟踪\n• 应用使用统计数据以匿名形式收集\n• 收集的角色和动漫信息不用于备份和恢复以外的目的";
+"privacy_backup_title" = "7. 数据备份和恢复";
+"privacy_backup_content" = "我们提供以下备份功能来保护您的宝贵数据：\n\n• 自动备份：注册或编辑角色和动漫时自动保存到服务器\n• 数据恢复：登录时自动从备份数据恢复\n• 备份目的：\n  - 在设备故障或丢失时保护数据\n  - 删除并重新安装应用时恢复数据\n  - 更换设备时迁移数据\n\n重要：此备份数据仅用于保护您的数据，绝不用于其他目的（营销、分析、提供给第三方等）。";
+"privacy_children_title" = "8. 儿童隐私";
+"privacy_children_content" = "此应用不适用于13岁以下的儿童。13岁以下的用户应在使用前获得父母同意。";
+"privacy_changes_title" = "9. 隐私政策的变更";
+"privacy_changes_content" = "我们可能会根据需要更改隐私政策。如有重大变更，我们将在应用内通知用户。";
+"privacy_contact_title" = "10. 联系我们";
+"privacy_contact_content" = "有关隐私的查询，请通过以下方式联系我们：\n\n电子邮件：fneko543@gmail.com";
+"privacy_last_updated" = "最后更新：2025年7月24日";
+"privacy_agree_and_start" = "同意并开始使用应用";
+"privacy_agree_description" = "同意隐私政策后，您就可以开始使用应用";
 
 /* Premium */
 "premium_upgrade_title" = "升级到高级版";

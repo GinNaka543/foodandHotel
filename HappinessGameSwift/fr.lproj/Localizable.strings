@@ -944,4 +944,5 @@
 /* Login Screen Details */
 "no_account_yet" = "Vous n'avez pas de compte ? Cliquez ici";
 "forgot_id_username" = "Si vous avez oublié votre ID et nom d'utilisateur";
-"recreate_account_message" = "Veuillez créer un compte à nouveau.\nVotre historique sera restauré lorsque vous créerez un compte.";
+"recreate_account_message" = "Veuillez créer un compte à nouveau.\n*Les images et les personnages enregistrés ne peuvent pas être restaurés.";
+"register_anime_video" = "Enregistrer une vidéo";

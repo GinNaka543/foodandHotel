@@ -943,4 +943,5 @@
 /* Login Screen Details */
 "no_account_yet" = "계정이 없으신가요? 여기를 클릭하세요";
 "forgot_id_username" = "ID와 사용자명을 잊으셨다면";
-"recreate_account_message" = "다시 계정을 만들어 주세요.\n계정을 만들면 기록이 복원됩니다.";
+"recreate_account_message" = "다시 계정을 만들어 주세요.\n*이미지와 등록된 캐릭터는 복원할 수 없습니다.";
+"register_anime_video" = "동영상 등록";

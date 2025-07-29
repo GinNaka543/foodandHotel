@@ -943,4 +943,5 @@
 /* Login Screen Details */
 "no_account_yet" = "还没有账号？点击这里";
 "forgot_id_username" = "如果您忘记了ID和用户名";
-"recreate_account_message" = "请重新创建账号。\n创建账号后您的历史记录将被恢复。";
+"recreate_account_message" = "请重新创建账号。\n*图片和已注册的角色无法恢复。";
+"register_anime_video" = "注册视频";

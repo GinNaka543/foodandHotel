@@ -810,7 +810,8 @@
 /* Login Screen Details */
 "no_account_yet" = "アカウントをお持ちでない方はこちら";
 "forgot_id_username" = "IDとユーザー名を忘れた場合";
-"recreate_account_message" = "もう一度アカウントを作成してください。\nアカウントを作成すると履歴が復元されます。";
+"recreate_account_message" = "もう一度アカウントを作成してください。\n※画像と登録したキャラクターの復元はできません。";
 "register_from_youtube" = "YouTubeから登録しよう";
 "from_youtube" = "YouTubeから";
 "register_video" = "動画を登録";
+"register_anime_video" = "動画を登録";

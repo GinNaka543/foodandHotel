@@ -63,6 +63,17 @@ module.exports = async function handler(req, res) {
                   const premiumData = premiumDoc.data();
                   subscription.isPremiumUser = premiumData.isPremium || false;
                   subscription.premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+                  
+                  // プレミアムユーザーの場合はhasPaidをtrueに設定
+                  if (premiumData.isPremium) {
+                    subscription.hasPaid = true;
+                    if (!subscription.paymentDate && premiumData.purchaseDate) {
+                      subscription.paymentDate = premiumData.purchaseDate.seconds;
+                    }
+                    if (!subscription.amount) {
+                      subscription.amount = 600;
+                    }
+                  }
                 } else {
                   subscription.isPremiumUser = false;
                 }
@@ -108,6 +119,11 @@ module.exports = async function handler(req, res) {
                 const premiumData = premiumDoc.data();
                 oldSub.isPremiumUser = premiumData.isPremium || false;
                 oldSub.premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+                
+                // プレミアムユーザーの場合はhasPaidをtrueに設定
+                if (premiumData.isPremium) {
+                  oldSub.hasPaid = true;
+                }
               } else {
                 oldSub.isPremiumUser = false;
               }
@@ -185,15 +201,18 @@ module.exports = async function handler(req, res) {
           console.log(`プレミアムユーザー情報取得エラー ${userId}:`, premiumError.message);
         }
         
+        // hasPaidはuserデータまたはpremiumUsersデータのいずれかがtrueならtrue
+        const hasPaid = userData.hasPaidSubscription || isPremiumUser || false;
+        
         const subscription = {
           userId: userId,
           deviceId: userData.deviceId || null,
           currentUserId: userId,
           username: userData.username || userData.displayName || '未設定',
           firstInstallDate,
-          hasPaid: userData.hasPaidSubscription || false,
-          paymentDate: userData.subscriptionDate?.seconds || userData.subscriptionDate || null,
-          amount: userData.hasPaidSubscription ? 500 : null,
+          hasPaid,
+          paymentDate: userData.subscriptionDate?.seconds || userData.subscriptionDate || premiumPurchaseDate || null,
+          amount: hasPaid ? 600 : null,
           createdAt,
           lastSeenAt,
           isPremiumUser,

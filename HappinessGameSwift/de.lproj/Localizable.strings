@@ -1027,4 +1027,5 @@ Gute Arbeit";
 /* Login Screen Details */
 "no_account_yet" = "Noch kein Konto? Hier klicken";
 "forgot_id_username" = "Falls Sie Ihre ID und Ihren Benutzernamen vergessen haben";
-"recreate_account_message" = "Bitte erstellen Sie erneut ein Konto.\nIhre Historie wird wiederhergestellt, wenn Sie ein Konto erstellen.";
+"recreate_account_message" = "Bitte erstellen Sie erneut ein Konto.\n*Bilder und registrierte Charaktere können nicht wiederhergestellt werden.";
+"register_anime_video" = "Video registrieren";

@@ -4781,6 +4781,7 @@ struct AnimeDetailView: View {
     @State private var showArtwork = false
     @State private var showVideo = false
     @State private var showAbout = false
+    @State private var refreshTrigger = UUID() // Force UI refresh
     // 編集用の状態変数
     @State private var showEditTitleModal = false
     @State private var showEditReleaseDateModal = false
@@ -4919,10 +4920,10 @@ struct AnimeDetailView: View {
                         }
                     
                     // キャラクターアイコン
-                    if !anime.characterIds.isEmpty {
+                    if !currentAnime.characterIds.isEmpty {
                         HStack(spacing: -8) {
                             // 最初の4つのキャラクターアイコン
-                            ForEach(Array(anime.characterIds.prefix(4)), id: \.self) { characterId in
+                            ForEach(Array(currentAnime.characterIds.prefix(4)), id: \.self) { characterId in
                                 if let character = characterManager.characters.first(where: { $0.id == characterId }) {
                                     Button(action: {
                                         showMemberList = true
@@ -4957,7 +4958,7 @@ struct AnimeDetailView: View {
                             }
                             
                             // 4つ以上のキャラクターがいる場合は総数ボタンを表示
-                            if anime.characterIds.count >= 4 {
+                            if currentAnime.characterIds.count >= 4 {
                                 Button(action: {
                                     showMemberList = true
                                 }) {
@@ -4966,7 +4967,7 @@ struct AnimeDetailView: View {
                                             .fill(Color(red: 0.7, green: 0.85, blue: 0.85))
                                             .frame(width: 36, height: 36)
                                         HStack(spacing: 2) {
-                                            Text("\(anime.characterIds.count)")
+                                            Text("\(currentAnime.characterIds.count)")
                                                 .font(.system(size: 16, weight: .medium))
                                                 .foregroundColor(.white)
                                             Image(systemName: "chevron.right")
@@ -4984,6 +4985,7 @@ struct AnimeDetailView: View {
                             }
                         }
                         .padding(.top, 12)
+                        .id("\(currentAnime.characterIds)_\(refreshTrigger)") // Force refresh when characterIds change or refreshTrigger updates
                     }
                     
                     // ナビゲーションバー（下部メニュー）
@@ -5133,6 +5135,8 @@ struct AnimeDetailView: View {
                             DispatchQueue.main.async {
                                 animeManager.objectWillChange.send()
                                 characterManager.objectWillChange.send()
+                                // Force refresh the view
+                                refreshTrigger = UUID()
                             }
                         }
                     }) {
@@ -5141,7 +5145,7 @@ struct AnimeDetailView: View {
                             .environmentObject(characterManager)
                     }
                     .fullScreenCover(isPresented: $showMemberList) {
-                        AnimeMemberListView(anime: anime, onClose: { showMemberList = false })
+                        AnimeMemberListView(anime: currentAnime, onClose: { showMemberList = false })
                             .environmentObject(characterManager)
                             .environmentObject(animeManager)
                     }

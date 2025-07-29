@@ -57,10 +57,9 @@ class LocalizationManager: ObservableObject {
         if let savedLanguage = UserDefaults.standard.string(forKey: "selectedLanguage"),
            let language = AppLanguage(rawValue: savedLanguage) {
             self.currentLanguage = language
-            Bundle.setLanguage(language.rawValue)
         } else {
             // デバイスの言語設定から初期言語を決定
-            let deviceLanguage = Locale.current.language.languageCode?.identifier ?? "en"
+            let deviceLanguage = Locale.current.languageCode ?? "en"
             
             // デバイスの言語がサポートされているか確認
             if let matchedLanguage = AppLanguage.allCases.first(where: { 
@@ -70,22 +69,32 @@ class LocalizationManager: ObservableObject {
             }) {
                 self.currentLanguage = matchedLanguage
             } else {
-                // デフォルトは英語
-                self.currentLanguage = .english
+                // デフォルトは日本語（このアプリは日本語ベース）
+                self.currentLanguage = .japanese
             }
-            Bundle.setLanguage(currentLanguage.rawValue)
+            
+            // 初期言語を保存
+            UserDefaults.standard.set(currentLanguage.rawValue, forKey: "selectedLanguage")
         }
+        
+        // Bundle言語設定を適用
+        Bundle.setLanguage(currentLanguage.rawValue)
     }
     
-    func setLanguage(_ language: AppLanguage, shouldRestart: Bool = true) {
+    func setLanguage(_ language: AppLanguage, shouldRestart: Bool = true, completion: (() -> Void)? = nil) {
         currentLanguage = language
         
         // 初回起動時はアプリを再起動しない
         if shouldRestart && UserDefaults.standard.bool(forKey: "hasSelectedLanguage") {
-            // アプリを再起動
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                exit(0)
+            // アプリを再起動する代わりに、アプリ全体を更新
+            NotificationCenter.default.post(name: Notification.Name("LanguageDidChange"), object: nil)
+            
+            // 少し遅延を入れてから完了を通知
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                completion?()
             }
+        } else {
+            completion?()
         }
     }
 }
@@ -97,16 +106,27 @@ extension Bundle {
     private static var bundle: Bundle!
     
     static func setLanguage(_ language: String) {
-        defer {
-            object_setClass(Bundle.main, AliasBundle.self)
+        let setLanguageWork = {
+            defer {
+                object_setClass(Bundle.main, AliasBundle.self)
+            }
+            
+            objc_setAssociatedObject(
+                Bundle.main,
+                &bundleKey,
+                language,
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
         }
         
-        objc_setAssociatedObject(
-            Bundle.main,
-            &bundleKey,
-            language,
-            .OBJC_ASSOCIATION_RETAIN_NONATOMIC
-        )
+        // Execute on main thread if not already on it
+        if Thread.isMainThread {
+            setLanguageWork()
+        } else {
+            DispatchQueue.main.sync {
+                setLanguageWork()
+            }
+        }
     }
 }
 

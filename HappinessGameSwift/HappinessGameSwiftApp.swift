@@ -2,7 +2,7 @@ import SwiftUI
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
-import StripePaymentSheet
+//import StripePaymentSheet
 import UIKit
 import BackgroundTasks
 
@@ -59,10 +59,10 @@ class AuthenticationManager: ObservableObject {
     func checkPaymentRequirement() {
         // Get first install date from keychain (persists across app reinstalls)
         if let firstInstallDate = getFirstInstallDateFromKeychain() {
-            // Check months for production (2 months)
-            let monthsSinceInstall = Calendar.current.dateComponents([.month], from: firstInstallDate, to: Date()).month ?? 0
+            // Check days for production (40 days)
+            let daysSinceInstall = Calendar.current.dateComponents([.day], from: firstInstallDate, to: Date()).day ?? 0
             
-            if monthsSinceInstall >= 2 && !hasPaid {
+            if daysSinceInstall >= 40 && !hasPaid {
                 requiresPayment = true
             }
         } else {
@@ -110,7 +110,7 @@ class AuthenticationManager: ObservableObject {
                 "deviceId": self.deviceId,
                 "currentUserId": userId,
                 "firstInstallDate": firstInstallDate.timeIntervalSince1970,
-                "daysUntilPayment": 60, // 2 months (60 days) in production
+                "daysUntilPayment": 40, // 40 days until payment required
                 "hasPaid": self.hasPaid,
                 "createdAt": Date().timeIntervalSince1970,
                 "lastSeenAt": Date().timeIntervalSince1970
@@ -278,11 +278,15 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var productManager = ProductManager()
     @StateObject private var authManager = AuthenticationManager()
     @StateObject private var paymentGatekeeper = PaymentGatekeeper.shared
+    @StateObject private var localizationManager = LocalizationManager.shared
     @State private var showSplash = true
     @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
     @State private var hasSelectedLanguage = UserDefaults.standard.bool(forKey: "hasSelectedLanguage")
     
     init() {
+        // Initialize localization manager first to ensure proper language loading
+        _ = LocalizationManager.shared
+        
         // Initialize memory pressure monitoring
         _ = MemoryPressureManager.shared
         
@@ -309,15 +313,8 @@ struct HappinessGameSwiftApp: App {
         }
         #endif
         
-        // Stripe SDKを初期化
-        // Read Stripe publishable key from Info.plist
-        if let infoDict = Bundle.main.infoDictionary,
-           let stripeKey = infoDict["STRIPE_PUBLISHABLE_KEY"] as? String,
-           !stripeKey.isEmpty {
-            StripeAPI.defaultPublishableKey = stripeKey
-        } else {
-            fatalError("STRIPE_PUBLISHABLE_KEY not found in Info.plist")
-        }
+        // Stripe SDKを初期化 - 削除済み
+        // Stripeは使用しないため、この部分はコメントアウト
         
         // Initialize app optimizations
         _ = AppOptimizationManager.shared
@@ -384,51 +381,7 @@ struct HappinessGameSwiftApp: App {
     #endif
     
     private func preloadStripePayment() {
-        // アプリ起動時にStripeの支払いインテントを事前に作成
-        // 少し遅延させてユーザーIDが利用可能になるのを待つ
-        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 2.0) {
-            // ユーザーIDがない場合は、後でリトライするか、汎用的なプリロードを行う
-            let userId = UserDefaults.standard.string(forKey: "userId") ?? "preload_user"
-            
-            guard let url = URL(string: "https://happiness-game.onrender.com/api/create-payment-intent") else {
-                return
-            }
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            
-            let body: [String: Any] = [
-                "amount": 600,
-                "userId": userId,
-                "pointAmount": 500,
-                "type": "app_subscription"
-            ]
-            
-            do {
-                request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            } catch {
-                return
-            }
-            
-            URLSession.shared.dataTask(with: request) { data, response, _ in
-                
-                guard let data = data else { return }
-                
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let clientSecret = json["clientSecret"] as? String {
-                        // PaymentSheetの設定を事前に準備
-                        var configuration = PaymentSheet.Configuration()
-                        configuration.merchantDisplayName = "AniCollect"
-                        configuration.allowsDelayedPaymentMethods = false
-                        
-                        // 事前にPaymentSheetを作成（表示はしない）
-                        _ = PaymentSheet(paymentIntentClientSecret: clientSecret, configuration: configuration)
-                    }
-                } catch {
-                }
-            }.resume()
-        }
+        // Stripeは使用しないため、この機能は無効化
     }
     
     var body: some Scene {
@@ -438,13 +391,16 @@ struct HappinessGameSwiftApp: App {
                 if !hasSelectedLanguage {
                     // 言語選択画面（最初に表示）
                     FirstTimeLanguageSelectionView(hasSelectedLanguage: $hasSelectedLanguage)
+                        .environmentObject(localizationManager)
                 } else if !hasSeenFirstLaunch {
                     // 初回起動時の説明画面
                     FirstLaunchView(hasSeenFirstLaunch: $hasSeenFirstLaunch)
+                        .environmentObject(localizationManager)
                 } else if authManager.isLoggedIn {
                     if paymentGatekeeper.isAppLocked {
                         PaymentBlockerView()
                             .environmentObject(paymentGatekeeper)
+                            .environmentObject(localizationManager)
                     } else {
                         MainContainerView()
                             .environmentObject(mainTab)
@@ -453,6 +409,7 @@ struct HappinessGameSwiftApp: App {
                             .environmentObject(productManager)
                             .environmentObject(authManager)
                             .environmentObject(paymentGatekeeper)
+                            .environmentObject(localizationManager)
                             .onAppear {
                                 // 開発用: サンプル画像を自動生成
                                 createSampleImagesIfNeeded()
@@ -493,6 +450,7 @@ struct HappinessGameSwiftApp: App {
                     }
                 } else {
                     AuthSelectionView(authManager: authManager)
+                        .environmentObject(localizationManager)
                 }
                 
                 // Splash screen overlay
@@ -1072,7 +1030,7 @@ struct PaymentPopupView: View {
                             .foregroundColor(.white)
                             .shadow(radius: 5)
                         
-                        Text("2ヶ月の無料期間が終了しました")
+                        Text("40日間の無料期間が終了しました")
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -1082,6 +1040,12 @@ struct PaymentPopupView: View {
                             .multilineTextAlignment(.center)
                             .foregroundColor(.white.opacity(0.9))
                             .padding(.horizontal, 20)
+                        
+                        Text("※40日後に課金が発生します")
+                            .font(.footnote)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.yellow)
+                            .padding(.top, 5)
                     }
                     .padding(.top, 30)
                     
@@ -1350,71 +1314,15 @@ struct PaymentPopupView: View {
     }
     
     private func processCardPayment(userId: String) {
-        // If we have a preloaded payment intent, use it
-        if let preloadedIntent = preloadedPaymentIntent {
-            // Configure payment sheet
-            var configuration = PaymentSheet.Configuration()
-            configuration.merchantDisplayName = "AniCollect"
-            configuration.allowsDelayedPaymentMethods = false
+        // Stripeを使用しないため、直接支払い完了処理を実行
+        DispatchQueue.main.async {
+            // 支払い成功として処理
+            self.authManager.completePayment()
+            self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
+            self.isProcessing = false
+            self.dismiss()
             
-            // Create payment sheet with preloaded intent
-            let paymentSheet = PaymentSheet(paymentIntentClientSecret: preloadedIntent, configuration: configuration)
-            
-            // Present payment sheet
-            DispatchQueue.main.async {
-                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                   let window = windowScene.windows.first,
-                   let viewController = window.rootViewController {
-                    
-                    var topViewController = viewController
-                    while let presented = topViewController.presentedViewController {
-                        topViewController = presented
-                    }
-                    
-                    paymentSheet.present(from: topViewController) { paymentResult in
-                        switch paymentResult {
-                        case .completed:
-                            // Payment successful
-                            self.authManager.completePayment()
-                            self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
-                            self.isProcessing = false
-                            self.dismiss()
-                            
-                        case .canceled:
-                            self.isProcessing = false
-                            self.errorMessage = "決済がキャンセルされました"
-                            self.showError = true
-                            
-                        case .failed(let error):
-                            self.isProcessing = false
-                            self.errorMessage = error.localizedDescription
-                            self.showError = true
-                        }
-                    }
-                }
-            }
-        } else {
-            // Fallback to regular payment flow
-            StripePaymentManager.shared.purchasePoints(userId: userId, package: subscriptionPackage) { result in
-                DispatchQueue.main.async {
-                    self.isProcessing = false
-                    
-                    switch result {
-                    case .success:
-                        // Payment successful - update local state
-                        self.authManager.completePayment()
-                        
-                        // Save subscription info to Firebase
-                        self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
-                        
-                        self.dismiss()
-                        
-                    case .failure(let error):
-                        self.errorMessage = error.localizedDescription
-                        self.showError = true
-                    }
-                }
-            }
+            // 注意: 実際のアプリでは、ここでApp内課金または他の決済方法を実装する必要があります
         }
     }
     

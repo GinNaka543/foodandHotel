@@ -23,7 +23,7 @@ struct StripePaymentSheetModifier: ViewModifier {
     
     private func presentPaymentSheet() {
         var configuration = PaymentSheet.Configuration()
-        configuration.merchantDisplayName = "アニレコ"
+        configuration.merchantDisplayName = "アニコレ"
         configuration.allowsDelayedPaymentMethods = false
         configuration.defaultBillingDetails.address.country = "JP"
         

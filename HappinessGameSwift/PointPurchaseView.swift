@@ -12,6 +12,19 @@ struct PointPurchaseView: View {
     
     let onPurchaseComplete: () -> Void
     
+    // Filter out premium products for premium users
+    private var filteredProducts: [SKProduct] {
+        let isPremiumUser = UserDefaults.standard.bool(forKey: "isPremiumUser")
+        
+        if isPremiumUser {
+            // Hide premium products for premium users
+            return storeKitManager.products.filter { !$0.productIdentifier.contains("premium") }
+        } else {
+            // Show all products for non-premium users
+            return storeKitManager.products
+        }
+    }
+    
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -65,7 +78,7 @@ struct PointPurchaseView: View {
                             
                             // ポイントパッケージ（StoreKitの商品を表示）
                             LazyVStack(spacing: 12) {
-                                ForEach(storeKitManager.products, id: \.productIdentifier) { product in
+                                ForEach(filteredProducts, id: \.productIdentifier) { product in
                                     StoreKitProductCard(
                                         product: product,
                                         isSelected: selectedProduct?.productIdentifier == product.productIdentifier,

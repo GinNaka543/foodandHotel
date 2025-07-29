@@ -16,6 +16,11 @@
 /* Language */
 "language_title" = "Lingua";
 "language" = "Lingua";
+"changing_language" = "Cambio lingua in corso...";
+"restart_required" = "Riavvio necessario";
+"restart_message" = "Per applicare il cambio di lingua, l'app deve essere riavviata.";
+"restart_now" = "Riavvia ora";
+"restart_later" = "Più tardi";
 
 /* Tab Bar */
 "home" = "Home";
@@ -47,8 +52,8 @@
 "terms_article_7_content" = "1. I diritti d'autore dei contenuti (testo, immagini, video, audio, ecc.) forniti all'interno dell'App appartengono all'operatore o ai legittimi titolari dei diritti.\n2. Gli utenti non possono utilizzare i contenuti dell'App oltre l'ambito dell'uso personale.";
 "terms_article_8_title" = "Articolo 8 (Disclaimer)";
 "terms_article_8_content" = "1. Sebbene venga fatto ogni sforzo per garantire l'accuratezza delle informazioni pubblicate sull'App, l'operatore non garantisce l'accuratezza, l'utilità o la tempestività delle informazioni dell'App.\n2. L'operatore non si assume alcuna responsabilità per eventuali danni subiti dagli utenti attraverso l'uso dell'App.";
-"terms_article_9_title" = "Articolo 9 (Raccolta e Condivisione delle Informazioni)";
-"terms_article_9_content" = "1. L'App può raccogliere informazioni testuali sui personaggi anime e doppiatori preferiti registrati dagli utenti e utilizzarle per migliorare i servizi e fornire funzioni di condivisione con altri utenti.\n2. Utilizzando l'App, gli utenti si considerano consenzienti alla raccolta e condivisione delle informazioni di cui sopra.\n3. Altre informazioni personali saranno gestite in modo appropriato in conformità con l'Informativa sulla Privacy stabilita separatamente.";
+"terms_article_9_title" = "Articolo 9 (Raccolta delle Informazioni)";
+"terms_article_9_content" = "1. L'App può raccogliere informazioni testuali sui personaggi anime e doppiatori preferiti registrati dagli utenti e utilizzarle per migliorare i servizi.\n2. Utilizzando l'App, gli utenti si considerano consenzienti alla raccolta delle informazioni di cui sopra.\n3. Le informazioni raccolte non vengono condivise con altri utenti.\n4. Altre informazioni personali saranno gestite in modo appropriato in conformità con l'Informativa sulla Privacy stabilita separatamente.";
 "terms_article_10_title" = "Articolo 10 (Metodo di Utilizzo)";
 "terms_article_10_content" = "Quando si cambia dispositivo, le informazioni testuali dell'utente verranno salvate, ma le immagini non verranno salvate. Dopo aver effettuato l'accesso su un nuovo dispositivo, le immagini dovranno essere caricate nuovamente.";
 "terms_article_11_title" = "Articolo 11 (Informativa sulla Privacy)";
@@ -62,7 +67,7 @@
 /* Privacy Policy */
 "privacy_policy_title" = "Informativa sulla Privacy";
 "privacy_info_we_collect_title" = "1. Informazioni che Raccogliamo";
-"privacy_info_we_collect_content" = "L'app \"ANICOLLE!\" raccoglie le seguenti informazioni:\n\n• Informazioni di registrazione utente (nome utente, ID utente)\n• Contenuti creati all'interno dell'app (registrazioni di personaggi, anime)\n• Informazioni sul dispositivo (ID dispositivo, versione OS)\n• Utilizzo dell'app (orari di accesso, frequenza di utilizzo delle funzionalità)\n• Informazioni di pagamento (informazioni di pagamento tramite Stripe, ma i numeri di carta di credito non vengono memorizzati)\n\nNota: Non raccogliamo indirizzi email";
+"privacy_info_we_collect_content" = "L'app \"ANICOLLE!\" raccoglie le seguenti informazioni:\n\n• Informazioni di registrazione utente (nome utente, ID utente)\n• Contenuti creati all'interno dell'app (registrazioni di personaggi, anime)\n• Informazioni sul dispositivo (ID dispositivo, versione OS)\n• Utilizzo dell'app (orari di accesso, frequenza di utilizzo delle funzionalità)\n• Informazioni di pagamento (i pagamenti vengono elaborati tramite Apple, le informazioni di pagamento dettagliate sono gestite da Apple)\n\nNota: Non raccogliamo indirizzi email";
 "privacy_purpose_title" = "2. Scopo dell'Utilizzo delle Informazioni";
 "privacy_purpose_content" = "Le informazioni raccolte vengono utilizzate solo per i seguenti scopi:\n\n• Fornire le funzionalità di base dell'app\n• Autenticazione utente e gestione account\n• Gestione pagamenti e punti\n• Backup delle informazioni di personaggi e anime (per il recupero dati)\n• Miglioramento dell'app e supporto clienti\n• Rispondere a requisiti legali\n\nNota: Le informazioni su personaggi e anime che registri vengono archiviate sui server esclusivamente per scopi di backup, consentendo il recupero dei dati in caso di guasto o sostituzione del dispositivo.";
 "privacy_data_storage_title" = "3. Archiviazione e Gestione dei Dati";
@@ -88,6 +93,14 @@
 /* Premium */
 "premium_upgrade_title" = "Passa a Premium";
 "free_trial_ended" = "Il periodo di prova è terminato";
+"free_trial_ended_message" = "Il periodo di prova gratuito è terminato";
+"unlimited_anime_registration" = "Registrazione anime illimitata";
+"access_all_features" = "Accesso a tutte le funzioni";
+"regular_updates" = "Aggiornamenti regolari";
+"support_developer" = "Supporta lo sviluppatore";
+"processing" = "Elaborazione...";
+"product_not_found" = "Prodotto non trovato";
+"error" = "Errore";
 "premium_features_unlimited" = "Registrazione anime illimitata";
 "premium_features_all_access" = "Accesso a tutte le funzioni";
 "premium_features_updates" = "Aggiornamenti regolari";
@@ -543,7 +556,7 @@
 "favorite_food" = "Cibo preferito";
 "first_product_required" = "Primo prodotto (richiesto)";
 "free" = "Free";
-"from_youtube" = "From YouTube";
+"from_youtube" = "Da YouTube";
 "go_back" = "Back";
 "hashtag" = "Hashtag";
 "hidden_label" = "Hidden";
@@ -609,11 +622,11 @@
 "rank_format" = "Rank %d";
 "rating" = "Valutazione";
 "really_delete" = "Really delete?";
-"register_anime_video" = "Register a video";
+"register_anime_video" = "Registra un video";
+"register_from_youtube" = "Da YouTube";
 "register_favorite_anime" = "Registra il tuo anime preferito";
 "register_favorite_character_anime_products" = "Registra e gestisci i prodotti\ndei tuoi personaggi e anime preferiti";
-"register_from_youtube" = "From YouTube";
-"register_video" = "Register a video";
+"register_video" = "Registra un video";
 "register_wishlist_items" = "Registra articoli lista desideri";
 "registered_products" = "Registered Products";
 "same_tag_albums" = "Puoi separare le serie con lo stesso #";
@@ -655,7 +668,7 @@
 "soundtrack" = "Soundtrack";
 "specify_product_owner" = "Specifica il proprietario di questo prodotto";
 "spots_count" = "%d spots";
-"tag" = "Tag";
+"tag" = "Anime di apparizione";
 "tag_name_placeholder" = "#TagName";
 "tags_comma_separated" = "Tags (comma separated)";
 "tags_label" = "Tags: %@";
@@ -922,7 +935,7 @@
 "trial_period_about" = "Informazioni sul periodo di prova";
 "trial_period_description_1" = "Questa app è gratuita per i primi 2 mesi.";
 "trial_period_description_2" = "Dopo 2 mesi, sono necessari 600 yen per continuare.";
-"payment_methods" = "Il pagamento può essere effettuato con punti o carta di credito.";
+"payment_methods" = "Il pagamento può essere effettuato con punti o acquisto in-app Apple.";
 "lets_start" = "Iniziamo!";
 "create_account_start" = "Crea un account e\ninizia a usare l'app";
 "agree_to_privacy_policy" = "Accetta l'Informativa sulla Privacy";
@@ -938,4 +951,5 @@
 /* Login Screen Details */
 "no_account_yet" = "Non hai un account? Clicca qui";
 "forgot_id_username" = "Se hai dimenticato il tuo ID e nome utente";
-"recreate_account_message" = "Per favore crea di nuovo un account.\nLa tua cronologia verrà ripristinata quando crei un account.";
+"recreate_account_message" = "Per favore crea di nuovo un account.\n*Le immagini e i personaggi registrati non possono essere ripristinati.";
+"register_anime_video" = "Registra video";

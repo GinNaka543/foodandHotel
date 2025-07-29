@@ -181,7 +181,7 @@ function Dashboard() {
             
             <div className="stat-card">
               <h3>デバイス種類</h3>
-              <div className="value">{Object.keys(subscriptionStats.deviceTypes || {}).length}</div>
+              <div className="value">{subscriptionStats.uniqueDevices || 1}</div>
               <div className="sub-value">登録デバイス種類数</div>
             </div>
           </>

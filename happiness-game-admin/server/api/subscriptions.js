@@ -38,86 +38,25 @@ module.exports = async function handler(req, res) {
     try {
       console.log('🔥 /api/subscriptions endpoint called');
       
-      // デバイスベースのサブスクリプションデータを取得
-      const deviceSubscriptionsSnapshot = await db.collection('device_subscriptions').get();
       const subscriptions = [];
-      const processedDevices = new Set();
+      const processedUserIds = new Set();
       
-      // device_subscriptionsからデータを処理
-      for (const doc of deviceSubscriptionsSnapshot.docs) {
-        const subscription = { ...doc.data() };
-        processedDevices.add(doc.id);
-        
-        // currentUserIdを使用してユーザー名を取得
-        if (subscription.currentUserId) {
-          try {
-            const userDoc = await db.collection('users').doc(subscription.currentUserId).get();
-            if (userDoc.exists) {
-              subscription.username = userDoc.data().username || userDoc.data().displayName || '未設定';
-            }
-          } catch (error) {
-            console.log(`ユーザー ${subscription.currentUserId} の情報取得エラー:`, error.message);
-          }
-        }
-        
-        // deviceIdをプライマリIDとして使用
-        subscription.userId = subscription.deviceId || doc.id;
-        
-        subscriptions.push(subscription);
-      }
-      
-      // 移行期間のため、古いsubscriptionsコレクションからもデータを取得
-      const oldSubscriptionsSnapshot = await db.collection('subscriptions').get();
-      for (const doc of oldSubscriptionsSnapshot.docs) {
-        const oldSub = doc.data();
-        
-        // deviceIdが既に処理されている場合はスキップ
-        if (oldSub.deviceId && processedDevices.has(oldSub.deviceId)) {
-          continue;
-        }
-        
-        // ユーザー名を取得
-        const userId = oldSub.userId || doc.id;
-        try {
-          const userDoc = await db.collection('users').doc(userId).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            oldSub.username = userData.username || userData.displayName || '未設定';
-            oldSub.deviceId = userData.deviceId || 'legacy-' + userId.substring(0, 8);
-          }
-        } catch (error) {
-          console.log(`ユーザー ${userId} の情報取得エラー:`, error.message);
-        }
-        
-        // 古いデータもdeviceIdベースの形式に変換
-        const subscription = {
-          userId: oldSub.deviceId || userId,
-          deviceId: oldSub.deviceId || null,
-          currentUserId: userId,
-          username: oldSub.username || '未設定',
-          firstInstallDate: oldSub.firstInstallDate || oldSub.createdAt,
-          hasPaid: oldSub.hasPaid || false,
-          paymentDate: oldSub.paymentDate,
-          amount: oldSub.amount,
-          createdAt: oldSub.createdAt,
-          lastSeenAt: oldSub.updatedAt || oldSub.createdAt
-        };
-        
-        subscriptions.push(subscription);
-      }
-      
-      // サブスクリプションレコードがないユーザーも表示
+      // まずusersコレクションから全ユーザーを取得
       const usersSnapshot = await db.collection('users').get();
-      const processedUserIds = new Set(subscriptions.map(s => s.currentUserId || s.userId));
+      console.log(`🔥 Found ${usersSnapshot.size} users in users collection`);
       
+      // 各ユーザーの情報を処理
       for (const userDoc of usersSnapshot.docs) {
         const userData = userDoc.data();
         const userId = userDoc.id;
         
-        if (processedUserIds.has(userId)) {
-          continue;
-        }
+        console.log(`🔍 Processing user ${userId}:`, {
+          username: userData.username,
+          hasPaidSubscription: userData.hasPaidSubscription,
+          deviceId: userData.deviceId
+        });
         
+        // 初回インストール日時を取得
         let firstInstallDate = Math.floor(Date.now() / 1000) - 86400;
         let createdAt = firstInstallDate;
         let lastSeenAt = Math.floor(Date.now() / 1000);
@@ -138,26 +77,80 @@ module.exports = async function handler(req, res) {
           lastSeenAt = userData.lastLoginAt.seconds;
         }
         
+        // プレミアムユーザー情報を取得
+        let isPremiumUser = false;
+        let premiumPurchaseDate = null;
+        try {
+          const premiumDoc = await db.collection('premiumUsers').doc(userId).get();
+          if (premiumDoc.exists) {
+            const premiumData = premiumDoc.data();
+            isPremiumUser = premiumData.isPremium || false;
+            premiumPurchaseDate = premiumData.purchaseDate ? premiumData.purchaseDate.seconds : null;
+            console.log(`🔍 Premium status for ${userId}: ${isPremiumUser}`);
+          }
+        } catch (premiumError) {
+          console.log(`プレミアムユーザー情報取得エラー ${userId}:`, premiumError.message);
+        }
+        
+        // hasPaidはuserデータまたはpremiumUsersデータのいずれかがtrueならtrue
+        const hasPaid = userData.hasPaidSubscription || isPremiumUser || false;
+        
         const subscription = {
           userId: userId,
-          deviceId: userData.deviceId || null,
+          deviceId: userData.deviceId || userId,  // deviceIdがない場合はuserIdを使用
           currentUserId: userId,
           username: userData.username || userData.displayName || '未設定',
           firstInstallDate,
-          hasPaid: userData.hasPaidSubscription || false,
-          paymentDate: userData.subscriptionDate?.seconds || userData.subscriptionDate || null,
-          amount: userData.hasPaidSubscription ? 500 : null,
+          hasPaid,
+          paymentDate: userData.subscriptionDate?.seconds || userData.subscriptionDate || premiumPurchaseDate || null,
+          amount: hasPaid ? 600 : null,
           createdAt,
-          lastSeenAt
+          lastSeenAt,
+          isPremiumUser,
+          premiumPurchaseDate
         };
         
         subscriptions.push(subscription);
+        processedUserIds.add(userId);
+      }
+      
+      // device_subscriptionsコレクションがある場合は追加で取得（エラーは無視）
+      try {
+        const deviceSubscriptionsSnapshot = await db.collection('device_subscriptions').get();
+        console.log(`🔥 Found ${deviceSubscriptionsSnapshot.size} device_subscriptions`);
+        
+        for (const doc of deviceSubscriptionsSnapshot.docs) {
+          const deviceData = doc.data();
+          const deviceId = doc.id;
+          
+          // 既に処理済みのユーザーはスキップ
+          if (deviceData.currentUserId && processedUserIds.has(deviceData.currentUserId)) {
+            continue;
+          }
+          
+          // デバイス情報から新しいサブスクリプションレコードを作成
+          if (deviceData.currentUserId) {
+            const existingIndex = subscriptions.findIndex(s => s.currentUserId === deviceData.currentUserId);
+            if (existingIndex >= 0) {
+              // 既存のレコードを更新
+              subscriptions[existingIndex].deviceId = deviceId;
+              if (deviceData.hasPaid) {
+                subscriptions[existingIndex].hasPaid = true;
+              }
+            }
+          }
+        }
+      } catch (deviceError) {
+        console.log('device_subscriptions取得エラー（無視）:', deviceError.message);
       }
       
       // 初回インストール日でソート（新しい順）
       subscriptions.sort((a, b) => (b.firstInstallDate || 0) - (a.firstInstallDate || 0));
       
       console.log(`🔥 Returning ${subscriptions.length} subscription records`);
+      console.log(`🔥 Premium users: ${subscriptions.filter(s => s.isPremiumUser).length}`);
+      console.log(`🔥 Paid users: ${subscriptions.filter(s => s.hasPaid).length}`);
+      
       res.json(subscriptions);
     } catch (error) {
       console.error('サブスクリプション取得エラー:', error);

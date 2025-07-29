@@ -25,21 +25,21 @@ struct PremiumUpgradeView: View {
                         .font(.system(size: 50))
                         .foregroundColor(.yellow)
                     
-                    Text("プレミアムプランへのアップグレード")
+                    Text(NSLocalizedString("premium_upgrade_title", comment: "Premium plan upgrade"))
                         .font(.title2)
                         .fontWeight(.bold)
                     
-                    Text("無料期間が終了しました")
+                    Text(NSLocalizedString("free_trial_ended_message", comment: "Free trial ended"))
                         .font(.subheadline)
                         .foregroundColor(.gray)
                 }
                 
                 // 特典リスト
                 VStack(alignment: .leading, spacing: 16) {
-                    FeatureRow(icon: "infinity", text: "無制限のアニメ登録")
-                    FeatureRow(icon: "sparkles", text: "すべての機能へのアクセス")
-                    FeatureRow(icon: "clock.arrow.circlepath", text: "定期的なアップデート")
-                    FeatureRow(icon: "heart.fill", text: "開発者をサポート")
+                    FeatureRow(icon: "infinity", text: NSLocalizedString("unlimited_anime_registration", comment: ""))
+                    FeatureRow(icon: "sparkles", text: NSLocalizedString("access_all_features", comment: ""))
+                    FeatureRow(icon: "clock.arrow.circlepath", text: NSLocalizedString("regular_updates", comment: ""))
+                    FeatureRow(icon: "heart.fill", text: NSLocalizedString("support_developer", comment: ""))
                 }
                 .padding(.horizontal)
                 
@@ -57,7 +57,7 @@ struct PremiumUpgradeView: View {
                         Text("¥600")
                             .font(.system(size: 36, weight: .bold))
                     }
-                    Text("永続ライセンス")
+                    Text(NSLocalizedString("permanent_license", comment: ""))
                         .font(.caption)
                         .foregroundColor(.gray)
                 }
@@ -73,7 +73,7 @@ struct PremiumUpgradeView: View {
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                     .scaleEffect(0.8)
                             }
-                            Text(processingPayment ? "処理中..." : "購入する")
+                            Text(processingPayment ? NSLocalizedString("processing", comment: "") : NSLocalizedString("purchase", comment: ""))
                                 .fontWeight(.semibold)
                         }
                         .frame(maxWidth: .infinity)
@@ -84,7 +84,7 @@ struct PremiumUpgradeView: View {
                     }
                     .disabled(processingPayment || selectedProduct == nil)
                     
-                    Button("後で") {
+                    Button(NSLocalizedString("later", comment: "")) {
                         showPaymentRequired = false
                     }
                     .foregroundColor(.gray)
@@ -100,7 +100,7 @@ struct PremiumUpgradeView: View {
         .onAppear {
             loadPremiumProduct()
         }
-        .alert("エラー", isPresented: $showError) {
+        .alert(NSLocalizedString("error", comment: ""), isPresented: $showError) {
             Button("OK") {}
         } message: {
             Text(errorMessage)
@@ -125,7 +125,7 @@ struct PremiumUpgradeView: View {
         guard let product = selectedProduct ?? storeKitManager.products.first(where: { 
             $0.productIdentifier == "com.nakajima.HappinessGameSwift.premium.2months" 
         }) else {
-            errorMessage = "商品が見つかりません"
+            errorMessage = NSLocalizedString("product_not_found", comment: "")
             showError = true
             return
         }

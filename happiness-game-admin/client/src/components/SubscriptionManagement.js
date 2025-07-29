@@ -5,6 +5,8 @@ function SubscriptionManagement() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all'); // all, paid, unpaid, expiring
+  const [testMode, setTestMode] = useState(false);
+  const [testDays, setTestDays] = useState(60);
 
   useEffect(() => {
     fetchSubscriptions();
@@ -18,7 +20,7 @@ function SubscriptionManagement() {
         const firstInstallDate = new Date(sub.firstInstallDate * 1000);
         const now = new Date();
         const daysSinceInstall = Math.floor((now - firstInstallDate) / (1000 * 60 * 60 * 24));
-        const daysUntilPayment = Math.max(0, 60 - daysSinceInstall); // 60 days for production
+        const daysUntilPayment = Math.max(0, testDays - daysSinceInstall); // 60 days for production
         
         return {
           ...sub,
@@ -60,6 +62,14 @@ function SubscriptionManagement() {
     });
   };
 
+  const getPremiumStatusBadge = (sub) => {
+    if (sub.isPremiumUser) {
+      return <span className="badge badge-premium">プレミアム</span>;
+    } else {
+      return <span className="badge badge-regular">一般</span>;
+    }
+  };
+
   const getStatusBadge = (sub) => {
     if (sub.hasPaid) {
       return <span className="badge badge-success">支払い済み</span>;
@@ -83,23 +93,60 @@ function SubscriptionManagement() {
   };
 
   const toggleSubscription = async (userId, currentStatus) => {
-    if (!window.confirm(`このユーザーの支払いステータスを${currentStatus ? '未払い' : '支払い済み'}に変更しますか？`)) {
-      return;
-    }
-
     try {
-      const response = await axios.post('/api/subscriptions/toggle', {
+      const response = await axios.post('/api/subscriptions', {
         userId,
         hasPaid: !currentStatus
       });
       
       if (response.data.success) {
-        alert(`ユーザー ${userId} のステータスを更新しました`);
-        fetchSubscriptions();
+        // 即座にローカルステートを更新
+        setSubscriptions(prevSubs => 
+          prevSubs.map(sub => 
+            (sub.currentUserId === userId || sub.userId === userId) 
+              ? { ...sub, hasPaid: !currentStatus }
+              : sub
+          )
+        );
+        
+        // バックグラウンドでデータを再取得
+        setTimeout(() => fetchSubscriptions(), 500);
       }
     } catch (error) {
       console.error('Error toggling subscription:', error);
       alert('ステータスの更新に失敗しました: ' + error.message);
+      // エラー時は元の状態に戻す
+      fetchSubscriptions();
+    }
+  };
+
+  const updateInstallDate = async (userId, daysAgo) => {
+    try {
+      const newDate = Math.floor(Date.now() / 1000) - (daysAgo * 24 * 60 * 60);
+      
+      // ローカルで即座に更新
+      setSubscriptions(prevSubs => 
+        prevSubs.map(sub => {
+          if (sub.currentUserId === userId || sub.userId === userId) {
+            const daysSinceInstall = daysAgo;
+            const daysUntilPayment = Math.max(0, testDays - daysSinceInstall);
+            return {
+              ...sub,
+              firstInstallDate: newDate,
+              daysSinceInstall,
+              daysUntilPayment,
+              requiresPaymentSoon: daysUntilPayment <= 7 && !sub.hasPaid,
+              requiresPaymentNow: daysUntilPayment === 0 && !sub.hasPaid
+            };
+          }
+          return sub;
+        })
+      );
+      
+      alert(`ユーザー ${userId} のインストール日を${daysAgo}日前に変更しました`);
+    } catch (error) {
+      console.error('Error updating install date:', error);
+      alert('インストール日の更新に失敗しました');
     }
   };
 
@@ -139,6 +186,55 @@ function SubscriptionManagement() {
         </button>
       </div>
 
+      <div style={{ marginBottom: '1.5rem', padding: '1rem', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+        <h4 style={{ marginBottom: '0.5rem' }}>テストモード</h4>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={testMode}
+              onChange={(e) => setTestMode(e.target.checked)}
+            />
+            テストモード有効
+          </label>
+          {testMode && (
+            <>
+              <label>
+                試用期間日数:
+                <input
+                  type="number"
+                  value={testDays}
+                  onChange={(e) => setTestDays(parseInt(e.target.value) || 60)}
+                  style={{ marginLeft: '0.5rem', width: '60px' }}
+                />
+              </label>
+              <button
+                className="btn btn-sm"
+                onClick={() => {
+                  const userId = prompt('ユーザーIDを入力してください');
+                  if (userId) {
+                    const daysAgo = prompt('何日前にインストールしたことにしますか？（例: 58）');
+                    if (daysAgo) {
+                      updateInstallDate(userId, parseInt(daysAgo));
+                    }
+                  }
+                }}
+              >
+                インストール日を変更
+              </button>
+              <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+                <strong>テストシナリオ例:</strong>
+                <ul style={{ margin: '0.25rem 0 0 1.5rem', paddingLeft: 0 }}>
+                  <li>58日前: 「まもなく支払い」状態になります</li>
+                  <li>60日前: 「期限切れ」状態になります（支払い必要）</li>
+                  <li>61日前: 既に期限切れの状態になります</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {loading ? (
         <div>読み込み中...</div>
       ) : (
@@ -146,13 +242,12 @@ function SubscriptionManagement() {
           <table>
             <thead>
               <tr>
-                <th>デバイスID</th>
-                <th>現在のユーザー</th>
+                <th>ユーザー名</th>
                 <th>初回インストール日</th>
                 <th>経過日数</th>
                 <th>支払いまで</th>
                 <th>ステータス</th>
-                <th>支払い日</th>
+                <th>支払い済み</th>
                 <th>金額</th>
                 <th>最終確認</th>
                 <th>操作</th>
@@ -160,26 +255,33 @@ function SubscriptionManagement() {
             </thead>
             <tbody>
               {getFilteredSubscriptions().map(sub => (
-                <tr key={sub.deviceId || sub.userId} className={sub.requiresPaymentNow ? 'highlight-danger' : sub.requiresPaymentSoon ? 'highlight-warning' : ''}>
-                  <td style={{ fontSize: '0.8rem', color: sub.deviceId ? '#333' : '#999' }}>
-                    {sub.deviceId ? sub.deviceId.substring(0, 12) + '...' : '未設定'}
-                  </td>
-                  <td>{sub.username || '未設定'}</td>
+                <tr key={sub.currentUserId || sub.userId} className={sub.requiresPaymentNow ? 'highlight-danger' : sub.requiresPaymentSoon ? 'highlight-warning' : ''}>
+                  <td style={{ fontWeight: 'bold' }}>{sub.username || '未設定'}</td>
                   <td>{formatDate(sub.firstInstallDate)}</td>
                   <td>{sub.daysSinceInstall}日</td>
                   <td>{getDaysDisplay(sub)}</td>
                   <td>{getStatusBadge(sub)}</td>
-                  <td>{sub.hasPaid ? formatDate(sub.paymentDate) : '-'}</td>
-                  <td>{sub.hasPaid ? `¥${sub.amount || 500}` : '-'}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <label className="toggle-switch">
+                        <input
+                          type="checkbox"
+                          checked={sub.hasPaid}
+                          onChange={() => toggleSubscription(sub.currentUserId || sub.userId, sub.hasPaid)}
+                        />
+                        <span className="toggle-slider"></span>
+                      </label>
+                      <span style={{ fontSize: '0.9rem' }}>
+                        {sub.hasPaid ? '支払い済み' : '未払い'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>{sub.hasPaid ? `¥${sub.amount || 600}` : '-'}</td>
                   <td>{formatDate(sub.lastSeenAt || sub.createdAt)}</td>
                   <td>
-                    <button
-                      className={`btn btn-sm ${sub.hasPaid ? 'btn-danger' : 'btn-success'}`}
-                      onClick={() => toggleSubscription(sub.deviceId || sub.userId, sub.hasPaid)}
-                      title={sub.hasPaid ? '未払いに戻す' : '支払い済みにする'}
-                    >
-                      {sub.hasPaid ? '未払いに戻す' : '支払い済みに'}
-                    </button>
+                    {sub.isPremiumUser && (
+                      <span className="badge badge-premium">プレミアム</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -237,6 +339,17 @@ function SubscriptionManagement() {
           color: white;
         }
         
+        .badge-premium {
+          background-color: #ffd700;
+          color: #333;
+          font-weight: bold;
+        }
+        
+        .badge-regular {
+          background-color: #6c757d;
+          color: white;
+        }
+        
         .highlight-danger {
           background-color: #ffebee !important;
         }
@@ -290,6 +403,51 @@ function SubscriptionManagement() {
         
         .btn-danger:hover {
           background-color: #c82333;
+        }
+        
+        .toggle-switch {
+          position: relative;
+          display: inline-block;
+          width: 50px;
+          height: 24px;
+        }
+        
+        .toggle-switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+        
+        .toggle-slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          transition: .4s;
+          border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+          position: absolute;
+          content: "";
+          height: 18px;
+          width: 18px;
+          left: 3px;
+          bottom: 3px;
+          background-color: white;
+          transition: .4s;
+          border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+          background-color: #28a745;
+        }
+        
+        input:checked + .toggle-slider:before {
+          transform: translateX(26px);
         }
       `}</style>
     </div>

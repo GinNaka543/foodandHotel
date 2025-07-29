@@ -204,9 +204,25 @@ struct HomeScreen: View {
                         showingProfile = true
                     }) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(profileManager.currentUser.username.isEmpty ? "中島 銀星" : profileManager.currentUser.username)
-                                .font(.system(size: 25, weight: .bold)) // 28 * 0.9 ≒ 25
-                                .foregroundColor(.primary)
+                            HStack(spacing: 8) {
+                                Text(profileManager.currentUser.username.isEmpty ? "中島 銀星" : profileManager.currentUser.username)
+                                    .font(.system(size: 25, weight: .bold)) // 28 * 0.9 ≒ 25
+                                    .foregroundColor(.primary)
+                                
+                                // Premium user special icon
+                                if UserDefaults.standard.bool(forKey: "isPremiumUser") {
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(.yellow)
+                                        .shadow(color: .orange, radius: 2, x: 1, y: 1)
+                                        .overlay(
+                                            Image(systemName: "sparkles")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.white)
+                                                .offset(x: -2, y: -2)
+                                        )
+                                }
+                            }
                             Text(profileManager.currentUser.animeQuote.isEmpty ? NSLocalizedString("set_anime_quote", comment: "Set anime quote") : profileManager.currentUser.animeQuote)
                                 .font(.system(size: 14)) // 16 * 0.9 ≒ 14
                                 .foregroundColor(.gray)
@@ -255,7 +271,7 @@ struct HomeScreen: View {
                         HStack(spacing: 6) {
                             Image(systemName: "person.circle")
                                 .foregroundColor(.blue)
-                            Text("Profile edit")
+                            Text(NSLocalizedString("profile_edit", comment: "Profile edit"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.blue)
                         }
@@ -271,7 +287,7 @@ struct HomeScreen: View {
                         HStack(spacing: 6) {
                             Image(systemName: "star.circle")
                                 .foregroundColor(.purple)
-                            Text("Points")
+                            Text(NSLocalizedString("points", comment: "Points"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.purple)
                         }
@@ -289,7 +305,7 @@ struct HomeScreen: View {
                 HStack {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
-                    TextField("Search", text: .constant(""))
+                    TextField(NSLocalizedString("search", comment: "Search"), text: .constant(""))
                         .font(.system(size: 16))
                 }
                 .padding(10)
@@ -299,7 +315,7 @@ struct HomeScreen: View {
                 .padding(.top, 12)
                 // リスト
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Favorite lists")
+                    Text(NSLocalizedString("favorite_lists", comment: "Favorite lists"))
                         .font(.system(size: 19, weight: .bold))
                         .padding(.top, 16)
                         .padding(.bottom, 4)
@@ -318,7 +334,7 @@ struct HomeScreen: View {
                                 color: Color.gray.opacity(0.3)
                             )
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Birthday reminders")
+                                Text(NSLocalizedString("birthday_reminders", comment: "Birthday reminders"))
                                     .font(.system(size: 16, weight: .semibold))
                                 Text(getBirthdayReminderText())
                                     .font(.system(size: 13))
@@ -349,7 +365,7 @@ struct HomeScreen: View {
                             color: Color.gray.opacity(0.3)
                         )
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Characters")
+                            Text(NSLocalizedString("characters", comment: "Characters"))
                                 .font(.system(size: 16, weight: .semibold))
                             Text(getCharacterNamesText())
                                 .font(.system(size: 13))
@@ -379,7 +395,7 @@ struct HomeScreen: View {
                             color: Color.gray.opacity(0.3)
                         )
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Animes")
+                            Text(NSLocalizedString("animes", comment: "Animes"))
                                 .font(.system(size: 16, weight: .semibold))
                             Text(getAnimeNamesText())
                                 .font(.system(size: 13))
@@ -401,7 +417,7 @@ struct HomeScreen: View {
                 
                 // スケジュールタイトル
                 HStack {
-                    Text("Schedule")
+                    Text(NSLocalizedString("schedule", comment: "Schedule"))
                         .font(.system(size: 19, weight: .bold))
                     Spacer()
                     Button(action: {

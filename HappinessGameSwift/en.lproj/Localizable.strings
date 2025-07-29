@@ -51,8 +51,8 @@
 "terms_article_7_content" = "1. The copyright of content (text, images, videos, audio, etc.) provided within the App belongs to the operator or legitimate rights holders.\n2. Users may not use the App's content beyond the scope of personal use.";
 "terms_article_8_title" = "Article 8 (Disclaimer)";
 "terms_article_8_content" = "1. While every effort is made to ensure the accuracy of information posted on the App, the operator does not guarantee the accuracy, usefulness, or timeliness of the App's information.\n2. The operator assumes no responsibility for any damages incurred by users through the use of the App.";
-"terms_article_9_title" = "Article 9 (Collection and Sharing of Information)";
-"terms_article_9_content" = "1. The App may collect text information about users' favorite anime and voice actor characters registered by users, and use it to improve services and provide sharing functions with other users.\n2. By using the App, users are deemed to have consented to the above information collection and sharing.\n3. Other personal information will be handled appropriately in accordance with the separately established Privacy Policy.";
+"terms_article_9_title" = "Article 9 (Collection of Information)";
+"terms_article_9_content" = "1. The App may collect text information about users' favorite anime and voice actor characters registered by users, and use it to improve services.\n2. By using the App, users are deemed to have consented to the above information collection.\n3. Collected information will not be shared with other users.\n4. Other personal information will be handled appropriately in accordance with the separately established Privacy Policy.";
 "terms_article_10_title" = "Article 10 (Usage Method)";
 "terms_article_10_content" = "When changing devices, user text information will be saved, but images will not be saved. After logging in on a new device, images will need to be uploaded again.";
 "terms_article_11_title" = "Article 11 (Privacy Policy)";
@@ -64,11 +64,11 @@
 "privacy_policy" = "Privacy Policy";
 "privacy_policy_title" = "Privacy Policy";
 "privacy_info_we_collect_title" = "1. Information We Collect";
-"privacy_info_we_collect_content" = "The App \"ANICOLLE!\" collects the following information:\n\n• User registration information (username, user ID)\n• Content created within the app (character, anime records)\n• Device information (device ID, OS version)\n• App usage (login times, feature usage frequency)\n• Payment information (payment info through Stripe, but credit card numbers are not stored)\n\nNote: We do not collect email addresses";
+"privacy_info_we_collect_content" = "The App \"ANICOLLE!\" collects the following information:\n\n• User registration information (username, user ID)\n• Content created within the app (character, anime records)\n• Device information (device ID, OS version)\n• App usage (login times, feature usage frequency)\n• Payment information (payments processed through Apple, detailed payment information is managed by Apple)\n\nNote: We do not collect email addresses";
 "privacy_purpose_title" = "2. Purpose of Information Use";
 "privacy_purpose_content" = "The collected information is used only for the following purposes:\n\n• Providing basic app functionality\n• User authentication and account management\n• Payment and point management\n• Backing up character and anime information (for data recovery)\n• App improvement and customer support\n• Responding to legal requirements\n\nNote: Character and anime information you register is stored on servers solely for backup purposes, allowing data recovery in case of device failure or replacement.";
 "privacy_data_storage_title" = "3. Data Storage and Management";
-"privacy_data_storage_content" = "• User-created content (character, anime information) is securely stored on Firebase servers for backup purposes\n• This system allows data recovery without loss in the following cases:\n  - Device failure or loss\n  - App reinstallation\n  - Device replacement\n• Authentication information, point information, and payment information are also managed on Firebase servers\n• All communications are encrypted with HTTPS\n• Users can delete their data at any time\n• Backup data is stored linked to user accounts and cannot be accessed by other users";
+"privacy_data_storage_content" = "• User-created content (character, anime information) is securely stored on Firebase servers for backup purposes\n• This system allows data recovery without loss in the following cases:\n  - Device failure or loss\n  - App reinstallation\n  - Device replacement\n• Authentication information and point information are managed on Firebase servers\n• Payment information is securely processed through Apple's In-App Purchase system\n• All communications are encrypted with HTTPS\n• Users can delete their data at any time\n• Backup data is stored linked to user accounts and cannot be accessed by other users";
 "privacy_disclosure_title" = "4. Information Disclosure to Third Parties";
 "privacy_disclosure_content" = "We do not provide users' personal information to third parties except in the following cases:\n\n• When user consent is obtained\n• When disclosure is required by law\n• When necessary to protect life, body, or property";
 "privacy_security_title" = "5. Security";
@@ -90,6 +90,14 @@
 /* Premium */
 "premium_upgrade_title" = "Upgrade to Premium";
 "free_trial_ended" = "Free trial has ended";
+"free_trial_ended_message" = "Free trial period has ended";
+"unlimited_anime_registration" = "Unlimited anime registration";
+"access_all_features" = "Access to all features";
+"regular_updates" = "Regular updates";
+"support_developer" = "Support the developer";
+"processing" = "Processing...";
+"product_not_found" = "Product not found";
+"error" = "Error";
 "premium_features_unlimited" = "Unlimited anime registration";
 "premium_features_all_access" = "Access to all features";
 "premium_features_updates" = "Regular updates";
@@ -522,7 +530,7 @@
 "register_video" = "Register a video";
 "character_name" = "Character Name";
 "select_icon_image" = "Select Icon Image";
-"tag" = "Tag";
+"tag" = "Appearing Anime";
 "voice_actor" = "Voice Actor";
 "month" = "Month";
 "day" = "Day";
@@ -965,12 +973,12 @@
 "welcome_description" = "Record and manage your\nfavorite characters and anime";
 "swipe_to_continue" = "Swipe to continue";
 "important_notice" = "Important Notice";
-"first_2_months_free" = "First 2 months free";
-"after_2_months_600yen" = "600 yen after 2 months";
+"first_2_months_free" = "First 40 days free";
+"after_2_months_600yen" = "600 yen after 40 days";
 "trial_period_about" = "About the trial period";
-"trial_period_description_1" = "This app is free to use for the first 2 months.";
-"trial_period_description_2" = "After 2 months, 600 yen is required for continued use.";
-"payment_methods" = "Payment can be made with points or credit card.";
+"trial_period_description_1" = "This app is free to use for the first 40 days.";
+"trial_period_description_2" = "After 40 days, 600 yen is required for continued use.";
+"payment_methods" = "Payment can be made with points or Apple In-App Purchase.";
 "lets_start" = "Let's get started!";
 "create_account_start" = "Create an account and\nstart using the app";
 "agree_to_privacy_policy" = "Agree to Privacy Policy";
@@ -986,4 +994,5 @@
 /* Login Screen Details */
 "no_account_yet" = "Don't have an account? Click here";
 "forgot_id_username" = "If you forgot your ID and username";
-"recreate_account_message" = "Please create an account again.\nYour history will be restored when you create an account.";
+"recreate_account_message" = "Please create an account again.\n*Images and registered characters cannot be restored.";
+"register_anime_video" = "Register video";

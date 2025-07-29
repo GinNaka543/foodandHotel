@@ -1404,6 +1404,74 @@ class FirebaseManager: ObservableObject {
             }
         }
     }
+    
+    // MARK: - Premium User Management
+    
+    // プレミアムユーザー情報をFirebaseに保存
+    func savePremiumUserStatus(userId: String, isPremium: Bool, purchaseDate: Date, completion: @escaping (Result<Void, Error>) -> Void) {
+        let userRef = db.collection("users").document(userId)
+        let premiumData: [String: Any] = [
+            "isPremiumUser": isPremium,
+            "premiumPurchaseDate": Timestamp(date: purchaseDate),
+            "premiumUpdatedAt": Timestamp(date: Date()),
+            "deviceId": UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+        ]
+        
+        userRef.updateData(premiumData) { error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+    
+    // プレミアムユーザー情報をFirebaseから取得
+    func loadPremiumUserStatus(userId: String, completion: @escaping (Result<(isPremium: Bool, purchaseDate: Date?), Error>) -> Void) {
+        let userRef = db.collection("users").document(userId)
+        
+        userRef.getDocument { snapshot, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let document = snapshot, document.exists,
+                  let data = document.data() else {
+                // ユーザードキュメントが存在しない場合は非プレミアムとして扱う
+                completion(.success((isPremium: false, purchaseDate: nil)))
+                return
+            }
+            
+            let isPremium = data["isPremiumUser"] as? Bool ?? false
+            let purchaseDate = (data["premiumPurchaseDate"] as? Timestamp)?.dateValue()
+            
+            completion(.success((isPremium: isPremium, purchaseDate: purchaseDate)))
+        }
+    }
+    
+    // プレミアム購入情報をApple購入記録として保存
+    func savePremiumPurchaseRecord(userId: String, productId: String, transactionId: String?, completion: @escaping (Result<Void, Error>) -> Void) {
+        let purchaseRef = db.collection("applePurchases").document("\(userId)_\(productId)_\(Date().timeIntervalSince1970)")
+        
+        let purchaseData: [String: Any] = [
+            "userId": userId,
+            "productId": productId,
+            "transactionId": transactionId ?? "",
+            "purchaseType": "premium",
+            "purchaseDate": Timestamp(date: Date()),
+            "platform": "iOS",
+            "deviceId": UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+        ]
+        
+        purchaseRef.setData(purchaseData) { error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
 }
 
 // 広告モデル

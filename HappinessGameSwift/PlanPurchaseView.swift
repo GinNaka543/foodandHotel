@@ -3,7 +3,7 @@ import SwiftUI
 struct PlanPurchaseView: View {
     let plan: VisitPlanModel
     @Binding var isPresented: Bool
-    @StateObject private var stripeManager = StripePaymentManager.shared
+    // @StateObject private var stripeManager = StripePaymentManager.shared // Stripe削除済み
     @StateObject private var firebaseManager = FirebaseManager.shared
     @State private var isPurchasing = false
     @State private var showingSuccess = false

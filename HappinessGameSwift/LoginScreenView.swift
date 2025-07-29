@@ -193,6 +193,9 @@ struct LoginScreenView: View {
                                             print("購入済みプランの同期エラー: \(error)")
                                         }
                                         
+                                        // プレミアムステータスをFirebaseから同期
+                                        PaymentGatekeeper.shared.syncPremiumStatusOnLogin(userId: userId)
+                                        
                                         authManager.login()
                                         dismiss()
                                     }

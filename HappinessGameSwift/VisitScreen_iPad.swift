@@ -21,14 +21,25 @@ struct VisitScreen_iPad: View {
     @State private var selectedDraftPlan: VisitPlanData? = nil
     @State private var isLoadingDraft = false
     @State private var isLoadingPlan = false
-    @State private var loadingMessage = "プランを読み込み中..."
+    @State private var loadingMessage = NSLocalizedString("loading_plans", comment: "Loading plans")
     @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
     enum VisitTab: String, CaseIterable {
-        case all = "オール"
-        case original = "オリジナル"
-        case purchased = "購入済み"
+        case all
+        case original
+        case purchased
+        
+        var localizedString: String {
+            switch self {
+            case .all:
+                return NSLocalizedString("visit_tab_all", comment: "All tab")
+            case .original:
+                return NSLocalizedString("visit_tab_original", comment: "Original tab")
+            case .purchased:
+                return NSLocalizedString("visit_tab_purchased", comment: "Purchased tab")
+            }
+        }
     }
     @State private var selectedTab: VisitTab = .all
     @State private var showSearchBar = true
@@ -50,7 +61,7 @@ struct VisitScreen_iPad: View {
     
     private var sidebarView: some View {
         List {
-                Section("フィルター") {
+                Section(NSLocalizedString("filter_section", comment: "Filter section")) {
                     ForEach(VisitTab.allCases, id: \.self) { tab in
                         Button(action: {
                             selectedTab = tab
@@ -60,7 +71,7 @@ struct VisitScreen_iPad: View {
                                                  tab == .original ? "person.fill" : "cart.fill")
                                     .foregroundColor(selectedTab == tab ? .purple : .gray)
                                     .frame(width: 20)
-                                Text(tab.rawValue)
+                                Text(tab.localizedString)
                                     .foregroundColor(selectedTab == tab ? .primary : .secondary)
                                 Spacer()
                                 if selectedTab == tab {
@@ -74,7 +85,7 @@ struct VisitScreen_iPad: View {
                     }
                 }
                 
-                Section("アクション") {
+                Section(NSLocalizedString("action_section", comment: "Action section")) {
                     Button(action: {
                         showingPlanningScreen = true
                     }) {
@@ -82,7 +93,7 @@ struct VisitScreen_iPad: View {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundColor(.purple)
                                 .frame(width: 20)
-                            Text("新規プラン作成")
+                            Text(NSLocalizedString("create_new_plan", comment: "Create new plan"))
                             Spacer()
                         }
                     }
@@ -90,7 +101,7 @@ struct VisitScreen_iPad: View {
             }
             .listStyle(SidebarListStyle())
             .frame(minWidth: 250)
-            .navigationTitle("ビジット")
+            .navigationTitle(NSLocalizedString("visit", comment: "Visit"))
     }
     
     private var mainContentView: some View {
@@ -124,7 +135,7 @@ struct VisitScreen_iPad: View {
                 Button(action: {
                     activeSearchText = searchText
                 }) {
-                    Text("検索")
+                    Text(NSLocalizedString("search_button", comment: "Search"))
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 8)
@@ -145,14 +156,14 @@ struct VisitScreen_iPad: View {
                                 .font(.system(size: 60))
                                 .foregroundColor(.purple.opacity(0.5))
                             
-                            Text(selectedTab == .purchased ? "購入したプランがありません" : 
-                                 selectedTab == .original ? "オリジナルの旅行プランを作ろう" : 
-                                 "まだプランがありません")
+                            Text(selectedTab == .purchased ? NSLocalizedString("no_purchased_plans", comment: "No purchased plans") : 
+                                 selectedTab == .original ? NSLocalizedString("create_original_plan", comment: "Create original plan") : 
+                                 NSLocalizedString("no_plans_yet", comment: "No plans yet"))
                                 .font(.title2)
                                 .fontWeight(.bold)
                             
                             if selectedTab == .original {
-                                Text("アニメの聖地を巡る、あなただけの旅行プランを作成しましょう")
+                                Text(NSLocalizedString("create_anime_pilgrimage_plan", comment: "Create anime pilgrimage plan"))
                                     .foregroundColor(.secondary)
                                     .multilineTextAlignment(.center)
                                     .frame(maxWidth: 400)
@@ -160,7 +171,7 @@ struct VisitScreen_iPad: View {
                                 Button(action: {
                                     showingPlanningScreen = true
                                 }) {
-                                    Label("オリジナルプランを追加", systemImage: "plus")
+                                    Label(NSLocalizedString("add_original_plan", comment: "Add original plan"), systemImage: "plus")
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 24)
                                         .padding(.vertical, 12)
@@ -204,7 +215,7 @@ struct VisitScreen_iPad: View {
                         }) {
                             HStack {
                                 Image(systemName: "map.fill")
-                                Text("聖地旅をプランする")
+                                Text(NSLocalizedString("plan_pilgrimage", comment: "Plan a pilgrimage"))
                                     .fontWeight(.bold)
                             }
                             .foregroundColor(.white)
@@ -355,7 +366,7 @@ struct VisitScreen_iPad: View {
                     // バッジ表示
                     Group {
                         if plan.isDraft {
-                            Text("下書き")
+                            Text(NSLocalizedString("draft", comment: "Draft"))
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
@@ -364,7 +375,7 @@ struct VisitScreen_iPad: View {
                                 .background(Color.orange)
                                 .cornerRadius(8)
                         } else if selectedTab == .purchased {
-                            Text("購入済み")
+                            Text(NSLocalizedString("purchased", comment: "Purchased"))
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
@@ -373,7 +384,7 @@ struct VisitScreen_iPad: View {
                                 .background(Color.blue)
                                 .cornerRadius(8)
                         } else if plan.price == 0 {
-                            Text(selectedTab == .original ? "オリジナル" : "無料")
+                            Text(selectedTab == .original ? NSLocalizedString("original", comment: "Original") : NSLocalizedString("free", comment: "Free"))
                                 .font(.caption)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
@@ -432,7 +443,7 @@ struct VisitScreen_iPad: View {
                                     .font(.caption)
                                     .fontWeight(.medium)
                                     .foregroundColor(.blue)
-                                Text("\(plan.spots.count)スポット")
+                                Text(String(format: NSLocalizedString("spots_format", comment: "Spots count"), plan.spots.count))
                                     .font(.caption2)
                                     .foregroundColor(.secondary)
                             }

@@ -397,6 +397,10 @@
 "character_order_menu" = "更改角色顺序";
 "anime_order_menu" = "更改动画顺序";
 "registration_error" = "注册错误";
+"user_id_issued" = "用户ID已发放。";
+"user_id_label_format" = "用户ID：%@";
+"id_required_for_next_login" = "下次登录时需要此ID。";
+"save_with_memo_or_screenshot" = "请用备忘录或截图保存。";
 "username_can_be_changed_later" = "※用户名可以稍后更改";
 "already_have_account" = "已有账号？在此登录";
 
@@ -568,6 +572,12 @@
 "just_now" = "Just now";
 "link_optional" = "链接（可选）";
 "loading_draft_plans" = "Loading draft plans...";
+"filter_section" = "筛选";
+"action_section" = "操作";
+"create_new_plan" = "创建新计划";
+"search_button" = "搜索";
+"plan_pilgrimage" = "规划朝圣之旅";
+"spots_format" = "%d个地点";
 "customize" = "自定义";
 "days_unit" = "天";
 "start_time" = "开始时间";
@@ -762,6 +772,21 @@
 "plan_available_in_original_tab" = "您可以从原创标签查看计划";
 "plan_can_use_multiple_times" = "购买的计划可以多次使用";
 "view_plan" = "查看计划";
+
+/* Plan Confirmation */
+"plan_confirmation_title" = "计划确认";
+"plan_name_label" = "计划名称";
+"points_required_for_plan" = "确认计划所需积分";
+"points_unit" = "%d 积分";
+"current_points_balance" = "当前积分余额";
+"balance_after_payment" = "支付后余额";
+"points_insufficient_warning" = "积分不足";
+"points_needed_message" = "您还需要%d积分才能确认计划";
+"plan_confirm_description_1" = "确认后，您可以开始访问游戏";
+"plan_confirm_description_2" = "确认后无法编辑计划";
+"plan_confirm_description_3" = "已确认的计划会保存在\"我的计划\"中";
+"pay_and_confirm_button" = "支付%d积分并确认";
+"purchase_points_button" = "购买积分";
 
 /* Visit Planning Screen */
 "plan_title" = "计划标题";

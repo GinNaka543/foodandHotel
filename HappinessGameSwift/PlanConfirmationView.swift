@@ -15,7 +15,7 @@ struct PlanConfirmationView: View {
             VStack(spacing: 0) {
                 // ヘッダー
                 HStack {
-                    Text("プラン確定の確認")
+                    Text(NSLocalizedString("plan_confirmation_title", comment: "Plan confirmation"))
                         .font(.system(size: 20, weight: .bold))
                     Spacer()
                     Button(action: onCancel) {
@@ -37,7 +37,7 @@ struct PlanConfirmationView: View {
                         VStack(spacing: 24) {
                             // プラン名表示
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("プラン名")
+                                Text(NSLocalizedString("plan_name_label", comment: "Plan name"))
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.gray)
                                 Text(planTitle)
@@ -56,10 +56,10 @@ struct PlanConfirmationView: View {
                                         .foregroundColor(.orange)
                                     
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("プラン確定に必要なポイント")
+                                        Text(NSLocalizedString("points_required_for_plan", comment: "Points required for plan"))
                                             .font(.system(size: 14))
                                             .foregroundColor(.gray)
-                                        Text("50 ポイント")
+                                        Text(String(format: NSLocalizedString("points_unit", comment: "Points unit"), 50))
                                             .font(.system(size: 24, weight: .bold))
                                     }
                                     
@@ -70,11 +70,11 @@ struct PlanConfirmationView: View {
                                 
                                 // 現在のポイント残高
                                 HStack {
-                                    Text("現在の保有ポイント")
+                                    Text(NSLocalizedString("current_points_balance", comment: "Current points balance"))
                                         .font(.system(size: 16))
                                         .foregroundColor(.gray)
                                     Spacer()
-                                    Text("\(userPoints) ポイント")
+                                    Text(String(format: NSLocalizedString("points_unit", comment: "Points unit"), userPoints))
                                         .font(.system(size: 18, weight: .semibold))
                                         .foregroundColor(userPoints >= 50 ? .primary : .red)
                                 }
@@ -82,11 +82,11 @@ struct PlanConfirmationView: View {
                                 // 支払い後の残高
                                 if userPoints >= 50 {
                                     HStack {
-                                        Text("支払い後の残高")
+                                        Text(NSLocalizedString("balance_after_payment", comment: "Balance after payment"))
                                             .font(.system(size: 14))
                                             .foregroundColor(.gray)
                                         Spacer()
-                                        Text("\(userPoints - 50) ポイント")
+                                        Text(String(format: NSLocalizedString("points_unit", comment: "Points unit"), userPoints - 50))
                                             .font(.system(size: 16))
                                             .foregroundColor(.gray)
                                     }
@@ -102,12 +102,12 @@ struct PlanConfirmationView: View {
                                     HStack {
                                         Image(systemName: "exclamationmark.triangle.fill")
                                             .foregroundColor(.orange)
-                                        Text("ポイントが不足しています")
+                                        Text(NSLocalizedString("points_insufficient_warning", comment: "Insufficient points"))
                                             .font(.system(size: 16, weight: .semibold))
                                             .foregroundColor(.orange)
                                     }
                                     
-                                    Text("プランを確定するには、あと\(50 - userPoints)ポイント必要です")
+                                    Text(String(format: NSLocalizedString("points_needed_message", comment: "Points needed message"), 50 - userPoints))
                                         .font(.system(size: 14))
                                         .foregroundColor(.gray)
                                 }
@@ -119,9 +119,9 @@ struct PlanConfirmationView: View {
                             
                             // 説明テキスト
                             VStack(alignment: .leading, spacing: 8) {
-                                Label("プランを確定すると、訪問ゲームを開始できます", systemImage: "checkmark.circle")
-                                Label("確定後はプランの編集ができません", systemImage: "lock")
-                                Label("確定したプランは「マイプラン」に保存されます", systemImage: "folder")
+                                Label(NSLocalizedString("plan_confirm_description_1", comment: "Plan confirm description 1"), systemImage: "checkmark.circle")
+                                Label(NSLocalizedString("plan_confirm_description_2", comment: "Plan confirm description 2"), systemImage: "lock")
+                                Label(NSLocalizedString("plan_confirm_description_3", comment: "Plan confirm description 3"), systemImage: "folder")
                             }
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
@@ -138,7 +138,7 @@ struct PlanConfirmationView: View {
                         Button(action: onConfirm) {
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
-                                Text("50ポイントを支払って確定")
+                                Text(String(format: NSLocalizedString("pay_and_confirm_button", comment: "Pay and confirm"), 50))
                             }
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
@@ -151,7 +151,7 @@ struct PlanConfirmationView: View {
                         Button(action: onPurchasePoints) {
                             HStack {
                                 Image(systemName: "plus.circle.fill")
-                                Text("ポイントを購入する")
+                                Text(NSLocalizedString("purchase_points_button", comment: "Purchase points"))
                             }
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundColor(.white)
@@ -163,7 +163,7 @@ struct PlanConfirmationView: View {
                     }
                     
                     Button(action: onCancel) {
-                        Text("キャンセル")
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
                             .font(.system(size: 17))
                             .foregroundColor(.gray)
                             .frame(maxWidth: .infinity)

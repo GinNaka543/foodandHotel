@@ -423,6 +423,10 @@
 "character_order_menu" = "Zeichenreihenfolge ändern";
 "anime_order_menu" = "Anime-Reihenfolge ändern";
 "registration_error" = "Registrierungsfehler";
+"user_id_issued" = "Benutzer-ID wurde ausgestellt.";
+"user_id_label_format" = "Benutzer-ID: %@";
+"id_required_for_next_login" = "Diese ID wird für Ihre nächste Anmeldung benötigt.";
+"save_with_memo_or_screenshot" = "Bitte speichern Sie sie als Notiz oder Screenshot.";
 "username_can_be_changed_later" = "※Der Benutzername kann später geändert werden";
 "already_have_account" = "Haben Sie bereits ein Konto? Hier anmelden";
 
@@ -594,6 +598,12 @@
 "just_now" = "Just now";
 "link_optional" = "Link (optional)";
 "loading_draft_plans" = "Loading draft plans...";
+"filter_section" = "Filter";
+"action_section" = "Aktionen";
+"create_new_plan" = "Neuen Plan erstellen";
+"search_button" = "Suchen";
+"plan_pilgrimage" = "Eine Pilgerreise planen";
+"spots_format" = "%d Orte";
 "customize" = "Anpassen";
 "days_unit" = "Tage";
 "start_time" = "Startzeit";
@@ -787,6 +797,21 @@
 "plan_available_in_original_tab" = "Sie können den Plan im Original-Tab überprüfen";
 "plan_can_use_multiple_times" = "Gekaufte Pläne können mehrmals verwendet werden";
 "view_plan" = "Plan ansehen";
+
+/* Plan Confirmation */
+"plan_confirmation_title" = "Planbestätigung";
+"plan_name_label" = "Planname";
+"points_required_for_plan" = "Punkte für Planbestätigung erforderlich";
+"points_unit" = "%d Punkte";
+"current_points_balance" = "Aktueller Punktestand";
+"balance_after_payment" = "Saldo nach Zahlung";
+"points_insufficient_warning" = "Unzureichende Punkte";
+"points_needed_message" = "Sie benötigen %d weitere Punkte, um den Plan zu bestätigen";
+"plan_confirm_description_1" = "Nach der Bestätigung können Sie das Besuchsspiel starten";
+"plan_confirm_description_2" = "Der Plan kann nach der Bestätigung nicht bearbeitet werden";
+"plan_confirm_description_3" = "Bestätigte Pläne werden in 'Meine Pläne' gespeichert";
+"pay_and_confirm_button" = "%d Punkte zahlen und bestätigen";
+"purchase_points_button" = "Punkte kaufen";
 
 /* Visit Planning Screen */
 "plan_title" = "Plantitel";

@@ -592,6 +592,12 @@
 "purchase_favorite_plan_message" = "お気に入りのプランを購入して\nアニメの世界を体験しよう";
 "purchase_plan" = "プランを購入する";
 "search_by_title_or_anime" = "タイトルもしくはアニメから検索";
+"filter_section" = "フィルター";
+"action_section" = "アクション";
+"create_new_plan" = "新規プラン作成";
+"search_button" = "検索";
+"plan_pilgrimage" = "聖地旅をプランする";
+"spots_format" = "%dスポット";
 "loading_draft_plans" = "下書きプランを読み込み中...";
 "customize" = "カスタマイズ";
 "days_unit" = "日間";
@@ -812,6 +818,21 @@
 "read_privacy_policy" = "プライバシーポリシーを読む";
 "privacy_agreement_note" = "プライバシーポリシーに同意することで、アプリの利用を開始できます";
 
+/* Plan Confirmation */
+"plan_confirmation_title" = "プラン確定の確認";
+"plan_name_label" = "プラン名";
+"points_required_for_plan" = "プラン確定に必要なポイント";
+"points_unit" = "%d ポイント";
+"current_points_balance" = "現在の保有ポイント";
+"balance_after_payment" = "支払い後の残高";
+"points_insufficient_warning" = "ポイントが不足しています";
+"points_needed_message" = "プランを確定するには、あと%dポイント必要です";
+"plan_confirm_description_1" = "プランを確定すると、訪問ゲームを開始できます";
+"plan_confirm_description_2" = "確定後はプランの編集ができません";
+"plan_confirm_description_3" = "確定したプランは「マイプラン」に保存されます";
+"pay_and_confirm_button" = "%dポイントを支払って確定";
+"purchase_points_button" = "ポイントを購入する";
+
 /* Auth Selection Screen */
 "auth_selection_subtitle" = "僕だけの推しギャラリー！";
 "login_button" = "ログイン";
@@ -825,3 +846,7 @@
 "from_youtube" = "YouTubeから";
 "register_video" = "動画を登録";
 "register_anime_video" = "動画を登録";
+"user_id_issued" = "ユーザーIDが発行されました。";
+"user_id_label_format" = "ユーザーID: %@";
+"id_required_for_next_login" = "このIDは次回ログイン時に必要です。";
+"save_with_memo_or_screenshot" = "必ずメモやスクリーンショットで保存してください。";

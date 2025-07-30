@@ -397,6 +397,10 @@
 "character_order_menu" = "캐릭터 순서 변경";
 "anime_order_menu" = "애니메이션 순서 변경";
 "registration_error" = "등록 오류";
+"user_id_issued" = "사용자 ID가 발급되었습니다.";
+"user_id_label_format" = "사용자 ID: %@";
+"id_required_for_next_login" = "이 ID는 다음 로그인 시 필요합니다.";
+"save_with_memo_or_screenshot" = "메모나 스크린샷으로 저장해 주세요.";
 "username_can_be_changed_later" = "※사용자명은 나중에 변경할 수 있습니다";
 "already_have_account" = "이미 계정이 있으신가요? 여기서 로그인";
 
@@ -568,6 +572,12 @@
 "just_now" = "Just now";
 "link_optional" = "링크 (선택사항)";
 "loading_draft_plans" = "Loading draft plans...";
+"filter_section" = "필터";
+"action_section" = "작업";
+"create_new_plan" = "새 플랜 만들기";
+"search_button" = "검색";
+"plan_pilgrimage" = "성지순례 계획하기";
+"spots_format" = "%d 스팟";
 "customize" = "사용자 지정";
 "days_unit" = "일간";
 "start_time" = "시작 시간";
@@ -762,6 +772,21 @@
 "plan_available_in_original_tab" = "오리지널 탭에서 플랜을 확인할 수 있습니다";
 "plan_can_use_multiple_times" = "구매한 플랜은 여러 번 사용할 수 있습니다";
 "view_plan" = "플랜 보기";
+
+/* Plan Confirmation */
+"plan_confirmation_title" = "플랜 확정 확인";
+"plan_name_label" = "플랜 이름";
+"points_required_for_plan" = "플랜 확정에 필요한 포인트";
+"points_unit" = "%d 포인트";
+"current_points_balance" = "현재 보유 포인트";
+"balance_after_payment" = "결제 후 잔액";
+"points_insufficient_warning" = "포인트가 부족합니다";
+"points_needed_message" = "플랜을 확정하려면 %d포인트가 더 필요합니다";
+"plan_confirm_description_1" = "확정하면 방문 게임을 시작할 수 있습니다";
+"plan_confirm_description_2" = "확정 후에는 플랜을 수정할 수 없습니다";
+"plan_confirm_description_3" = "확정된 플랜은 '내 플랜'에 저장됩니다";
+"pay_and_confirm_button" = "%d포인트를 결제하고 확정";
+"purchase_points_button" = "포인트 구매하기";
 
 /* Visit Planning Screen */
 "plan_title" = "플랜 제목";

@@ -396,6 +396,10 @@
 "character_order_menu" = "Alterar ordem dos personagens";
 "anime_order_menu" = "Alterar ordem dos anime";
 "registration_error" = "Erro de registro";
+"user_id_issued" = "O ID do usuário foi emitido.";
+"user_id_label_format" = "ID do usuário: %@";
+"id_required_for_next_login" = "Este ID é necessário para seu próximo login.";
+"save_with_memo_or_screenshot" = "Por favor, salve-o com um lembrete ou captura de tela.";
 "username_can_be_changed_later" = "※O nome de usuário pode ser alterado mais tarde";
 "already_have_account" = "Já tem uma conta? Entre aqui";
 
@@ -567,6 +571,12 @@
 "just_now" = "Just now";
 "link_optional" = "Link (opcional)";
 "loading_draft_plans" = "Loading draft plans...";
+"filter_section" = "Filtrar";
+"action_section" = "Ações";
+"create_new_plan" = "Criar novo plano";
+"search_button" = "Pesquisar";
+"plan_pilgrimage" = "Planejar uma peregrinação";
+"spots_format" = "%d locais";
 "customize" = "Personalizar";
 "days_unit" = "dias";
 "start_time" = "Horário de início";
@@ -761,6 +771,21 @@
 "plan_available_in_original_tab" = "Você pode verificar o plano na aba Original";
 "plan_can_use_multiple_times" = "Planos comprados podem ser usados várias vezes";
 "view_plan" = "Ver plano";
+
+/* Plan Confirmation */
+"plan_confirmation_title" = "Confirmação do Plano";
+"plan_name_label" = "Nome do Plano";
+"points_required_for_plan" = "Pontos necessários para confirmação do plano";
+"points_unit" = "%d pontos";
+"current_points_balance" = "Saldo atual de pontos";
+"balance_after_payment" = "Saldo após pagamento";
+"points_insufficient_warning" = "Pontos insuficientes";
+"points_needed_message" = "Você precisa de mais %d pontos para confirmar o plano";
+"plan_confirm_description_1" = "Uma vez confirmado, você pode iniciar o jogo de visita";
+"plan_confirm_description_2" = "O plano não pode ser editado após a confirmação";
+"plan_confirm_description_3" = "Planos confirmados são salvos em 'Meus Planos'";
+"pay_and_confirm_button" = "Pagar %d pontos e confirmar";
+"purchase_points_button" = "Comprar pontos";
 
 /* Visit Planning Screen */
 "plan_title" = "Título do plano";

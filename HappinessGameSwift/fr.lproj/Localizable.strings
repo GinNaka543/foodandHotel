@@ -397,6 +397,10 @@
 "character_order_menu" = "Modifier l'ordre des personnages";
 "anime_order_menu" = "Modifier l'ordre des anime";
 "registration_error" = "Erreur d'inscription";
+"user_id_issued" = "L'ID utilisateur a été émis.";
+"user_id_label_format" = "ID utilisateur : %@";
+"id_required_for_next_login" = "Cet ID est nécessaire pour votre prochaine connexion.";
+"save_with_memo_or_screenshot" = "Assurez-vous de le sauvegarder avec une note ou une capture d'écran.";
 "username_can_be_changed_later" = "※Le nom d'utilisateur peut être modifié plus tard";
 "already_have_account" = "Vous avez déjà un compte ? Connectez-vous ici";
 
@@ -569,6 +573,12 @@
 "just_now" = "Just now";
 "link_optional" = "Lien (optionnel)";
 "loading_draft_plans" = "Loading draft plans...";
+"filter_section" = "Filtrer";
+"action_section" = "Actions";
+"create_new_plan" = "Créer un nouveau plan";
+"search_button" = "Rechercher";
+"plan_pilgrimage" = "Planifier un pèlerinage";
+"spots_format" = "%d lieux";
 "customize" = "Personnaliser";
 "days_unit" = "jours";
 "start_time" = "Heure de début";
@@ -763,6 +773,21 @@
 "plan_available_in_original_tab" = "Vous pouvez consulter le plan depuis l'onglet Original";
 "plan_can_use_multiple_times" = "Les plans achetés peuvent être utilisés plusieurs fois";
 "view_plan" = "Voir le plan";
+
+/* Plan Confirmation */
+"plan_confirmation_title" = "Confirmation du Plan";
+"plan_name_label" = "Nom du Plan";
+"points_required_for_plan" = "Points nécessaires pour confirmer le plan";
+"points_unit" = "%d points";
+"current_points_balance" = "Solde actuel de points";
+"balance_after_payment" = "Solde après paiement";
+"points_insufficient_warning" = "Points insuffisants";
+"points_needed_message" = "Vous avez besoin de %d points supplémentaires pour confirmer le plan";
+"plan_confirm_description_1" = "Une fois confirmé, vous pouvez commencer le jeu de visite";
+"plan_confirm_description_2" = "Le plan ne peut pas être modifié après confirmation";
+"plan_confirm_description_3" = "Les plans confirmés sont enregistrés dans 'Mes Plans'";
+"pay_and_confirm_button" = "Payer %d points et confirmer";
+"purchase_points_button" = "Acheter des points";
 
 /* Visit Planning Screen */
 "plan_title" = "Titre du plan";

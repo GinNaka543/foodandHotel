@@ -492,6 +492,12 @@
 "purchase_favorite_plan_message" = "Purchase your favorite plan and\nexperience the anime world";
 "purchase_plan" = "Purchase Plan";
 "search_by_title_or_anime" = "Search by title or anime";
+"filter_section" = "Filter";
+"action_section" = "Actions";
+"create_new_plan" = "Create New Plan";
+"search_button" = "Search";
+"plan_pilgrimage" = "Plan a Pilgrimage";
+"spots_format" = "%d spots";
 "loading_draft_plans" = "Loading draft plans...";
 "customize" = "Customize";
 "days_unit" = "days";
@@ -517,6 +523,10 @@
 "registration_bonus" = "Registration bonus";
 "registration_complete_with_bonus" = "Please save your User ID:\n\n%@\n\n🎉 50 points have been awarded as a new registration bonus!\n\nThis ID is required for your next login.";
 "registration_complete_message" = "Please save your User ID:\n\n%@\n\nThis ID is required for your next login.";
+"user_id_issued" = "User ID has been issued.";
+"user_id_label_format" = "User ID: %@";
+"id_required_for_next_login" = "This ID is required for your next login.";
+"save_with_memo_or_screenshot" = "Please save it with a memo or screenshot.";
 "registration_error" = "Registration Error";
 "username_can_be_changed_later" = "※Username can be changed later";
 "already_have_account" = "Already have an account? Sign in here";
@@ -799,6 +809,21 @@
 "plan_available_in_original_tab" = "You can check the plan from the Original tab";
 "plan_can_use_multiple_times" = "Purchased plans can be used multiple times";
 "view_plan" = "View plan";
+
+/* Plan Confirmation */
+"plan_confirmation_title" = "Plan Confirmation";
+"plan_name_label" = "Plan Name";
+"points_required_for_plan" = "Points required for plan confirmation";
+"points_unit" = "%d points";
+"current_points_balance" = "Current points balance";
+"balance_after_payment" = "Balance after payment";
+"points_insufficient_warning" = "Insufficient points";
+"points_needed_message" = "You need %d more points to confirm the plan";
+"plan_confirm_description_1" = "Once confirmed, you can start the visit game";
+"plan_confirm_description_2" = "The plan cannot be edited after confirmation";
+"plan_confirm_description_3" = "Confirmed plans are saved in 'My Plans'";
+"pay_and_confirm_button" = "Pay %d points and confirm";
+"purchase_points_button" = "Purchase points";
 
 /* Search */
 "search_by_title_or_anime" = "Search by title or anime";

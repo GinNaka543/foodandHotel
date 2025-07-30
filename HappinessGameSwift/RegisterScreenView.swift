@@ -174,20 +174,20 @@ struct RegisterScreenView: View {
                     } else {
                         // 2回目以降の登録（ボーナスなし）
                         isLoading = false
-                        alertTitle = "登録完了"
+                        alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
                         alertMessage = """
-                        ユーザーIDが発行されました。
+                        \(NSLocalizedString("user_id_issued", comment: "User ID has been issued"))
                         
-                        ユーザーID: \(generatedUserId)
+                        \(String(format: NSLocalizedString("user_id_label_format", comment: "User ID: %@"), generatedUserId))
                         
-                        このIDは次回ログイン時に必要です。
-                        必ずメモやスクリーンショットで保存してください。
+                        \(NSLocalizedString("id_required_for_next_login", comment: "This ID is required for next login"))
+                        \(NSLocalizedString("save_with_memo_or_screenshot", comment: "Save with memo or screenshot"))
                         """
                         showingAlert = true
                     }
                 case .failure(let error):
                     isLoading = false
-                    alertTitle = "登録エラー"
+                    alertTitle = NSLocalizedString("registration_error", comment: "Registration Error")
                     alertMessage = error.localizedDescription
                     showingAlert = true
                 }

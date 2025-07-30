@@ -1,6 +1,12 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Custom Field Model
+struct CustomField: Codable, Hashable {
+    var name: String
+    var value: String
+}
+
 // MARK: - Character Model
 struct Character: Identifiable, Codable, Equatable {
     let id: UUID
@@ -24,6 +30,11 @@ struct Character: Identifiable, Codable, Equatable {
     var bodyType: String
     var bloodType: String
     var backgroundImagePath: String?
+    var customFields: [CustomField]? // Add this for storing description and other custom data
+    var order: Int = 0 // For display order
+    var iconScale: Double = 1.0 // Icon zoom scale
+    var iconOffsetX: Double = 0.0 // Icon horizontal offset
+    var iconOffsetY: Double = 0.0 // Icon vertical offset
     
     // Ranking scores
     var cuteScore: Double = 0
@@ -41,7 +52,9 @@ struct Character: Identifiable, Codable, Equatable {
          height: String = "", shoeSize: String = "", clothingSize: String = "", 
          bustSize: String = "", bankBalance: String = "", occupation: String = "", 
          personality: String = "", hobby: String = "", bodyType: String = "", 
-         bloodType: String = "", backgroundImagePath: String? = nil) {
+         bloodType: String = "", backgroundImagePath: String? = nil,
+         customFields: [CustomField]? = nil, order: Int = 0,
+         iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.name = name
         self.imageIdentifier = imageIdentifier
@@ -63,6 +76,11 @@ struct Character: Identifiable, Codable, Equatable {
         self.bodyType = bodyType
         self.bloodType = bloodType
         self.backgroundImagePath = backgroundImagePath
+        self.customFields = customFields
+        self.order = order
+        self.iconScale = iconScale
+        self.iconOffsetX = iconOffsetX
+        self.iconOffsetY = iconOffsetY
     }
 }
 
@@ -97,6 +115,7 @@ class CharacterManager: ObservableObject {
     func saveCharacters() {
         if let encodedData = try? JSONEncoder().encode(characters) {
             UserDefaults.standard.set(encodedData, forKey: userDefaultsKey)
+            UserDefaults.standard.synchronize()
         }
     }
     

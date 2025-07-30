@@ -1063,3 +1063,18 @@ Gute Arbeit";
 "forgot_id_username" = "Falls Sie Ihre ID und Ihren Benutzernamen vergessen haben";
 "recreate_account_message" = "Bitte erstellen Sie erneut ein Konto.\n*Bilder und registrierte Charaktere können nicht wiederhergestellt werden.";
 "register_anime_video" = "Video registrieren";
+
+/* Plan Purchase Confirmation */
+"plan_purchase_confirm" = "Plankauf-Bestätigung";
+"confirm_purchase_plan" = "Möchten Sie diesen Plan kaufen?";
+"plan_name" = "Planname";
+"spot_count" = "Anzahl der Orte";
+"spots_count_format" = "%d Orte";
+"purchase_fee" = "Kaufgebühr:";
+"points_after_purchase" = "Punkte nach dem Kauf:";
+"note_plan_saved_to_original" = "• Gekaufte Pläne werden im Original-Tab gespeichert";
+"note_points_consumed" = "• %d Punkte werden verbraucht";
+"note_can_edit_after_purchase" = "• Sie können den Plan nach dem Kauf bearbeiten oder löschen";
+"note_can_use_multiple_times" = "• Gekaufte Pläne können mehrfach verwendet werden";
+"purchasing" = "Kaufe...";
+"purchase_with_points" = "Mit %d Punkten kaufen";

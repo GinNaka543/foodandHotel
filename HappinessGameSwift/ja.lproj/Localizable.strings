@@ -851,3 +851,18 @@
 "user_id_label_format" = "ユーザーID: %@";
 "id_required_for_next_login" = "このIDは次回ログイン時に必要です。";
 "save_with_memo_or_screenshot" = "必ずメモやスクリーンショットで保存してください。";
+
+/* Plan Purchase Confirmation */
+"plan_purchase_confirm" = "プラン購入確認";
+"confirm_purchase_plan" = "このプランを購入しますか？";
+"plan_name" = "プラン名";
+"spot_count" = "スポット数";
+"spots_count_format" = "%dスポット";
+"purchase_fee" = "購入料金:";
+"points_after_purchase" = "購入後のポイント:";
+"note_plan_saved_to_original" = "• 購入したプランはオリジナルタブに保存されます";
+"note_points_consumed" = "• %dポイントが使用されます";
+"note_can_edit_after_purchase" = "• 購入後にプランの編集・削除ができます";
+"note_can_use_multiple_times" = "• 購入したプランは何度でも使用できます";
+"purchasing" = "購入中...";
+"purchase_with_points" = "%dポイントで購入";

@@ -23,12 +23,13 @@ struct VisitPlanModel: Codable, Identifiable {
     let isDraft: Bool // 下書きかどうか
     let isConfirmed: Bool? // 確定済みかどうか
     let streamingUrls: [StreamingService] // ストリーミングサービスURL
+    let language: String? // プランの言語 (ja, en, ko, zh, de, fr, es, it, pt)
     
     // 標準的な初期化子
     init(id: String, userId: String, animeName: String, title: String, description: String,
          duration: String, spots: [VisitSpot], thumbnailUrl: String?, price: Int, budget: Int,
          createdDate: Date, startTime: Date, numberOfDays: Int, totalCost: Int,
-         isPublic: Bool, purchasedBy: [String], createdAt: Date, updatedAt: Date, isDraft: Bool = false, isConfirmed: Bool? = nil, streamingUrls: [StreamingService] = []) {
+         isPublic: Bool, purchasedBy: [String], createdAt: Date, updatedAt: Date, isDraft: Bool = false, isConfirmed: Bool? = nil, streamingUrls: [StreamingService] = [], language: String? = nil) {
         self.id = id
         self.userId = userId
         self.animeName = animeName
@@ -50,6 +51,7 @@ struct VisitPlanModel: Codable, Identifiable {
         self.isDraft = isDraft
         self.isConfirmed = isConfirmed
         self.streamingUrls = streamingUrls
+        self.language = language
     }
     
     // Firebaseとの連携用
@@ -101,7 +103,8 @@ struct VisitPlanModel: Codable, Identifiable {
                     "url": service.url,
                     "icon": service.icon ?? ""
                 ]
-            }
+            },
+            "language": language ?? ""
         ]
     }
     
@@ -238,6 +241,9 @@ struct VisitPlanModel: Codable, Identifiable {
         } else {
             self.streamingUrls = []
         }
+        
+        // 言語フィールドの初期化
+        self.language = dictionary["language"] as? String
         
         // Spotsの変換
         self.spots = spotsData.compactMap { spotDict in

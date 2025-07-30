@@ -18,6 +18,22 @@ const TravelPlans = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
+  
+  // 言語コードから言語名を取得するヘルパー関数
+  const getLanguageLabel = (languageCode) => {
+    const languages = {
+      'ja': '日本語',
+      'en': 'English',
+      'ko': '한국어',
+      'zh': '中文',
+      'de': 'Deutsch',
+      'fr': 'Français',
+      'es': 'Español',
+      'it': 'Italiano',
+      'pt': 'Português'
+    };
+    return languages[languageCode] || languageCode;
+  };
   const [formData, setFormData] = useState({
     title: '',
     animeName: '',
@@ -30,7 +46,8 @@ const TravelPlans = () => {
     thumbnailUrl: '',
     numberOfDays: 1,
     startTime: '09:00',
-    streamingUrls: []
+    streamingUrls: [],
+    language: 'ja' // デフォルトは日本語
   });
   const [streamingServices] = useState([
     { name: 'Netflix', icon: '🎬', color: '#E50914' },
@@ -219,7 +236,8 @@ const TravelPlans = () => {
       thumbnailUrl: plan.thumbnailUrl || '',
       numberOfDays: plan.numberOfDays || 1,
       startTime: plan.startTime || '09:00',
-      streamingUrls: plan.streamingUrls || []
+      streamingUrls: plan.streamingUrls || [],
+      language: plan.language || 'ja'
     });
     setShowCreateForm(true);
   };
@@ -239,7 +257,8 @@ const TravelPlans = () => {
       thumbnailUrl: '',
       numberOfDays: 1,
       startTime: '09:00',
-      streamingUrls: []
+      streamingUrls: [],
+      language: 'ja'
     });
     setCurrentSpot({
       name: '',
@@ -376,6 +395,26 @@ const TravelPlans = () => {
                   onChange={handleInputChange}
                   required
                 />
+              </div>
+
+              <div className="form-group">
+                <label>言語:</label>
+                <select
+                  name="language"
+                  value={formData.language}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="ja">日本語</option>
+                  <option value="en">English</option>
+                  <option value="ko">한국어</option>
+                  <option value="zh">中文</option>
+                  <option value="de">Deutsch</option>
+                  <option value="fr">Français</option>
+                  <option value="es">Español</option>
+                  <option value="it">Italiano</option>
+                  <option value="pt">Português</option>
+                </select>
               </div>
 
               <div className="form-group">
@@ -796,6 +835,7 @@ const TravelPlans = () => {
             </div>
             <div className="plan-info">
               <p><strong>アニメ:</strong> {plan.animeName}</p>
+              <p><strong>言語:</strong> {getLanguageLabel(plan.language || 'ja')}</p>
               <p><strong>所要時間:</strong> {plan.duration}</p>
               <p><strong>日数:</strong> {plan.numberOfDays || 1}日</p>
               <p><strong>開始時間:</strong> {plan.startTime || '09:00'}</p>

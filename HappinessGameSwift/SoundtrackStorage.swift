@@ -123,6 +123,7 @@ class SoundtrackStorage {
         // Save metadata to UserDefaults
         if let data = try? JSONEncoder().encode(metadataArray) {
             UserDefaults.standard.set(data, forKey: "character_soundtracks_metadata_\(characterId)")
+            UserDefaults.standard.synchronize()
         }
     }
     
@@ -160,6 +161,7 @@ class SoundtrackStorage {
         // Save metadata to UserDefaults
         if let data = try? JSONEncoder().encode(metadataArray) {
             UserDefaults.standard.set(data, forKey: "anime_soundtracks_metadata_\(animeId)")
+            UserDefaults.standard.synchronize()
         }
     }
     

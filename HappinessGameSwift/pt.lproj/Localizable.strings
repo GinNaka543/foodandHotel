@@ -978,3 +978,18 @@
 "forgot_id_username" = "Se você esqueceu seu ID e nome de usuário";
 "recreate_account_message" = "Por favor, crie uma conta novamente.\n*Imagens e personagens registrados não podem ser restaurados.";
 "register_anime_video" = "Registrar vídeo";
+
+/* Plan Purchase Confirmation */
+"plan_purchase_confirm" = "Confirmação de compra do plano";
+"confirm_purchase_plan" = "Você quer comprar este plano?";
+"plan_name" = "Nome do plano";
+"spot_count" = "Número de locais";
+"spots_count_format" = "%d locais";
+"purchase_fee" = "Taxa de compra:";
+"points_after_purchase" = "Pontos após a compra:";
+"note_plan_saved_to_original" = "• Os planos comprados são salvos na aba Original";
+"note_points_consumed" = "• %d pontos serão consumidos";
+"note_can_edit_after_purchase" = "• Você pode editar ou excluir o plano após a compra";
+"note_can_use_multiple_times" = "• Os planos comprados podem ser usados várias vezes";
+"purchasing" = "Comprando...";
+"purchase_with_points" = "Comprar com %d pontos";

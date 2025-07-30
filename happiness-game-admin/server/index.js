@@ -1580,7 +1580,7 @@ app.get('/api/travel-plans', async (req, res) => {
 
 app.post('/api/travel-plans', async (req, res) => {
   try {
-    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls } = req.body;
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls, language } = req.body;
     
     console.log('🔍 [DEBUG] 受信したデータ:');
     console.log('  title:', title);
@@ -1646,7 +1646,9 @@ app.post('/api/travel-plans', async (req, res) => {
       rating: 0,
       reviewCount: 0,
       // ストリーミングサービスURL
-      streamingUrls: streamingUrls || []
+      streamingUrls: streamingUrls || [],
+      // 言語設定
+      language: language || 'ja'
     };
 
     // Firebaseに保存
@@ -1709,7 +1711,7 @@ app.delete('/api/travel-plans/:id', async (req, res) => {
 app.put('/api/travel-plans/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls } = req.body;
+    const { title, animeName, duration, description, spots, price, tags, imageUrl, thumbnailUrl, numberOfDays, streamingUrls, language } = req.body;
     
     console.log('🔍 [DEBUG] 更新データ:');
     console.log('  id:', id);
@@ -1777,7 +1779,9 @@ app.put('/api/travel-plans/:id', async (req, res) => {
       totalCost: parseInt(price) || 0,
       updatedAt: now.getTime() / 1000,
       // ストリーミングサービスURL
-      streamingUrls: streamingUrls || []
+      streamingUrls: streamingUrls || [],
+      // 言語設定
+      language: language || 'ja'
     };
 
     // Firebaseに更新

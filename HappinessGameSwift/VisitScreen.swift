@@ -737,7 +737,11 @@ public struct VisitScreen: View {
                 for (_, _) in plans.enumerated() {
                 }
                 
-                self.publicPlans = plans
+                // 言語フィルタリングを適用
+                let languageFilteredPlans = self.filterPlansByLanguage(plans)
+                print("DEBUG: Filtered \(plans.count) plans to \(languageFilteredPlans.count) by language")
+                
+                self.publicPlans = languageFilteredPlans
             case .failure(_):
                 break
             }
@@ -1155,6 +1159,54 @@ public struct VisitScreen: View {
         
         print("DEBUG: Removed \(plans.count - uniquePlans.count) duplicate plans")
         return uniquePlans
+    }
+    
+    // 現在の端末言語を取得
+    private func getCurrentLanguage() -> String {
+        let preferredLanguage = Locale.preferredLanguages.first ?? "ja"
+        
+        // 中国語の場合の特別処理
+        if preferredLanguage.hasPrefix("zh") {
+            return "zh"
+        }
+        
+        // その他の言語は最初の2文字を使用
+        let languageCode = String(preferredLanguage.prefix(2))
+        
+        // サポートされている言語のリスト
+        let supportedLanguages = ["ja", "en", "ko", "zh", "de", "fr", "es", "it", "pt"]
+        
+        // サポートされている言語であればそれを返す、そうでなければ英語をデフォルトとする
+        if supportedLanguages.contains(languageCode) {
+            return languageCode
+        }
+        
+        return "en" // サポートされていない言語の場合は英語
+    }
+    
+    // プランを言語でフィルタリング
+    private func filterPlansByLanguage(_ plans: [VisitPlanModel]) -> [VisitPlanModel] {
+        let currentLanguage = getCurrentLanguage()
+        
+        return plans.filter { plan in
+            // 管理者プランの場合、言語フィールドをチェック
+            if plan.userId == "admin" {
+                // 言語が設定されていない場合は全ての言語で表示（後方互換性のため）
+                guard let planLanguage = plan.language, !planLanguage.isEmpty else {
+                    print("DEBUG: Plan '\(plan.title)' has no language set, showing in all languages")
+                    return true
+                }
+                
+                // デバッグログ
+                print("DEBUG: Plan '\(plan.title)' - Plan language: \(planLanguage), Current language: \(currentLanguage)")
+                
+                // プランの言語が現在の言語と一致する場合に表示
+                return planLanguage == currentLanguage
+            }
+            
+            // 一般ユーザーのプランはすべて表示
+            return true
+        }
     }
 }
 

@@ -979,3 +979,18 @@
 "forgot_id_username" = "如果您忘记了ID和用户名";
 "recreate_account_message" = "请重新创建账号。\n*图片和已注册的角色无法恢复。";
 "register_anime_video" = "注册视频";
+
+/* Plan Purchase Confirmation */
+"plan_purchase_confirm" = "计划购买确认";
+"confirm_purchase_plan" = "您要购买这个计划吗？";
+"plan_name" = "计划名称";
+"spot_count" = "景点数量";
+"spots_count_format" = "%d个景点";
+"purchase_fee" = "购买费用:";
+"points_after_purchase" = "购买后积分:";
+"note_plan_saved_to_original" = "• 购买的计划将保存到原始标签";
+"note_points_consumed" = "• 将使用%d积分";
+"note_can_edit_after_purchase" = "• 购买后可以编辑·删除计划";
+"note_can_use_multiple_times" = "• 购买的计划可以多次使用";
+"purchasing" = "购买中...";
+"purchase_with_points" = "用%d积分购买";

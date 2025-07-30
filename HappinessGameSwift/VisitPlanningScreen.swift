@@ -522,18 +522,13 @@ struct VisitPlanningScreen: View {
                 }
             }
         }
-        .sheet(item: Binding<EditTransportData?>(
-            get: { 
-                if let editingTransport = editingTransport {
-                    return EditTransportData(fromSpot: editingTransport.fromSpot, index: editingTransport.index)
-                }
-                return nil
-            },
-            set: { newValue in 
-                editingTransport = nil
+        .sheet(isPresented: Binding<Bool>(
+            get: { editingTransport != nil },
+            set: { _ in editingTransport = nil }
+        )) {
+            if let editingTransport = editingTransport {
+                TransportEditView(spots: $spots, fromSpotIndex: editingTransport.index)
             }
-        )) { data in
-            TransportEditView(spots: $spots, fromSpotIndex: data.index)
         }
         .sheet(isPresented: $showingCustomDaysPicker) {
             CustomDaysPickerView(numberOfDays: $numberOfDays)
@@ -2360,12 +2355,6 @@ func normalizeTransportMethod(_ method: String) -> String {
     }
 }
 
-// 交通機関編集用のデータ構造
-struct EditTransportData: Identifiable {
-    let id = UUID()
-    let fromSpot: VisitSpot
-    let index: Int
-}
 
 // 交通機関編集ビュー
 struct TransportEditView: View {

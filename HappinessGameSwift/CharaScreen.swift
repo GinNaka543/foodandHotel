@@ -1450,14 +1450,8 @@ struct CharacterDetailView: View {
             } else {
             }
             
-            // キャラクターのサントラがある場合、ランダムに再生
-            if !currentCharacter.soundtracks.isEmpty {
-                SoundtrackManager.shared.collectAllSoundtracks(
-                    characters: [currentCharacter],
-                    animes: []
-                )
-                SoundtrackManager.shared.startRandomPlayback()
-            }
+            // 音楽の自動準備・自動再生は一切行わない
+            // ユーザーが「音楽を再生」ボタンを押した時のみ処理される
             
             // CharacterDetailView用のバナー初期化
             loadYouTubeVideosForDetail()
@@ -1481,10 +1475,6 @@ struct CharacterDetailView: View {
                 }
             }
         }
-        .onDisappear {
-            // ビューが消える時に音楽を停止
-            SoundtrackManager.shared.stopPlayback()
-        }
         // サントラプレイヤーを下部に表示
         .overlay(
             VStack {
@@ -1492,6 +1482,10 @@ struct CharacterDetailView: View {
                 SoundtrackPlayerView()
                     .padding(.bottom, 40)
             }
+        )
+        // 音楽再生ボタン（プレイヤーが非表示の時のみ表示）
+        .overlay(
+            PlayMusicButtonViewForCharacter(character: currentCharacter)
         )
         .onChange(of: iconPickerItem) { _, newValue in
             Task {
@@ -1516,8 +1510,9 @@ struct CharacterDetailView: View {
             }
         }
         .onDisappear {
-            // ビューが消える時に音楽を停止
+            // ページから離れる時に音楽を完全に停止してリセット
             SoundtrackManager.shared.stopPlayback()
+            SoundtrackManager.shared.isPlayerVisible = false
         }
     }
     
@@ -3368,6 +3363,46 @@ struct CharacterIconAdjustmentView: View {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+// キャラクター用の音楽再生ボタンビュー
+struct PlayMusicButtonViewForCharacter: View {
+    let character: Character
+    @ObservedObject private var soundtrackManager = SoundtrackManager.shared
+    
+    var body: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                if !soundtrackManager.isPlayerVisible && !character.soundtracks.isEmpty {
+                    Button(action: {
+                        // 常に新しくランダム選択して再生
+                        soundtrackManager.collectAllSoundtracks(
+                            characters: [character],
+                            animes: []
+                        )
+                        soundtrackManager.startRandomPlayback()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "music.note")
+                                .font(.system(size: 16))
+                            Text("音楽を再生")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.purple)
+                        .cornerRadius(20)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 50)
                 }
             }
         }

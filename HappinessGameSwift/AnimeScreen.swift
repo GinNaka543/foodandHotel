@@ -5160,19 +5160,13 @@ struct AnimeDetailView: View {
                 currentDisplayedIcon = loadImageFromPath(imageIdentifier)
             }
             
-            // アニメのサントラがある場合、ランダムに再生
-            let currentAnime = animeManager.animes.first(where: { $0.id == anime.id }) ?? anime
-            if !currentAnime.soundtracks.isEmpty {
-                SoundtrackManager.shared.collectAllSoundtracks(
-                    characters: [],
-                    animes: [currentAnime]
-                )
-                SoundtrackManager.shared.startRandomPlayback()
-            }
+            // 音楽の自動準備・自動再生は一切行わない
+            // ユーザーが「音楽を再生」ボタンを押した時のみ処理される
         }
         .onDisappear {
-            // ビューが消える時に音楽を停止
+            // ページから離れる時に音楽を完全に停止してリセット
             SoundtrackManager.shared.stopPlayback()
+            SoundtrackManager.shared.isPlayerVisible = false
         }
         // サントラプレイヤーを表示
         .overlay(
@@ -5181,6 +5175,10 @@ struct AnimeDetailView: View {
                 SoundtrackPlayerView()
                     .padding(.bottom, 40)
             }
+        )
+        // 音楽再生ボタン（プレイヤーが非表示の時のみ表示）
+        .overlay(
+            PlayMusicButtonView(anime: currentAnime)
         )
         .navigationBarHidden(true)
         // タイトル編集モーダル
@@ -6400,6 +6398,46 @@ struct CharacterDropDelegate: DropDelegate {
                 var newCharacters = characters
                 newCharacters.move(fromOffsets: IndexSet(integer: fromIndex), toOffset: toIndex > fromIndex ? toIndex + 1 : toIndex)
                 onReorder(newCharacters)
+            }
+        }
+    }
+}
+
+// アニメ用の音楽再生ボタンビュー
+struct PlayMusicButtonView: View {
+    let anime: Anime
+    @ObservedObject private var soundtrackManager = SoundtrackManager.shared
+    
+    var body: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                if !soundtrackManager.isPlayerVisible && !anime.soundtracks.isEmpty {
+                    Button(action: {
+                        // 常に新しくランダム選択して再生
+                        soundtrackManager.collectAllSoundtracks(
+                            characters: [],
+                            animes: [anime]
+                        )
+                        soundtrackManager.startRandomPlayback()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "music.note")
+                                .font(.system(size: 16))
+                            Text("音楽を再生")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.purple)
+                        .cornerRadius(20)
+                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 50)
+                }
             }
         }
     }

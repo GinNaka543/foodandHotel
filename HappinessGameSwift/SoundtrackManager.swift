@@ -7,6 +7,7 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     
     @Published var isPlaying = false
     @Published var currentSoundtrack: Soundtrack?
+    @Published var isPlayerVisible = false // デフォルトで非表示（再生ボタン表示）
     
     private var audioPlayer: AVAudioPlayer?
     private var fadeTimer: Timer?
@@ -67,6 +68,7 @@ class SoundtrackManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             
             currentSoundtrack = soundtrack
             isPlaying = true
+            isPlayerVisible = true // 新しい音楽が再生されるときはプレイヤーを表示
             
             // フェードインを開始
             startFadeIn()
@@ -185,8 +187,8 @@ struct SoundtrackPlayerView: View {
     @State private var showingSoundtrackList = false
     
     var body: some View {
-        // currentSoundtrackが存在する限りバーを表示（一時停止中でも）
-        if let soundtrack = manager.currentSoundtrack {
+        // currentSoundtrackが存在し、かつプレイヤーが表示状態の場合のみバーを表示
+        if let soundtrack = manager.currentSoundtrack, manager.isPlayerVisible {
             HStack(spacing: 12) {
                 // サムネイル
                 if let thumbnailData = soundtrack.thumbnailData,
@@ -242,6 +244,16 @@ struct SoundtrackPlayerView: View {
                     Image(systemName: "forward.fill")
                         .font(.system(size: 20))
                         .foregroundColor(.purple)
+                }
+                
+                // ×ボタン（プレイヤーを非表示にする）
+                Button(action: {
+                    manager.isPlayerVisible = false
+                    manager.stopPlayback()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.gray)
                 }
             }
             .padding(.horizontal, 16)

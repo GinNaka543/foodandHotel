@@ -20,6 +20,7 @@ struct SpotEditView: View {
     @State private var detailImagesData: [Data] = []
     @StateObject private var currencyManager = CurrencyManager.shared
     @State private var isNextDay: Bool = false
+    @State private var showingCurrencyPicker = false
     
     var body: some View {
         NavigationView {
@@ -77,7 +78,23 @@ struct SpotEditView: View {
                     HStack {
                         Text(NSLocalizedString("Cost", comment: "Label for cost"))
                         Spacer()
-                        Text(currencyManager.currencySymbol)
+                        
+                        Button(action: { showingCurrencyPicker = true }) {
+                            HStack(spacing: 4) {
+                                Text(currencyManager.getCurrencyFlag())
+                                    .font(.system(size: 16))
+                                Text(currencyManager.currencyCode)
+                                    .font(.system(size: 14, weight: .medium))
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(6)
+                        }
+                        
                         TextField("0", text: $spotCost)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
@@ -285,6 +302,9 @@ struct SpotEditView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showingCurrencyPicker) {
+            CurrencyPickerView(isPresented: $showingCurrencyPicker)
         }
     }
     

@@ -13,6 +13,8 @@ struct PublishPlanDialog: View {
     @State private var isLoadingPoints = true
     @State private var showingPurchaseSheet = false
     @State private var errorMessage = ""
+    @State private var showingCurrencyPicker = false
+    @StateObject private var currencyManager = CurrencyManager.shared
     
     private let publicationCost = 5000 // 5,000ポイント
     
@@ -115,11 +117,26 @@ struct PublishPlanDialog: View {
                                         .textFieldStyle(RoundedBorderTextFieldStyle())
                                         .frame(width: 120)
                                         .keyboardType(.numberPad)
-                                    Text(CurrencyManager.shared.getLocalizedCurrencyName())
-                                        .font(.system(size: 16))
+                                    
+                                    Button(action: { showingCurrencyPicker = true }) {
+                                        HStack(spacing: 4) {
+                                            Text(currencyManager.getCurrencyFlag())
+                                                .font(.system(size: 16))
+                                            Text(currencyManager.currencyCode)
+                                                .font(.system(size: 16, weight: .medium))
+                                            Image(systemName: "chevron.down")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.gray)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(Color.gray.opacity(0.1))
+                                        .cornerRadius(8)
+                                    }
+                                    
                                     Spacer()
                                 }
-                                Text(NSLocalizedString("free_plan_note", comment: "* Setting to 0 yen makes it a free plan"))
+                                Text(NSLocalizedString("free_plan_note", comment: "* Setting to 0 makes it a free plan"))
                                     .font(.system(size: 12))
                                     .foregroundColor(.gray)
                             }
@@ -133,8 +150,19 @@ struct PublishPlanDialog: View {
                                         .textFieldStyle(RoundedBorderTextFieldStyle())
                                         .frame(width: 120)
                                         .keyboardType(.numberPad)
-                                    Text(CurrencyManager.shared.getLocalizedCurrencyName())
-                                        .font(.system(size: 16))
+                                    
+                                    // Display current currency (same as price field)
+                                    HStack(spacing: 4) {
+                                        Text(currencyManager.getCurrencyFlag())
+                                            .font(.system(size: 16))
+                                        Text(currencyManager.currencyCode)
+                                            .font(.system(size: 16, weight: .medium))
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.gray.opacity(0.05))
+                                    .cornerRadius(8)
+                                    
                                     Spacer()
                                 }
                                 Text(NSLocalizedString("budget_note", comment: "* Please enter the approximate budget for this plan (required)"))
@@ -228,6 +256,9 @@ struct PublishPlanDialog: View {
                     loadUserPoints()
                 }
             )
+        }
+        .sheet(isPresented: $showingCurrencyPicker) {
+            CurrencyPickerView(isPresented: $showingCurrencyPicker)
         }
     }
     

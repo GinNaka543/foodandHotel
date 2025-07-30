@@ -50,6 +50,8 @@ public struct VisitScreen: View {
     @State private var searchText = ""
     @State private var activeSearchText = ""
     @State private var showingPlanningScreen = false
+    @State private var showingCurrencySelection = false
+    @State private var selectedPlanCurrency = CurrencyManager.shared.selectedCurrency
     
     public var body: some View {
         mainContent
@@ -121,6 +123,17 @@ public struct VisitScreen: View {
                 Button(NSLocalizedString("cancel", comment: "Cancel"), role: .cancel) { }
             } message: { plan in
                 Text(String(format: NSLocalizedString("delete_plan_confirm_message", comment: "Delete \"%@\". This action cannot be undone."), plan.title))
+            }
+            .sheet(isPresented: $showingCurrencySelection) {
+                InitialCurrencySelectionView(
+                    isPresented: $showingCurrencySelection,
+                    selectedCurrency: $selectedPlanCurrency,
+                    onCurrencySelected: {
+                        // 通貨が選択されたら、CurrencyManagerに設定してプラン作成画面を開く
+                        CurrencyManager.shared.selectedCurrency = selectedPlanCurrency
+                        showingPlanningScreen = true
+                    }
+                )
             }
             .onAppear {
                 loadingMessage = NSLocalizedString("loading_plans", comment: "Loading plans...")
@@ -336,7 +349,7 @@ public struct VisitScreen: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 20)
                     
-                    Button(action: { showingPlanningScreen = true }) {
+                    Button(action: { showingCurrencySelection = true }) {
                         HStack {
                             Image(systemName: "plus")
                             Text(NSLocalizedString("add_original_plan", comment: "Add original plan"))
@@ -493,7 +506,7 @@ public struct VisitScreen: View {
                 Spacer()
             }
             // Createボタン（右下固定）
-            Button(action: { showingPlanningScreen = true }) {
+            Button(action: { showingCurrencySelection = true }) {
                 Text("Create")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)

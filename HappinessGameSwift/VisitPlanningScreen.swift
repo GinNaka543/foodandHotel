@@ -36,6 +36,7 @@ struct VisitPlanningScreen: View {
     @StateObject private var githubManager = GitHubImageManager.shared
     @StateObject private var currencyManager = CurrencyManager.shared
     @State private var showingSaveSuccess = false
+    @State private var showingCurrencyPicker = false
     
     // 編集中の下書きデータ
     @State private var editingDraftId: UUID?
@@ -362,6 +363,23 @@ struct VisitPlanningScreen: View {
                                         .font(.system(size: 14))
                                         .foregroundColor(.gray)
                                     Spacer()
+                                    
+                                    Button(action: { showingCurrencyPicker = true }) {
+                                        HStack(spacing: 4) {
+                                            Text(currencyManager.getCurrencyFlag())
+                                                .font(.system(size: 14))
+                                            Text(currencyManager.currencyCode)
+                                                .font(.system(size: 12, weight: .medium))
+                                            Image(systemName: "chevron.down")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(.gray)
+                                        }
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.gray.opacity(0.1))
+                                        .cornerRadius(6)
+                                    }
+                                    
                                     Text(currencyManager.formatPrice(calculateTotalCost()))
                                         .font(.system(size: 14, weight: .medium))
                                 }
@@ -529,6 +547,9 @@ struct VisitPlanningScreen: View {
         }
         .sheet(isPresented: $showingCustomDaysPicker) {
             CustomDaysPickerView(numberOfDays: $numberOfDays)
+        }
+        .sheet(isPresented: $showingCurrencyPicker) {
+            CurrencyPickerView(isPresented: $showingCurrencyPicker)
         }
         .fullScreenCover(isPresented: $showingItinerary) {
             VisitGameScreen(
@@ -1210,6 +1231,7 @@ struct AddSpotView: View {
     @State private var selectedThumbnail: PhotosPickerItem?
     @State private var thumbnailImage: UIImage?
     @State private var thumbnailData: Data?
+    @StateObject private var currencyManager = CurrencyManager.shared
     
     let transportMethods = [
         NSLocalizedString("train", comment: "Train"),
@@ -1363,7 +1385,7 @@ struct AddSpotView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 80)
                             .multilineTextAlignment(.center)
-                        Text(NSLocalizedString("yen", comment: "yen"))
+                        Text(currencyManager.currencyCode)
                             .font(.system(size: 14))
                     }
                 }
@@ -1424,7 +1446,7 @@ struct AddSpotView: View {
                             imageData: thumbnailData, // サムネイル画像を設定
                             detailImagesData: spotImagesData.isEmpty ? nil : spotImagesData,
                             dayNumber: selectedDay,
-                            spotCost: spotCost
+                            spotCost: currencyManager.convertToYen(Double(spotCost))
                         )
                         spots.append(newSpot)
                         dismiss()
@@ -1519,7 +1541,7 @@ struct AddSpotView: View {
                                 .frame(width: 100)
                                 .multilineTextAlignment(.center)
                                 .keyboardType(.numberPad)
-                            Text(NSLocalizedString("yen", comment: "yen"))
+                            Text(currencyManager.currencyCode)
                                 .font(.system(size: 14))
                         }
                     }
@@ -1872,6 +1894,7 @@ struct EditSpotView: View {
     @State private var transportRoute: String = ""
     @State private var showTransportSection: Bool = false
     @State private var hasScrolledToTransport: Bool = false
+    @StateObject private var currencyManager = CurrencyManager.shared
     
     // Define transport methods as a static property to ensure consistency
     static let transportMethods = [
@@ -1900,7 +1923,7 @@ struct EditSpotView: View {
         self._spotNotes = State(initialValue: spot.notes)
         self._timeRange = State(initialValue: spot.timeRange)
         self._activity = State(initialValue: spot.activity)
-        self._spotCost = State(initialValue: spot.spotCost)
+        self._spotCost = State(initialValue: Int(CurrencyManager.shared.convertFromYen(spot.spotCost)))
         if let imageData = spot.imageData {
             self._spotImage = State(initialValue: UIImage(data: imageData))
             self._spotImageData = State(initialValue: imageData)
@@ -2079,7 +2102,7 @@ struct EditSpotView: View {
                                 .frame(width: 100)
                                 .multilineTextAlignment(.center)
                                 .keyboardType(.numberPad)
-                            Text(NSLocalizedString("yen", comment: "yen"))
+                            Text(currencyManager.currencyCode)
                                 .font(.system(size: 14))
                         }
                     }
@@ -2293,7 +2316,7 @@ struct EditSpotView: View {
                             imageData: spotImageData,
                             detailImagesData: detailImagesData.isEmpty ? nil : detailImagesData,
                             dayNumber: spot.dayNumber,
-                            spotCost: spotCost,
+                            spotCost: currencyManager.convertToYen(Double(spotCost)),
                             imageUrl: spot.imageUrl,
                             images: existingImageUrls
                         )
@@ -2379,6 +2402,7 @@ struct TransportEditView: View {
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
     @State private var transportRoute: String = ""
+    @StateObject private var currencyManager = CurrencyManager.shared
     
     var body: some View {
         NavigationView {
@@ -2413,7 +2437,7 @@ struct TransportEditView: View {
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 80)
-                        Text("¥")
+                        Text(currencyManager.currencySymbol)
                     }
                     
                     TextField(NSLocalizedString("route_description", comment: "Route description"), text: $transportRoute)
@@ -2448,7 +2472,7 @@ struct TransportEditView: View {
             // Normalize the transport method to match the picker tags
             transportMethod = normalizeTransportMethod(transport.method)
             transportDuration = transport.duration
-            transportCost = transport.cost
+            transportCost = Int(currencyManager.convertFromYen(transport.cost))
             transportRoute = transport.route
             
             print("DEBUG: Loaded transport info - Method: \(transport.method) -> \(transportMethod)")
@@ -2485,7 +2509,7 @@ struct TransportEditView: View {
         let transportInfo = TransportInfo(
             method: transportMethod,
             duration: transportDuration,
-            cost: transportCost,
+            cost: currencyManager.convertToYen(Double(transportCost)),
             route: transportRoute
         )
         

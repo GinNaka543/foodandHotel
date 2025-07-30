@@ -13,10 +13,8 @@ final class EmergencyCleanup {
         var removedCount = 0
         var totalRemovedSize = 0
         
-        // Specifically target soundtrack and video keys
+        // Specifically target large data keys but exclude metadata
         let problematicPrefixes = [
-            "anime_soundtracks_",
-            "character_soundtracks_",
             "videos_",
             "anime_videos_",
             "artworks_",
@@ -24,6 +22,7 @@ final class EmergencyCleanup {
             "video_albums_",
             "artwork_albums_"
         ]
+        // Note: Removed soundtrack prefixes to preserve metadata
         
         for (key, value) in dictionary {
             // Check if key matches problematic patterns
@@ -39,8 +38,11 @@ final class EmergencyCleanup {
                     size = jsonData.count
                 }
                 
-                // Remove if it's a soundtrack or large data key
-                if key.contains("soundtrack") || size > 100_000 {
+                // Remove if it's large data but NOT soundtrack metadata
+                // Soundtrack metadata keys should be preserved as they are small
+                let isSoundtrackMetadata = key.contains("soundtracks_metadata")
+                
+                if !isSoundtrackMetadata && size > 100_000 {
                     #if DEBUG
                     print("Removing key: \(key) (size: \(formatBytes(size)))")
                     #endif
@@ -71,25 +73,28 @@ final class EmergencyCleanup {
         return formatter.string(fromByteCount: Int64(bytes))
     }
     
-    // Remove all soundtracks from UserDefaults
+    // Remove only large soundtrack data from UserDefaults, preserve metadata
     static func removeAllSoundtracksFromUserDefaults() {
         let userDefaults = UserDefaults.standard
         let allKeys = userDefaults.dictionaryRepresentation().keys
         
         let soundtrackKeys = allKeys.filter { 
-            $0.contains("soundtrack") || 
-            $0.contains("soundtracks")
+            ($0.contains("soundtrack") || $0.contains("soundtracks")) &&
+            !$0.contains("metadata") // Preserve metadata keys
         }
         
         #if DEBUG
-        print("Found \(soundtrackKeys.count) soundtrack keys to remove")
+        print("Found \(soundtrackKeys.count) soundtrack data keys to remove (preserving metadata)")
         #endif
         
         for key in soundtrackKeys {
-            userDefaults.removeObject(forKey: key)
-            #if DEBUG
-            print("Removed soundtrack key: \(key)")
-            #endif
+            // Only remove if it's large data
+            if let data = userDefaults.data(forKey: key), data.count > 100_000 {
+                userDefaults.removeObject(forKey: key)
+                #if DEBUG
+                print("Removed large soundtrack key: \(key) (size: \(data.count) bytes)")
+                #endif
+            }
         }
         
         userDefaults.synchronize()

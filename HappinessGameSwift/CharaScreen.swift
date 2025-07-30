@@ -1234,13 +1234,6 @@ struct CharacterDetailView: View {
                 // 戻るボタン
                 backButton
                 
-                // サントラプレイヤーを上部に配置（戻るボタンの下）
-                if !currentCharacter.soundtracks.isEmpty {
-                    SoundtrackPlayerView()
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                }
-                
                 VStack {
                     Spacer().frame(height: 180)
                     // アイコン
@@ -1488,6 +1481,18 @@ struct CharacterDetailView: View {
                 }
             }
         }
+        .onDisappear {
+            // ビューが消える時に音楽を停止
+            SoundtrackManager.shared.stopPlayback()
+        }
+        // サントラプレイヤーを下部に表示
+        .overlay(
+            VStack {
+                Spacer()
+                SoundtrackPlayerView()
+                    .padding(.bottom, 40)
+            }
+        )
         .onChange(of: iconPickerItem) { _, newValue in
             Task {
                 if let newValue = newValue {

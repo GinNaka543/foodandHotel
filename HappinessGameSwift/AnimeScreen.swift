@@ -4868,7 +4868,7 @@ struct AnimeDetailView: View {
                                 .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
-                    .padding(.top, 70)
+                    .padding(.top, 20)
                     .padding(.leading, 16)
                     
                     Spacer()
@@ -5179,7 +5179,7 @@ struct AnimeDetailView: View {
             VStack {
                 Spacer()
                 SoundtrackPlayerView()
-                    .padding(.bottom, 70)
+                    .padding(.bottom, 40)
             }
         )
         .navigationBarHidden(true)

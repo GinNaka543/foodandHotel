@@ -582,7 +582,8 @@
 "days_unit" = "일간";
 "start_time" = "시작 시간";
 "trip_days" = "여행 일수";
-"loading_plans" = "Loading plans...";
+"loading_plans" = "계획 로딩 중...";
+"checking_purchase_status" = "구매 상태 확인 중...";
 "manage_character_info" = "Manage your favorite character info and check anytime";
 "manage_viewing_status" = "시청 상태를 관리하여 놓치는 에피소드 방지";
 "memo" = "Memo";

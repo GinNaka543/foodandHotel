@@ -608,7 +608,8 @@
 "days_unit" = "Tage";
 "start_time" = "Startzeit";
 "trip_days" = "Reisetage";
-"loading_plans" = "Loading plans...";
+"loading_plans" = "Pläne werden geladen...";
+"checking_purchase_status" = "Kaufstatus wird überprüft...";
 "manage_character_info" = "Manage your favorite character info and check anytime";
 "manage_viewing_status" = "Sehstatus verwalten, um verpasste Episoden zu vermeiden";
 "memo" = "Memo";

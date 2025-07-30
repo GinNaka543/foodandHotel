@@ -582,7 +582,8 @@
 "days_unit" = "天";
 "start_time" = "开始时间";
 "trip_days" = "旅行天数";
-"loading_plans" = "Loading plans...";
+"loading_plans" = "正在加载计划...";
+"checking_purchase_status" = "正在检查购买状态...";
 "manage_character_info" = "Manage your favorite character info and check anytime";
 "manage_viewing_status" = "管理观看状态以防错过剧集";
 "memo" = "Memo";

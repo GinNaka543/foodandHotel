@@ -581,7 +581,8 @@
 "days_unit" = "dias";
 "start_time" = "Horário de início";
 "trip_days" = "Dias de viagem";
-"loading_plans" = "Loading plans...";
+"loading_plans" = "Carregando planos...";
+"checking_purchase_status" = "Verificando status de compra...";
 "manage_character_info" = "Manage your favorite character info and check anytime";
 "manage_viewing_status" = "Gerencie o status de visualização para evitar perder episódios";
 "memo" = "Memo";

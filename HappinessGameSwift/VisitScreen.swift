@@ -58,6 +58,7 @@ public struct VisitScreen: View {
             }
             .fullScreenCover(isPresented: $showingPlanningScreen, onDismiss: {
                 selectedDraftPlan = nil // クリア
+                selectedTab = .original // オリジナルタブに移動
                 loadSavedPlans()
                 loadFirebasePlans()
                 
@@ -545,7 +546,9 @@ public struct VisitScreen: View {
     }
     
     func loadSavedPlans() {
+        print("DEBUG: loadSavedPlans called")
         guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans") else {
+            print("DEBUG: No saved plans data found")
             savedPlans = []
             userOriginalPlans = []
             return
@@ -554,12 +557,11 @@ public struct VisitScreen: View {
         do {
             let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
             savedPlans = plans
+            print("DEBUG: Loaded \(plans.count) saved plans")
             
             // オリジナル作成プランのみ（購入プランを除外）
-            for _ in plans {
-            }
-            
             let originalPlans = plans.filter { !$0.isPurchased }
+            print("DEBUG: Found \(originalPlans.count) original plans (non-purchased)")
             
             userOriginalPlans = originalPlans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
                 VisitPlanModel(
@@ -585,6 +587,10 @@ public struct VisitScreen: View {
                     streamingUrls: plan.streamingUrls // ストリーミングURLを追加
                 )
             }
+            
+            // 重複削除を適用
+            userOriginalPlans = removeDuplicatePlans(userOriginalPlans)
+            print("DEBUG: userOriginalPlans updated with \(userOriginalPlans.count) plans after deduplication")
             
             // 購入済みプランのみ（非表示を除外し、最新順にソート）
             purchasedPlans = plans.filter { $0.isPurchased && !hiddenPlanIds.contains($0.id.uuidString) }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
@@ -807,7 +813,7 @@ public struct VisitScreen: View {
         }
         
         // ローカル記録にない場合、Firebaseでチェック
-        loadingMessage = "購入状態を確認中..."
+        loadingMessage = NSLocalizedString("checking_purchase_status", comment: "Checking purchase status...")
         isLoadingPlan = true
         
         firebaseManager.checkPlanPurchased(userId: currentUserId, planId: plan.id) { result in
@@ -835,7 +841,7 @@ public struct VisitScreen: View {
     func showPlanDetail(_ plan: VisitPlanModel) {
         
         // ローディング開始
-        loadingMessage = "プランを読み込み中..."
+        loadingMessage = NSLocalizedString("loading_plans", comment: "Loading plans...")
         isLoadingPlan = true
         
         // 少し遅延を入れてスムーズな遷移を演出
@@ -952,17 +958,29 @@ public struct VisitScreen: View {
     }
     
     func deleteOriginalPlan(_ plan: VisitPlanModel) {
+        print("DEBUG: Deleting plan - ID: \(plan.id), Title: \(plan.title)")
+        
         // savedPlansから削除
         if let index = savedPlans.firstIndex(where: { $0.id.uuidString == plan.id }) {
             savedPlans.remove(at: index)
+            print("DEBUG: Removed plan from savedPlans at index \(index)")
             
-            // UserDefaultsに保存
+            // UserDefaultsHelperを使用して保存
             if let encodedData = try? JSONEncoder().encode(savedPlans) {
-                UserDefaults.standard.set(encodedData, forKey: "savedPlans")
+                UserDefaultsHelper.shared.setData(encodedData, forKey: "savedPlans")
+                print("DEBUG: Successfully saved updated plans to UserDefaults")
             }
             
             // userOriginalPlansから削除
             userOriginalPlans.removeAll(where: { $0.id == plan.id })
+            print("DEBUG: Removed plan from userOriginalPlans")
+            
+            // プランリストをリロードしてUIを更新
+            DispatchQueue.main.async {
+                self.loadSavedPlans()
+            }
+        } else {
+            print("DEBUG: Plan not found in saved plans")
         }
     }
     
@@ -1106,6 +1124,37 @@ public struct VisitScreen: View {
             }
             return duration
         }
+    }
+    
+    // 重複プランを削除する関数
+    private func removeDuplicatePlans(_ plans: [VisitPlanModel]) -> [VisitPlanModel] {
+        var uniquePlans: [VisitPlanModel] = []
+        var seenPlanIds: Set<String> = []
+        var seenPlanKeys: Set<String> = []
+        
+        for plan in plans {
+            // まずIDで重複チェック
+            if seenPlanIds.contains(plan.id) {
+                print("DEBUG: Removed duplicate plan by ID - Title: \(plan.title), ID: \(plan.id)")
+                continue
+            }
+            
+            // タイトル、アニメ名、作成日で重複判定
+            let planKey = "\(plan.title)_\(plan.animeName)_\(plan.createdDate.timeIntervalSince1970)"
+            if seenPlanKeys.contains(planKey) {
+                print("DEBUG: Removed duplicate plan by content - Title: \(plan.title), Key: \(planKey)")
+                continue
+            }
+            
+            // 重複でない場合は追加
+            seenPlanIds.insert(plan.id)
+            seenPlanKeys.insert(planKey)
+            uniquePlans.append(plan)
+            print("DEBUG: Added unique plan - Title: \(plan.title), ID: \(plan.id)")
+        }
+        
+        print("DEBUG: Removed \(plans.count - uniquePlans.count) duplicate plans")
+        return uniquePlans
     }
 }
 

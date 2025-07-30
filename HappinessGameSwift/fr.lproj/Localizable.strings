@@ -583,7 +583,8 @@
 "days_unit" = "jours";
 "start_time" = "Heure de début";
 "trip_days" = "Jours de voyage";
-"loading_plans" = "Loading plans...";
+"loading_plans" = "Chargement des plans...";
+"checking_purchase_status" = "Vérification du statut d'achat...";
 "manage_character_info" = "Manage your favorite character info and check anytime";
 "manage_viewing_status" = "Gérez le statut de visionnage pour éviter de manquer des épisodes";
 "memo" = "Memo";

@@ -474,6 +474,7 @@
 
 /* Visit */
 "loading_plans" = "Loading plans...";
+"checking_purchase_status" = "Checking purchase status...";
 "visit_tab_all" = "All";
 "visit_tab_original" = "Original";
 "visit_tab_purchased" = "Purchased";

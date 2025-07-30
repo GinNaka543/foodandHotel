@@ -1928,8 +1928,18 @@ struct AnimeArtworkScreen: View {
                     if !tag.isEmpty {
                         let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
                         if !tagArtworks.isEmpty {
-                            albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
-                            saveAlbumsToUserDefaults()
+                            // Check if album already exists
+                            if !albums.contains(where: { $0.tag == tag }) {
+                                let newAlbum = ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: "")
+                                albums.append(newAlbum)
+                                saveAlbumsToUserDefaults()
+                                print("Created album '\(tag)' with \(tagArtworks.count) artworks")
+                                print("Total albums: \(albums.count)")
+                            } else {
+                                print("Album '\(tag)' already exists")
+                            }
+                        } else {
+                            print("No artworks found with tag '\(tag)'")
                         }
                     }
                     newTag = ""
@@ -2347,8 +2357,9 @@ struct AnimeArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         
-        // Add to matching albums
-        addArtworkToMatchingAlbums(newArtwork)
+        // Reload albums to include the new artwork
+        loadAlbumsFromUserDefaults()
+        print("🔄 [AnimeScreen] Reloaded albums after adding new artwork")
         
         selectedImage = nil
         photoTitle = ""
@@ -2420,9 +2431,8 @@ struct AnimeArtworkScreen: View {
     private func saveAlbumsToUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
-            // Save directly to UserDefaults to ensure persistence
-            UserDefaults.standard.set(encodedData, forKey: key)
-            UserDefaults.standard.synchronize()
+            // Save using UserDefaultsHelper to ensure consistency
+            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
             print("💾 [ArtworkAlbum] Saved \(albums.count) albums to UserDefaults with key: \(key)")
         } else {
             print("❌ [ArtworkAlbum] Failed to encode albums for saving")
@@ -2431,28 +2441,26 @@ struct AnimeArtworkScreen: View {
     
     private func loadAlbumsFromUserDefaults() {
         let key = "anime_artwork_albums_\(anime.id.uuidString)"
-        // Load directly from UserDefaults for consistency with saving
-        if let data = UserDefaults.standard.data(forKey: key),
+        // Load from UserDefaultsHelper
+        if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
-            albums = decodedAlbums
-            print("💾 [ArtworkAlbum] Loaded \(albums.count) albums from UserDefaults with key: \(key)")
+            // Rebuild albums with current artworks to ensure they're up to date
+            albums = decodedAlbums.map { album in
+                let currentArtworks = artworks.filter { artwork in
+                    artwork.tags.contains(album.tag)
+                }
+                return ArtworkAlbum(tag: album.tag, videos: currentArtworks, characterImageName: album.characterImageName)
+            }
+            print("💾 [ArtworkAlbum] Loaded and rebuilt \(albums.count) albums from UserDefaults with key: \(key)")
+            for album in albums {
+                print("  - Album '\(album.tag)' with \(album.videos.count) artworks")
+            }
         } else {
             albums = []
             print("💾 [ArtworkAlbum] No albums found or failed to decode. Starting with empty array.")
         }
     }
     
-    private func addArtworkToMatchingAlbums(_ artwork: Artwork) {
-        for (index, album) in albums.enumerated() {
-            if artwork.tags.contains(album.tag) {
-                if !albums[index].videos.contains(where: { $0.id == artwork.id }) {
-                    albums[index].videos.append(artwork)
-                    print("📝 [ArtworkAlbum] Added artwork '\(artwork.title)' to album '\(album.tag)'")
-                }
-            }
-        }
-        saveAlbumsToUserDefaults()
-    }
     
     private func updateAlbumsAfterArtworkDeletion(deletedArtworkId: UUID) {
         // 各Albumから削除された画像を除去
@@ -2505,8 +2513,9 @@ struct AnimeArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         
-        // Add to matching albums
-        addArtworkToMatchingAlbums(newArtwork)
+        // Reload albums to include the new artwork
+        loadAlbumsFromUserDefaults()
+        print("🔄 [AnimeScreen] Reloaded albums after adding new Pixiv artwork")
         
         // フォームをリセット
         photoTitle = ""

@@ -1558,8 +1558,9 @@ struct VideoGalleryScreen: View {
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
         
-        // Check for existing albums with matching tags and add the video
-        addVideoToMatchingAlbums(newVideo)
+        // Reload albums from storage to ensure we have the latest data
+        loadAlbumsFromUserDefaults()
+        
         selectedVideoURL = nil
         videoTitle = ""
         videoTags = ""
@@ -1690,8 +1691,8 @@ struct VideoGalleryScreen: View {
         videos.insert(newVideo, at: 0)
         saveVideosToUserDefaults()
         
-        // Check for existing albums with matching tags and add the video
-        addVideoToMatchingAlbums(newVideo)
+        // Reload albums from storage to ensure we have the latest data
+        loadAlbumsFromUserDefaults()
         
         selectedThumbnailData = nil // リセット
         showAddSheet = false
@@ -1700,26 +1701,6 @@ struct VideoGalleryScreen: View {
         NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
     }
     
-    // Add video to albums with matching tags
-    private func addVideoToMatchingAlbums(_ video: MemoryVideo) {
-        var albumsUpdated = false
-        
-        for (index, album) in albums.enumerated() {
-            // Check if the video has the same tag as the album
-            if video.tags.contains(album.tag) {
-                // Check if the video is not already in the album
-                if !albums[index].videos.contains(where: { $0.id == video.id }) {
-                    albums[index].videos.append(video)
-                    albumsUpdated = true
-                }
-            }
-        }
-        
-        // Save albums if any were updated
-        if albumsUpdated {
-            saveAlbumsToUserDefaults()
-        }
-    }
     
     private func setupBackgroundObserver() {
         backgroundObserver = NotificationCenter.default.addObserver(

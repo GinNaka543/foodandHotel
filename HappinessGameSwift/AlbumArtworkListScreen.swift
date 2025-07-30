@@ -24,7 +24,7 @@ struct AlbumArtworkListScreen: View {
     private func formatViewCount(_ count: Int) -> String {
         if count >= 10000 {
             let formatted = Double(count) / 10000.0
-            return String(format: "%.1f万", formatted)
+            return String(format: NSLocalizedString("view_count_format", comment: "%.1f万"), formatted)
         } else {
             return "\(count)"
         }
@@ -37,17 +37,17 @@ struct AlbumArtworkListScreen: View {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date, to: now)
         
         if let years = components.year, years > 0 {
-            return "\(years)年前"
+            return String(format: NSLocalizedString("years_ago", comment: "%d years ago"), years)
         } else if let months = components.month, months > 0 {
-            return "\(months)ヶ月前"
+            return String(format: NSLocalizedString("months_ago", comment: "%d months ago"), months)
         } else if let days = components.day, days > 0 {
-            return "\(days)日前"
+            return String(format: NSLocalizedString("days_ago", comment: "%d days ago"), days)
         } else if let hours = components.hour, hours > 0 {
-            return "\(hours)時間前"
+            return String(format: NSLocalizedString("hours_ago", comment: "%d hours ago"), hours)
         } else if let minutes = components.minute, minutes > 0 {
-            return "\(minutes)分前"
+            return String(format: NSLocalizedString("minutes_ago", comment: "%d minutes ago"), minutes)
         } else {
-            return "たった今"
+            return NSLocalizedString("just_now", comment: "Just now")
         }
     }
     
@@ -91,7 +91,7 @@ struct AlbumArtworkListScreen: View {
                         Text("#" + tag)
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.white)
-                        Text("\(artworks.count)件の作品")
+                        Text(String(format: NSLocalizedString("artwork_items_count", comment: "%d items"), artworks.count))
                             .font(.system(size: 16))
                             .foregroundColor(.white.opacity(0.9))
                     }
@@ -172,7 +172,7 @@ struct AlbumArtworkListScreen: View {
                                             .foregroundColor(.gray)
                                     }
                                     
-                                    Text("\(formatViewCount(artwork.viewCount ?? 0))回・\(timeAgo(from: artwork.createdAt))")
+                                    Text("\(formatViewCount(artwork.viewCount ?? 0))\(NSLocalizedString("views_separator", comment: " • "))\(timeAgo(from: artwork.createdAt))")
                                         .font(.system(size: 13.8, weight: .regular))
                                         .foregroundColor(.gray)
                                         .padding(.vertical, 1)

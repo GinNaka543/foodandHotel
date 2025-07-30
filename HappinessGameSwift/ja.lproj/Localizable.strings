@@ -788,7 +788,13 @@
 "see_more_dots" = "...もっと見る";
 "edit_image" = "画像の編集";
 "views_times" = "%@回";
-"view_count_format" = "%@回";
+"view_count_format" = "%.1f万";
+"tag_name_placeholder" = "#タグ名";
+"artwork_items_count" = "%d件の作品";
+"views_separator" = "回・";
+"years_ago" = "%d年前";
+"months_ago" = "%dヶ月前";
+"just_now" = "たった今";
 "related_images" = "関連画像";
 "delete_image_confirm_title" = "本当に削除しますか？";
 "delete_image_confirm_message" = "この画像は完全に削除されます。";

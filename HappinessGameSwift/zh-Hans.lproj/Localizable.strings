@@ -938,7 +938,13 @@
 "see_more_dots" = "...查看更多";
 "edit_image" = "编辑图片";
 "views_times" = "%@次";
-"view_count_format" = "%@次观看";
+"view_count_format" = "%.1f万";
+"tag_name_placeholder" = "#标签名";
+"artwork_items_count" = "%d个作品";
+"views_separator" = "次・";
+"years_ago" = "%d年前";
+"months_ago" = "%d个月前";
+"just_now" = "刚刚";
 "related_images" = "相关图片";
 "delete_image_confirm_title" = "删除此图片？";
 "delete_image_confirm_message" = "此图片将被永久删除。";

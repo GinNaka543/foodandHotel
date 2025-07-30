@@ -981,7 +981,13 @@
 "see_more_dots" = "...Show more";
 "edit_image" = "Edit image";
 "views_times" = "%@ views";
-"view_count_format" = "%@ views";
+"view_count_format" = "%.1fK";
+"tag_name_placeholder" = "#Tag name";
+"artwork_items_count" = "%d items";
+"views_separator" = " • ";
+"years_ago" = "%d years ago";
+"months_ago" = "%d months ago";
+"just_now" = "Just now";
 "related_images" = "Related Images";
 "delete_image_confirm_title" = "Delete this image?";
 "delete_image_confirm_message" = "This image will be permanently deleted.";

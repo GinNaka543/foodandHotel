@@ -94,6 +94,7 @@ struct ArtworkScreen: View {
     @State private var showR18Alert = false
     @State private var r18ArtworkTitles: [String] = []
     @State private var isShowingFullDescription = false
+    @State private var refreshID = UUID()
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -286,7 +287,7 @@ struct ArtworkScreen: View {
                 }
                 .padding(.horizontal, 16)  // Same as banner padding
                 .padding(.bottom, 16)
-
+                
                 // タブバー - カプセル型デザイン（左寄せ）
                 HStack {
                     HStack(spacing: 12) {
@@ -318,6 +319,7 @@ struct ArtworkScreen: View {
                     Spacer()
                 }
                 .padding(.vertical, 8)
+                .zIndex(1) // Ensure tab buttons are above content
                 
                 // 画像リスト or Album
                 ZStack {
@@ -358,9 +360,8 @@ struct ArtworkScreen: View {
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                             } else {
-                                ScrollView {
-                                    VStack(spacing: 12) {
-                                        ForEach(albums) { album in
+                                VStack(spacing: 12) {
+                                    ForEach(albums) { album in
                                             Button(action: {
                                                 selectedAlbum = album
                                             }) {
@@ -445,9 +446,8 @@ struct ArtworkScreen: View {
                                             .padding(.horizontal, 16)
                                         }
                                     }
-                                    .padding(.top, 8)
-                                    .padding(.bottom, 8)
-                                }
+                                .padding(.top, 8)
+                                .padding(.bottom, 8)
                             }
                         }
                         .fullScreenCover(item: $selectedAlbum) { album in
@@ -513,9 +513,8 @@ struct ArtworkScreen: View {
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                             } else {
-                                ScrollView {
-                                    VStack(spacing: 32) {
-                                        ForEach(artworks, id: \.id) { artwork in
+                                VStack(spacing: 32) {
+                                    ForEach(artworks, id: \.id) { artwork in
                                             Button(action: {
                                                 selectedArtwork = artwork
                                             }) {
@@ -593,8 +592,7 @@ struct ArtworkScreen: View {
                                             .buttonStyle(PlainButtonStyle())
                                         }
                                     }
-                                    .padding(.top, 8)
-                                }
+                                .padding(.top, 8)
                             }
                         }
                     }
@@ -618,7 +616,7 @@ struct ArtworkScreen: View {
                         VStack(spacing: 4) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24))
-                            Text("戻る")
+                            Text(NSLocalizedString("back", comment: "Back"))
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.gray)
@@ -697,8 +695,21 @@ struct ArtworkScreen: View {
             }
         )
         .onAppear {
+            print("🎨 [ArtworkScreen] onAppear called for character: \(character.name)")
             loadArtworks()
             loadAlbumsFromUserDefaults()
+            print("🎨 [ArtworkScreen] Loaded \(artworks.count) artworks and \(albums.count) albums")
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ArtworkDataUpdated"))) { notification in
+            // Only reload if the notification is from a different source
+            if let userInfo = notification.userInfo, 
+               let source = userInfo["source"] as? String,
+               source != "currentView" {
+                print("🔄 [ArtworkScreen] Received ArtworkDataUpdated notification from \(source) - reloading data")
+                loadArtworks()
+                loadAlbumsFromUserDefaults()
+                refreshID = UUID()
+            }
         }
         .fullScreenCover(isPresented: $showAbout) {
             AboutView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
@@ -722,33 +733,47 @@ struct ArtworkScreen: View {
                 )
             case .tagInput:
                 VStack(spacing: 24) {
-                    Text("同じタグからアルバムを作れます")
+                    Text(NSLocalizedString("create_album_instruction", comment: "Create album from same tag"))
                         .font(.headline)
-                    TextField("#タグ名", text: $newTag)
+                    TextField(NSLocalizedString("tag_name_placeholder", comment: "#Tag name"), text: $newTag)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .padding(.horizontal, 24)
-                    Button("保存") {
-                        let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !tag.isEmpty {
-                            let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
-                            if !tagArtworks.isEmpty {
-                                albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
-                                saveAlbumsToUserDefaults()
-                            }
+                    HStack(spacing: 16) {
+                        Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                            activeSheet = nil
                         }
-                        newTag = ""
-                        activeSheet = nil
+                        .foregroundColor(.red)
+                        .font(.headline)
+                        
+                        Button(NSLocalizedString("save", comment: "Save")) {
+                            let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !tag.isEmpty {
+                                let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                                if !tagArtworks.isEmpty {
+                                    // Check if album already exists
+                                    if !albums.contains(where: { $0.tag == tag }) {
+                                        let newAlbum = ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: "")
+                                        albums.append(newAlbum)
+                                        saveAlbumsToUserDefaults()
+                                        print("Created album '\(tag)' with \(tagArtworks.count) artworks")
+                                        print("Total albums: \(albums.count)")
+                                    } else {
+                                        print("Album '\(tag)' already exists")
+                                    }
+                                } else {
+                                    print("No artworks found with tag '\(tag)'")
+                                }
+                            }
+                            newTag = ""
+                            activeSheet = nil
+                        }
+                        .font(.headline)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 10)
+                        .background(Color.black)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                     }
-                    .font(.headline)
-                    .padding(.horizontal, 32)
-                    .padding(.vertical, 10)
-                    .background(Color.black)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    Button("キャンセル") {
-                        activeSheet = nil
-                    }
-                    .foregroundColor(.red)
                 }
                 .padding(32)
             }
@@ -778,33 +803,47 @@ struct ArtworkScreen: View {
         }
         .sheet(isPresented: $showTagInput) {
             VStack(spacing: 24) {
-                Text("同じタグからアルバムを作れます")
+                Text(NSLocalizedString("create_album_instruction", comment: "Create album from same tag"))
                     .font(.headline)
-                TextField("#タグ名", text: $newTag)
+                TextField(NSLocalizedString("tag_name_placeholder", comment: "#Tag name"), text: $newTag)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal, 24)
-                Button("保存") {
-                    let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !tag.isEmpty {
-                        let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
-                        if !tagArtworks.isEmpty {
-                            albums.append(ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: ""))
-                            saveAlbumsToUserDefaults()
-                        }
+                HStack(spacing: 16) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        showTagInput = false
                     }
-                    newTag = ""
-                    showTagInput = false
+                    .foregroundColor(.red)
+                    .font(.headline)
+                    
+                    Button(NSLocalizedString("save", comment: "Save")) {
+                        let tag = newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !tag.isEmpty {
+                            let tagArtworks = artworks.filter { $0.tags.contains(where: { $0 == tag }) }
+                            if !tagArtworks.isEmpty {
+                                // Check if album already exists
+                                if !albums.contains(where: { $0.tag == tag }) {
+                                    let newAlbum = ArtworkAlbum(tag: tag, videos: tagArtworks, characterImageName: "")
+                                    albums.append(newAlbum)
+                                    saveAlbumsToUserDefaults()
+                                    print("Created album '\(tag)' with \(tagArtworks.count) artworks")
+                                    print("Total albums: \(albums.count)")
+                                } else {
+                                    print("Album '\(tag)' already exists")
+                                }
+                            } else {
+                                print("No artworks found with tag '\(tag)'")
+                            }
+                        }
+                        newTag = ""
+                        showTagInput = false
+                    }
+                    .font(.headline)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 10)
+                    .background(Color.black)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
                 }
-                .font(.headline)
-                .padding(.horizontal, 32)
-                .padding(.vertical, 10)
-                .background(Color.black)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                Button("キャンセル") {
-                    showTagInput = false
-                }
-                .foregroundColor(.red)
             }
             .padding(32)
         }
@@ -895,28 +934,42 @@ struct ArtworkScreen: View {
     
     func saveArtworksToUserDefaults() {
         ArtworkStorage.shared.saveArtworks(for: character.id.uuidString, artworks: artworks)
+        // Notify data update with source info
+        NotificationCenter.default.post(
+            name: NSNotification.Name("ArtworkDataUpdated"), 
+            object: nil,
+            userInfo: ["source": "currentView"]
+        )
     }
     
     private func saveAlbumsToUserDefaults() {
         let key = "artwork_albums_\(character.id.uuidString)"
         if let encodedData = try? JSONEncoder().encode(albums) {
-            // Save directly to UserDefaults to ensure persistence
-            UserDefaults.standard.set(encodedData, forKey: key)
-            UserDefaults.standard.synchronize()
+            // Save using UserDefaultsHelper to ensure consistency
+            UserDefaultsHelper.shared.setData(encodedData, forKey: key)
+            print("📝 [ArtworkScreen] Saved \(albums.count) albums to UserDefaults with key: \(key)")
         }
     }
     
     private func loadAlbumsFromUserDefaults() {
         let key = "artwork_albums_\(character.id.uuidString)"
-        // Try to load from UserDefaultsHelper first, then fallback to direct UserDefaults
+        // Load from UserDefaultsHelper
         if let data = UserDefaultsHelper.shared.getData(forKey: key),
            let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
-            albums = decodedAlbums
-        } else if let data = UserDefaults.standard.data(forKey: key),
-                  let decodedAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: data) {
-            albums = decodedAlbums
+            // Rebuild albums with current artworks to ensure they're up to date
+            albums = decodedAlbums.map { album in
+                let currentArtworks = artworks.filter { artwork in
+                    artwork.tags.contains(album.tag)
+                }
+                return ArtworkAlbum(tag: album.tag, videos: currentArtworks, characterImageName: album.characterImageName)
+            }
+            print("📖 [ArtworkScreen] Loaded and rebuilt \(albums.count) albums from UserDefaults")
+            for album in albums {
+                print("  - Album '\(album.tag)' with \(album.videos.count) artworks")
+            }
         } else {
             albums = []
+            print("📖 [ArtworkScreen] No albums found for key: \(key)")
         }
     }
     
@@ -936,8 +989,9 @@ struct ArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         
-        // Check for existing albums with matching tags and add the artwork
-        addArtworkToMatchingAlbums(newArtwork)
+        // Reload albums to include the new artwork
+        loadAlbumsFromUserDefaults()
+        print("🔄 [ArtworkScreen] Reloaded albums after adding new artwork")
         
         selectedImage = nil
         photoTitle = ""
@@ -962,8 +1016,9 @@ struct ArtworkScreen: View {
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
         
-        // Check for existing albums with matching tags and add the artwork
-        addArtworkToMatchingAlbums(newArtwork)
+        // Reload albums to include the new artwork
+        loadAlbumsFromUserDefaults()
+        print("🔄 [ArtworkScreen] Reloaded albums after adding new Pixiv artwork")
         
         photoTitle = ""
         photoTags = ""
@@ -980,26 +1035,6 @@ struct ArtworkScreen: View {
         }
     }
     
-    // Add artwork to albums with matching tags
-    private func addArtworkToMatchingAlbums(_ artwork: Artwork) {
-        var albumsUpdated = false
-        
-        for (index, album) in albums.enumerated() {
-            // Check if the artwork has the same tag as the album
-            if artwork.tags.contains(album.tag) {
-                // Check if the artwork is not already in the album
-                if !albums[index].videos.contains(where: { $0.id == artwork.id }) {
-                    albums[index].videos.append(artwork)
-                    albumsUpdated = true
-                }
-            }
-        }
-        
-        // Save albums if any were updated
-        if albumsUpdated {
-            saveAlbumsToUserDefaults()
-        }
-    }
     
     func deleteArtworkAlbum(_ album: ArtworkAlbum) {
         if let index = albums.firstIndex(where: { $0.id == album.id }) {

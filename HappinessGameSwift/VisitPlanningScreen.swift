@@ -529,16 +529,11 @@ struct VisitPlanningScreen: View {
                 }
                 return nil
             },
-            set: { _ in editingTransport = nil }
+            set: { newValue in 
+                editingTransport = nil
+            }
         )) { data in
             TransportEditView(spots: $spots, fromSpotIndex: data.index)
-                .onDisappear {
-                    // 編集後に自動的に下書き保存（一度だけ実行）
-                    print("DEBUG: TransportEditView onDisappear called")
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        saveDraftInternal()
-                    }
-                }
         }
         .sheet(isPresented: $showingCustomDaysPicker) {
             CustomDaysPickerView(numberOfDays: $numberOfDays)

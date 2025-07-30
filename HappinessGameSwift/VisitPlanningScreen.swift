@@ -31,14 +31,15 @@ struct VisitPlanningScreen: View {
     @StateObject private var firebaseManager = FirebaseManager.shared
     // @StateObject private var stripeManager = StripePaymentManager.shared // Stripe削除済み
     @StateObject private var githubManager = GitHubImageManager.shared
+    @State private var showingSaveSuccess = false
     
     // 編集中の下書きデータ
-    private let editingDraftId: UUID?
+    @State private var editingDraftId: UUID?
     
     init(editingDraft: VisitPlanData? = nil) {
         if let draft = editingDraft {
-            // print("DEBUG: 下書きデータを読み込み中: \(draft.title)")
-            self.editingDraftId = draft.id
+            print("DEBUG: Loading draft data - ID: \(draft.id), Title: \(draft.title)")
+            self._editingDraftId = State(initialValue: draft.id)
             self._animeName = State(initialValue: draft.animeName)
             self._planTitle = State(initialValue: draft.title)
             self._spots = State(initialValue: draft.spots)
@@ -49,7 +50,7 @@ struct VisitPlanningScreen: View {
                 self._thumbnailImage = State(initialValue: UIImage(data: thumbnailData))
             }
         } else {
-            self.editingDraftId = nil
+            self._editingDraftId = State(initialValue: nil)
         }
     }
     
@@ -71,8 +72,8 @@ struct VisitPlanningScreen: View {
                 // ヘッダー
                 HStack {
                     Button(action: { 
-                        // 戻るボタンを押した時、未確定のプランを自動的に下書き保存
-                        if !planTitle.isEmpty || !animeName.isEmpty || !spots.isEmpty {
+                        // 戻るボタンを押した時、変更がある場合は自動的に下書き保存
+                        if hasUnsavedChanges() {
                             saveDraftSilently()
                         } else {
                             dismiss()
@@ -389,15 +390,21 @@ struct VisitPlanningScreen: View {
                         Button(action: {
                             saveDraft()
                         }) {
-                            Text(NSLocalizedString("save_draft", comment: "Save draft"))
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.blue)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.blue, lineWidth: 2)
-                                )
+                            HStack {
+                                if showingSaveSuccess {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.green)
+                                }
+                                Text(showingSaveSuccess ? NSLocalizedString("saved", comment: "Saved") : NSLocalizedString("save_draft", comment: "Save draft"))
+                                    .font(.system(size: 17, weight: .semibold))
+                            }
+                            .foregroundColor(showingSaveSuccess ? .green : .blue)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(showingSaveSuccess ? Color.green : Color.blue, lineWidth: 2)
+                            )
                         }
                         
                         Button(action: {
@@ -420,6 +427,12 @@ struct VisitPlanningScreen: View {
                 .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+        }
+        .onDisappear {
+            // 画面が消えるときに自動保存（既に保存済みの場合はスキップ）
+            if hasUnsavedChanges() && !showingSaveSuccess {
+                saveDraftOnDisappear()
+            }
         }
         .sheet(isPresented: $showingConfirmation) {
             PlanConfirmationView(
@@ -738,9 +751,19 @@ struct VisitPlanningScreen: View {
     }
     
     func saveDraft() {
-        // 下書きプランデータを作成
+        print("DEBUG: saveDraft called")
+        saveDraftInternal()
+    }
+    
+    private func saveDraftInternal() {
+        // editingDraftIdがない場合は新しいIDを作成し、以後はそのIDを使用
+        let draftId = editingDraftId ?? UUID()
+        if editingDraftId == nil {
+            editingDraftId = draftId
+        }
+        
         let planData = VisitPlanData(
-            id: editingDraftId ?? UUID(), // 編集中の場合は既存のIDを使用
+            id: draftId,
             animeName: animeName,
             title: planTitle.isEmpty ? "無題のプラン" : planTitle,
             duration: formatTotalDuration(),
@@ -752,75 +775,65 @@ struct VisitPlanningScreen: View {
             isDraft: true
         )
         
-        var savedPlans = getSavedPlans()
+        print("DEBUG: Plan data created - ID: \(draftId), title: \(planData.title), spots: \(planData.spots.count)")
         
-        if let editingId = editingDraftId {
-            // 既存の下書きを更新
-            if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
-                savedPlans[index] = planData
-            } else {
-                // 既存の下書きが見つからない場合は新規追加
-                savedPlans.append(planData)
-            }
+        var savedPlans = getSavedPlans()
+        print("DEBUG: Current saved plans count: \(savedPlans.count)")
+        
+        // 既存のプランを更新または新規追加
+        if let index = savedPlans.firstIndex(where: { $0.id == draftId }) {
+            savedPlans[index] = planData
+            print("DEBUG: Updated existing draft at index \(index)")
         } else {
-            // 新規の下書きとして追加
             savedPlans.append(planData)
+            print("DEBUG: Added new draft")
         }
         
         if let encoded = try? JSONEncoder().encode(savedPlans) {
             UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
+            print("DEBUG: Successfully saved to UserDefaults")
             
-            DispatchQueue.main.async {
-                // オリジナルタブに遷移
-                NotificationCenter.default.post(
-                    name: Notification.Name("NavigateToVisitOriginalTab"),
-                    object: nil
-                )
-                self.dismiss()
+            // 保存成功のフィードバックを表示（dismissはしない）
+            showingSaveSuccess = true
+            
+            // 2秒後に保存成功表示をリセット
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                showingSaveSuccess = false
             }
+            
+            // 保存後にリロードを促す通知を送信
+            NotificationCenter.default.post(
+                name: Notification.Name("ReloadVisitPlans"),
+                object: nil
+            )
         } else {
+            print("DEBUG: Failed to encode plans")
         }
     }
     
+    func hasUnsavedChanges() -> Bool {
+        // 編集モードの場合は常にtrue（変更がある可能性があるため）
+        if editingDraftId != nil {
+            return true
+        }
+        // 新規作成の場合は、入力があるかチェック
+        return !planTitle.isEmpty || !animeName.isEmpty || !spots.isEmpty || thumbnailData != nil
+    }
+    
     func saveDraftSilently() {
-        // 下書きプランデータを作成
-        let planData = VisitPlanData(
-            id: editingDraftId ?? UUID(), // 編集中の場合は既存のIDを使用
-            animeName: animeName,
-            title: planTitle.isEmpty ? "無題のプラン" : planTitle,
-            duration: formatTotalDuration(),
-            spots: updateSpotTimes(),
-            thumbnailData: thumbnailData,
-            startTime: startTime,
-            numberOfDays: numberOfDays,
-            isPurchased: false,
-            isDraft: true
-        )
-        
-        var savedPlans = getSavedPlans()
-        
-        if let editingId = editingDraftId {
-            // 既存の下書きを更新
-            if let index = savedPlans.firstIndex(where: { $0.id == editingId }) {
-                savedPlans[index] = planData
-            } else {
-                // 既存の下書きが見つからない場合は新規追加
-                savedPlans.append(planData)
-            }
-        } else {
-            // 新規の下書きとして追加
-            savedPlans.append(planData)
-        }
-        
-        if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-        } else {
-        }
+        print("DEBUG: saveDraftSilently called")
+        saveDraftInternal()
         
         // dismiss()を最後に呼び出す
         DispatchQueue.main.async {
             self.dismiss()
         }
+    }
+    
+    func saveDraftOnDisappear() {
+        print("DEBUG: saveDraftOnDisappear called")
+        // 画面が消えるときの自動保存（dismissを呼ばない）
+        saveDraftInternal()
     }
 }
 

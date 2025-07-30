@@ -204,8 +204,8 @@ struct VisitScreen_iPad: View {
             }
             .background(Color(.systemGray6))
             
-            // オールタブの時に右下に固定ボタンを表示
-            if selectedTab == .all {
+            // オールタブとオリジナルタブの時に右下に固定ボタンを表示
+            if selectedTab == .all || selectedTab == .original {
                 VStack {
                     Spacer()
                     HStack {
@@ -242,12 +242,37 @@ struct VisitScreen_iPad: View {
             loadSavedPlans()
             loadFirebasePlans()
         }
-        .fullScreenCover(isPresented: $showingPlanningScreen) {
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ReloadVisitPlans"))) { _ in
+            print("DEBUG: Received reload notification")
+            DispatchQueue.main.async {
+                loadSavedPlans()
+            }
+        }
+        .fullScreenCover(isPresented: $showingPlanningScreen, onDismiss: {
+            // 画面が閉じられたときにプランをリロードし、オリジナルタブに移動
+            print("DEBUG: Planning screen dismissed, reloading plans")
+            selectedDraftPlan = nil // 選択をクリア
+            selectedTab = .original // オリジナルタブに移動
+            DispatchQueue.main.async {
+                loadSavedPlans()
+            }
+        }) {
             if let draft = selectedDraftPlan {
                 VisitPlanningScreen(editingDraft: draft)
             } else {
                 VisitPlanningScreen()
             }
+        }
+        .alert(NSLocalizedString("delete_plan", comment: "Delete plan"), isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
+            Button(NSLocalizedString("cancel", comment: "Cancel"), role: .cancel) {
+                planToDelete = nil
+            }
+            Button(NSLocalizedString("delete", comment: "Delete"), role: .destructive) {
+                deletePlan(plan)
+                planToDelete = nil
+            }
+        } message: { plan in
+            Text(String(format: NSLocalizedString("delete_plan_confirmation", comment: "Are you sure you want to delete '%@'?"), plan.title))
         }
         .sheet(item: $planToPurchase) { plan in
             PlanPurchaseConfirmationView(
@@ -296,11 +321,10 @@ struct VisitScreen_iPad: View {
     
     @ViewBuilder
     private func planCard_iPad(for plan: VisitPlanModel) -> some View {
-        Button(action: {
-            handlePlanTap(plan)
-        }) {
-            planCardContent(for: plan)
-        }
+        planCardContent(for: plan)
+            .onTapGesture {
+                handlePlanTap(plan)
+            }
     }
     
     private func handlePlanTap(_ plan: VisitPlanModel) {
@@ -436,7 +460,11 @@ struct VisitScreen_iPad: View {
                             }) {
                                 Image(systemName: "ellipsis")
                                     .foregroundColor(.gray)
+                                    .padding(8)
+                                    .background(Color.white.opacity(0.8))
+                                    .clipShape(Circle())
                             }
+                            .buttonStyle(PlainButtonStyle())
                         } else {
                             VStack(alignment: .trailing, spacing: 2) {
                                 Text(plan.duration)
@@ -460,22 +488,31 @@ struct VisitScreen_iPad: View {
     
     // 以下、必要な関数をVisitScreenからコピー
     private func getDisplayPlans() -> [VisitPlanModel] {
+        let plans: [VisitPlanModel]
+        
         switch selectedTab {
         case .all:
             // オールタブでは言語フィルタリングを適用
-            return publicPlans.filter { plan in
+            plans = publicPlans.filter { plan in
                 LanguageDetector.shared.isTitleMatchingCurrentLanguage(plan.title)
             }
         case .original:
-            return userOriginalPlans
+            plans = userOriginalPlans
         case .purchased:
-            return purchasedPlans
+            plans = purchasedPlans
         }
+        
+        // 表示時の最終重複チェック
+        let uniquePlans = removeDuplicatePlans(plans)
+        print("DEBUG: getDisplayPlans - Tab: \(selectedTab), Original: \(plans.count), After dedup: \(uniquePlans.count)")
+        return uniquePlans
     }
     
     
     private func loadSavedPlans() {
+        print("DEBUG: loadSavedPlans called")
         guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans") else {
+            print("DEBUG: No saved plans data found")
             savedPlans = []
             userOriginalPlans = []
             return
@@ -484,10 +521,13 @@ struct VisitScreen_iPad: View {
         do {
             let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
             savedPlans = plans
+            print("DEBUG: Loaded \(plans.count) saved plans")
             
             let originalPlans = plans.filter { !$0.isPurchased }
+            print("DEBUG: Found \(originalPlans.count) original plans (non-purchased)")
             userOriginalPlans = originalPlans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
-                VisitPlanModel(
+                print("DEBUG: Processing plan - Title: \(plan.title), isDraft: \(plan.isDraft)")
+                return VisitPlanModel(
                     id: plan.id.uuidString,
                     userId: currentUserId,
                     animeName: plan.animeName,
@@ -512,10 +552,16 @@ struct VisitScreen_iPad: View {
                 )
             }
             
-            // 購入済みプランの処理を追加
-            let purchasedPlansData = plans.filter { $0.isPurchased }
-            purchasedPlans = purchasedPlansData.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
-                VisitPlanModel(
+            // 重複削除を適用
+            userOriginalPlans = removeDuplicatePlans(userOriginalPlans)
+            print("DEBUG: userOriginalPlans updated with \(userOriginalPlans.count) plans after deduplication")
+            
+            // ローカルの購入済みプランの処理
+            let localPurchasedPlansData = plans.filter { $0.isPurchased }
+            print("DEBUG: Local purchased plans count: \(localPurchasedPlansData.count)")
+            
+            let localPurchasedPlans = localPurchasedPlansData.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+                return VisitPlanModel(
                     id: plan.id.uuidString,
                     userId: currentUserId,
                     animeName: plan.animeName,
@@ -539,6 +585,18 @@ struct VisitScreen_iPad: View {
                     streamingUrls: plan.streamingUrls
                 )
             }
+            
+            // ローカルの購入済みプランを既存の購入済みプランとマージ（重複防止）
+            for localPlan in localPurchasedPlans {
+                if !purchasedPlans.contains(where: { $0.id == localPlan.id }) {
+                    purchasedPlans.append(localPlan)
+                }
+            }
+            purchasedPlans = purchasedPlans.sorted(by: { $0.createdAt > $1.createdAt })
+            
+            // 重複削除を適用
+            purchasedPlans = removeDuplicatePlans(purchasedPlans)
+            print("DEBUG: Total purchased plans after local merge and deduplication: \(purchasedPlans.count)")
         } catch {
             savedPlans = []
             userOriginalPlans = []
@@ -556,7 +614,21 @@ struct VisitScreen_iPad: View {
                 // 購入済みプランの読み込み
                 if let purchasedData = UserDefaultsHelper.shared.getData(forKey: "purchasedPlans"),
                    let purchasedIds = try? JSONDecoder().decode([String].self, from: purchasedData) {
-                    self.purchasedPlans = plans.filter { purchasedIds.contains($0.id) }
+                    let firebasePurchasedPlans = plans.filter { purchasedIds.contains($0.id) }
+                    print("DEBUG: Firebase purchased plans count: \(firebasePurchasedPlans.count)")
+                    
+                    // ローカルの購入済みプランとマージ（重複を防ぐ）
+                    var allPurchasedPlans = self.purchasedPlans
+                    for plan in firebasePurchasedPlans {
+                        if !allPurchasedPlans.contains(where: { $0.id == plan.id }) {
+                            allPurchasedPlans.append(plan)
+                        }
+                    }
+                    self.purchasedPlans = allPurchasedPlans.sorted(by: { $0.createdAt > $1.createdAt })
+                    
+                    // 重複削除を適用
+                    self.purchasedPlans = self.removeDuplicatePlans(self.purchasedPlans)
+                    print("DEBUG: Total purchased plans after merge and deduplication: \(self.purchasedPlans.count)")
                 }
             case .failure(_):
                 break
@@ -566,6 +638,8 @@ struct VisitScreen_iPad: View {
     
     
     private func purchasePlan(_ plan: VisitPlanModel) {
+        print("DEBUG: Purchasing plan - ID: \(plan.id), Title: \(plan.title)")
+        
         // 購入処理の実装
         var purchasedIds = [String]()
         if let data = UserDefaultsHelper.shared.getData(forKey: "purchasedPlans"),
@@ -573,15 +647,84 @@ struct VisitScreen_iPad: View {
             purchasedIds = existingIds
         }
         
+        print("DEBUG: Current purchased IDs: \(purchasedIds)")
+        
         if !purchasedIds.contains(plan.id) {
             purchasedIds.append(plan.id)
             if let encoded = try? JSONEncoder().encode(purchasedIds) {
                 UserDefaultsHelper.shared.setData(encoded, forKey: "purchasedPlans")
+                print("DEBUG: Added plan ID to purchased list")
             }
+        } else {
+            print("DEBUG: Plan already purchased")
         }
         
         purchasedPlan = plan
         showingPurchaseCompletion = true
+        
+        // 購入後にFirebaseプランをリロード
         loadFirebasePlans()
+    }
+    
+    private func deletePlan(_ plan: VisitPlanModel) {
+        print("DEBUG: Deleting plan - ID: \(plan.id), Title: \(plan.title)")
+        
+        // ローカルの保存済みプランから削除
+        var savedPlans = getSavedPlans()
+        if let index = savedPlans.firstIndex(where: { $0.id.uuidString == plan.id }) {
+            savedPlans.remove(at: index)
+            print("DEBUG: Removed plan from saved plans at index \(index)")
+            
+            if let encoded = try? JSONEncoder().encode(savedPlans) {
+                UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
+                print("DEBUG: Successfully saved updated plans to UserDefaults")
+                
+                // UIをリロード
+                DispatchQueue.main.async {
+                    loadSavedPlans()
+                }
+            }
+        } else {
+            print("DEBUG: Plan not found in saved plans")
+        }
+    }
+    
+    private func getSavedPlans() -> [VisitPlanData] {
+        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans"),
+              let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
+            return []
+        }
+        return plans
+    }
+    
+    // 重複プランを削除する関数
+    private func removeDuplicatePlans(_ plans: [VisitPlanModel]) -> [VisitPlanModel] {
+        var uniquePlans: [VisitPlanModel] = []
+        var seenPlanIds: Set<String> = []
+        var seenPlanKeys: Set<String> = []
+        
+        for plan in plans {
+            // まずIDで重複チェック
+            if seenPlanIds.contains(plan.id) {
+                print("DEBUG: Removed duplicate plan by ID - Title: \(plan.title), ID: \(plan.id)")
+                continue
+            }
+            
+            // タイトル、アニメ名、作成日で重複判定
+            let planKey = "\(plan.title)_\(plan.animeName)_\(plan.createdDate.timeIntervalSince1970)"
+            if seenPlanKeys.contains(planKey) {
+                print("DEBUG: Removed duplicate plan by content - Title: \(plan.title), Key: \(planKey)")
+                continue
+            }
+            
+            // 重複でない場合は追加
+            seenPlanIds.insert(plan.id)
+            seenPlanKeys.insert(planKey)
+            uniquePlans.append(plan)
+            print("DEBUG: Added unique plan - Title: \(plan.title), ID: \(plan.id)")
+        }
+        
+        print("DEBUG: Removed \(plans.count - uniquePlans.count) duplicate plans")
+        return uniquePlans
     }
 }

@@ -524,7 +524,15 @@ struct VisitPlanningScreen: View {
         }
         .sheet(isPresented: Binding<Bool>(
             get: { editingTransport != nil },
-            set: { _ in editingTransport = nil }
+            set: { isPresented in 
+                if !isPresented {
+                    editingTransport = nil
+                    // Save draft after transport editing
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        saveDraftInternal()
+                    }
+                }
+            }
         )) {
             if let editingTransport = editingTransport {
                 TransportEditView(spots: $spots, fromSpotIndex: editingTransport.index)
@@ -2432,10 +2440,33 @@ struct TransportEditView: View {
         guard fromSpotIndex < spots.count else { return }
         
         if let transport = spots[fromSpotIndex].transportToNext {
-            transportMethod = transport.method
+            // Normalize the transport method to match the picker tags
+            transportMethod = normalizeTransportMethod(transport.method)
             transportDuration = transport.duration
             transportCost = transport.cost
             transportRoute = transport.route
+            
+            print("DEBUG: Loaded transport info - Method: \(transport.method) -> \(transportMethod)")
+        }
+    }
+    
+    private func normalizeTransportMethod(_ method: String) -> String {
+        switch method {
+        case NSLocalizedString("walking", comment: "Walking"), "walking":
+            return "徒歩"
+        case NSLocalizedString("train", comment: "Train"), "train":
+            return "電車"
+        case NSLocalizedString("bus", comment: "Bus"), "bus":
+            return "バス"
+        case NSLocalizedString("car", comment: "Car"), "car":
+            return "車"
+        case NSLocalizedString("bicycle", comment: "Bicycle"), "bicycle":
+            return "自転車"
+        case NSLocalizedString("taxi", comment: "Taxi"), "taxi":
+            return "タクシー"
+        default:
+            // If already in Japanese, return as is
+            return method
         }
     }
     

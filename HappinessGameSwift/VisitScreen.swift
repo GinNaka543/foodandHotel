@@ -638,15 +638,38 @@ public struct VisitScreen: View {
         let basePlans: [VisitPlanModel]
         switch selectedTab {
         case .all:
-            // オールタブでは言語フィルタリングを適用
+            // オールタブでは言語フィルタリングを適用（管理者設定言語 vs アプリ言語）
+            let currentAppLanguage = LocalizationManager.shared.currentLanguage.rawValue
+            print("DEBUG: getDisplayPlans - Current app language: \(currentAppLanguage)")
+            print("DEBUG: getDisplayPlans - Total publicPlans: \(publicPlans.count)")
+            
             basePlans = publicPlans.filter { plan in
-                let shouldShow = LanguageDetector.shared.isTitleMatchingCurrentLanguage(plan.title)
-                // デバッグ用ログ出力（最初の5つまで）
-                if publicPlans.firstIndex(where: { $0.id == plan.id }) ?? 0 < 5 {
-                    LanguageDetector.shared.debugLanguageDetection(title: plan.title)
+                // 管理者プランの場合、設定された言語とアプリ言語を比較
+                if plan.userId == "admin" {
+                    print("DEBUG: getDisplayPlans - Admin plan: '\(plan.title)' language: \(plan.language ?? "nil")")
+                    
+                    // 言語が設定されていない場合は表示しない（管理者は言語を明示的に設定する必要がある）
+                    guard let planLanguage = plan.language, !planLanguage.isEmpty else {
+                        print("DEBUG: getDisplayPlans - Plan '\(plan.title)' has no language, not showing")
+                        return false
+                    }
+                    
+                    // 中国語の場合は zh と zh-Hans 両方をサポート（後方互換性）
+                    if currentAppLanguage == "zh-Hans" && planLanguage == "zh" {
+                        print("DEBUG: getDisplayPlans - Plan '\(plan.title)' matches zh->zh-Hans compatibility")
+                        return true
+                    }
+                    
+                    // 管理者設定言語 == アプリ言語の場合に表示
+                    let shouldShow = planLanguage == currentAppLanguage
+                    print("DEBUG: getDisplayPlans - Plan '\(plan.title)' - planLang: \(planLanguage), appLang: \(currentAppLanguage), showing: \(shouldShow)")
+                    return shouldShow
                 }
-                return shouldShow
+                // 一般ユーザーのプランはすべて表示
+                print("DEBUG: getDisplayPlans - User plan: '\(plan.title)' - showing")
+                return true
             }
+            print("DEBUG: getDisplayPlans - Filtered to \(basePlans.count) plans from \(publicPlans.count)")
         case .original:
             basePlans = userOriginalPlans
         case .purchased:
@@ -741,11 +764,8 @@ public struct VisitScreen: View {
                 for (_, _) in plans.enumerated() {
                 }
                 
-                // 言語フィルタリングを適用
-                let languageFilteredPlans = self.filterPlansByLanguage(plans)
-                print("DEBUG: Filtered \(plans.count) plans to \(languageFilteredPlans.count) by language")
-                
-                self.publicPlans = languageFilteredPlans
+                // ドラフトでないプランのみを取得（言語フィルタリングはgetDisplayPlans()で行う）
+                self.publicPlans = plans.filter { !$0.isDraft }
             case .failure(_):
                 break
             }
@@ -1165,44 +1185,5 @@ public struct VisitScreen: View {
         return uniquePlans
     }
     
-    // 現在の端末言語を取得
-    private func getCurrentLanguage() -> String {
-        // LocalizationManagerから現在選択されている言語を取得
-        let currentLanguage = LocalizationManager.shared.currentLanguage.rawValue
-        
-        // デバッグログ
-        print("DEBUG: LocalizationManager current language: \(currentLanguage)")
-        
-        return currentLanguage
-    }
-    
-    // プランを言語でフィルタリング
-    private func filterPlansByLanguage(_ plans: [VisitPlanModel]) -> [VisitPlanModel] {
-        let currentLanguage = getCurrentLanguage()
-        
-        return plans.filter { plan in
-            // 管理者プランの場合、言語フィールドをチェック
-            if plan.userId == "admin" {
-                // 言語が設定されていない場合は全ての言語で表示（後方互換性のため）
-                guard let planLanguage = plan.language, !planLanguage.isEmpty else {
-                    print("DEBUG: Plan '\(plan.title)' has no language set, showing in all languages")
-                    return true
-                }
-                
-                // デバッグログ
-                print("DEBUG: Plan '\(plan.title)' - Plan language: \(planLanguage), Current language: \(currentLanguage)")
-                
-                // プランの言語が現在の言語と一致する場合に表示
-                // 中国語の場合は zh と zh-Hans 両方をサポート（後方互換性）
-                if currentLanguage == "zh-Hans" && planLanguage == "zh" {
-                    return true
-                }
-                return planLanguage == currentLanguage
-            }
-            
-            // 一般ユーザーのプランはすべて表示
-            return true
-        }
-    }
 }
 

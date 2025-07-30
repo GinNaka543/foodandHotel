@@ -129,6 +129,11 @@ class LanguageDetector {
             return true
         }
         
+        // 中国語設定で日本語（漢字を含む）の場合も表示
+        if currentLanguage == .chinese && detectedLanguage == .japanese {
+            return true
+        }
+        
         return false
     }
     

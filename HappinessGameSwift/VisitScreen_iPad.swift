@@ -492,10 +492,38 @@ struct VisitScreen_iPad: View {
         
         switch selectedTab {
         case .all:
-            // オールタブでは言語フィルタリングを適用
+            // オールタブでは言語フィルタリングを適用（管理者設定言語 vs アプリ言語）
+            let currentAppLanguage = LocalizationManager.shared.currentLanguage.rawValue
+            print("DEBUG: getDisplayPlans_iPad - Current app language: \(currentAppLanguage)")
+            print("DEBUG: getDisplayPlans_iPad - Total publicPlans: \(publicPlans.count)")
+            
             plans = publicPlans.filter { plan in
-                LanguageDetector.shared.isTitleMatchingCurrentLanguage(plan.title)
+                // 管理者プランの場合、設定された言語とアプリ言語を比較
+                if plan.userId == "admin" {
+                    print("DEBUG: getDisplayPlans_iPad - Admin plan: '\(plan.title)' language: \(plan.language ?? "nil")")
+                    
+                    // 言語が設定されていない場合は表示しない（管理者は言語を明示的に設定する必要がある）
+                    guard let planLanguage = plan.language, !planLanguage.isEmpty else {
+                        print("DEBUG: getDisplayPlans_iPad - Plan '\(plan.title)' has no language, not showing")
+                        return false
+                    }
+                    
+                    // 中国語の場合は zh と zh-Hans 両方をサポート（後方互換性）
+                    if currentAppLanguage == "zh-Hans" && planLanguage == "zh" {
+                        print("DEBUG: getDisplayPlans_iPad - Plan '\(plan.title)' matches zh->zh-Hans compatibility")
+                        return true
+                    }
+                    
+                    // 管理者設定言語 == アプリ言語の場合に表示
+                    let shouldShow = planLanguage == currentAppLanguage
+                    print("DEBUG: getDisplayPlans_iPad - Plan '\(plan.title)' - planLang: \(planLanguage), appLang: \(currentAppLanguage), showing: \(shouldShow)")
+                    return shouldShow
+                }
+                // 一般ユーザーのプランはすべて表示
+                print("DEBUG: getDisplayPlans_iPad - User plan: '\(plan.title)' - showing")
+                return true
             }
+            print("DEBUG: getDisplayPlans_iPad - Filtered to \(plans.count) plans from \(publicPlans.count)")
         case .original:
             plans = userOriginalPlans
         case .purchased:
@@ -608,17 +636,14 @@ struct VisitScreen_iPad: View {
         FirebaseManager.shared.fetchPublicPlans { result in
             switch result {
             case .success(let plans):
-                // 言語フィルタリングを適用
-                let languageFilteredPlans = self.filterPlansByLanguage(plans)
-                print("DEBUG: Filtered \(plans.count) plans to \(languageFilteredPlans.count) by language")
-                
-                self.publicPlans = languageFilteredPlans.filter { !$0.isDraft }
+                // ドラフトでないプランのみを取得（言語フィルタリングはgetDisplayPlans()で行う）
+                self.publicPlans = plans.filter { !$0.isDraft }
                     .sorted(by: { $0.createdAt > $1.createdAt })
                 
                 // 購入済みプランの読み込み
                 if let purchasedData = UserDefaultsHelper.shared.getData(forKey: "purchasedPlans"),
                    let purchasedIds = try? JSONDecoder().decode([String].self, from: purchasedData) {
-                    let firebasePurchasedPlans = languageFilteredPlans.filter { purchasedIds.contains($0.id) }
+                    let firebasePurchasedPlans = plans.filter { purchasedIds.contains($0.id) }
                     print("DEBUG: Firebase purchased plans count: \(firebasePurchasedPlans.count)")
                     
                     // ローカルの購入済みプランとマージ（重複を防ぐ）
@@ -732,43 +757,4 @@ struct VisitScreen_iPad: View {
         return uniquePlans
     }
     
-    // 現在の端末言語を取得
-    private func getCurrentLanguage() -> String {
-        // LocalizationManagerから現在選択されている言語を取得
-        let currentLanguage = LocalizationManager.shared.currentLanguage.rawValue
-        
-        // デバッグログ
-        print("DEBUG: LocalizationManager current language: \(currentLanguage)")
-        
-        return currentLanguage
-    }
-    
-    // プランを言語でフィルタリング
-    private func filterPlansByLanguage(_ plans: [VisitPlanModel]) -> [VisitPlanModel] {
-        let currentLanguage = getCurrentLanguage()
-        
-        return plans.filter { plan in
-            // 管理者プランの場合、言語フィールドをチェック
-            if plan.userId == "admin" {
-                // 言語が設定されていない場合は全ての言語で表示（後方互換性のため）
-                guard let planLanguage = plan.language, !planLanguage.isEmpty else {
-                    print("DEBUG: Plan '\(plan.title)' has no language set, showing in all languages")
-                    return true
-                }
-                
-                // デバッグログ
-                print("DEBUG: Plan '\(plan.title)' - Plan language: \(planLanguage), Current language: \(currentLanguage)")
-                
-                // プランの言語が現在の言語と一致する場合に表示
-                // 中国語の場合は zh と zh-Hans 両方をサポート（後方互換性）
-                if currentLanguage == "zh-Hans" && planLanguage == "zh" {
-                    return true
-                }
-                return planLanguage == currentLanguage
-            }
-            
-            // 一般ユーザーのプランはすべて表示
-            return true
-        }
-    }
 }

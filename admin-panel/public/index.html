@@ -127,9 +127,14 @@
                     <div id="plans-tab" class="tab-content">
                         <div class="mb-4 flex justify-between items-center">
                             <h2 class="text-xl font-bold">聖地巡礼プラン一覧</h2>
-                            <button onclick="refreshPlans()" class="btn btn-secondary">
-                                <i class="fas fa-refresh mr-2"></i>更新
-                            </button>
+                            <div>
+                                <button onclick="showPlanForm()" class="btn btn-primary mr-2">
+                                    <i class="fas fa-plus mr-2"></i>新規プラン
+                                </button>
+                                <button onclick="refreshPlans()" class="btn btn-secondary">
+                                    <i class="fas fa-refresh mr-2"></i>更新
+                                </button>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full">
@@ -137,6 +142,7 @@
                                     <tr class="border-b">
                                         <th class="text-left py-2">プラン名</th>
                                         <th class="text-left py-2">アニメ</th>
+                                        <th class="text-left py-2">言語</th>
                                         <th class="text-left py-2">期間</th>
                                         <th class="text-left py-2">スポット数</th>
                                         <th class="text-left py-2">作成日</th>
@@ -257,6 +263,92 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- プラン編集モーダル -->
+    <div id="planFormModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="bg-white rounded-lg shadow-lg max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold" id="planFormTitle">プラン編集</h3>
+                        <button onclick="closePlanForm()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <form id="planForm" onsubmit="savePlan(event)">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">プラン名 <span class="text-red-500">*</span></label>
+                                <input type="text" id="planTitle" name="title" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">アニメ名 <span class="text-red-500">*</span></label>
+                                <input type="text" id="planAnimeName" name="animeName" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">対象言語 <span class="text-red-500">*</span></label>
+                                <select id="planLanguage" name="language" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">言語を選択してください</option>
+                                    <option value="ja">日本語 (ja)</option>
+                                    <option value="en">English (en)</option>
+                                    <option value="ko">한국어 (ko)</option>
+                                    <option value="zh">中文 (zh)</option>
+                                    <option value="de">Deutsch (de)</option>
+                                    <option value="fr">Français (fr)</option>
+                                    <option value="es">Español (es)</option>
+                                    <option value="it">Italiano (it)</option>
+                                    <option value="pt">Português (pt)</option>
+                                </select>
+                                <p class="text-sm text-gray-500 mt-1">選択した言語のユーザーにのみ表示されます</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">期間</label>
+                                <select id="planDuration" name="duration" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="半日">半日</option>
+                                    <option value="1日">1日</option>
+                                    <option value="2日">2日</option>
+                                    <option value="3日">3日</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">説明</label>
+                                <textarea id="planDescription" name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">公開設定</label>
+                                <select id="planIsPublic" name="isPublic" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="true">公開</option>
+                                    <option value="false">非公開</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">価格（ポイント）</label>
+                                <input type="number" id="planPrice" name="price" min="0" value="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            
+                            <input type="hidden" id="planId" name="id">
+                            <input type="hidden" id="planUserId" name="userId" value="admin">
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button type="button" onclick="closePlanForm()" class="btn btn-secondary">
+                                キャンセル
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                保存
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

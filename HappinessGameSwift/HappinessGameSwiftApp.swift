@@ -419,22 +419,11 @@ struct HappinessGameSwiftApp: App {
                                     // 既存データの移行を実行
                                     UserDefaultsHelper.shared.migrateDataIfNeeded()
                                     
-                                    // Firebaseからデータを同期
-                                    print("🔄 Syncing data from Firebase...")
-                                    FirebaseManager.shared.syncUserContentFromFirebase(userId: userId) { result in
-                                        switch result {
-                                        case .success:
-                                            print("✅ Firebase sync completed")
-                                            // データを再読み込み
-                                            characterManager.loadCharacters()
-                                            animeManager.loadAnimes()
-                                        case .failure(let error):
-                                            print("❌ Firebase sync failed: \(error)")
-                                            // エラーでもローカルデータを読み込む
-                                            characterManager.loadCharacters()
-                                            animeManager.loadAnimes()
-                                        }
-                                    }
+                                    // Firebase同期無効化 - Privacy policy updated
+                                    print("ℹ️ Firebase sync disabled - loading local data only")
+                                    // ローカルデータを直接読み込み
+                                    characterManager.loadCharacters()
+                                    animeManager.loadAnimes()
                                     
                                     // 購入済みプランも同期
                                     FirebaseManager.shared.syncPurchasedPlans(userId: userId) { _ in

@@ -593,7 +593,7 @@ public struct VisitScreen: View {
             print("DEBUG: userOriginalPlans updated with \(userOriginalPlans.count) plans after deduplication")
             
             // 購入済みプランのみ（非表示を除外し、最新順にソート）
-            purchasedPlans = plans.filter { $0.isPurchased && !hiddenPlanIds.contains($0.id.uuidString) }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+            let tempPurchasedPlans = plans.filter { $0.isPurchased && !hiddenPlanIds.contains($0.id.uuidString) }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
                 VisitPlanModel(
                     id: plan.id.uuidString,
                     userId: currentUserId,
@@ -617,6 +617,10 @@ public struct VisitScreen: View {
                     streamingUrls: plan.streamingUrls // ストリーミングURLを追加
                 )
             }
+            
+            // 購入済みプランにも重複削除を適用
+            purchasedPlans = removeDuplicatePlans(tempPurchasedPlans)
+            print("DEBUG: purchasedPlans updated with \(purchasedPlans.count) plans after deduplication")
             
             for (_, _) in plans.enumerated() {
             }
@@ -1163,25 +1167,13 @@ public struct VisitScreen: View {
     
     // 現在の端末言語を取得
     private func getCurrentLanguage() -> String {
-        let preferredLanguage = Locale.preferredLanguages.first ?? "ja"
+        // LocalizationManagerから現在選択されている言語を取得
+        let currentLanguage = LocalizationManager.shared.currentLanguage.rawValue
         
-        // 中国語の場合の特別処理
-        if preferredLanguage.hasPrefix("zh") {
-            return "zh"
-        }
+        // デバッグログ
+        print("DEBUG: LocalizationManager current language: \(currentLanguage)")
         
-        // その他の言語は最初の2文字を使用
-        let languageCode = String(preferredLanguage.prefix(2))
-        
-        // サポートされている言語のリスト
-        let supportedLanguages = ["ja", "en", "ko", "zh", "de", "fr", "es", "it", "pt"]
-        
-        // サポートされている言語であればそれを返す、そうでなければ英語をデフォルトとする
-        if supportedLanguages.contains(languageCode) {
-            return languageCode
-        }
-        
-        return "en" // サポートされていない言語の場合は英語
+        return currentLanguage
     }
     
     // プランを言語でフィルタリング
@@ -1201,6 +1193,10 @@ public struct VisitScreen: View {
                 print("DEBUG: Plan '\(plan.title)' - Plan language: \(planLanguage), Current language: \(currentLanguage)")
                 
                 // プランの言語が現在の言語と一致する場合に表示
+                // 中国語の場合は zh と zh-Hans 両方をサポート（後方互換性）
+                if currentLanguage == "zh-Hans" && planLanguage == "zh" {
+                    return true
+                }
                 return planLanguage == currentLanguage
             }
             

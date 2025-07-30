@@ -2626,7 +2626,6 @@ struct VideoNavigationButtonStyle: ButtonStyle {
         favoriteFood: "",
         age: "",
         voiceActor: "",
-        cupSize: "",
         seichi: "",
         height: ""
     ))

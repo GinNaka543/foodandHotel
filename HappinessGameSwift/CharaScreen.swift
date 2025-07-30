@@ -36,6 +36,9 @@ class CharacterManager: ObservableObject {
         if let data = try? JSONEncoder().encode(characters) {
             UserDefaultsHelper.shared.setData(data, forKey: "characters")
             
+            // Force synchronization to ensure data is persisted immediately
+            UserDefaults.standard.synchronize()
+            
             // Firebaseに直接キャラクターデータを保存
             if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
                let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
@@ -50,15 +53,17 @@ class CharacterManager: ObservableObject {
                 }
             } else {
                 // currentUserProfileが存在しない場合でも、ユーザーIDがあればキャラクターを保存
-                if let userId = UserDefaults.standard.string(forKey: "userId") {
-                    print("🔥 Saving characters directly with userId: \(userId)")
-                    FirebaseManager.shared.saveUserContentData(userId: userId)
-                } else {
-                    print("⚠️ No user ID found - characters saved locally only")
-                    print("📝 Characters saved: \(characters.count) items")
-                    for (index, character) in characters.enumerated() {
-                        print("  \(index + 1). \(character.name) (ID: \(character.id))")
-                    }
+                // DISABLED: Privacy policy updated - user content no longer saved to Firebase
+                // if let userId = UserDefaults.standard.string(forKey: "userId") {
+                //     print("🔥 Saving characters directly with userId: \(userId)")
+                //     FirebaseManager.shared.saveUserContentData_DISABLED(userId: userId)
+                // } else {
+                //     print("⚠️ No user ID found - characters saved locally only")
+                // }
+                print("✅ Characters saved locally only (Firebase sync disabled)")
+                print("📝 Characters saved: \(characters.count) items")
+                for (index, character) in characters.enumerated() {
+                    print("  \(index + 1). \(character.name) (ID: \(character.id))")
                 }
             }
         } else {
@@ -213,7 +218,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     var favoriteFood: String
     var age: String // 年齢
     var voiceActor: String // 声優
-    var cupSize: String // カップ数
+    // var cupSize: String // カップ数 (removed)
     var seichi: String // 聖地
     var height: String // 身長
     var customFields: [CustomField]? // カスタムフィールド
@@ -227,7 +232,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     }
     // Codable対応
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, cupSize, seichi, height, customFields, order, iconScale, iconOffsetX, iconOffsetY
+        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, seichi, height, customFields, order, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -238,7 +243,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         try container.encode(favoriteFood, forKey: .favoriteFood)
         try container.encode(age, forKey: .age)
         try container.encode(voiceActor, forKey: .voiceActor)
-        try container.encode(cupSize, forKey: .cupSize)
+        // try container.encode(cupSize, forKey: .cupSize) // removed
         try container.encode(seichi, forKey: .seichi)
         try container.encode(height, forKey: .height)
         try container.encodeIfPresent(imageIdentifier, forKey: .imageIdentifier)
@@ -258,7 +263,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         favoriteFood = (try? container.decode(String.self, forKey: .favoriteFood)) ?? ""
         age = (try? container.decode(String.self, forKey: .age)) ?? ""
         voiceActor = (try? container.decode(String.self, forKey: .voiceActor)) ?? ""
-        cupSize = (try? container.decode(String.self, forKey: .cupSize)) ?? ""
+        // cupSize = (try? container.decode(String.self, forKey: .cupSize)) ?? "" // removed
         seichi = (try? container.decode(String.self, forKey: .seichi)) ?? ""
         height = (try? container.decode(String.self, forKey: .height)) ?? ""
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
@@ -269,7 +274,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
         iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, cupSize: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0, iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0, iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -279,7 +284,7 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         self.favoriteFood = favoriteFood
         self.age = age
         self.voiceActor = voiceActor
-        self.cupSize = cupSize
+        // self.cupSize = cupSize // removed
         self.seichi = seichi
         self.height = height
         self.customFields = customFields
@@ -894,7 +899,7 @@ struct AddCharacterSheet: View {
                             let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
                             let calendar = Calendar.current
                             let date = calendar.date(from: components) ?? Date()
-                            let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, cupSize: "", seichi: "", height: "", customFields: nil)
+                            let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, seichi: "", height: "", customFields: nil)
                             characterManager.addCharacterAtTop(newChar)
                             dismiss()
                         }) {
@@ -1229,6 +1234,13 @@ struct CharacterDetailView: View {
                 // 戻るボタン
                 backButton
                 
+                // サントラプレイヤーを上部に配置（戻るボタンの下）
+                if !currentCharacter.soundtracks.isEmpty {
+                    SoundtrackPlayerView()
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                }
+                
                 VStack {
                     Spacer().frame(height: 180)
                     // アイコン
@@ -1388,13 +1400,34 @@ struct CharacterDetailView: View {
                 // タイマーを停止
                 bannerTimer?.invalidate()
             }
-            .fullScreenCover(isPresented: $showAbout) {
+            .fullScreenCover(isPresented: $showAbout, onDismiss: {
+                // アバウトページから戻った時に最新のデータを反映
+                characterManager.loadCharacters()
+                
+                // 最新のキャラクター情報を取得して更新
+                if let updatedCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                    character = updatedCharacter
+                    
+                    // サウンドトラックが追加されている場合は再生を開始
+                    if !updatedCharacter.soundtracks.isEmpty {
+                        SoundtrackManager.shared.collectAllSoundtracks(
+                            characters: [updatedCharacter],
+                            animes: []
+                        )
+                        if !SoundtrackManager.shared.isPlaying {
+                            SoundtrackManager.shared.startRandomPlayback()
+                        }
+                    }
+                    
+                    // UIを強制的に更新
+                    DispatchQueue.main.async {
+                        characterManager.objectWillChange.send()
+                        refreshID = UUID()
+                    }
+                }
+            }) {
                 AboutView(characters: $characters, characterId: character.id, onClose: { 
                     showAbout = false
-                    // 最新のキャラクター情報を取得して更新
-                    if let updatedCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
-                        character = updatedCharacter
-                    }
                 })
                     .environmentObject(characterManager)
             }
@@ -1455,14 +1488,6 @@ struct CharacterDetailView: View {
                 }
             }
         }
-        // サントラプレイヤーを表示
-        .overlay(
-            VStack {
-                Spacer()
-                SoundtrackPlayerView()
-                    .padding(.bottom, 70)
-            }
-        )
         .onChange(of: iconPickerItem) { _, newValue in
             Task {
                 if let newValue = newValue {
@@ -1583,7 +1608,7 @@ struct AboutView: View {
     @State private var editedAge: String = ""
     @State private var editedFavoriteFood: String = ""
     @State private var editedVoiceActor: String = ""
-    @State private var editedCupSize: String = ""
+    // @State private var editedCupSize: String = "" // removed
     @State private var editedBirthday: Date = Date()
     @State private var editedTag: String = ""
     @State private var isEditingProfile: Bool = false
@@ -1731,8 +1756,7 @@ struct AboutView: View {
                                 editableProfileRow(label: NSLocalizedString("voice_actor", comment: ""), text: $editedVoiceActor)
                                     .onChange(of: editedVoiceActor) { saveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: NSLocalizedString("cup_size", comment: ""), text: $editedCupSize)
-                                    .onChange(of: editedCupSize) { saveCharacter() }
+                                // Cup size removed
                             } else {
                                 profileRow(label: NSLocalizedString("name", comment: ""), value: character?.name ?? "")
                                 Divider().padding(.leading, 20)
@@ -1745,10 +1769,7 @@ struct AboutView: View {
                                 profileRow(label: NSLocalizedString("favorite_food", comment: ""), value: character?.favoriteFood ?? NSLocalizedString("not_set", comment: ""))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("voice_actor", comment: ""), value: character?.voiceActor ?? NSLocalizedString("not_set", comment: ""))
-                                if let cupSize = character?.cupSize, !cupSize.isEmpty {
-                                    Divider().padding(.leading, 20)
-                                    profileRow(label: NSLocalizedString("cup_size", comment: ""), value: cupSize)
-                                }
+                                // Cup size display removed
                             }
                         }
                         .background(Color.white)
@@ -1882,20 +1903,12 @@ struct AboutView: View {
                 editedAge = character.age
                 editedFavoriteFood = character.favoriteFood
                 editedVoiceActor = character.voiceActor
-                editedCupSize = character.cupSize
+                // editedCupSize = character.cupSize // removed
                 editedBirthday = character.birthday
                 editedTag = character.tag
                 
             }
         }
-        // サントラプレイヤーを表示
-        .overlay(
-            VStack {
-                Spacer()
-                SoundtrackPlayerView()
-                    .padding(.bottom, 20)
-            }
-        )
         .onDisappear {
             saveCharacter()
         }
@@ -2161,7 +2174,7 @@ struct AboutView: View {
         updatedCharacter.age = editedAge
         updatedCharacter.favoriteFood = editedFavoriteFood
         updatedCharacter.voiceActor = editedVoiceActor
-        updatedCharacter.cupSize = editedCupSize
+        // updatedCharacter.cupSize = editedCupSize // removed
         updatedCharacter.birthday = editedBirthday
         updatedCharacter.tag = editedTag
         

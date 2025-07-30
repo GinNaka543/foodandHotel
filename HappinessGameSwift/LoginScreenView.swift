@@ -177,49 +177,37 @@ struct LoginScreenView: View {
                     if isValid {
                         saveUserData(username: username, userId: userId)
                         
-                        // Firebaseからユーザーデータを同期
-                        FirebaseManager.shared.syncUserContentFromFirebase(userId: userId) { syncResult in
-                            switch syncResult {
-                            case .success:
-                                print("ユーザーデータの同期が完了しました")
+                        // Firebase同期無効化 - Privacy policy updated
+                        print("ℹ️ User content sync disabled - processing plans and premium status only")
+                        
+                        // 購入済みプランのみ同期（プライバシーポリシーには含まれない）
+                        FirebaseManager.shared.syncPurchasedPlans(userId: userId) { planSyncResult in
+                            DispatchQueue.main.async {
+                                switch planSyncResult {
+                                case .success:
+                                    print("購入済みプランの同期が完了しました")
+                                case .failure(let error):
+                                    print("購入済みプランの同期エラー: \(error)")
+                                }
                                 
-                                // 購入済みプランも同期
-                                FirebaseManager.shared.syncPurchasedPlans(userId: userId) { planSyncResult in
+                                // プレミアムステータスをFirebaseから同期
+                                FirebaseManager.shared.loadPremiumUserStatus(userId: userId) { result in
                                     DispatchQueue.main.async {
-                                        switch planSyncResult {
-                                        case .success:
-                                            print("購入済みプランの同期が完了しました")
-                                        case .failure(let error):
-                                            print("購入済みプランの同期エラー: \(error)")
-                                        }
-                                        
-                                        // プレミアムステータスをFirebaseから同期
-                                        FirebaseManager.shared.loadPremiumUserStatus(userId: userId) { result in
-                                            DispatchQueue.main.async {
-                                                switch result {
-                                                case .success(let (isPremium, purchaseDate)):
-                                                    if isPremium, let purchaseDate = purchaseDate {
-                                                        UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
-                                                        UserDefaults.standard.set(true, forKey: "isPremiumUser")
-                                                    }
-                                                    PaymentGatekeeper.shared.checkPaymentStatus()
-                                                case .failure:
-                                                    PaymentGatekeeper.shared.checkPaymentStatus()
-                                                }
+                                        switch result {
+                                        case .success(let (isPremium, purchaseDate)):
+                                            if isPremium, let purchaseDate = purchaseDate {
+                                                UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
+                                                UserDefaults.standard.set(true, forKey: "isPremiumUser")
                                             }
+                                            PaymentGatekeeper.shared.checkPaymentStatus()
+                                        case .failure:
+                                            PaymentGatekeeper.shared.checkPaymentStatus()
                                         }
-                                        
-                                        authManager.login()
-                                        dismiss()
                                     }
                                 }
                                 
-                            case .failure(let error):
-                                print("ユーザーデータの同期エラー: \(error)")
-                                DispatchQueue.main.async {
-                                    authManager.login()
-                                    dismiss()
-                                }
+                                authManager.login()
+                                dismiss()
                             }
                         }
                     } else {

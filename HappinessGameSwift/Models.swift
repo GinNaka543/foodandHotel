@@ -17,7 +17,7 @@ struct Character: Identifiable, Codable, Equatable {
     var favoriteFood: String
     var age: String
     var voiceActor: String
-    var cupSize: String
+    // var cupSize: String // removed
     var seichi: String
     var height: String
     var shoeSize: String
@@ -48,7 +48,7 @@ struct Character: Identifiable, Codable, Equatable {
     
     init(id: UUID = UUID(), imageIdentifier: String? = nil, name: String = "", tag: String = "", 
          birthday: Date = Date(), favoriteFood: String = "", age: String = "", 
-         voiceActor: String = "", cupSize: String = "", seichi: String = "", 
+         voiceActor: String = "", seichi: String = "", 
          height: String = "", shoeSize: String = "", clothingSize: String = "", 
          bustSize: String = "", bankBalance: String = "", occupation: String = "", 
          personality: String = "", hobby: String = "", bodyType: String = "", 
@@ -63,7 +63,7 @@ struct Character: Identifiable, Codable, Equatable {
         self.favoriteFood = favoriteFood
         self.age = age
         self.voiceActor = voiceActor
-        self.cupSize = cupSize
+        // self.cupSize = cupSize // removed
         self.seichi = seichi
         self.height = height
         self.shoeSize = shoeSize
@@ -123,10 +123,10 @@ class CharacterManager: ObservableObject {
         characters.append(character)
         saveCharacters()
         
-        // Firebase に保存
-        if let userId = UserDefaults.standard.string(forKey: "userId") {
-            FirebaseManager.shared.saveUserContentData(userId: userId)
-        }
+        // Firebase に保存 - DISABLED: Privacy policy updated
+        // if let userId = UserDefaults.standard.string(forKey: "userId") {
+        //     FirebaseManager.shared.saveUserContentData_DISABLED(userId: userId)
+        // }
     }
     
     func updateCharacter(_ character: Character) {
@@ -134,10 +134,10 @@ class CharacterManager: ObservableObject {
             characters[index] = character
             saveCharacters()
             
-            // Firebase に保存
-            if let userId = UserDefaults.standard.string(forKey: "userId") {
-                FirebaseManager.shared.saveUserContentData(userId: userId)
-            }
+            // Firebase に保存 - DISABLED: Privacy policy updated
+            // if let userId = UserDefaults.standard.string(forKey: "userId") {
+            //     FirebaseManager.shared.saveUserContentData_DISABLED(userId: userId)
+            // }
         }
     }
     

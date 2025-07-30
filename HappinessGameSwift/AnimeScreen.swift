@@ -4868,14 +4868,15 @@ struct AnimeDetailView: View {
                                 .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         }
                     }
-                    .padding(.top, 24)
+                    .padding(.top, 70)
                     .padding(.leading, 16)
                     
                     Spacer()
                 }
                 
                 VStack {
-                    Spacer().frame(height: 180)
+                    Spacer()
+                    Spacer().frame(height: 60)
                     // アイコン
                     ZStack {
                         if let currentIcon = currentDisplayedIcon {

@@ -80,6 +80,33 @@ app.post('/api/plans', async (req, res) => {
     }
 });
 
+// API: プラン更新
+app.put('/api/plans/:id', async (req, res) => {
+    try {
+        const filePath = path.join(DATA_DIR, 'plans.json');
+        const data = await fs.readFile(filePath, 'utf-8').catch(() => '[]');
+        const plans = JSON.parse(data);
+        
+        const planIndex = plans.findIndex(plan => plan.id === req.params.id);
+        if (planIndex === -1) {
+            return res.status(404).json({ error: 'Plan not found' });
+        }
+        
+        // 既存のプランデータを更新
+        plans[planIndex] = {
+            ...plans[planIndex],
+            ...req.body,
+            id: req.params.id,
+            updatedAt: new Date().toISOString()
+        };
+        
+        await fs.writeFile(filePath, JSON.stringify(plans, null, 2));
+        res.json(plans[planIndex]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update plan' });
+    }
+});
+
 // API: プラン削除
 app.delete('/api/plans/:id', async (req, res) => {
     try {

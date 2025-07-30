@@ -109,15 +109,16 @@ class FirebaseManager: ObservableObject {
             if let error = error {
                 completion(.failure(error))
             } else {
-                // ユーザーが登録したキャラクターとアニメも保存
-                self.saveUserContentData(userId: profile.id)
+                // ユーザーが登録したキャラクターとアニメの保存 - DISABLED
+                // self.saveUserContentData_DISABLED(userId: profile.id)
                 completion(.success(()))
             }
         }
     }
     
     // ユーザーが登録したキャラクターとアニメデータを保存
-    func saveUserContentData(userId: String) {
+    // DISABLED: Privacy policy updated - user content no longer saved to Firebase
+    private func saveUserContentData_DISABLED(userId: String) {
         print("🔥 [Firebase] saveUserContentData called for userId: \(userId)")
         
         // キャラクターデータを保存
@@ -142,7 +143,7 @@ class FirebaseManager: ObservableObject {
                     "age": character.age,
                     "favoriteFood": character.favoriteFood,
                     "voiceActor": character.voiceActor,
-                    "cupSize": character.cupSize,
+                    // "cupSize": character.cupSize, // removed
                     "anime": "", // character.anime is not available in current Character struct
                     "createdAt": Timestamp(date: Date()), // character.createdAt is not available
                     "updatedAt": Timestamp(date: Date())  // character.updatedAt is not available
@@ -658,7 +659,8 @@ class FirebaseManager: ObservableObject {
     // MARK: - User Data Sync Functions
     
     // ユーザーのキャラクターデータをFirebaseから取得
-    func loadUserCharacters(userId: String, completion: @escaping (Result<[Character], Error>) -> Void) {
+    // DISABLED: Privacy policy updated - user content no longer stored in Firebase
+    private func loadUserCharacters_DISABLED(userId: String, completion: @escaping (Result<[Character], Error>) -> Void) {
         print("📱 Loading characters for userId: \(userId)")
         
         db.collection("userCharacters")
@@ -694,7 +696,6 @@ class FirebaseManager: ObservableObject {
                     let birthday = (data["birthday"] as? Timestamp)?.dateValue() ?? Date()
                     let age = data["age"] as? String ?? ""
                     let favoriteFood = data["favoriteFood"] as? String ?? ""
-                    let cupSize = data["cupSize"] as? String ?? ""
                     
                     let character = Character(
                         id: characterId,
@@ -705,7 +706,6 @@ class FirebaseManager: ObservableObject {
                         favoriteFood: favoriteFood,
                         age: age,
                         voiceActor: voiceActor,
-                        cupSize: cupSize,
                         seichi: "",
                         height: ""
                     )
@@ -718,7 +718,8 @@ class FirebaseManager: ObservableObject {
     }
     
     // ユーザーのアニメデータをFirebaseから取得
-    func loadUserAnimes(userId: String, completion: @escaping (Result<[Anime], Error>) -> Void) {
+    // DISABLED: Privacy policy updated - user content no longer stored in Firebase
+    private func loadUserAnimes_DISABLED(userId: String, completion: @escaping (Result<[Anime], Error>) -> Void) {
         print("📱 Loading animes for userId: \(userId)")
         
         db.collection("userAnimes")
@@ -787,118 +788,11 @@ class FirebaseManager: ObservableObject {
     }
     
     // ユーザーのすべてのコンテンツデータをFirebaseから同期
-    func syncUserContentFromFirebase(userId: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        let group = DispatchGroup()
-        var syncError: Error?
-        
-        // キャラクターデータを取得
-        group.enter()
-        loadUserCharacters(userId: userId) { result in
-            switch result {
-            case .success(let characters):
-                print("✅ Successfully loaded \(characters.count) characters")
-                if !characters.isEmpty {
-                    // 既存のローカルデータを取得して画像情報を保持
-                    var existingCharacters: [UUID: Character] = [:]
-                    if let existingData = UserDefaultsHelper.shared.getData(forKey: "characters"),
-                       let existing = try? JSONDecoder().decode([Character].self, from: existingData) {
-                        for char in existing {
-                            existingCharacters[char.id] = char
-                        }
-                        print("📷 Found \(existing.count) existing characters with potential image data")
-                    }
-                    
-                    // Firebaseから取得したキャラクターに既存の画像情報をマージ
-                    var mergedCharacters: [Character] = []
-                    for var character in characters {
-                        if let existingChar = existingCharacters[character.id],
-                           let existingImage = existingChar.imageIdentifier {
-                            // 既存の画像情報を保持
-                            character.imageIdentifier = existingImage
-                            print("📷 Preserved image for character: \(character.name)")
-                        }
-                        mergedCharacters.append(character)
-                    }
-                    
-                    // マージしたデータを保存
-                    if let encoded = try? JSONEncoder().encode(mergedCharacters) {
-                        UserDefaultsHelper.shared.setData(encoded, forKey: "characters")
-                        print("💾 Saved \(mergedCharacters.count) characters to UserDefaults (with preserved images)")
-                    }
-                } else {
-                    print("⚠️ No characters to save")
-                }
-            case .failure(let error):
-                syncError = error
-            }
-            group.leave()
-        }
-        
-        // アニメデータを取得
-        group.enter()
-        loadUserAnimes(userId: userId) { result in
-            switch result {
-            case .success(let animes):
-                print("✅ Successfully loaded \(animes.count) animes")
-                if !animes.isEmpty {
-                    // 既存のローカルデータを取得して画像情報を保持
-                    var existingAnimes: [UUID: Anime] = [:]
-                    if let existingData = UserDefaultsHelper.shared.getData(forKey: "animes"),
-                       let existing = try? JSONDecoder().decode([Anime].self, from: existingData) {
-                        for anime in existing {
-                            existingAnimes[anime.id] = anime
-                        }
-                        print("📷 Found \(existing.count) existing animes with potential image data")
-                    }
-                    
-                    // Firebaseから取得したアニメに既存の画像情報をマージ
-                    var mergedAnimes: [Anime] = []
-                    for var anime in animes {
-                        if let existingAnime = existingAnimes[anime.id] {
-                            // 既存の画像情報を保持
-                            if let existingImage = existingAnime.imageIdentifier {
-                                anime.imageIdentifier = existingImage
-                                print("📷 Preserved main image for anime: \(anime.title)")
-                            }
-                            if let existingBgImage = existingAnime.backgroundImagePath {
-                                anime.backgroundImagePath = existingBgImage
-                                print("📷 Preserved background image for anime: \(anime.title)")
-                            }
-                            // 既存のキャラクターIDを保持（Firebaseから取得したものとマージ）
-                            if !existingAnime.characterIds.isEmpty {
-                                // 既存のキャラクターIDとFirebaseのキャラクターIDをマージ（重複を排除）
-                                let combinedIds = Set(anime.characterIds + existingAnime.characterIds)
-                                anime.characterIds = Array(combinedIds)
-                                print("📝 Preserved/merged \(anime.characterIds.count) character IDs for anime: \(anime.title)")
-                            }
-                        }
-                        mergedAnimes.append(anime)
-                    }
-                    
-                    // マージしたデータを保存
-                    if let encoded = try? JSONEncoder().encode(mergedAnimes) {
-                        UserDefaultsHelper.shared.setData(encoded, forKey: "animes")
-                        print("💾 Saved \(mergedAnimes.count) animes to UserDefaults (with preserved images)")
-                    }
-                } else {
-                    print("⚠️ No animes to save")
-                }
-            case .failure(let error):
-                syncError = error
-            }
-            group.leave()
-        }
-        
-        // すべての処理が完了したら
-        group.notify(queue: .main) {
-            if let error = syncError {
-                completion(.failure(error))
-            } else {
-                // データ更新の通知を送信
-                NotificationCenter.default.post(name: Notification.Name("UserDataSynced"), object: nil)
-                completion(.success(()))
-            }
-        }
+    // DISABLED: Privacy policy updated - user content no longer stored in Firebase
+    private func syncUserContentFromFirebase_DISABLED(userId: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        // Function disabled due to privacy policy changes
+        print("ℹ️ User content sync disabled - local data only")
+        completion(.success(()))
     }
     
     // ユーザーが購入したプランを取得

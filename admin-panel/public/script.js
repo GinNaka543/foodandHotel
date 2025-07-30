@@ -79,17 +79,35 @@ async function loadPlans() {
         }
         
         plans.forEach(plan => {
+            const languageMap = {
+                'ja': '日本語',
+                'en': 'English',
+                'ko': '한국어',
+                'zh': '中文',
+                'de': 'Deutsch',
+                'fr': 'Français',
+                'es': 'Español',
+                'it': 'Italiano',
+                'pt': 'Português'
+            };
+            const languageDisplay = plan.language ? `${languageMap[plan.language] || plan.language}` : '未設定';
+            
             const tr = document.createElement('tr');
             tr.className = 'border-b hover:bg-gray-50';
             tr.innerHTML = `
                 <td class="py-3">${plan.title}</td>
                 <td class="py-3">${plan.animeName}</td>
+                <td class="py-3">
+                    <span class="px-2 py-1 text-xs rounded ${plan.language ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'}">
+                        ${languageDisplay}
+                    </span>
+                </td>
                 <td class="py-3">${plan.duration}</td>
                 <td class="py-3">${plan.spots ? plan.spots.length : 0}</td>
                 <td class="py-3">${new Date(plan.createdAt).toLocaleDateString('ja-JP')}</td>
                 <td class="py-3">
-                    <button onclick="viewPlan('${plan.id}')" class="btn btn-sm btn-secondary mr-2">
-                        <i class="fas fa-eye"></i>
+                    <button onclick="editPlan('${plan.id}')" class="btn btn-sm btn-primary mr-2">
+                        <i class="fas fa-edit"></i>
                     </button>
                     <button onclick="deletePlan('${plan.id}')" class="btn btn-sm btn-danger">
                         <i class="fas fa-trash"></i>
@@ -103,9 +121,100 @@ async function loadPlans() {
     }
 }
 
-// プランの詳細表示
-function viewPlan(id) {
-    alert('プラン詳細機能は実装中です');
+// プラン編集フォームを表示
+function showPlanForm(plan = null) {
+    const modal = document.getElementById('planFormModal');
+    const form = document.getElementById('planForm');
+    const title = document.getElementById('planFormTitle');
+    
+    // フォームをリセット
+    form.reset();
+    
+    if (plan) {
+        // 編集モード
+        title.textContent = 'プラン編集';
+        document.getElementById('planId').value = plan.id;
+        document.getElementById('planTitle').value = plan.title || '';
+        document.getElementById('planAnimeName').value = plan.animeName || '';
+        document.getElementById('planLanguage').value = plan.language || '';
+        document.getElementById('planDuration').value = plan.duration || '1日';
+        document.getElementById('planDescription').value = plan.description || '';
+        document.getElementById('planIsPublic').value = plan.isPublic !== false ? 'true' : 'false';
+        document.getElementById('planPrice').value = plan.price || 0;
+    } else {
+        // 新規作成モード
+        title.textContent = '新規プラン作成';
+        document.getElementById('planId').value = '';
+    }
+    
+    modal.classList.remove('hidden');
+}
+
+// プラン編集フォームを閉じる
+function closePlanForm() {
+    document.getElementById('planFormModal').classList.add('hidden');
+}
+
+// プランを編集
+async function editPlan(id) {
+    try {
+        const response = await fetch(`${API_URL}/plans`);
+        const plans = await response.json();
+        const plan = plans.find(p => p.id === id);
+        
+        if (plan) {
+            showPlanForm(plan);
+        } else {
+            alert('プランが見つかりません');
+        }
+    } catch (error) {
+        console.error('プランの取得に失敗しました:', error);
+        alert('プランの取得に失敗しました');
+    }
+}
+
+// プランを保存
+async function savePlan(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const planData = {
+        id: formData.get('id') || undefined,
+        title: formData.get('title'),
+        animeName: formData.get('animeName'),
+        language: formData.get('language'),
+        duration: formData.get('duration'),
+        description: formData.get('description'),
+        isPublic: formData.get('isPublic') === 'true',
+        price: parseInt(formData.get('price')) || 0,
+        userId: 'admin',
+        spots: [] // スポットは別途管理
+    };
+    
+    try {
+        const method = planData.id ? 'PUT' : 'POST';
+        const url = planData.id ? `${API_URL}/plans/${planData.id}` : `${API_URL}/plans`;
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(planData)
+        });
+        
+        if (response.ok) {
+            alert('プランを保存しました');
+            closePlanForm();
+            loadPlans();
+            loadStats();
+        } else {
+            alert('保存に失敗しました');
+        }
+    } catch (error) {
+        console.error('プランの保存に失敗しました:', error);
+        alert('保存に失敗しました');
+    }
 }
 
 // プランの削除

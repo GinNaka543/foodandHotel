@@ -16,6 +16,7 @@ struct VisitPlanningScreen: View {
     @State private var startTime = Date()
     @State private var editingSpot: VisitSpot?
     @State private var editingTransport: (fromSpot: VisitSpot, index: Int)?
+    @State private var shouldScrollToTransport = false
     @State private var numberOfDays: Int = 1
     @State private var selectedDay: Int = 1
     @State private var showingDayPicker = false
@@ -336,7 +337,8 @@ struct VisitPlanningScreen: View {
                                                 from: spot,
                                                 to: filteredSpots[index + 1],
                                                 onEdit: {
-                                                    editingTransport = (fromSpot: spot, index: spots.firstIndex(where: { $0.id == spot.id }) ?? 0)
+                                                    editingSpot = spot
+                                                    shouldScrollToTransport = true
                                                 }
                                             )
                                         }
@@ -487,7 +489,7 @@ struct VisitPlanningScreen: View {
             }
         }
         .sheet(item: $editingSpot) { spot in
-            EditSpotView(spot: spot, spots: .constant(spots), startTime: startTime) { updatedSpot in
+            EditSpotView(spot: spot, spots: $spots, startTime: startTime, onSave: { updatedSpot in
                 print("DEBUG: Callback received updatedSpot with name: '\(updatedSpot.name)'")
                 
                 print("DEBUG: Processing updated spot - ID: \(updatedSpot.id), Name: '\(updatedSpot.name)'")
@@ -520,22 +522,9 @@ struct VisitPlanningScreen: View {
                         saveDraftInternal()
                     }
                 }
-            }
-        }
-        .sheet(isPresented: Binding<Bool>(
-            get: { editingTransport != nil },
-            set: { isPresented in 
-                if !isPresented {
-                    editingTransport = nil
-                    // Save draft after transport editing
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        saveDraftInternal()
-                    }
-                }
-            }
-        )) {
-            if let editingTransport = editingTransport {
-                TransportEditView(spots: $spots, fromSpotIndex: editingTransport.index)
+            }, scrollToTransport: shouldScrollToTransport)
+            .onDisappear {
+                shouldScrollToTransport = false
             }
         }
         .sheet(isPresented: $showingCustomDaysPicker) {
@@ -1857,6 +1846,7 @@ struct EditSpotView: View {
     @Binding var spots: [VisitSpot]
     let startTime: Date
     let onSave: ((VisitSpot) -> Void)?
+    let scrollToTransport: Bool
     
     @State private var spotName: String
     @State private var spotAddress: String
@@ -1881,6 +1871,7 @@ struct EditSpotView: View {
     @State private var transportCost: Int = 0
     @State private var transportRoute: String = ""
     @State private var showTransportSection: Bool = false
+    @State private var hasScrolledToTransport: Bool = false
     
     // Define transport methods as a static property to ensure consistency
     static let transportMethods = [
@@ -1896,11 +1887,12 @@ struct EditSpotView: View {
         return EditSpotView.transportMethods
     }
     
-    init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date, onSave: ((VisitSpot) -> Void)? = nil) {
+    init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date, onSave: ((VisitSpot) -> Void)? = nil, scrollToTransport: Bool = false) {
         self.spot = spot
         self._spots = spots
         self.startTime = startTime
         self.onSave = onSave
+        self.scrollToTransport = scrollToTransport
         self._spotName = State(initialValue: spot.name)
         self._spotAddress = State(initialValue: spot.address)
         self._nearestStation = State(initialValue: spot.nearestStation)
@@ -2015,8 +2007,9 @@ struct EditSpotView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(NSLocalizedString("spot_info", comment: "Spot Info")) {
+            ScrollViewReader { scrollProxy in
+                Form {
+                    Section(NSLocalizedString("spot_info", comment: "Spot Info")) {
                     TextField(NSLocalizedString("spot_name", comment: "Spot name"), text: $spotName)
                         .onChange(of: spotName) { oldValue, newValue in
                             print("DEBUG: spotName changed from '\(oldValue)' to '\(newValue)'")
@@ -2231,6 +2224,7 @@ struct EditSpotView: View {
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                         }
                     }
+                    .id("transportSection")
                 }
                 
                 Section {
@@ -2244,7 +2238,18 @@ struct EditSpotView: View {
                         dismiss()
                     }
                 }
+            } // End of Form
+            .onAppear {
+                if scrollToTransport && !hasScrolledToTransport && showTransportSection {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        withAnimation {
+                            scrollProxy.scrollTo("transportSection", anchor: .top)
+                        }
+                        hasScrolledToTransport = true
+                    }
+                }
             }
+            } // End of ScrollViewReader
             .navigationTitle(NSLocalizedString("spot_edit", comment: "Edit Spot"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

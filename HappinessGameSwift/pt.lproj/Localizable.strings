@@ -993,3 +993,9 @@
 "note_can_use_multiple_times" = "• Os planos comprados podem ser usados várias vezes";
 "purchasing" = "Comprando...";
 "purchase_with_points" = "Comprar com %d pontos";
+
+/* Music Player */
+"play_music" = "Tocar música";
+"no_soundtrack_title" = "Nenhuma trilha sonora registrada";
+"add_soundtrack_from_about" = "Por favor, adicione uma trilha sonora na página Sobre";
+"ok" = "OK";

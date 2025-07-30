@@ -994,3 +994,9 @@
 "note_can_use_multiple_times" = "• 购买的计划可以多次使用";
 "purchasing" = "购买中...";
 "purchase_with_points" = "用%d积分购买";
+
+/* Music Player */
+"play_music" = "播放音乐";
+"no_soundtrack_title" = "未注册音轨";
+"add_soundtrack_from_about" = "请从关于页面添加音轨";
+"ok" = "确定";

@@ -866,3 +866,9 @@
 "note_can_use_multiple_times" = "• 購入したプランは何度でも使用できます";
 "purchasing" = "購入中...";
 "purchase_with_points" = "%dポイントで購入";
+
+/* Music Player */
+"play_music" = "音楽を再生";
+"no_soundtrack_title" = "サントラが登録されていません";
+"add_soundtrack_from_about" = "アバウトページからサントラを追加してください";
+"ok" = "OK";

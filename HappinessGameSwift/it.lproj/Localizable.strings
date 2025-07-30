@@ -994,3 +994,9 @@
 "note_can_use_multiple_times" = "• I piani acquistati possono essere utilizzati più volte";
 "purchasing" = "Acquisto in corso...";
 "purchase_with_points" = "Acquista con %d punti";
+
+/* Music Player */
+"play_music" = "Riproduci musica";
+"no_soundtrack_title" = "Nessuna colonna sonora registrata";
+"add_soundtrack_from_about" = "Si prega di aggiungere una colonna sonora dalla pagina Informazioni";
+"ok" = "OK";

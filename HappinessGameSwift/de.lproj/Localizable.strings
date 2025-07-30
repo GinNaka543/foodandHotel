@@ -1078,3 +1078,9 @@ Gute Arbeit";
 "note_can_use_multiple_times" = "• Gekaufte Pläne können mehrfach verwendet werden";
 "purchasing" = "Kaufe...";
 "purchase_with_points" = "Mit %d Punkten kaufen";
+
+/* Music Player */
+"play_music" = "Musik abspielen";
+"no_soundtrack_title" = "Kein Soundtrack registriert";
+"add_soundtrack_from_about" = "Bitte fügen Sie einen Soundtrack über die Info-Seite hinzu";
+"ok" = "OK";

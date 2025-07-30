@@ -3373,25 +3373,31 @@ struct CharacterIconAdjustmentView: View {
 struct PlayMusicButtonViewForCharacter: View {
     let character: Character
     @ObservedObject private var soundtrackManager = SoundtrackManager.shared
+    @State private var showSoundtrackAlert = false
     
     var body: some View {
         VStack {
             Spacer()
             HStack {
                 Spacer()
-                if !soundtrackManager.isPlayerVisible && !character.soundtracks.isEmpty {
+                if !soundtrackManager.isPlayerVisible {
                     Button(action: {
-                        // 常に新しくランダム選択して再生
-                        soundtrackManager.collectAllSoundtracks(
-                            characters: [character],
-                            animes: []
-                        )
-                        soundtrackManager.startRandomPlayback()
+                        if character.soundtracks.isEmpty {
+                            // サントラがない場合はアラートを表示
+                            showSoundtrackAlert = true
+                        } else {
+                            // サントラがある場合は再生
+                            soundtrackManager.collectAllSoundtracks(
+                                characters: [character],
+                                animes: []
+                            )
+                            soundtrackManager.startRandomPlayback()
+                        }
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: "music.note")
                                 .font(.system(size: 16))
-                            Text("音楽を再生")
+                            Text(NSLocalizedString("play_music", comment: "音楽を再生"))
                                 .font(.system(size: 14, weight: .medium))
                         }
                         .foregroundColor(.white)
@@ -3403,6 +3409,13 @@ struct PlayMusicButtonViewForCharacter: View {
                     }
                     .padding(.trailing, 20)
                     .padding(.bottom, 50)
+                    .alert(NSLocalizedString("no_soundtrack_title", comment: "サントラが登録されていません"), isPresented: $showSoundtrackAlert) {
+                        Button(NSLocalizedString("ok", comment: "OK")) {
+                            showSoundtrackAlert = false
+                        }
+                    } message: {
+                        Text(NSLocalizedString("add_soundtrack_from_about", comment: "アバウトページからサントラを追加してください"))
+                    }
                 }
             }
         }

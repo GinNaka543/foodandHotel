@@ -18,19 +18,21 @@ struct SpotEditView: View {
     @State private var selectedDetailImages: [PhotosPickerItem] = []
     @State private var imageData: Data?
     @State private var detailImagesData: [Data] = []
+    @StateObject private var currencyManager = CurrencyManager.shared
+    @State private var isNextDay: Bool = false
     
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("基本情報")) {
-                    TextField("スポット名", text: $name)
-                    TextField("住所", text: $address)
-                    TextField("ここで何をするか", text: $activity)
+                Section(header: Text(NSLocalizedString("Basic Information", comment: "Section header for basic spot information"))) {
+                    TextField(NSLocalizedString("Spot Name", comment: "Placeholder for spot name field"), text: $name)
+                    TextField(NSLocalizedString("Address", comment: "Placeholder for address field"), text: $address)
+                    TextField(NSLocalizedString("What to do here", comment: "Placeholder for activity field"), text: $activity)
                 }
                 
-                Section(header: Text("時間と費用")) {
+                Section(header: Text(NSLocalizedString("Time and Cost", comment: "Section header for time and cost information"))) {
                     HStack {
-                        Text("滞在時間")
+                        Text(NSLocalizedString("Stay Duration", comment: "Label for stay duration"))
                         Spacer()
                         TextField("60", text: $stayDuration)
                             .keyboardType(.numberPad)
@@ -39,12 +41,12 @@ struct SpotEditView: View {
                             .onChange(of: stayDuration) { _, newValue in
                                 updateDepartureTime()
                             }
-                        Text("分")
+                        Text(NSLocalizedString("minutes", comment: "Unit for minutes"))
                     }
                     
                     VStack(spacing: 8) {
                         HStack {
-                            Text("到着時間")
+                            Text(NSLocalizedString("Arrival Time", comment: "Label for arrival time"))
                                 .frame(width: 80, alignment: .leading)
                             Spacer()
                             DatePicker("", selection: $arrivalTime, displayedComponents: .hourAndMinute)
@@ -55,7 +57,7 @@ struct SpotEditView: View {
                         }
                         
                         HStack {
-                            Text("出発時間")
+                            Text(NSLocalizedString("Departure Time", comment: "Label for departure time"))
                                 .frame(width: 80, alignment: .leading)
                             Spacer()
                             DatePicker("", selection: $departureTime, displayedComponents: .hourAndMinute)
@@ -64,21 +66,26 @@ struct SpotEditView: View {
                                     updateStayDuration()
                                 }
                         }
+                        
+                        Toggle(NSLocalizedString("Next Day", comment: "Toggle for next day departure"), isOn: $isNextDay)
+                            .onChange(of: isNextDay) { _, newValue in
+                                updateDepartureTime()
+                            }
                     }
                     .padding(.vertical, 4)
                     
                     HStack {
-                        Text("費用")
+                        Text(NSLocalizedString("Cost", comment: "Label for cost"))
                         Spacer()
-                        Text("¥")
+                        Text(currencyManager.currencySymbol)
                         TextField("0", text: $spotCost)
-                            .keyboardType(.numberPad)
+                            .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
                     }
                 }
                 
-                Section(header: Text("スポット画像")) {
+                Section(header: Text(NSLocalizedString("Spot Image", comment: "Section header for spot image"))) {
                     VStack(spacing: 16) {
                         // 現在の画像表示
                         if let imageData = imageData,
@@ -98,7 +105,7 @@ struct SpotEditView: View {
                                         Image(systemName: "photo")
                                             .font(.system(size: 50))
                                             .foregroundColor(.blue)
-                                        Text("スポットの画像を追加")
+                                        Text(NSLocalizedString("Add spot image", comment: "Placeholder text for adding spot image"))
                                             .font(.subheadline)
                                             .foregroundColor(.secondary)
                                     }
@@ -114,7 +121,7 @@ struct SpotEditView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "photo.badge.plus")
                                     .font(.system(size: 18, weight: .medium))
-                                Text(imageData != nil ? "画像を変更" : "画像を選択")
+                                Text(imageData != nil ? NSLocalizedString("Change Image", comment: "Button text to change image") : NSLocalizedString("Select Image", comment: "Button text to select image"))
                                     .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(.white)
@@ -135,7 +142,7 @@ struct SpotEditView: View {
                     .padding(.vertical, 8)
                 }
                 
-                Section(header: Text("詳細画像（予約情報など）")) {
+                Section(header: Text(NSLocalizedString("Detail Images (Reservation info, etc.)", comment: "Section header for detail images"))) {
                     VStack(spacing: 12) {
                         if !detailImagesData.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
@@ -175,7 +182,7 @@ struct SpotEditView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "photo.on.rectangle.angled")
                                     .font(.system(size: 16, weight: .medium))
-                                Text("詳細画像を追加")
+                                Text(NSLocalizedString("Add detail images", comment: "Button text to add detail images"))
                                     .font(.system(size: 15, weight: .medium))
                             }
                             .foregroundColor(.blue)
@@ -189,21 +196,21 @@ struct SpotEditView: View {
                     .padding(.vertical, 4)
                 }
                 
-                Section(header: Text("メモ")) {
+                Section(header: Text(NSLocalizedString("Notes", comment: "Section header for notes"))) {
                     TextEditor(text: $notes)
                         .frame(minHeight: 100)
                 }
             }
-            .navigationTitle("スポットを編集")
+            .navigationTitle(NSLocalizedString("Edit Spot", comment: "Navigation title for editing spot"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button(NSLocalizedString("Cancel", comment: "Cancel button")) {
                         onCancel()
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
+                    Button(NSLocalizedString("Save", comment: "Save button")) {
                         saveChanges()
                     }
                     .fontWeight(.semibold)
@@ -220,7 +227,11 @@ struct SpotEditView: View {
             notes = spot.notes
             activity = spot.activity
             stayDuration = String(spot.stayDuration)
-            spotCost = String(spot.spotCost)
+            
+            // Convert stored JPY amount to current currency for display
+            let convertedCost = currencyManager.formatPriceWithoutSymbol(spot.spotCost)
+            spotCost = convertedCost
+            
             imageData = spot.imageData
             detailImagesData = spot.detailImagesData ?? []
             
@@ -228,12 +239,21 @@ struct SpotEditView: View {
             if let arrival = spot.arrivalTime, let departure = spot.departureTime {
                 arrivalTime = arrival
                 departureTime = departure
+                
+                // Check if departure is next day
+                let calendar = Calendar.current
+                let arrivalHour = calendar.component(.hour, from: arrival)
+                let departureHour = calendar.component(.hour, from: departure)
+                
+                // If departure hour is much smaller than arrival hour, it's likely next day
+                isNextDay = departureHour < arrivalHour - 6
             } else {
                 // デフォルトの時間を設定
                 let calendar = Calendar.current
                 let now = Date()
                 arrivalTime = calendar.date(bySettingHour: 10, minute: 0, second: 0, of: now) ?? now
                 departureTime = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
+                isNextDay = false
             }
             
             // 初期滞在時間を更新
@@ -275,91 +295,94 @@ struct SpotEditView: View {
         spot.notes = notes
         spot.activity = activity
         spot.stayDuration = Int(stayDuration) ?? 60
-        spot.spotCost = Int(spotCost) ?? 0
+        
+        // Convert entered amount in current currency back to JPY for storage
+        let enteredAmount = Double(spotCost) ?? 0
+        spot.spotCost = currencyManager.convertToYen(enteredAmount)
+        
         spot.imageData = imageData
         spot.detailImagesData = detailImagesData.isEmpty ? nil : detailImagesData
         
         // 時間データの保存
         spot.arrivalTime = arrivalTime
-        spot.departureTime = departureTime
         
-        // timeRangeも更新
+        // Handle next day departure
+        if isNextDay {
+            // Add one day to departure time
+            let calendar = Calendar.current
+            spot.departureTime = calendar.date(byAdding: .day, value: 1, to: departureTime) ?? departureTime
+        } else {
+            spot.departureTime = departureTime
+        }
+        
+        // timeRangeも更新 - include next day indicator if needed
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
-        spot.timeRange = "\(formatter.string(from: arrivalTime))-\(formatter.string(from: departureTime))"
+        let departureStr = formatter.string(from: departureTime)
+        let arrivalStr = formatter.string(from: arrivalTime)
         
-        // ローカルに変更を保存
-        saveSpotChangesLocally()
+        if isNextDay {
+            spot.timeRange = "\(arrivalStr)-\(NSLocalizedString("next day", comment: "Next day indicator")) \(departureStr)"
+        } else {
+            spot.timeRange = "\(arrivalStr)-\(departureStr)"
+        }
         
+        // onSaveを呼び出して親ビューに保存を委譲
         onSave()
     }
     
     func loadLocalSpotChanges() {
-        let key = "spot_changes_\(spot.id.uuidString)"
-        
-        if let changes = UserDefaults.standard.dictionary(forKey: key) {
-            
-            if let name = changes["name"] as? String {
-                spot.name = name
-            }
-            if let address = changes["address"] as? String {
-                spot.address = address
-            }
-            if let notes = changes["notes"] as? String {
-                spot.notes = notes
-            }
-            if let activity = changes["activity"] as? String {
-                spot.activity = activity
-            }
-            if let stayDuration = changes["stayDuration"] as? Int {
-                spot.stayDuration = stayDuration
-            }
-            if let spotCost = changes["spotCost"] as? Int {
-                spot.spotCost = spotCost
-            }
-            if let timeRange = changes["timeRange"] as? String {
-                spot.timeRange = timeRange
-            }
-            if let arrivalInterval = changes["arrivalTime"] as? Double, arrivalInterval > 0 {
-                spot.arrivalTime = Date(timeIntervalSince1970: arrivalInterval)
-            }
-            if let departureInterval = changes["departureTime"] as? Double, departureInterval > 0 {
-                spot.departureTime = Date(timeIntervalSince1970: departureInterval)
-            }
-        }
+        // ローカル変更の読み込みを削除
+        // SpotEditViewはBindingを使用しているので、
+        // 直接spotの値を変更すると親ビューに反映される
     }
     
     func updateStayDuration() {
         // 到着時間と出発時間から滞在時間を計算
-        let duration = Int(departureTime.timeIntervalSince(arrivalTime) / 60)
+        var effectiveDepartureTime = departureTime
+        
+        // If next day is selected, add 24 hours for calculation
+        if isNextDay {
+            let calendar = Calendar.current
+            effectiveDepartureTime = calendar.date(byAdding: .day, value: 1, to: departureTime) ?? departureTime
+        }
+        
+        let duration = Int(effectiveDepartureTime.timeIntervalSince(arrivalTime) / 60)
         if duration > 0 {
             stayDuration = String(duration)
+        } else if duration < 0 && !isNextDay {
+            // Negative duration might mean it's actually next day
+            isNextDay = true
+            updateStayDuration() // Recalculate with next day
         }
     }
     
     func updateDepartureTime() {
         // 滞在時間から出発時間を計算
         if let duration = Int(stayDuration), duration > 0 {
-            departureTime = arrivalTime.addingTimeInterval(TimeInterval(duration * 60))
+            var newDepartureTime = arrivalTime.addingTimeInterval(TimeInterval(duration * 60))
+            
+            // Check if the new departure time is next day
+            let calendar = Calendar.current
+            let arrivalDay = calendar.component(.day, from: arrivalTime)
+            let departureDay = calendar.component(.day, from: newDepartureTime)
+            
+            // If departure is next day, adjust the time to show correctly
+            if departureDay > arrivalDay {
+                isNextDay = true
+                // Subtract one day to get the correct time display
+                newDepartureTime = calendar.date(byAdding: .day, value: -1, to: newDepartureTime) ?? newDepartureTime
+            } else {
+                isNextDay = false
+            }
+            
+            departureTime = newDepartureTime
         }
     }
     
     func saveSpotChangesLocally() {
-        // デバイス固有のキーを使用して変更を保存
-        let key = "spot_changes_\(spot.id.uuidString)"
-        
-        let changes: [String: Any] = [
-            "name": spot.name,
-            "address": spot.address,
-            "notes": spot.notes,
-            "activity": spot.activity,
-            "stayDuration": spot.stayDuration,
-            "spotCost": spot.spotCost,
-            "timeRange": spot.timeRange,
-            "arrivalTime": spot.arrivalTime?.timeIntervalSince1970 ?? 0,
-            "departureTime": spot.departureTime?.timeIntervalSince1970 ?? 0
-        ]
-        
-        UserDefaults.standard.set(changes, forKey: key)
+        // ローカル保存を削除
+        // SpotEditViewはBindingを使用しているので、
+        // onSaveクロージャで親ビューがプランデータを保存する
     }
 }

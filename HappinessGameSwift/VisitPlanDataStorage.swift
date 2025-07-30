@@ -37,6 +37,8 @@ class VisitPlanDataStorage {
         ensureDirectoryExists()
         let planId = plan.id.uuidString
         
+        print("[VisitPlanDataStorage] Saving plan - ID: \(planId), Title: \(plan.title), isDraft: \(plan.isDraft)")
+        
         // Create plan directory
         let planDir = planDirectory(for: planId)
         try? FileManager.default.createDirectory(at: planDir, withIntermediateDirectories: true)
@@ -79,17 +81,25 @@ class VisitPlanDataStorage {
             planDict["lastVisitedDate"] = lastVisitedDate.timeIntervalSince1970
         }
         
+        // Check if plan is being moved from draft to confirmed
+        var drafts = loadAllDraftPlansMetadata()
+        var plans = loadAllSavedPlansMetadata()
+        
+        // Remove from both to prevent duplicates
+        drafts.removeValue(forKey: planId)
+        plans.removeValue(forKey: planId)
+        
         // Save to appropriate storage based on plan type
         if plan.isDraft {
             // Save draft plans separately
-            var drafts = loadAllDraftPlansMetadata()
             drafts[planId] = planDict
             saveDraftPlansMetadata(drafts)
+            print("[VisitPlanDataStorage] Saved as draft. Total drafts: \(drafts.count)")
         } else {
             // Save regular plans
-            var plans = loadAllSavedPlansMetadata()
             plans[planId] = planDict
             saveSavedPlansMetadata(plans)
+            print("[VisitPlanDataStorage] Saved as confirmed plan. Total plans: \(plans.count)")
         }
     }
     
@@ -233,5 +243,106 @@ class VisitPlanDataStorage {
         return metadata.compactMap { (planId, _) in
             loadPlanData(planId: planId, isDraft: true)
         }
+    }
+    
+    // MARK: - Data Cleanup Functions
+    
+    func cleanupDuplicatePlans() {
+        print("[VisitPlanDataStorage] Starting duplicate cleanup...")
+        
+        // 重複を完全に削除する
+        cleanupAllDuplicatePlansCompletely()
+    }
+    
+    // 完全な重複削除機能
+    func cleanupAllDuplicatePlansCompletely() {
+        var plansMetadata = loadAllSavedPlansMetadata()
+        var draftsMetadata = loadAllDraftPlansMetadata()
+        
+        print("[VisitPlanDataStorage] 🚨 AGGRESSIVE CLEANUP STARTED")
+        print("[VisitPlanDataStorage] Found \(plansMetadata.count) plans before cleanup")
+        
+        // 購入されたプランを特定（同じタイトルで複数ある場合は1つだけ残す）
+        var cleanPlans: [String: [String: Any]] = [:]
+        var test3Plans: [(String, [String: Any])] = []
+        
+        // Test3プランを全て収集
+        for (planId, planData) in plansMetadata {
+            guard let title = planData["title"] as? String,
+                  let isPurchased = planData["isPurchased"] as? Bool else {
+                continue
+            }
+            
+            if isPurchased && title == "Test3" {
+                test3Plans.append((planId, planData))
+            } else {
+                // Test3以外のプランは全て保持
+                cleanPlans[planId] = planData
+            }
+        }
+        
+        print("[VisitPlanDataStorage] Found \(test3Plans.count) Test3 duplicate plans")
+        
+        // Test3プランは最初の1つだけ保持
+        if !test3Plans.isEmpty {
+            let (firstId, firstData) = test3Plans[0]
+            cleanPlans[firstId] = firstData
+            print("[VisitPlanDataStorage] Keeping only first Test3 plan with ID: \(firstId)")
+            
+            // 残りのTest3プランを削除
+            for i in 1..<test3Plans.count {
+                let (planId, _) = test3Plans[i]
+                print("[VisitPlanDataStorage] 🗑️ Deleting duplicate Test3 plan: \(planId)")
+                // プランディレクトリも削除
+                let planDir = planDirectory(for: planId)
+                try? FileManager.default.removeItem(at: planDir)
+            }
+        }
+        
+        print("[VisitPlanDataStorage] Cleaned plans count: \(cleanPlans.count) (removed \(plansMetadata.count - cleanPlans.count) duplicates)")
+        
+        // クリーンなデータを保存
+        saveSavedPlansMetadata(cleanPlans)
+        
+        // UserDefaultsを同期
+        UserDefaults.standard.synchronize()
+        
+        // 不要なファイルも削除
+        cleanupOrphanedPlanFiles(keepingPlanIds: Set(cleanPlans.keys))
+        
+        print("[VisitPlanDataStorage] ✅ AGGRESSIVE CLEANUP COMPLETE")
+    }
+    
+    // 不要なプランファイルを削除
+    private func cleanupOrphanedPlanFiles(keepingPlanIds: Set<String>) {
+        do {
+            let planDirs = try FileManager.default.contentsOfDirectory(at: visitPlansDirectory, 
+                                                                      includingPropertiesForKeys: nil, 
+                                                                      options: .skipsHiddenFiles)
+            
+            for planDir in planDirs {
+                let planId = planDir.lastPathComponent
+                if !keepingPlanIds.contains(planId) {
+                    try FileManager.default.removeItem(at: planDir)
+                    print("[VisitPlanDataStorage] Deleted orphaned plan directory: \(planId)")
+                }
+            }
+        } catch {
+            print("[VisitPlanDataStorage] Error cleaning up orphaned files: \(error)")
+        }
+    }
+    
+    func getStorageStatistics() -> (totalPlans: Int, totalDrafts: Int, duplicatePlans: Int, duplicateDrafts: Int) {
+        let allPlans = loadAllSavedPlans()
+        let allDrafts = loadAllDraftPlans()
+        
+        // Count unique IDs
+        let uniquePlanIds = Set(allPlans.map { $0.id.uuidString })
+        let uniqueDraftIds = Set(allDrafts.map { $0.id.uuidString })
+        
+        let duplicatePlans = allPlans.count - uniquePlanIds.count
+        let duplicateDrafts = allDrafts.count - uniqueDraftIds.count
+        
+        return (allPlans.count, allDrafts.count, duplicatePlans, duplicateDrafts)
     }
 }

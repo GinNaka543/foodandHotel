@@ -12,7 +12,7 @@ class ImageLoader: ObservableObject {
             DispatchQueue.main.async {
                 self.isLoading = false
                 
-                if let error = error {
+                if error != nil {
                     return
                 }
                 
@@ -325,9 +325,10 @@ struct VisitGameScreen: View {
         NavigationView {
             ZStack(alignment: .top) {
                 VStack(spacing: 0) {
-                    // ヘッダーのスペースを確保
-                    Color.clear
-                        .frame(height: 60)
+                    // ヘッダー
+                    animeStyleHeader
+                        .background(Color(.systemBackground))
+                        .zIndex(1000)
                     
                     // メインバナー
                     mainBanner
@@ -350,36 +351,54 @@ struct VisitGameScreen: View {
                             let dayFilteredSpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
                             ForEach(Array(dayFilteredSpots.enumerated()), id: \.element.id) { index, spot in
                                 if let realIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
-                                    NavigationLink(destination: SpotDetailPageView(
-                                        spot: $viewModel.spots[realIndex],
-                                        spots: $viewModel.spots,
-                                        startTime: startTime,
-                                        savePlanProgress: {}
-                                    )) {
-                                        AnimeStyleSpotCard(
-                                            spot: viewModel.spots[realIndex],
-                                            isCompleted: viewModel.spots[realIndex].isCompleted,
-                                            onToggle: {
-                                                // 読み取り専用モードではチェックボックスを無効化
-                                                if !isReadOnly {
-                                                    withAnimation(.spring()) {
-                                                        viewModel.spots[realIndex].isCompleted.toggle()
-                                                        if viewModel.spots[realIndex].isCompleted {
-                                                            newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
-                                                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                                newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
-                                                            }
-                                                        }
-                                                        
-                                                        // 全てのスポットが完了したかチェック
-                                                        if allSpotsCompleted {
-                                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                                showCompletionPopup = true
-                                                            }
-                                                        }
-                                                    }
+                                    Group {
+                                        if isReadOnly {
+                                            // 読み取り専用モードではNavigationLinkを無効化
+                                            AnimeStyleSpotCard(
+                                                spot: viewModel.spots[realIndex],
+                                                isCompleted: viewModel.spots[realIndex].isCompleted,
+                                                onToggle: {
+                                                    // 読み取り専用モードでは何もしない
+                                                },
+                                                onTap: {
+                                                    // 読み取り専用モードでは何もしない
+                                                },
+                                                isReadOnly: isReadOnly,
+                                                isFirstSpot: index == 0,
+                                                isLastSpot: index == dayFilteredSpots.count - 1,
+                                                previousDepartureTime: index > 0 ? dayFilteredSpots[index - 1].departureTime : nil,
+                                                onEditTransport: {
+                                                    // 読み取り専用モードでは何もしない
                                                 }
-                                            },
+                                            )
+                                        } else {
+                                            NavigationLink(destination: SpotDetailPageView(
+                                                spot: $viewModel.spots[realIndex],
+                                                spots: $viewModel.spots,
+                                                startTime: startTime,
+                                                savePlanProgress: savePlanProgress
+                                            )) {
+                                                AnimeStyleSpotCard(
+                                                    spot: viewModel.spots[realIndex],
+                                                    isCompleted: viewModel.spots[realIndex].isCompleted,
+                                                    onToggle: {
+                                                        withAnimation(.spring()) {
+                                                            viewModel.spots[realIndex].isCompleted.toggle()
+                                                            if viewModel.spots[realIndex].isCompleted {
+                                                                newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
+                                                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                                                    newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
+                                                                }
+                                                            }
+                                                            
+                                                            // 全てのスポットが完了したかチェック
+                                                            if allSpotsCompleted {
+                                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                                                    showCompletionPopup = true
+                                                                }
+                                                            }
+                                                        }
+                                                    },
                                             onTap: {
                                                 // NavigationLinkを使用するため、このonTapは使用しない
                                             },
@@ -394,6 +413,7 @@ struct VisitGameScreen: View {
                                         )
                                     }
                                     .buttonStyle(PlainButtonStyle())
+                                    }
                                 }
                             }
                         }
@@ -412,13 +432,6 @@ struct VisitGameScreen: View {
                 }
             }
             .background(Color(.systemBackground))
-            
-            // ヘッダーを最前面に配置
-            VStack {
-                animeStyleHeader
-                    .background(Color(.systemBackground))
-                    .zIndex(1000)
-                Spacer()
             }
         }
         .navigationBarHidden(true)
@@ -487,14 +500,13 @@ struct VisitGameScreen: View {
                 )
             }
         }
-        }
         .onAppear {
             for spot in viewModel.spots {
-                if let arrival = spot.arrivalTime, let departure = spot.departureTime {
+                if let arrival = spot.arrivalTime, let _ = spot.departureTime {
                     let formatter = DateFormatter()
                     formatter.dateFormat = "HH:mm"
                 }
-                if let transport = spot.transportToNext {
+                if let _ = spot.transportToNext {
                 }
             }
             if viewModel.spots.isEmpty {
@@ -517,6 +529,7 @@ struct VisitGameScreen: View {
                 )
             }
         }
+    }
     }
     
     // アニメページスタイルのヘッダー
@@ -924,6 +937,58 @@ struct VisitGameScreen: View {
         // Use new storage system that saves images to files
         let planIdString = planId?.uuidString ?? planTitle
         VisitPlanStorage.shared.savePlan(planId: planIdString, planTitle: planTitle, spots: viewModel.spots)
+        
+        // 確定済みプランの場合、savedPlansも更新
+        if let planId = planId {
+            updateConfirmedPlanSpots(planId: planId, spots: viewModel.spots)
+        }
+    }
+    
+    func updateConfirmedPlanSpots(planId: UUID, spots: [VisitSpot]) {
+        // VisitPlanDataStorageから該当プランを検索
+        if let planData = VisitPlanDataStorage.shared.loadPlanData(planId: planId.uuidString, isDraft: false) ?? 
+                          VisitPlanDataStorage.shared.loadPlanData(planId: planId.uuidString, isDraft: true) {
+            // プランのスポットを更新
+            var updatedPlan = planData
+            updatedPlan.spots = spots
+            
+            // 保存
+            VisitPlanDataStorage.shared.savePlanData(updatedPlan)
+            
+            // Firebaseにも更新を反映（確定済みプランの場合）
+            if !updatedPlan.isDraft {
+                updateFirebasePlan(planData: updatedPlan)
+            }
+        }
+    }
+    
+    func updateFirebasePlan(planData: VisitPlanData) {
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        let plan = VisitPlanModel(
+            id: planData.id.uuidString,
+            userId: userId,
+            animeName: planData.animeName,
+            title: planData.title,
+            description: "",
+            duration: planData.duration,
+            spots: planData.spots,
+            thumbnailUrl: planData.thumbnailUrl,
+            price: 0,
+            budget: 0,
+            createdDate: planData.createdDate,
+            startTime: planData.startTime,
+            numberOfDays: planData.numberOfDays,
+            totalCost: planData.totalCost,
+            isPublic: false,
+            purchasedBy: [],
+            createdAt: planData.createdDate,
+            updatedAt: Date(),
+            isDraft: false,
+            isConfirmed: true
+        )
+        
+        FirebaseManager.shared.saveVisitPlan(plan) { _ in }
     }
     
     func getThumbnailImage() -> UIImage? {
@@ -1111,6 +1176,46 @@ struct AnimeStyleSpotCard: View {
         return formatter
     }()
     
+    func transportIcon(_ method: String) -> String {
+        switch method {
+        case NSLocalizedString("train", comment: "Train"), "電車":
+            return "tram"
+        case NSLocalizedString("bus", comment: "Bus"), "バス":
+            return "bus"
+        case NSLocalizedString("walking", comment: "Walking"), "徒歩":
+            return "figure.walk"
+        case NSLocalizedString("taxi", comment: "Taxi"), "タクシー":
+            return "car"
+        case NSLocalizedString("car", comment: "Car"), "車":
+            return "car.fill"
+        case NSLocalizedString("bicycle", comment: "Bicycle"), "自転車":
+            return "bicycle"
+        default:
+            return "arrow.right"
+        }
+    }
+    
+    func localizedTransportMethod(_ method: String) -> String {
+        // 旧データの日本語からローカライズされた文字列に変換
+        switch method {
+        case "電車":
+            return NSLocalizedString("train", comment: "Train")
+        case "バス":
+            return NSLocalizedString("bus", comment: "Bus")
+        case "徒歩":
+            return NSLocalizedString("walking", comment: "Walking")
+        case "タクシー":
+            return NSLocalizedString("taxi", comment: "Taxi")
+        case "車":
+            return NSLocalizedString("car", comment: "Car")
+        case "自転車":
+            return NSLocalizedString("bicycle", comment: "Bicycle")
+        default:
+            // すでにローカライズされている可能性があるので、そのまま返す
+            return method
+        }
+    }
+    
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
             // 左側のプログレスバー部分
@@ -1252,44 +1357,58 @@ struct AnimeStyleSpotCard: View {
                 // 交通機関情報（次のスポットがある場合）
                 if !isLastSpot {
                     if let transport = spot.transportToNext {
-                        HStack(spacing: 8) {
-                            // 交通手段アイコン
-                            Image(systemName: transport.method == NSLocalizedString("train", comment: "Train") ? "tram.fill" : 
-                                            transport.method == "バス" ? "bus.fill" : 
-                                            transport.method == "徒歩" ? "figure.walk" : "car.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.orange)
-                            
-                            Text(transport.method)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.orange)
-                            
-                            Text(String(format: "• %@", String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), transport.duration)))
-                                .font(.system(size: 13))
-                                .foregroundColor(.gray)
-                            
-                            if !transport.route.isEmpty {
-                                Text("• \(transport.route)")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.gray)
-                                    .lineLimit(1)
-                            }
-                            
-                            Spacer()
-                            
-                            // 編集ボタン（読み取り専用でない場合のみ表示）
+                        Button(action: {
                             if !isReadOnly {
-                                Button(action: {
-                                    onEditTransport?()
-                                }) {
-                                    Image(systemName: "pencil.circle")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.orange)
+                                onEditTransport?()
+                            }
+                        }) {
+                            HStack(spacing: 8) {
+                                // 交通手段アイコン
+                                Image(systemName: transportIcon(transport.method))
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.orange)
+                                
+                                Text(localizedTransportMethod(transport.method))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.orange)
+                                
+                                Text(String(format: "• %@", String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), transport.duration)))
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.gray)
+                                
+                                if transport.cost > 0 {
+                                    Text("• \(CurrencyManager.shared.formatPrice(transport.cost))")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.gray)
+                                }
+                                
+                                if !transport.route.isEmpty {
+                                    Text("• \(transport.route)")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.gray)
+                                        .lineLimit(1)
+                                }
+                                
+                                Spacer()
+                                
+                                // 編集アイコン（読み取り専用でない場合のみ表示）
+                                if !isReadOnly {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.orange.opacity(0.6))
                                 }
                             }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(isReadOnly ? Color.clear : Color.orange.opacity(0.05))
+                            )
                         }
-                        .padding(.leading, 30)
-                        .padding(.vertical, 8)
+                        .buttonStyle(PlainButtonStyle())
+                        .disabled(isReadOnly)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
                     } else if !isReadOnly {
                         // 交通手段が未設定の場合の追加ボタン
                         Button(action: {
@@ -1647,13 +1766,13 @@ struct TransportCard: View {
                     Image(systemName: transportIcon(transport.method))
                         .font(.system(size: 14))
                         .foregroundColor(.orange)
-                    Text(transport.method)
+                    Text(localizedTransportMethod(transport.method))
                         .font(.system(size: 14, weight: .medium))
                     Text(String(format: "• %@", String(format: NSLocalizedString("minutes_format", comment: "%d minutes"), transport.duration)))
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                     if transport.cost > 0 {
-                        Text("・ ¥\(transport.cost)")
+                        Text("・ \(CurrencyManager.shared.formatPrice(transport.cost))")
                             .font(.system(size: 14))
                             .foregroundColor(.gray)
                     }
@@ -1673,16 +1792,41 @@ struct TransportCard: View {
     
     func transportIcon(_ method: String) -> String {
         switch method {
-        case "電車":
+        case NSLocalizedString("train", comment: "Train"), "電車":
             return "tram"
-        case "バス":
+        case NSLocalizedString("bus", comment: "Bus"), "バス":
             return "bus"
-        case "徒歩":
+        case NSLocalizedString("walking", comment: "Walking"), "徒歩":
             return "figure.walk"
-        case "タクシー":
+        case NSLocalizedString("taxi", comment: "Taxi"), "タクシー":
             return "car"
+        case NSLocalizedString("car", comment: "Car"), "車":
+            return "car.fill"
+        case NSLocalizedString("bicycle", comment: "Bicycle"), "自転車":
+            return "bicycle"
         default:
             return "arrow.right"
+        }
+    }
+    
+    func localizedTransportMethod(_ method: String) -> String {
+        // 旧データの日本語からローカライズされた文字列に変換
+        switch method {
+        case "電車":
+            return NSLocalizedString("train", comment: "Train")
+        case "バス":
+            return NSLocalizedString("bus", comment: "Bus")
+        case "徒歩":
+            return NSLocalizedString("walking", comment: "Walking")
+        case "タクシー":
+            return NSLocalizedString("taxi", comment: "Taxi")
+        case "車":
+            return NSLocalizedString("car", comment: "Car")
+        case "自転車":
+            return NSLocalizedString("bicycle", comment: "Bicycle")
+        default:
+            // 既にローカライズされた文字列の場合はそのまま返す
+            return method
         }
     }
 }
@@ -1846,7 +1990,7 @@ struct SpotDetailPageView: View {
                         // スポット費用
                         if spot.spotCost > 0 {
                             HStack {
-                                Image(systemName: "yensign.circle")
+                                Image(systemName: "dollarsign.circle")
                                     .foregroundColor(.blue)
                                     .font(.system(size: 16))
                                     .frame(width: 20)
@@ -1854,7 +1998,7 @@ struct SpotDetailPageView: View {
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                     .frame(width: 80, alignment: .leading)
-                                Text("¥\(spot.spotCost)")
+                                Text(CurrencyManager.shared.formatPrice(spot.spotCost))
                                     .font(.system(size: 16))
                                     .foregroundColor(.blue)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -2266,12 +2410,19 @@ struct GameAddTransportView: View {
     let onSave: (TransportInfo) -> Void
     @Environment(\.dismiss) var dismiss
     
-    @State private var method: String = "電車"
+    @State private var method: String = ""
     @State private var duration: Int = 30
     @State private var cost: Int = 0
     @State private var route: String = ""
     
-    let transportMethods = ["電車", "バス", "徒歩", "タクシー", "車", "自転車"]
+    let transportMethods = [
+        NSLocalizedString("train", comment: "Train"),
+        NSLocalizedString("bus", comment: "Bus"),
+        NSLocalizedString("walking", comment: "Walking"),
+        NSLocalizedString("taxi", comment: "Taxi"),
+        NSLocalizedString("car", comment: "Car"),
+        NSLocalizedString("bicycle", comment: "Bicycle")
+    ]
     
     var body: some View {
         NavigationView {
@@ -2280,6 +2431,11 @@ struct GameAddTransportView: View {
                     Picker(NSLocalizedString("movement_method", comment: "Movement method"), selection: $method) {
                         ForEach(transportMethods, id: \.self) { method in
                             Text(method).tag(method)
+                        }
+                    }
+                    .onAppear {
+                        if method.isEmpty {
+                            method = transportMethods[0]
                         }
                     }
                     

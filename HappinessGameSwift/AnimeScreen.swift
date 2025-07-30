@@ -1429,6 +1429,8 @@ struct AnimeArtworkScreen: View {
                             AlbumArtworkListScreen(
                                 artworks: album.videos, 
                                 tag: album.tag,
+                                character: nil,
+                                anime: anime,
                                 onArtworkDeleted: { deletedArtwork in
                                     // 親画面のartworksリストから削除
                                     if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
@@ -3116,6 +3118,8 @@ struct AnimeVideoScreen: View {
             AlbumVideoListScreen(
                 videos: album.videos, 
                 tag: album.tag,
+                character: nil,
+                anime: anime,
                 onVideoDeleted: { deletedVideo in
                     // 動画リストから削除
                     if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
@@ -3477,6 +3481,8 @@ struct AnimeVideoScreen: View {
             AlbumVideoListScreen(
                 videos: album.videos,
                 tag: album.tag,
+                character: nil,
+                anime: anime,
                 onVideoDeleted: { deletedVideo in
                     if let idx = self.videos.firstIndex(where: { $0.id == deletedVideo.id }) {
                         self.videos.remove(at: idx)

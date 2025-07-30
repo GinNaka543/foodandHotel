@@ -454,6 +454,8 @@ struct ArtworkScreen: View {
                             AlbumArtworkListScreenTemp(
                                 artworks: album.videos, 
                                 tag: album.tag,
+                                character: character,
+                                anime: nil,
                                 onArtworkDeleted: { deletedArtwork in
                                     if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
                                         artworks.remove(at: idx)

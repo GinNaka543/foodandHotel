@@ -13,6 +13,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         return AppDelegate.orientationLock
     }
+    
+    func applicationWillTerminate(_ application: UIApplication) {
+        print("⚠️ App will terminate - forcing UserDefaults synchronization")
+        UserDefaults.standard.synchronize()
+    }
+    
+    func applicationDidEnterBackground(_ application: UIApplication) {
+        print("📱 App did enter background - synchronizing UserDefaults")
+        UserDefaults.standard.synchronize()
+    }
 }
 
 class MainTabSelection: ObservableObject {
@@ -280,6 +290,7 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var paymentGatekeeper = PaymentGatekeeper.shared
     @StateObject private var localizationManager = LocalizationManager.shared
     @State private var showSplash = true
+    @Environment(\.scenePhase) private var scenePhase
     @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
     @State private var hasSelectedLanguage = UserDefaults.standard.bool(forKey: "hasSelectedLanguage")
     
@@ -455,6 +466,52 @@ struct HappinessGameSwiftApp: App {
                                 }
                             }
                         }
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .background:
+                    // アプリがバックグラウンドに移行する時に UserDefaults を同期
+                    print("📱 App moving to background - synchronizing UserDefaults")
+                    UserDefaults.standard.synchronize()
+                    
+                    // Visit plansの保存を確実にする
+                    NotificationCenter.default.post(
+                        name: Notification.Name("SaveAllDrafts"),
+                        object: nil
+                    )
+                case .inactive:
+                    // アプリが非アクティブになった時も同期
+                    UserDefaults.standard.synchronize()
+                case .active:
+                    // アプリがアクティブになった時はデータを再読み込み
+                    NotificationCenter.default.post(
+                        name: Notification.Name("ReloadVisitPlans"),
+                        object: nil
+                    )
+                @unknown default:
+                    break
+                }
+            }
+            .onAppear {
+                // アプリ起動時に一度だけマイグレーションを実行
+                if !UserDefaults.standard.bool(forKey: "hasPerformedVisitPlanMigration") {
+                    print("📱 Performing one-time visit plan migration...")
+                    VisitPlanDataStorage.shared.migrateOldSavedPlans()
+                    UserDefaults.standard.set(true, forKey: "hasPerformedVisitPlanMigration")
+                }
+                
+                // データクリーンアップを実行（重複を削除）
+                let stats = VisitPlanDataStorage.shared.getStorageStatistics()
+                print("📊 Visit Plan Storage Stats - Plans: \(stats.totalPlans), Drafts: \(stats.totalDrafts), Duplicate Plans: \(stats.duplicatePlans), Duplicate Drafts: \(stats.duplicateDrafts)")
+                
+                if stats.duplicatePlans > 0 || stats.duplicateDrafts > 0 {
+                    print("🧹 Cleaning up duplicate visit plans...")
+                    VisitPlanDataStorage.shared.cleanupDuplicatePlans()
+                    
+                    // Verify cleanup
+                    let newStats = VisitPlanDataStorage.shared.getStorageStatistics()
+                    print("✅ Cleanup complete - Plans: \(newStats.totalPlans), Drafts: \(newStats.totalDrafts)")
                 }
             }
         }

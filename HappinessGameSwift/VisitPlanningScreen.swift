@@ -8,12 +8,14 @@ struct VisitPlanningScreen: View {
     @State private var showingAddSpotSheet = false
     @State private var animeName: String = ""
     @State private var planTitle: String = ""
+    @State private var refreshID = UUID()
     @State private var showingItinerary = false
     @State private var selectedImage: PhotosPickerItem?
     @State private var thumbnailImage: UIImage?
     @State private var thumbnailData: Data?
     @State private var startTime = Date()
     @State private var editingSpot: VisitSpot?
+    @State private var editingTransport: (fromSpot: VisitSpot, index: Int)?
     @State private var numberOfDays: Int = 1
     @State private var selectedDay: Int = 1
     @State private var showingDayPicker = false
@@ -31,6 +33,7 @@ struct VisitPlanningScreen: View {
     @StateObject private var firebaseManager = FirebaseManager.shared
     // @StateObject private var stripeManager = StripePaymentManager.shared // Stripe削除済み
     @StateObject private var githubManager = GitHubImageManager.shared
+    @StateObject private var currencyManager = CurrencyManager.shared
     @State private var showingSaveSuccess = false
     
     // 編集中の下書きデータ
@@ -331,7 +334,10 @@ struct VisitPlanningScreen: View {
                                         if index < filteredSpots.count - 1 {
                                             TransportView(
                                                 from: spot,
-                                                to: filteredSpots[index + 1]
+                                                to: filteredSpots[index + 1],
+                                                onEdit: {
+                                                    editingTransport = (fromSpot: spot, index: spots.firstIndex(where: { $0.id == spot.id }) ?? 0)
+                                                }
                                             )
                                         }
                                     }
@@ -350,11 +356,11 @@ struct VisitPlanningScreen: View {
                                     Spacer()
                                 }
                                 HStack {
-                                    Label("予想費用", systemImage: "yensign.circle")
+                                    Label(NSLocalizedString("Estimated Cost", comment: "Label for estimated cost"), systemImage: "dollarsign.circle")
                                         .font(.system(size: 14))
                                         .foregroundColor(.gray)
                                     Spacer()
-                                    Text(String(format: NSLocalizedString("price_format", comment: "¥%d"), calculateTotalCost()))
+                                    Text(currencyManager.formatPrice(calculateTotalCost()))
                                         .font(.system(size: 14, weight: .medium))
                                 }
                             }
@@ -434,6 +440,13 @@ struct VisitPlanningScreen: View {
                 saveDraftOnDisappear()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SaveAllDrafts"))) { _ in
+            print("📱 [VisitPlanningScreen] Received SaveAllDrafts notification")
+            // アプリがバックグラウンドに行くときに強制的に下書き保存
+            if hasUnsavedChanges() {
+                saveDraftOnDisappear()
+            }
+        }
         .sheet(isPresented: $showingConfirmation) {
             PlanConfirmationView(
                 planTitle: planTitle,
@@ -474,7 +487,58 @@ struct VisitPlanningScreen: View {
             }
         }
         .sheet(item: $editingSpot) { spot in
-            EditSpotView(spot: spot, spots: $spots, startTime: startTime)
+            EditSpotView(spot: spot, spots: .constant(spots), startTime: startTime) { updatedSpot in
+                print("DEBUG: Callback received updatedSpot with name: '\(updatedSpot.name)'")
+                
+                print("DEBUG: Processing updated spot - ID: \(updatedSpot.id), Name: '\(updatedSpot.name)'")
+                
+                // Create a completely new array using map to ensure all elements are new
+                let updatedSpots = spots.map { spot in
+                    spot.id == updatedSpot.id ? updatedSpot : spot
+                }
+                
+                // Log the update
+                for (index, spot) in updatedSpots.enumerated() {
+                    if spot.id == updatedSpot.id {
+                        print("DEBUG: Updated spots[\(index)] - name: '\(spot.name)'")
+                    }
+                }
+                
+                // First, clear the array to force SwiftUI to notice the change
+                spots = []
+                
+                // Then set the new array after a minimal delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    spots = updatedSpots
+                    refreshID = UUID()
+                    
+                    // Verify and save
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if let index = spots.firstIndex(where: { $0.id == updatedSpot.id }) {
+                            print("DEBUG: Final verification - spots[\(index)].name = '\(spots[index].name)'")
+                        }
+                        saveDraftInternal()
+                    }
+                }
+            }
+        }
+        .sheet(item: Binding<EditTransportData?>(
+            get: { 
+                if let editingTransport = editingTransport {
+                    return EditTransportData(fromSpot: editingTransport.fromSpot, index: editingTransport.index)
+                }
+                return nil
+            },
+            set: { _ in editingTransport = nil }
+        )) { data in
+            TransportEditView(spots: $spots, fromSpotIndex: data.index)
+                .onDisappear {
+                    // 編集後に自動的に下書き保存（一度だけ実行）
+                    print("DEBUG: TransportEditView onDisappear called")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        saveDraftInternal()
+                    }
+                }
         }
         .sheet(isPresented: $showingCustomDaysPicker) {
             CustomDaysPickerView(numberOfDays: $numberOfDays)
@@ -494,6 +558,7 @@ struct VisitPlanningScreen: View {
                 thumbnailUrl: nil
             )
         }
+        .id(refreshID) // Force refresh when spots are updated
     }
     
     func updateSpotTimes() -> [VisitSpot] {
@@ -546,20 +611,15 @@ struct VisitPlanningScreen: View {
             numberOfDays: numberOfDays
         )
         
-        var savedPlans = getSavedPlans()
-        savedPlans.append(plan)
-        
-        if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-        }
+        // VisitPlanDataStorageを使用して保存
+        VisitPlanDataStorage.shared.savePlanData(plan)
     }
     
     func getSavedPlans() -> [VisitPlanData] {
-        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans"),
-              let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
-            return []
-        }
-        return plans
+        // VisitPlanDataStorageから読み込み
+        let savedPlans = VisitPlanDataStorage.shared.loadAllSavedPlans()
+        let draftPlans = VisitPlanDataStorage.shared.loadAllDraftPlans()
+        return savedPlans + draftPlans
     }
     
     func savePlanPrivately() {
@@ -679,8 +739,12 @@ struct VisitPlanningScreen: View {
     func savePlanAsConfirmed() {
         let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
         
+        // 既存の下書きIDを使用するか、新しいIDを作成
+        let planId = editingDraftId ?? UUID()
+        
         // ローカルに保存するためのプランデータを作成
         let planData = VisitPlanData(
+            id: planId,
             animeName: animeName,
             title: planTitle.isEmpty ? "無題のプラン" : planTitle,
             duration: formatTotalDuration(),
@@ -692,13 +756,8 @@ struct VisitPlanningScreen: View {
             isDraft: false
         )
         
-        // ローカルストレージに保存
-        var savedPlans = getSavedPlans()
-        savedPlans.append(planData)
-        
-        if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-        }
+        // VisitPlanDataStorageを使用して保存
+        VisitPlanDataStorage.shared.savePlanData(planData)
         
         // Firebaseにも保存
         let plan = VisitPlanModel(
@@ -724,13 +783,7 @@ struct VisitPlanningScreen: View {
             isConfirmed: true // 確定済みフラグ
         )
         
-        // ローカルに保存
-        var localPlans = getSavedPlans()
-        localPlans.append(planData)
-        
-        if let encoded = try? JSONEncoder().encode(localPlans) {
-            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-        }
+        // ローカルに保存（重複削除 - すでに上で保存済み）
         
         // Firebaseに保存
         firebaseManager.saveVisitPlan(plan) { result in
@@ -756,10 +809,20 @@ struct VisitPlanningScreen: View {
     }
     
     private func saveDraftInternal() {
+        print("DEBUG: saveDraftInternal called - current spots array has \(spots.count) items")
+        
         // editingDraftIdがない場合は新しいIDを作成し、以後はそのIDを使用
         let draftId = editingDraftId ?? UUID()
         if editingDraftId == nil {
             editingDraftId = draftId
+        }
+        
+        let updatedSpots = updateSpotTimes()
+        
+        // デバッグ: スポットの詳細を出力
+        print("DEBUG: Saving draft with \(updatedSpots.count) spots:")
+        for (index, spot) in updatedSpots.enumerated() {
+            print("DEBUG: Spot \(index): '\(spot.name)' - Duration: \(spot.stayDuration) min")
         }
         
         let planData = VisitPlanData(
@@ -767,7 +830,7 @@ struct VisitPlanningScreen: View {
             animeName: animeName,
             title: planTitle.isEmpty ? "無題のプラン" : planTitle,
             duration: formatTotalDuration(),
-            spots: updateSpotTimes(),
+            spots: updatedSpots,
             thumbnailData: thumbnailData,
             startTime: startTime,
             numberOfDays: numberOfDays,
@@ -776,39 +839,27 @@ struct VisitPlanningScreen: View {
         )
         
         print("DEBUG: Plan data created - ID: \(draftId), title: \(planData.title), spots: \(planData.spots.count)")
+        print("DEBUG: First spot in planData: \(planData.spots.first?.name ?? "None")")
         
-        var savedPlans = getSavedPlans()
-        print("DEBUG: Current saved plans count: \(savedPlans.count)")
+        // VisitPlanDataStorageを使用して保存
+        VisitPlanDataStorage.shared.savePlanData(planData)
         
-        // 既存のプランを更新または新規追加
-        if let index = savedPlans.firstIndex(where: { $0.id == draftId }) {
-            savedPlans[index] = planData
-            print("DEBUG: Updated existing draft at index \(index)")
-        } else {
-            savedPlans.append(planData)
-            print("DEBUG: Added new draft")
+        print("DEBUG: savePlanData completed")
+        print("DEBUG: Successfully saved to VisitPlanDataStorage")
+        
+        // 保存成功のフィードバックを表示（dismissはしない）
+        showingSaveSuccess = true
+        
+        // 2秒後に保存成功表示をリセット
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            showingSaveSuccess = false
         }
         
-        if let encoded = try? JSONEncoder().encode(savedPlans) {
-            UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-            print("DEBUG: Successfully saved to UserDefaults")
-            
-            // 保存成功のフィードバックを表示（dismissはしない）
-            showingSaveSuccess = true
-            
-            // 2秒後に保存成功表示をリセット
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                showingSaveSuccess = false
-            }
-            
-            // 保存後にリロードを促す通知を送信
-            NotificationCenter.default.post(
-                name: Notification.Name("ReloadVisitPlans"),
-                object: nil
-            )
-        } else {
-            print("DEBUG: Failed to encode plans")
-        }
+        // 保存後にリロードを促す通知を送信 - TEMPORARILY DISABLED to prevent overwrites
+        // NotificationCenter.default.post(
+        //     name: Notification.Name("ReloadVisitPlans"),
+        //     object: nil
+        // )
     }
     
     func hasUnsavedChanges() -> Bool {
@@ -942,10 +993,12 @@ struct TimelineItem: View {
 struct TransportView: View {
     let from: VisitSpot
     let to: VisitSpot
+    let onEdit: () -> Void
     
     var body: some View {
         if let transport = from.transportToNext {
-            HStack(spacing: 16) {
+            Button(action: onEdit) {
+                HStack(spacing: 16) {
                 Spacer()
                     .frame(width: 50)
                 
@@ -959,7 +1012,7 @@ struct TransportView: View {
                         Image(systemName: transportIcon(transport.method))
                             .font(.system(size: 14))
                             .foregroundColor(.orange)
-                        Text(transport.method)
+                        Text(localizedTransportMethod(transport.method))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.orange)
                         Text("・ " + String(format: NSLocalizedString("duration_minutes", comment: "%d minutes"), transport.duration))
@@ -981,23 +1034,50 @@ struct TransportView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Spacer()
+                }
+                .padding(.horizontal, 16)
             }
-            .padding(.horizontal, 16)
+            .buttonStyle(PlainButtonStyle())
         }
     }
     
     func transportIcon(_ method: String) -> String {
         switch method {
-        case NSLocalizedString("train", comment: "Train"):
+        case NSLocalizedString("train", comment: "Train"), "電車":
             return "tram"
-        case NSLocalizedString("bus", comment: "Bus"):
+        case NSLocalizedString("bus", comment: "Bus"), "バス":
             return "bus"
-        case NSLocalizedString("walking", comment: "Walking"):
+        case NSLocalizedString("walking", comment: "Walking"), "徒歩":
             return "figure.walk"
-        case NSLocalizedString("taxi", comment: "Taxi"):
+        case NSLocalizedString("taxi", comment: "Taxi"), "タクシー":
             return "car"
+        case NSLocalizedString("car", comment: "Car"), "車":
+            return "car.fill"
+        case NSLocalizedString("bicycle", comment: "Bicycle"), "自転車":
+            return "bicycle"
         default:
             return "arrow.right"
+        }
+    }
+    
+    func localizedTransportMethod(_ method: String) -> String {
+        // 旧データの日本語からローカライズされた文字列に変換
+        switch method {
+        case "電車":
+            return NSLocalizedString("train", comment: "Train")
+        case "バス":
+            return NSLocalizedString("bus", comment: "Bus")
+        case "徒歩":
+            return NSLocalizedString("walking", comment: "Walking")
+        case "タクシー":
+            return NSLocalizedString("taxi", comment: "Taxi")
+        case "車":
+            return NSLocalizedString("car", comment: "Car")
+        case "自転車":
+            return NSLocalizedString("bicycle", comment: "Bicycle")
+        default:
+            // 既にローカライズされた文字列の場合はそのまま返す
+            return method
         }
     }
 }
@@ -1136,7 +1216,7 @@ struct AddSpotView: View {
     @State private var selectedImages: [PhotosPickerItem] = []
     @State private var spotImages: [UIImage] = []
     @State private var spotImagesData: [Data] = []
-    @State private var transportMethod: String = "電車"
+    @State private var transportMethod: String = ""
     @State private var transportDuration: Int = 30
     @State private var transportCost: Int = 0
     @State private var transportRoute: String = ""
@@ -1144,7 +1224,14 @@ struct AddSpotView: View {
     @State private var thumbnailImage: UIImage?
     @State private var thumbnailData: Data?
     
-    let transportMethods = [NSLocalizedString("train", comment: "Train"), NSLocalizedString("bus", comment: "Bus"), NSLocalizedString("walking", comment: "Walking"), NSLocalizedString("taxi", comment: "Taxi")]
+    let transportMethods = [
+        NSLocalizedString("train", comment: "Train"),
+        NSLocalizedString("bus", comment: "Bus"),
+        NSLocalizedString("walking", comment: "Walking"),
+        NSLocalizedString("taxi", comment: "Taxi"),
+        NSLocalizedString("car", comment: "Car"),
+        NSLocalizedString("bicycle", comment: "Bicycle")
+    ]
     
     init(spots: Binding<[VisitSpot]>, startTime: Date, previousSpots: [VisitSpot], selectedDay: Int) {
         self._spots = spots
@@ -1190,6 +1277,41 @@ struct AddSpotView: View {
         return nil
     }
     
+    // Calculate minimum time for the new spot (previous spot end time + transport duration)
+    var minimumStartTime: Date {
+        let daySpots = previousSpots.filter { $0.dayNumber == selectedDay }
+        guard let lastSpot = daySpots.last else { 
+            // If no previous spots on this day, use the plan's start time
+            return startTime 
+        }
+        
+        // Parse the end time from the previous spot's time range
+        let normalizedTimeRange = lastSpot.timeRange.replacingOccurrences(of: "〜", with: "~")
+        let components = normalizedTimeRange.split(separator: "~")
+        if components.count == 2 {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            let endTimeStr = String(components[1]).trimmingCharacters(in: .whitespaces)
+            
+            if let endDate = formatter.date(from: endTimeStr) {
+                // Create a date with the correct day and time
+                let calendar = Calendar.current
+                var dateComponents = calendar.dateComponents([.year, .month, .day], from: startTime)
+                let endComponents = calendar.dateComponents([.hour, .minute], from: endDate)
+                dateComponents.hour = endComponents.hour
+                dateComponents.minute = endComponents.minute
+                
+                if let baseEndTime = calendar.date(from: dateComponents) {
+                    // Add transport duration
+                    return baseEndTime.addingTimeInterval(TimeInterval(transportDuration * 60))
+                }
+            }
+        }
+        
+        // Fallback to start time if parsing fails
+        return startTime
+    }
+    
     var previousSpotEndTimeSection: some View {
         Group {
             if let endTime = previousSpotEndTime {
@@ -1217,6 +1339,11 @@ struct AddSpotView: View {
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
+                .onAppear {
+                    if transportMethod.isEmpty {
+                        transportMethod = transportMethods[0]
+                    }
+                }
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text(NSLocalizedString("how_long_does_it_take", comment: "How long does it take?"))
@@ -1227,6 +1354,14 @@ struct AddSpotView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .frame(width: 60)
                             .multilineTextAlignment(.center)
+                            .onChange(of: transportDuration) { _, _ in
+                                // When transport duration changes, validate start time
+                                if startTimeForSpot < minimumStartTime {
+                                    startTimeForSpot = minimumStartTime
+                                    // Also update end time to maintain duration
+                                    endTimeForSpot = startTimeForSpot.addingTimeInterval(3600)
+                                }
+                            }
                         Text(NSLocalizedString("minutes", comment: "minutes"))
                             .font(.system(size: 14))
                     }
@@ -1348,6 +1483,16 @@ struct AddSpotView: View {
                             DatePicker("", selection: $startTimeForSpot, displayedComponents: .hourAndMinute)
                                 .labelsHidden()
                                 .frame(width: 100)
+                                .onChange(of: startTimeForSpot) { _, newValue in
+                                    // Ensure start time is not before minimum time
+                                    if newValue < minimumStartTime {
+                                        startTimeForSpot = minimumStartTime
+                                    }
+                                    // Ensure end time is after start time
+                                    if endTimeForSpot <= startTimeForSpot {
+                                        endTimeForSpot = startTimeForSpot.addingTimeInterval(3600) // Add 1 hour
+                                    }
+                                }
                             
                             Text(NSLocalizedString("time_separator", comment: "~"))
                                 .font(.system(size: 16))
@@ -1356,6 +1501,12 @@ struct AddSpotView: View {
                             DatePicker("", selection: $endTimeForSpot, displayedComponents: .hourAndMinute)
                                 .labelsHidden()
                                 .frame(width: 100)
+                                .onChange(of: endTimeForSpot) { _, newValue in
+                                    // Ensure end time is after start time
+                                    if newValue <= startTimeForSpot {
+                                        endTimeForSpot = startTimeForSpot.addingTimeInterval(3600) // Add 1 hour
+                                    }
+                                }
                         }
                         
                         // 計算された滞在時間を表示
@@ -1707,6 +1858,7 @@ struct EditSpotView: View {
     let spot: VisitSpot
     @Binding var spots: [VisitSpot]
     let startTime: Date
+    let onSave: ((VisitSpot) -> Void)?
     
     @State private var spotName: String
     @State private var spotAddress: String
@@ -1725,10 +1877,32 @@ struct EditSpotView: View {
     @State private var detailImagesData: [Data] = []
     @State private var existingImageUrls: [String] = []
     
-    init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date) {
+    // Transportation states - Initialize with a valid default
+    @State private var transportMethod: String = NSLocalizedString("walking", comment: "Walking")
+    @State private var transportDuration: Int = 30
+    @State private var transportCost: Int = 0
+    @State private var transportRoute: String = ""
+    @State private var showTransportSection: Bool = false
+    
+    // Define transport methods as a static property to ensure consistency
+    static let transportMethods = [
+        NSLocalizedString("train", comment: "Train"),
+        NSLocalizedString("bus", comment: "Bus"),
+        NSLocalizedString("walking", comment: "Walking"),
+        NSLocalizedString("taxi", comment: "Taxi"),
+        NSLocalizedString("car", comment: "Car"),
+        NSLocalizedString("bicycle", comment: "Bicycle")
+    ]
+    
+    var transportMethods: [String] {
+        return EditSpotView.transportMethods
+    }
+    
+    init(spot: VisitSpot, spots: Binding<[VisitSpot]>, startTime: Date, onSave: ((VisitSpot) -> Void)? = nil) {
         self.spot = spot
         self._spots = spots
         self.startTime = startTime
+        self.onSave = onSave
         self._spotName = State(initialValue: spot.name)
         self._spotAddress = State(initialValue: spot.address)
         self._nearestStation = State(initialValue: spot.nearestStation)
@@ -1760,6 +1934,25 @@ struct EditSpotView: View {
                 self._endTimeForSpot = State(initialValue: end)
             }
         }
+        
+        // Initialize transport data if available
+        if let transport = spot.transportToNext {
+            // Normalize transport method to handle legacy data
+            let normalizedMethod = normalizeTransportMethod(transport.method)
+            self._transportMethod = State(initialValue: normalizedMethod)
+            self._transportDuration = State(initialValue: transport.duration)
+            self._transportCost = State(initialValue: transport.cost)
+            self._transportRoute = State(initialValue: transport.route)
+        } else {
+            // Set default transport method to the first available option
+            self._transportMethod = State(initialValue: EditSpotView.transportMethods.first ?? "Walking")
+        }
+        
+        // Determine if we should show transport section
+        // Show transport section if this is not the last spot in the list
+        let spotIndex = spots.wrappedValue.firstIndex(where: { $0.id == spot.id }) ?? 0
+        let isLastSpot = spotIndex == spots.wrappedValue.count - 1
+        self._showTransportSection = State(initialValue: !isLastSpot)
     }
     
     var calculatedStayDuration: Int {
@@ -1772,11 +1965,64 @@ struct EditSpotView: View {
         return "\(formatter.string(from: startTimeForSpot))〜\(formatter.string(from: endTimeForSpot))"
     }
     
+    // Calculate minimum time for this spot based on previous spot
+    var minimumStartTime: Date {
+        // Find the index of the current spot
+        guard let currentIndex = spots.firstIndex(where: { $0.id == spot.id }) else {
+            return startTime
+        }
+        
+        // Get spots on the same day
+        let sameDaySpots = spots.filter { $0.dayNumber == spot.dayNumber }
+        
+        // Find the previous spot on the same day
+        let previousSameDaySpots = sameDaySpots.filter { otherSpot in
+            if let otherIndex = spots.firstIndex(where: { $0.id == otherSpot.id }) {
+                return otherIndex < currentIndex
+            }
+            return false
+        }
+        
+        guard let previousSpot = previousSameDaySpots.last else {
+            // No previous spot on this day, use plan start time
+            return startTime
+        }
+        
+        // Parse the end time from the previous spot's time range
+        let normalizedTimeRange = previousSpot.timeRange.replacingOccurrences(of: "〜", with: "~")
+        let components = normalizedTimeRange.split(separator: "~")
+        if components.count == 2 {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "HH:mm"
+            let endTimeStr = String(components[1]).trimmingCharacters(in: .whitespaces)
+            
+            if let endDate = formatter.date(from: endTimeStr) {
+                // Create a date with the correct day and time
+                let calendar = Calendar.current
+                var dateComponents = calendar.dateComponents([.year, .month, .day], from: startTime)
+                let endComponents = calendar.dateComponents([.hour, .minute], from: endDate)
+                dateComponents.hour = endComponents.hour
+                dateComponents.minute = endComponents.minute
+                
+                if let baseEndTime = calendar.date(from: dateComponents) {
+                    // Add transport duration from previous spot
+                    let transportDuration = previousSpot.transportToNext?.duration ?? 0
+                    return baseEndTime.addingTimeInterval(TimeInterval(transportDuration * 60))
+                }
+            }
+        }
+        
+        return startTime
+    }
+    
     var body: some View {
         NavigationView {
             Form {
                 Section(NSLocalizedString("spot_info", comment: "Spot Info")) {
                     TextField(NSLocalizedString("spot_name", comment: "Spot name"), text: $spotName)
+                        .onChange(of: spotName) { oldValue, newValue in
+                            print("DEBUG: spotName changed from '\(oldValue)' to '\(newValue)'")
+                        }
                     
                     // 滞在時間帯選択
                     VStack(alignment: .leading, spacing: 8) {
@@ -1788,6 +2034,16 @@ struct EditSpotView: View {
                             DatePicker("", selection: $startTimeForSpot, displayedComponents: .hourAndMinute)
                                 .labelsHidden()
                                 .frame(width: 100)
+                                .onChange(of: startTimeForSpot) { _, newValue in
+                                    // Ensure start time is not before minimum time
+                                    if newValue < minimumStartTime {
+                                        startTimeForSpot = minimumStartTime
+                                    }
+                                    // Ensure end time is after start time
+                                    if endTimeForSpot <= startTimeForSpot {
+                                        endTimeForSpot = startTimeForSpot.addingTimeInterval(3600) // Add 1 hour
+                                    }
+                                }
                             
                             Text(NSLocalizedString("time_separator", comment: "~"))
                                 .font(.system(size: 16))
@@ -1796,6 +2052,12 @@ struct EditSpotView: View {
                             DatePicker("", selection: $endTimeForSpot, displayedComponents: .hourAndMinute)
                                 .labelsHidden()
                                 .frame(width: 100)
+                                .onChange(of: endTimeForSpot) { _, newValue in
+                                    // Ensure end time is after start time
+                                    if newValue <= startTimeForSpot {
+                                        endTimeForSpot = startTimeForSpot.addingTimeInterval(3600) // Add 1 hour
+                                    }
+                                }
                         }
                         
                         // 計算された滞在時間を表示
@@ -1925,6 +2187,54 @@ struct EditSpotView: View {
                     }
                 }
                 
+                // Transportation section - show only if not the last spot
+                if showTransportSection {
+                    Section(header: Text(NSLocalizedString("transportation_to_next", comment: "Transportation to next spot"))) {
+                        Picker(NSLocalizedString("transportation_method", comment: "Transportation method"), selection: $transportMethod) {
+                            ForEach(transportMethods, id: \.self) { method in
+                                Text(method).tag(method)
+                            }
+                        }
+                        .pickerStyle(MenuPickerStyle())
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(NSLocalizedString("how_long_does_it_take", comment: "How long does it take?"))
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            HStack {
+                                TextField("30", value: $transportDuration, format: .number)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 60)
+                                    .multilineTextAlignment(.center)
+                                Text(NSLocalizedString("minutes", comment: "minutes"))
+                                    .font(.system(size: 14))
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(NSLocalizedString("transportation_cost", comment: "How much is the transportation cost?"))
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            HStack {
+                                TextField("0", value: $transportCost, format: .number)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .frame(width: 80)
+                                    .multilineTextAlignment(.center)
+                                Text(NSLocalizedString("yen", comment: "yen"))
+                                    .font(.system(size: 14))
+                            }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(NSLocalizedString("which_route_optional", comment: "Which route will you use? (Optional)"))
+                                .font(.system(size: 13))
+                                .foregroundColor(.gray)
+                            TextField(NSLocalizedString("route_example", comment: "e.g. JR Yamanote Line → Tokyo Metro Ginza Line"), text: $transportRoute)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                        }
+                    }
+                }
+                
                 Section {
                     Button(NSLocalizedString("delete", comment: "Delete"), role: .destructive) {
                         if let index = spots.firstIndex(where: { $0.id == spot.id }) {
@@ -1947,18 +2257,52 @@ struct EditSpotView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(NSLocalizedString("save", comment: "Save")) {
-                        if let index = spots.firstIndex(where: { $0.id == spot.id }) {
-                            spots[index].name = spotName
-                            spots[index].address = spotAddress
-                            spots[index].nearestStation = nearestStation
-                            spots[index].stayDuration = calculatedStayDuration
-                            spots[index].notes = spotNotes
-                            spots[index].timeRange = formattedTimeRange
-                            spots[index].activity = activity
-                            spots[index].imageData = spotImageData
-                            spots[index].spotCost = spotCost
-                            spots[index].detailImagesData = detailImagesData.isEmpty ? nil : detailImagesData
-                            spots[index].images = existingImageUrls
+                        print("DEBUG: EditSpotView Save button tapped")
+                        print("DEBUG: Original spot name: \(spot.name)")
+                        print("DEBUG: Current spotName state: '\(spotName)'")
+                        print("DEBUG: spotAddress: '\(spotAddress)'")
+                        print("DEBUG: spotNotes: '\(spotNotes)'")
+                        print("DEBUG: activity: '\(activity)'")
+                        
+                        // Create transport info if not the last spot
+                        let transportInfo: TransportInfo? = showTransportSection ? TransportInfo(
+                            method: transportMethod,
+                            duration: transportDuration,
+                            cost: transportCost,
+                            route: transportRoute
+                        ) : nil
+                        
+                        // Create updated spot
+                        let updatedSpot = VisitSpot(
+                            id: spot.id,
+                            name: spotName,
+                            address: spotAddress,
+                            notes: spotNotes,
+                            event: spot.event,
+                            nearestStation: nearestStation,
+                            arrivalTime: spot.arrivalTime,
+                            departureTime: spot.departureTime,
+                            stayDuration: calculatedStayDuration,
+                            transportToNext: transportInfo,
+                            isCompleted: spot.isCompleted,
+                            timeRange: formattedTimeRange,
+                            activity: activity,
+                            imageData: spotImageData,
+                            detailImagesData: detailImagesData.isEmpty ? nil : detailImagesData,
+                            dayNumber: spot.dayNumber,
+                            spotCost: spotCost,
+                            imageUrl: spot.imageUrl,
+                            images: existingImageUrls
+                        )
+                        
+                        print("DEBUG: Created updated spot with name: '\(updatedSpot.name)'")
+                        
+                        // Don't try to update the binding directly - just call the callback
+                        print("DEBUG: Calling callback to update spot")
+                        if let onSave = onSave {
+                            onSave(updatedSpot)
+                        } else {
+                            print("DEBUG: ERROR - No onSave callback provided")
                         }
                         dismiss()
                     }
@@ -1991,5 +2335,141 @@ struct EditSpotView: View {
         let interval = end.timeIntervalSince(start)
         let minutes = Int(interval / 60)
         return minutes > 0 ? minutes : 60 // 負の値の場合はデフォルト60分
+    }
+}
+
+// Helper function to normalize transport method for legacy data
+func normalizeTransportMethod(_ method: String) -> String {
+    // Map Japanese transport methods to localized strings
+    switch method {
+    case "電車":
+        return NSLocalizedString("train", comment: "Train")
+    case "バス":
+        return NSLocalizedString("bus", comment: "Bus")
+    case "徒歩":
+        return NSLocalizedString("walking", comment: "Walking")
+    case "タクシー":
+        return NSLocalizedString("taxi", comment: "Taxi")
+    case "車":
+        return NSLocalizedString("car", comment: "Car")
+    case "自転車":
+        return NSLocalizedString("bicycle", comment: "Bicycle")
+    default:
+        // If already localized or unknown, check if it's in our valid methods
+        if EditSpotView.transportMethods.contains(method) {
+            return method
+        } else {
+            // Default to first available method
+            return EditSpotView.transportMethods.first ?? "Walking"
+        }
+    }
+}
+
+// 交通機関編集用のデータ構造
+struct EditTransportData: Identifiable {
+    let id = UUID()
+    let fromSpot: VisitSpot
+    let index: Int
+}
+
+// 交通機関編集ビュー
+struct TransportEditView: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var spots: [VisitSpot]
+    let fromSpotIndex: Int
+    
+    @State private var transportMethod: String = "徒歩"
+    @State private var transportDuration: Int = 30
+    @State private var transportCost: Int = 0
+    @State private var transportRoute: String = ""
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section(header: Text(NSLocalizedString("transportation_details", comment: "Transportation details"))) {
+                    Picker(NSLocalizedString("transportation_method", comment: "Transportation method"), selection: $transportMethod) {
+                        Text(NSLocalizedString("walking", comment: "Walking")).tag("徒歩")
+                        Text(NSLocalizedString("train", comment: "Train")).tag("電車")
+                        Text(NSLocalizedString("bus", comment: "Bus")).tag("バス")
+                        Text(NSLocalizedString("car", comment: "Car")).tag("車")
+                        Text(NSLocalizedString("bicycle", comment: "Bicycle")).tag("自転車")
+                        Text(NSLocalizedString("taxi", comment: "Taxi")).tag("タクシー")
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                    
+                    HStack {
+                        Text(NSLocalizedString("duration", comment: "Duration"))
+                        Spacer()
+                        TextField("30", value: $transportDuration, format: .number)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                        Text(NSLocalizedString("minutes", comment: "minutes"))
+                    }
+                    
+                    HStack {
+                        Text(NSLocalizedString("cost", comment: "Cost"))
+                        Spacer()
+                        TextField("0", value: $transportCost, format: .number)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
+                        Text("¥")
+                    }
+                    
+                    TextField(NSLocalizedString("route_description", comment: "Route description"), text: $transportRoute)
+                }
+            }
+            .navigationTitle(NSLocalizedString("edit_transportation", comment: "Edit transportation"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("save", comment: "Save")) {
+                        print("DEBUG: TransportEditView Save button tapped")
+                        saveTransportInfo()
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            loadCurrentTransportInfo()
+        }
+    }
+    
+    private func loadCurrentTransportInfo() {
+        guard fromSpotIndex < spots.count else { return }
+        
+        if let transport = spots[fromSpotIndex].transportToNext {
+            transportMethod = transport.method
+            transportDuration = transport.duration
+            transportCost = transport.cost
+            transportRoute = transport.route
+        }
+    }
+    
+    private func saveTransportInfo() {
+        print("DEBUG: saveTransportInfo called for index \(fromSpotIndex)")
+        guard fromSpotIndex < spots.count else { 
+            print("DEBUG: Invalid spot index \(fromSpotIndex), spots count: \(spots.count)")
+            return 
+        }
+        
+        let transportInfo = TransportInfo(
+            method: transportMethod,
+            duration: transportDuration,
+            cost: transportCost,
+            route: transportRoute
+        )
+        
+        spots[fromSpotIndex].transportToNext = transportInfo
+        print("DEBUG: Updated transport for spot: \(spots[fromSpotIndex].name) - Method: \(transportMethod), Duration: \(transportDuration)min")
     }
 }

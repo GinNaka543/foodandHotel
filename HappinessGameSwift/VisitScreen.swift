@@ -144,6 +144,12 @@ public struct VisitScreen: View {
                 loadFirebasePlans()
                 loadPurchasedPlansFromFirebase()
             }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ReloadVisitPlans"))) { _ in
+                print("📱 [VisitScreen] Received ReloadVisitPlans notification - reloading all plans")
+                loadSavedPlans()
+                loadFirebasePlans()
+                loadPurchasedPlansFromFirebase()
+            }
     }
     
     @ViewBuilder
@@ -547,23 +553,29 @@ public struct VisitScreen: View {
     
     func loadSavedPlans() {
         print("DEBUG: loadSavedPlans called")
-        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans") else {
-            print("DEBUG: No saved plans data found")
-            savedPlans = []
-            userOriginalPlans = []
-            return
-        }
         
-        do {
-            let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
-            savedPlans = plans
-            print("DEBUG: Loaded \(plans.count) saved plans")
-            
-            // オリジナル作成プランのみ（購入プランを除外）
-            let originalPlans = plans.filter { !$0.isPurchased }
-            print("DEBUG: Found \(originalPlans.count) original plans (non-purchased)")
-            
-            userOriginalPlans = originalPlans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+        // 古いUserDefaultsデータをクリーンアップ（一度だけ実行）
+        cleanupOldUserDefaultsData()
+        
+        // 緊急修正: Test3の重複を強制的に削除
+        emergencyCleanupTest3Duplicates()
+        
+        // 重複データをクリーンアップ
+        VisitPlanDataStorage.shared.cleanupDuplicatePlans()
+        
+        // 新しいストレージシステムからプランを読み込む
+        let allSavedPlans = VisitPlanDataStorage.shared.loadAllSavedPlans()
+        let allDraftPlans = VisitPlanDataStorage.shared.loadAllDraftPlans()
+        
+        let plans = allSavedPlans + allDraftPlans
+        savedPlans = plans
+        print("DEBUG: Loaded \(plans.count) saved plans (including \(allDraftPlans.count) drafts)")
+        
+        // オリジナル作成プランのみ（購入プランを除外）
+        let originalPlans = plans.filter { !$0.isPurchased }
+        print("DEBUG: Found \(originalPlans.count) original plans (non-purchased)")
+        
+        userOriginalPlans = originalPlans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
                 VisitPlanModel(
                     id: plan.id.uuidString,
                     userId: currentUserId,
@@ -586,14 +598,14 @@ public struct VisitScreen: View {
                     isDraft: plan.isDraft, // 下書きフラグを設定
                     streamingUrls: plan.streamingUrls // ストリーミングURLを追加
                 )
-            }
-            
-            // 重複削除を適用
-            userOriginalPlans = removeDuplicatePlans(userOriginalPlans)
-            print("DEBUG: userOriginalPlans updated with \(userOriginalPlans.count) plans after deduplication")
-            
-            // 購入済みプランのみ（非表示を除外し、最新順にソート）
-            let tempPurchasedPlans = plans.filter { $0.isPurchased && !hiddenPlanIds.contains($0.id.uuidString) }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+        }
+        
+        // 重複削除を適用
+        userOriginalPlans = removeDuplicatePlans(userOriginalPlans)
+        print("DEBUG: userOriginalPlans updated with \(userOriginalPlans.count) plans after deduplication")
+        
+        // 購入済みプランのみ（非表示を除外し、最新順にソート）
+        let tempPurchasedPlans = plans.filter { $0.isPurchased && !hiddenPlanIds.contains($0.id.uuidString) }.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
                 VisitPlanModel(
                     id: plan.id.uuidString,
                     userId: currentUserId,
@@ -616,20 +628,11 @@ public struct VisitScreen: View {
                     isDraft: false, // 購入済みプランは下書きではない
                     streamingUrls: plan.streamingUrls // ストリーミングURLを追加
                 )
-            }
-            
-            // 購入済みプランにも重複削除を適用
-            purchasedPlans = removeDuplicatePlans(tempPurchasedPlans)
-            print("DEBUG: purchasedPlans updated with \(purchasedPlans.count) plans after deduplication")
-            
-            for (_, _) in plans.enumerated() {
-            }
-        } catch {
-            savedPlans = []
-            userOriginalPlans = []
-            purchasedPlans = []
         }
         
+        // 購入済みプランにも重複削除を適用
+        purchasedPlans = removeDuplicatePlans(tempPurchasedPlans)
+        print("DEBUG: purchasedPlans updated with \(purchasedPlans.count) plans after deduplication")
     }
     
     // 広告関連の機能を削除
@@ -962,53 +965,30 @@ public struct VisitScreen: View {
             streamingUrls: plan.streamingUrls
         )
         
-        // 既存の保存済みプランを読み込み
-        var savedPlans = self.savedPlans
+        // 新しいVisitPlanDataStorageシステムを使用して保存
+        VisitPlanDataStorage.shared.savePlanData(visitPlanData)
+        print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
         
-        // 既に同じプランが保存されていないかチェック（IDとタイトルの両方でチェック）
-        if !savedPlans.contains(where: { $0.id.uuidString == plan.id || ($0.title == plan.title && $0.isPurchased) }) {
-            savedPlans.append(visitPlanData)
-            
-            // UserDefaultsに保存
-            if let encodedData = try? JSONEncoder().encode(savedPlans) {
-                UserDefaults.standard.set(encodedData, forKey: "savedPlans")
-                
-                // 保存済みプランのリストを直接更新（重複を防ぐため）
-                self.savedPlans = savedPlans
-                
-                // 保存済みプランを再読み込み
-                DispatchQueue.main.async {
-                    self.loadSavedPlans()
-                }
-            }
-        } else {
+        // 保存済みプランを再読み込み
+        DispatchQueue.main.async {
+            self.loadSavedPlans()
         }
     }
     
     func deleteOriginalPlan(_ plan: VisitPlanModel) {
         print("DEBUG: Deleting plan - ID: \(plan.id), Title: \(plan.title)")
         
-        // savedPlansから削除
-        if let index = savedPlans.firstIndex(where: { $0.id.uuidString == plan.id }) {
-            savedPlans.remove(at: index)
-            print("DEBUG: Removed plan from savedPlans at index \(index)")
-            
-            // UserDefaultsHelperを使用して保存
-            if let encodedData = try? JSONEncoder().encode(savedPlans) {
-                UserDefaultsHelper.shared.setData(encodedData, forKey: "savedPlans")
-                print("DEBUG: Successfully saved updated plans to UserDefaults")
-            }
-            
-            // userOriginalPlansから削除
-            userOriginalPlans.removeAll(where: { $0.id == plan.id })
-            print("DEBUG: Removed plan from userOriginalPlans")
-            
-            // プランリストをリロードしてUIを更新
-            DispatchQueue.main.async {
-                self.loadSavedPlans()
-            }
-        } else {
-            print("DEBUG: Plan not found in saved plans")
+        // VisitPlanDataStorageを使用して削除
+        VisitPlanDataStorage.shared.deletePlanData(planId: plan.id)
+        print("DEBUG: Deleted plan from VisitPlanDataStorage")
+        
+        // userOriginalPlansから削除
+        userOriginalPlans.removeAll(where: { $0.id == plan.id })
+        print("DEBUG: Removed plan from userOriginalPlans")
+        
+        // プランリストをリロードしてUIを更新
+        DispatchQueue.main.async {
+            self.loadSavedPlans()
         }
     }
     
@@ -1156,33 +1136,100 @@ public struct VisitScreen: View {
     
     // 重複プランを削除する関数
     private func removeDuplicatePlans(_ plans: [VisitPlanModel]) -> [VisitPlanModel] {
-        var uniquePlans: [VisitPlanModel] = []
-        var seenPlanIds: Set<String> = []
-        var seenPlanKeys: Set<String> = []
+        // パフォーマンス最適化: 重複チェックをDictionary使用で高速化
+        var uniquePlansDict: [String: VisitPlanModel] = [:]
+        var duplicateCount = 0
         
         for plan in plans {
-            // まずIDで重複チェック
-            if seenPlanIds.contains(plan.id) {
-                print("DEBUG: Removed duplicate plan by ID - Title: \(plan.title), ID: \(plan.id)")
-                continue
+            // IDをキーとして使用（最も信頼できる一意識別子）
+            if uniquePlansDict[plan.id] == nil {
+                uniquePlansDict[plan.id] = plan
+            } else {
+                duplicateCount += 1
             }
-            
-            // タイトル、アニメ名、作成日で重複判定
-            let planKey = "\(plan.title)_\(plan.animeName)_\(plan.createdDate.timeIntervalSince1970)"
-            if seenPlanKeys.contains(planKey) {
-                print("DEBUG: Removed duplicate plan by content - Title: \(plan.title), Key: \(planKey)")
-                continue
-            }
-            
-            // 重複でない場合は追加
-            seenPlanIds.insert(plan.id)
-            seenPlanKeys.insert(planKey)
-            uniquePlans.append(plan)
-            print("DEBUG: Added unique plan - Title: \(plan.title), ID: \(plan.id)")
         }
         
-        print("DEBUG: Removed \(plans.count - uniquePlans.count) duplicate plans")
-        return uniquePlans
+        if duplicateCount > 0 {
+            print("DEBUG: Removed \(duplicateCount) duplicate plans")
+        }
+        
+        // 作成日時の降順でソート
+        return Array(uniquePlansDict.values).sorted { $0.createdDate > $1.createdDate }
+    }
+    
+    // 古いUserDefaultsデータをクリーンアップ
+    private func cleanupOldUserDefaultsData() {
+        // 古い "savedPlans" キーが存在する場合は削除
+        if UserDefaults.standard.object(forKey: "savedPlans") != nil {
+            UserDefaults.standard.removeObject(forKey: "savedPlans")
+            print("🧹 Cleaned up old UserDefaults savedPlans data")
+        }
+    }
+    
+    // 緊急修正: Test3の重複を強制的に削除
+    private func emergencyCleanupTest3Duplicates() {
+        print("🚨 EMERGENCY CLEANUP: Removing Test3 duplicates...")
+        
+        // UserDefaultsから直接メタデータを取得
+        guard let metadata = UserDefaults.standard.dictionary(forKey: "savedPlansMetadata") as? [String: [String: Any]] else {
+            print("❌ No metadata found")
+            return
+        }
+        
+        print("📊 Found \(metadata.count) total plans in metadata")
+        
+        var cleanedMetadata: [String: [String: Any]] = [:]
+        var test3Found = false
+        var test3Count = 0
+        var keptPlanId: String?
+        
+        // Test3プランをカウントして、最初の1つだけ保持
+        for (planId, planData) in metadata {
+            if let title = planData["title"] as? String,
+               let isPurchased = planData["isPurchased"] as? Bool,
+               isPurchased && title == "Test3" {
+                test3Count += 1
+                if !test3Found {
+                    // 最初のTest3プランだけを保持
+                    cleanedMetadata[planId] = planData
+                    test3Found = true
+                    keptPlanId = planId
+                    print("✅ Keeping first Test3 plan with ID: \(planId)")
+                } else {
+                    print("🗑️ Removing duplicate Test3 plan with ID: \(planId)")
+                    // プランディレクトリも削除
+                    deleteplanDirectory(planId: planId)
+                }
+            } else {
+                // Test3以外のプランは全て保持
+                cleanedMetadata[planId] = planData
+            }
+        }
+        
+        print("📊 Test3 duplicates found: \(test3Count), keeping only 1")
+        print("📊 Final plan count: \(cleanedMetadata.count) (removed \(metadata.count - cleanedMetadata.count) plans)")
+        
+        // クリーンなメタデータを保存
+        UserDefaults.standard.set(cleanedMetadata, forKey: "savedPlansMetadata")
+        UserDefaults.standard.synchronize()
+        
+        print("✅ EMERGENCY CLEANUP COMPLETE")
+    }
+    
+    // プランディレクトリを削除
+    private func deleteplanDirectory(planId: String) {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let visitPlansDirectory = documentsDirectory.appendingPathComponent("VisitPlanData")
+        let planDirectory = visitPlansDirectory.appendingPathComponent(planId)
+        
+        do {
+            if FileManager.default.fileExists(atPath: planDirectory.path) {
+                try FileManager.default.removeItem(at: planDirectory)
+                print("🗑️ Deleted plan directory: \(planId)")
+            }
+        } catch {
+            print("❌ Failed to delete plan directory: \(error)")
+        }
     }
     
 }

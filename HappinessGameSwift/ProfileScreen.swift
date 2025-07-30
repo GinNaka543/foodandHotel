@@ -337,6 +337,11 @@ struct SettingsView: View {
     @State private var autoSaveEnabled = true
     @State private var darkModeEnabled = false
     @State private var showingPurchaseHistory = false
+    @StateObject private var currencyManager = CurrencyManager.shared
+    @State private var showingCleanupAlert = false
+    @State private var cleanupStats: (totalPlans: Int, totalDrafts: Int, duplicatePlans: Int, duplicateDrafts: Int)?
+    @State private var isCleaningUp = false
+    @State private var showingCleanupSuccess = false
     
     var body: some View {
         NavigationView {
@@ -355,6 +360,19 @@ struct SettingsView: View {
                     Toggle(NSLocalizedString("dark_mode", comment: "Dark mode"), isOn: $darkModeEnabled)
                 }
                 
+                Section(NSLocalizedString("Currency", comment: "Currency settings")) {
+                    Picker(NSLocalizedString("Currency", comment: "Currency selection"), selection: $currencyManager.selectedCurrency) {
+                        ForEach(currencyManager.availableCurrencies, id: \.self) { currency in
+                            HStack {
+                                Text(getCurrencyFlag(for: currency))
+                                Text("\(currency) (\(getCurrencySymbol(for: currency)))")
+                            }
+                            .tag(currency)
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                }
+                
                 Section(NSLocalizedString("purchase_info", comment: "Purchase info")) {
                     Button(action: {
                         showingPurchaseHistory = true
@@ -367,6 +385,57 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                                 .font(.caption)
                         }
+                    }
+                }
+                
+                Section(header: Text("データ管理")) {
+                    Button(action: {
+                        checkForDuplicates()
+                    }) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("重複データのクリーンアップ")
+                                    .foregroundColor(.primary)
+                                if let stats = cleanupStats, stats.duplicatePlans > 0 || stats.duplicateDrafts > 0 {
+                                    Text("\(stats.duplicatePlans + stats.duplicateDrafts)件の重複が見つかりました")
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                }
+                            }
+                            Spacer()
+                            if isCleaningUp {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle())
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    }
+                    .disabled(isCleaningUp)
+                    
+                    if let stats = cleanupStats {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("ストレージ情報")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            HStack {
+                                Text("保存済みプラン:")
+                                Spacer()
+                                Text("\(stats.totalPlans)件")
+                                    .foregroundColor(.secondary)
+                            }
+                            .font(.caption)
+                            HStack {
+                                Text("下書き:")
+                                Spacer()
+                                Text("\(stats.totalDrafts)件")
+                                    .foregroundColor(.secondary)
+                            }
+                            .font(.caption)
+                        }
+                        .padding(.vertical, 4)
                     }
                 }
                 
@@ -391,6 +460,79 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingPurchaseHistory) {
             PurchaseHistoryView()
+        }
+        .alert("重複データのクリーンアップ", isPresented: $showingCleanupAlert) {
+            Button("キャンセル", role: .cancel) {}
+            Button("クリーンアップ", role: .destructive) {
+                performCleanup()
+            }
+        } message: {
+            if let stats = cleanupStats {
+                Text("重複プラン: \(stats.duplicatePlans)件\n重複下書き: \(stats.duplicateDrafts)件\n\nクリーンアップを実行しますか？")
+            } else {
+                Text("重複データをチェック中...")
+            }
+        }
+        .alert("クリーンアップ完了", isPresented: $showingCleanupSuccess) {
+            Button("OK") {}
+        } message: {
+            Text("重複データのクリーンアップが完了しました。")
+        }
+        .onAppear {
+            checkForDuplicates()
+        }
+    }
+    
+    private func checkForDuplicates() {
+        let stats = VisitPlanDataStorage.shared.getStorageStatistics()
+        cleanupStats = stats
+        
+        if stats.duplicatePlans > 0 || stats.duplicateDrafts > 0 {
+            showingCleanupAlert = true
+        }
+    }
+    
+    private func performCleanup() {
+        isCleaningUp = true
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            VisitPlanDataStorage.shared.cleanupDuplicatePlans()
+            
+            DispatchQueue.main.async {
+                isCleaningUp = false
+                cleanupStats = VisitPlanDataStorage.shared.getStorageStatistics()
+                showingCleanupSuccess = true
+                
+                // Notify VisitScreen to reload
+                NotificationCenter.default.post(
+                    name: Notification.Name("ReloadVisitPlans"),
+                    object: nil
+                )
+            }
+        }
+    }
+    
+    private func getCurrencySymbol(for currency: String) -> String {
+        switch currency {
+        case "USD": return "$"
+        case "EUR": return "€"
+        case "GBP": return "£"
+        case "KRW": return "₩"
+        case "CNY": return "¥"
+        case "JPY": return "¥"
+        default: return ""
+        }
+    }
+    
+    private func getCurrencyFlag(for currency: String) -> String {
+        switch currency {
+        case "USD": return "🇺🇸"
+        case "EUR": return "🇪🇺"
+        case "GBP": return "🇬🇧"
+        case "KRW": return "🇰🇷"
+        case "CNY": return "🇨🇳"
+        case "JPY": return "🇯🇵"
+        default: return ""
         }
     }
 }

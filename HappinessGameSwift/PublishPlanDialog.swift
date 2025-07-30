@@ -37,7 +37,7 @@ struct PublishPlanDialog: View {
                     VStack(alignment: .leading, spacing: 24) {
                         // 公開料金の説明
                         VStack(alignment: .leading, spacing: 12) {
-                            Label(NSLocalizedString("plan_publish_fee", comment: "Plan Publication Fee"), systemImage: "yensign.circle.fill")
+                            Label(NSLocalizedString("plan_publish_fee", comment: "Plan Publication Fee"), systemImage: "dollarsign.circle.fill")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.purple)
                             

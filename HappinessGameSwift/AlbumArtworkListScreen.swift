@@ -4,6 +4,8 @@ import Foundation
 struct AlbumArtworkListScreen: View {
     @State var artworks: [Artwork]
     let tag: String
+    let character: Character?
+    let anime: Anime?
     let onArtworkDeleted: ((Artwork) -> Void)?
     let onArtworkEdited: ((Artwork) -> Void)?
     let onAlbumDeleted: (() -> Void)?
@@ -192,6 +194,8 @@ struct AlbumArtworkListScreen: View {
         .fullScreenCover(item: $selectedArtwork) { artwork in
             ArtworkPlayerScreen(
                 artwork: artwork,
+                character: character,
+                anime: anime,
                 allArtworks: artworks,
                 onDelete: {
                     // 親画面に削除を通知

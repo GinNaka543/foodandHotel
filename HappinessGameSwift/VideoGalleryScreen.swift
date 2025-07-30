@@ -390,6 +390,8 @@ struct VideoGalleryScreen: View {
             AlbumVideoListScreen(
                 videos: album.videos, 
                 tag: album.tag,
+                character: character,
+                anime: nil,
                 onVideoDeleted: { deletedVideo in
                     if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
                         videos.remove(at: idx)
@@ -2051,6 +2053,8 @@ struct CharacterIconView: View {
 struct AlbumVideoListScreen: View {
     let videos: [MemoryVideo]
     let tag: String
+    let character: Character?
+    let anime: Anime?
     let onVideoDeleted: ((MemoryVideo) -> Void)?
     let onAlbumDeleted: (() -> Void)?
     @Environment(\.presentationMode) var presentationMode
@@ -2398,8 +2402,8 @@ struct AlbumVideoListScreen: View {
         .fullScreenCover(item: $selectedVideo) { video in
             VideoPlayerScreen(
                 video: video,
-                character: nil as Character?,
-                anime: nil as Anime?,
+                character: character,
+                anime: anime,
                 allVideos: videos,
                 onSave: { newTitle, newTags in
                     // 編集処理（必要ならここも拡張）

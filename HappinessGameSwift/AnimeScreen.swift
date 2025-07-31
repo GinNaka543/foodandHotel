@@ -1355,50 +1355,51 @@ struct AnimeArtworkScreen: View {
             Spacer()
         }
         .padding(.vertical, 8)
+        .background(Color.white)
     }
     
     // コンテンツビュー
     var contentView: some View {
         ZStack {
-                    if showAlbum {
-                        if albums.isEmpty {
-                            VStack(spacing: 20) {
-                                Spacer()
-                                    .frame(maxHeight: 100)
-                                
-                                Image(systemName: "folder.badge.plus")
-                                    .font(.system(size: 60))
-                                    .foregroundColor(.purple)
-                                
-                                Text(NSLocalizedString("no_albums_anime", comment: ""))
-                                    .font(.title2)
-                                    .fontWeight(.semibold)
-                                
-                                Text(NSLocalizedString("create_album_same_tag", comment: ""))
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal)
-                                
-                                Button(action: {
-                                    showTagInput = true
-                                }) {
-                                    Label(NSLocalizedString("create_album", comment: ""), systemImage: "plus.circle.fill")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .padding()
-                                        .background(Color.purple)
-                                        .cornerRadius(25)
-                                }
-                                
-                                Spacer()
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        } else {
-                            ScrollView {
-                                VStack(spacing: 12) {
-                                    // --- アルバムリスト ---
-                                    ForEach(albums) { album in
+            if showAlbum {
+                if albums.isEmpty {
+                    VStack(spacing: 20) {
+                        Spacer()
+                            .frame(maxHeight: 100)
+                        
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 60))
+                            .foregroundColor(.purple)
+                        
+                        Text(NSLocalizedString("no_albums_anime", comment: ""))
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text(NSLocalizedString("create_album_same_tag", comment: ""))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                        
+                        Button(action: {
+                            showTagInput = true
+                        }) {
+                            Label(NSLocalizedString("create_album", comment: ""), systemImage: "plus.circle.fill")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.purple)
+                                .cornerRadius(25)
+                        }
+                        
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            // --- アルバムリスト ---
+                            ForEach(albums) { album in
                                     Button(action: {
                                         selectedAlbum = album
                                     }) {
@@ -1529,8 +1530,8 @@ struct AnimeArtworkScreen: View {
                                 }
                             )
                         }
-                        }
-                    } else {
+                    }
+            } else {
                         if artworks.isEmpty {
                             VStack(spacing: 20) {
                                 Spacer()
@@ -1569,13 +1570,7 @@ struct AnimeArtworkScreen: View {
                                 VStack(spacing: 32) {
                                     ForEach(artworks, id: \ .id) { artwork in
                                     Button(action: {
-                                        if let pixivURL = artwork.pixivURL {
-                                            pixivRedirectURL = pixivURL
-                                            pixivRedirectArtwork = artwork
-                                            showPixivRedirect = true
-                                        } else {
-                                            selectedArtwork = artwork
-                                        }
+                                        selectedArtwork = artwork
                                     }) {
                                         VStack(alignment: .leading, spacing: 0) {
                                             ZStack {
@@ -1634,7 +1629,6 @@ struct AnimeArtworkScreen: View {
                                 }
                             }
                             .padding(.top, 8)
-                        }
                         .fullScreenCover(item: $selectedArtwork) { artwork in
                             ArtworkPlayerScreen(
                                 artwork: artwork,
@@ -1672,6 +1666,8 @@ struct AnimeArtworkScreen: View {
                 }
             }
         }
+        .background(Color.white)
+    }
     
     // メインコンテンツ
     var mainContent: some View {
@@ -1933,6 +1929,8 @@ struct AnimeArtworkScreen: View {
                 .environmentObject(animeManager)
                 .environmentObject(characterManager)
         }
+        // Pixiv redirect sheet is no longer used - all artworks now go to ArtworkPlayerScreen
+        /*
         .sheet(isPresented: $showPixivRedirect) {
             PixivRedirectView(
                 pixivURL: pixivRedirectURL,
@@ -1962,6 +1960,7 @@ struct AnimeArtworkScreen: View {
                 }
             )
         }
+        */
         .alert(isPresented: $showDeleteArtworkAlbumAlert) {
             Alert(
                 title: Text(NSLocalizedString("delete_album_confirm_title", comment: "")),
@@ -2092,9 +2091,9 @@ struct AnimeArtworkScreen: View {
                                             .clipped()
                                             .cornerRadius(24)
                                             .onTapGesture {
-                                                pixivRedirectURL = pixivURL
-                                                pixivRedirectArtwork = artwork
-                                                showPixivRedirect = true
+                                                withAnimation(.easeInOut(duration: 0.3)) {
+                                                    showFullscreenImage = true
+                                                }
                                             }
                                     } else {
                                         Text(NSLocalizedString("image_data_not_found", comment: ""))
@@ -6533,5 +6532,3 @@ struct PlayMusicButtonView: View {
         }
     }
 }
-
-

@@ -180,6 +180,13 @@
 "delete_anime_confirm" = "您确定要删除这个动画吗？";
 "r18_images_removed" = "以下图片无法加载并已被删除：\n%@\n\nR18作品的缩略图无法显示，将自动删除。";
 
+/* Pixiv Content Messages */
+"loading_failed" = "加载失败";
+"r18_content_cannot_display" = "无法显示R18内容";
+"loading_pixiv_image" = "加载Pixiv图片中...";
+"image_load_failed" = "图片加载失败";
+"possibly_r18_content" = "这可能是R18内容";
+
 /* Video Page */
 "no_albums_yet" = "还没有相册";
 "create_album_from_videos" = "您可以从具有相同标签的视频创建相册";
@@ -371,6 +378,18 @@
 "open_in_pixiv_question" = "在Pixiv中打开？";
 "pixiv_artwork" = "Pixiv作品";
 "open_in_pixiv" = "在Pixiv中打开";
+
+/* Pixiv Modal Strings */
+"edit" = "编辑";
+"pixiv_image_source" = "此图片来自Pixiv";
+"select_edit_item" = "选择编辑项目";
+"edit_title" = "编辑标题";
+"edit_tags" = "编辑标签";
+"delete_image" = "删除图片";
+"edit_title_name" = "编辑标题名称";
+"title" = "标题";
+"tags_comma_separated" = "标签（用逗号分隔）";
+"confirm_delete" = "您确定要删除吗？";
 
 /* Login */
 "username" = "用户名";

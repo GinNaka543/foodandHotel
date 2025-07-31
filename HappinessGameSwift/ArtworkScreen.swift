@@ -796,13 +796,13 @@ struct ArtworkScreen: View {
                 }
             )
         }
-        .alert("読み込めない画像を削除しました", isPresented: $showR18Alert) {
+        .alert(NSLocalizedString("r18_images_deleted", comment: ""), isPresented: $showR18Alert) {
             Button("OK") {
                 showR18Alert = false
                 r18ArtworkTitles.removeAll()
             }
         } message: {
-            Text("以下の画像は読み込めないため削除されました：\n\(r18ArtworkTitles.joined(separator: "\n"))\n\nR18作品のサムネイルは表示できないため、自動的に削除されます。")
+            Text(NSLocalizedString("r18_images_removed", comment: "R18 images removed message").replacingOccurrences(of: "%@", with: r18ArtworkTitles.joined(separator: "\n")))
         }
         .sheet(isPresented: $showTagInput) {
             VStack(spacing: 24) {

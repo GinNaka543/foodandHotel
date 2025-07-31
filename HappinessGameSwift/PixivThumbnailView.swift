@@ -23,10 +23,10 @@ struct PixivThumbnailView: View {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 24))
                             .foregroundColor(.orange)
-                        Text("読み込めませんでした")
+                        Text(NSLocalizedString("loading_failed", comment: "Loading failed"))
                             .font(.caption2)
                             .foregroundColor(.gray)
-                        Text("R18作品は表示できません")
+                        Text(NSLocalizedString("r18_content_cannot_display", comment: "R18 content cannot be displayed"))
                             .font(.caption2)
                             .foregroundColor(.gray)
                     } else {
@@ -120,11 +120,11 @@ struct PixivFullscreenView: View {
                             .font(.system(size: 60))
                             .foregroundColor(.orange)
                     }
-                    Text(isLoading ? "Pixiv画像を読み込み中..." : "画像を読み込めませんでした")
+                    Text(isLoading ? NSLocalizedString("loading_pixiv_image", comment: "Loading Pixiv image...") : NSLocalizedString("image_load_failed", comment: "Failed to load image"))
                         .font(.headline)
                         .foregroundColor(.white)
                     if !isLoading {
-                        Text("R18作品の可能性があります")
+                        Text(NSLocalizedString("possibly_r18_content", comment: "This may be R18 content"))
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }

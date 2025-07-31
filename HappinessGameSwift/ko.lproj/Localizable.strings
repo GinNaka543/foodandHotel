@@ -180,6 +180,13 @@
 "delete_anime_confirm" = "이 애니메이션을 삭제하시겠습니까?";
 "r18_images_removed" = "다음 이미지는 로드할 수 없어 삭제되었습니다:\n%@\n\nR18 작품의 썸네일은 표시할 수 없으므로 자동으로 삭제됩니다.";
 
+/* Pixiv Content Messages */
+"loading_failed" = "로딩 실패";
+"r18_content_cannot_display" = "R18 콘텐츠를 표시할 수 없습니다";
+"loading_pixiv_image" = "Pixiv 이미지 로딩 중...";
+"image_load_failed" = "이미지 로드 실패";
+"possibly_r18_content" = "이것은 R18 콘텐츠일 수 있습니다";
+
 /* Video Page */
 "no_albums_yet" = "아직 앨범이 없습니다";
 "create_album_from_videos" = "같은 태그가 있는 동영상으로 앨범을 만들 수 있습니다";
@@ -371,6 +378,18 @@
 "open_in_pixiv_question" = "Pixiv에서 열까요?";
 "pixiv_artwork" = "Pixiv 작품";
 "open_in_pixiv" = "Pixiv에서 열기";
+
+// Pixiv Modal Strings
+"edit" = "편집";
+"pixiv_image_source" = "Pixiv 이미지 소스";
+"select_edit_item" = "편집할 항목 선택";
+"edit_title" = "제목 편집";
+"edit_tags" = "태그 편집";
+"delete_image" = "이미지 삭제";
+"edit_title_name" = "제목 편집";
+"title" = "제목";
+"tags_comma_separated" = "태그 (쉼표로 구분)";
+"confirm_delete" = "삭제 확인";
 
 /* Login */
 "username" = "사용자명";

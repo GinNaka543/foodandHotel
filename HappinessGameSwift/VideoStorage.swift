@@ -62,6 +62,7 @@ class VideoStorage {
     // MARK: - Save and Load Functions
     
     func saveVideos(for characterId: String, videos: [MemoryVideo]) {
+        print("💾 [VideoStorage] Saving \(videos.count) videos for character: \(characterId)")
         ensureDirectoryExists()
         
         var metadataArray: [VideoMetadata] = []
@@ -70,7 +71,12 @@ class VideoStorage {
             // Save thumbnail if present
             if let thumbnailData = video.thumbnailData {
                 let thumbnailURL = self.thumbnailURL(for: video.id.uuidString)
-                try? thumbnailData.write(to: thumbnailURL)
+                do {
+                    try thumbnailData.write(to: thumbnailURL)
+                    print("💾 [VideoStorage] Saved thumbnail for video: \(video.id.uuidString)")
+                } catch {
+                    print("❌ [VideoStorage] Failed to save thumbnail: \(error)")
+                }
             }
             
             // Create metadata
@@ -92,8 +98,13 @@ class VideoStorage {
         
         // Save metadata to UserDefaults
         let key = "videos_metadata_\(characterId)"
-        if let data = try? JSONEncoder().encode(metadataArray) {
+        do {
+            let data = try JSONEncoder().encode(metadataArray)
             UserDefaults.standard.set(data, forKey: key)
+            UserDefaults.standard.synchronize()
+            print("✅ [VideoStorage] Successfully saved \(metadataArray.count) video metadata")
+        } catch {
+            print("❌ [VideoStorage] Failed to save videos: \(error)")
         }
     }
     
@@ -142,21 +153,29 @@ class VideoStorage {
     func deleteVideo(videoId: String, videoPath: String? = nil) {
         print("🗑️ [VideoStorage] deleteVideo called - videoId: \(videoId), videoPath: \(videoPath ?? "nil")")
         
-        // Delete thumbnail
-        let thumbnailURL = self.thumbnailURL(for: videoId)
-        if FileManager.default.fileExists(atPath: thumbnailURL.path) {
-            do {
+        // Delete thumbnail - wrap in do-catch to prevent crashes
+        do {
+            let thumbnailURL = self.thumbnailURL(for: videoId)
+            if FileManager.default.fileExists(atPath: thumbnailURL.path) {
                 try FileManager.default.removeItem(at: thumbnailURL)
                 print("✅ [VideoStorage] Deleted thumbnail: \(thumbnailURL.lastPathComponent)")
-            } catch {
-                print("❌ [VideoStorage] Failed to delete thumbnail: \(error)")
+            } else {
+                print("⚠️ [VideoStorage] Thumbnail not found: \(thumbnailURL.lastPathComponent)")
             }
-        } else {
-            print("⚠️ [VideoStorage] Thumbnail not found: \(thumbnailURL.lastPathComponent)")
+            
+            // Also try to delete YouTube custom thumbnail if exists
+            let youtubeThumbnailURL = videoThumbnailsDirectory.appendingPathComponent("youtube_\(videoId)_thumbnail.jpg")
+            if FileManager.default.fileExists(atPath: youtubeThumbnailURL.path) {
+                try FileManager.default.removeItem(at: youtubeThumbnailURL)
+                print("✅ [VideoStorage] Deleted YouTube custom thumbnail")
+            }
+        } catch {
+            print("❌ [VideoStorage] Error during thumbnail deletion: \(error)")
+            // Continue with video deletion even if thumbnail deletion fails
         }
         
         // Delete actual video file if path is provided
-        if let videoPath = videoPath {
+        if let videoPath = videoPath, !videoPath.isEmpty {
             // Handle different path formats
             var videoURL: URL
             
@@ -208,6 +227,7 @@ class VideoStorage {
     // MARK: - Anime Videos
     
     func saveAnimeVideos(for animeId: String, videos: [MemoryVideo]) {
+        print("💾 [VideoStorage] Saving \(videos.count) videos for anime: \(animeId)")
         ensureDirectoryExists()
         
         var metadataArray: [VideoMetadata] = []
@@ -216,7 +236,12 @@ class VideoStorage {
             // Save thumbnail if present
             if let thumbnailData = video.thumbnailData {
                 let thumbnailURL = self.thumbnailURL(for: video.id.uuidString)
-                try? thumbnailData.write(to: thumbnailURL)
+                do {
+                    try thumbnailData.write(to: thumbnailURL)
+                    print("💾 [VideoStorage] Saved thumbnail for video: \(video.id.uuidString)")
+                } catch {
+                    print("❌ [VideoStorage] Failed to save thumbnail: \(error)")
+                }
             }
             
             // Create metadata
@@ -238,8 +263,13 @@ class VideoStorage {
         
         // Save metadata to UserDefaults
         let key = "anime_videos_metadata_\(animeId)"
-        if let data = try? JSONEncoder().encode(metadataArray) {
+        do {
+            let data = try JSONEncoder().encode(metadataArray)
             UserDefaults.standard.set(data, forKey: key)
+            UserDefaults.standard.synchronize()
+            print("✅ [VideoStorage] Successfully saved \(metadataArray.count) anime video metadata")
+        } catch {
+            print("❌ [VideoStorage] Failed to save anime videos: \(error)")
         }
     }
     

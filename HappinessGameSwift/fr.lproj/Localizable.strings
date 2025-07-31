@@ -180,6 +180,13 @@
 "delete_anime_confirm" = "Êtes-vous sûr de vouloir supprimer cet anime?";
 "r18_images_removed" = "Les images suivantes n'ont pas pu être chargées et ont été supprimées:\n%@\n\nLes miniatures d'œuvres R18 ne peuvent pas être affichées et sont automatiquement supprimées.";
 
+/* Pixiv Content Messages */
+"loading_failed" = "Échec du chargement";
+"r18_content_cannot_display" = "Le contenu R18 ne peut pas être affiché";
+"loading_pixiv_image" = "Chargement de l'image Pixiv...";
+"image_load_failed" = "Échec du chargement de l'image";
+"possibly_r18_content" = "Ceci pourrait être du contenu R18";
+
 /* Video Page */
 "no_albums_yet" = "Aucun album pour le moment";
 "create_album_from_videos" = "Vous pouvez créer des albums à partir de vidéos avec le même tag";
@@ -371,6 +378,18 @@
 "open_in_pixiv_question" = "Ouvrir dans Pixiv?";
 "pixiv_artwork" = "Œuvre Pixiv";
 "open_in_pixiv" = "Ouvrir dans Pixiv";
+
+// Pixiv Modal Strings
+"edit" = "Modifier";
+"pixiv_image_source" = "Source d'image Pixiv";
+"select_edit_item" = "Sélectionner l'élément à modifier";
+"edit_title" = "Modifier le titre";
+"edit_tags" = "Modifier les tags";
+"delete_image" = "Supprimer l'image";
+"edit_title_name" = "Modifier le titre";
+"title" = "Titre";
+"tags_comma_separated" = "Tags (séparés par des virgules)";
+"confirm_delete" = "Confirmer la suppression";
 
 /* Login */
 "username" = "Nom d'utilisateur";

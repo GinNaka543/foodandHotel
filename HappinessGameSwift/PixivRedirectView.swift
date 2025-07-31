@@ -37,7 +37,7 @@ struct PixivRedirectView: View {
                             Button(action: {
                                 showEditMenu = true
                             }) {
-                                Text("編集")
+                                Text(NSLocalizedString("edit", comment: "Edit"))
                                     .font(.system(size: 16, weight: .medium))
                                     .foregroundColor(.blue)
                             }
@@ -92,7 +92,7 @@ struct PixivRedirectView: View {
                                 HStack {
                                     Image(systemName: "link.circle.fill")
                                         .font(.title2)
-                                    Text("Pixivで開く")
+                                    Text(NSLocalizedString("open_in_pixiv", comment: "Open in Pixiv"))
                                         .font(.headline)
                                 }
                                 .foregroundColor(.white)
@@ -103,7 +103,7 @@ struct PixivRedirectView: View {
                                 .padding(.horizontal)
                             }
                             
-                            Text("この画像はPixivから取得されています")
+                            Text(NSLocalizedString("pixiv_image_source", comment: "This image is from Pixiv"))
                                 .font(.caption)
                                 .foregroundColor(.gray)
                                 .multilineTextAlignment(.center)
@@ -111,6 +111,8 @@ struct PixivRedirectView: View {
                             
                             Spacer(minLength: 50)
                         }
+                        .frame(maxWidth: 600) // Limit width on iPad
+                        .frame(maxWidth: .infinity)
                     }
                 }
                 
@@ -123,7 +125,7 @@ struct PixivRedirectView: View {
                     }
                 
                 VStack(spacing: 20) {
-                    Text("編集する項目を選択")
+                    Text(NSLocalizedString("select_edit_item", comment: "Select item to edit"))
                         .font(.headline)
                         .padding(.top, 20)
                     
@@ -135,7 +137,7 @@ struct PixivRedirectView: View {
                         }) {
                             HStack {
                                 Image(systemName: "pencil")
-                                Text("タイトルを編集")
+                                Text(NSLocalizedString("edit_title", comment: "Edit title"))
                                 Spacer()
                             }
                             .padding()
@@ -151,7 +153,7 @@ struct PixivRedirectView: View {
                         }) {
                             HStack {
                                 Image(systemName: "tag")
-                                Text("タグを編集")
+                                Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                                 Spacer()
                             }
                             .padding()
@@ -167,7 +169,7 @@ struct PixivRedirectView: View {
                         }) {
                             HStack {
                                 Image(systemName: "trash")
-                                Text("画像を削除")
+                                Text(NSLocalizedString("delete_image", comment: "Delete image"))
                                 Spacer()
                             }
                             .padding()
@@ -181,7 +183,7 @@ struct PixivRedirectView: View {
                     Button(action: {
                         showEditMenu = false
                     }) {
-                        Text("キャンセル")
+                        Text(NSLocalizedString("cancel", comment: "Cancel"))
                             .foregroundColor(.blue)
                             .padding(.vertical, 10)
                     }
@@ -255,17 +257,17 @@ struct EditTitleDialog: View {
         Color.black.opacity(0.25)
             .edgesIgnoringSafeArea(.all)
         VStack(spacing: 20) {
-            Text("タイトル名を編集")
+            Text(NSLocalizedString("edit_title_name", comment: "Edit title name"))
                 .font(.headline)
                 .padding(.top, 12)
-            TextField("タイトル", text: $editText)
+            TextField(NSLocalizedString("title", comment: "Title"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
             HStack(spacing: 24) {
                 Button(action: { showDialog = false }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .foregroundColor(.blue)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -274,7 +276,7 @@ struct EditTitleDialog: View {
                     onSave()
                     showDialog = false
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.blue)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -302,17 +304,17 @@ struct EditTagsDialog: View {
         Color.black.opacity(0.25)
             .edgesIgnoringSafeArea(.all)
         VStack(spacing: 20) {
-            Text("タグを編集")
+            Text(NSLocalizedString("edit_tags", comment: "Edit tags"))
                 .font(.headline)
                 .padding(.top, 12)
-            TextField("タグ（カンマ区切り）", text: $editText)
+            TextField(NSLocalizedString("tags_comma_separated", comment: "Tags (comma separated)"), text: $editText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .font(.system(size: 18))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
             HStack(spacing: 24) {
                 Button(action: { showDialog = false }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .foregroundColor(.blue)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -321,7 +323,7 @@ struct EditTagsDialog: View {
                     onSave()
                     showDialog = false
                 }) {
-                    Text("保存")
+                    Text(NSLocalizedString("save", comment: "Save"))
                         .foregroundColor(.blue)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)
@@ -348,14 +350,14 @@ struct DeleteAlertDialog: View {
         Color.black.opacity(0.25)
             .edgesIgnoringSafeArea(.all)
         VStack(spacing: 20) {
-            Text("本当に削除しますか？")
+            Text(NSLocalizedString("confirm_delete", comment: "Are you sure you want to delete?"))
                 .font(.headline)
                 .padding(.top, 12)
             HStack(spacing: 24) {
                 Button(action: {
                     showDialog = false
                 }) {
-                    Text("キャンセル")
+                    Text(NSLocalizedString("cancel", comment: "Cancel"))
                         .foregroundColor(.blue)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
@@ -364,7 +366,7 @@ struct DeleteAlertDialog: View {
                     onDelete()
                     showDialog = false
                 }) {
-                    Text("削除")
+                    Text(NSLocalizedString("delete", comment: "Delete"))
                         .foregroundColor(.red)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity)

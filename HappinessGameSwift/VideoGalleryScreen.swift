@@ -1651,19 +1651,29 @@ struct VideoGalleryScreen: View {
         if let idx = videos.firstIndex(where: { $0.id == id }) {
             let video = videos[idx]
             
+            print("🗑️ [VideoGallery] Starting video deletion:")
+            print("  - Video: \(video.title)")
+            print("  - YouTube URL: \(video.youtubeURL ?? "none")")
+            print("  - Video Path: \(video.videoPath)")
+            print("  - Has custom thumbnail: \(video.thumbnailData != nil)")
+            
             // Delete the actual video file
             VideoStorage.shared.deleteVideo(videoId: video.id.uuidString, videoPath: video.videoPath)
             
-            // Remove from array
+            // Remove from array BEFORE saving to prevent corruption
             videos.remove(at: idx)
-            updateAlbumsAfterVideoDeletion(deletedVideoId: id)
+            
+            // Save immediately after removal
             saveVideosToUserDefaults()
+            
+            // Then update albums
+            updateAlbumsAfterVideoDeletion(deletedVideoId: id)
             saveAlbumsToUserDefaults()
             
             // ビデオデータが更新されたことを通知
             NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
             
-            print("✅ [VideoGallery] Deleted video and file: \(video.videoPath)")
+            print("✅ [VideoGallery] Successfully deleted video")
         } else {
             print("❌ [VideoGallery] Video not found for deletion: \(id)")
         }

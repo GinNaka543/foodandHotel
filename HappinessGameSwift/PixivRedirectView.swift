@@ -115,6 +115,8 @@ struct PixivRedirectView: View {
                         .frame(maxWidth: .infinity)
                     }
                 }
+                .frame(maxWidth: 600) // Limit width on iPad
+                .frame(maxWidth: .infinity)
                 
                 // Edit menu
                 if showEditMenu {
@@ -231,6 +233,8 @@ struct PixivRedirectView: View {
                 )
             }
         }
+        .frame(maxWidth: 600) // Limit width on iPad
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     private func openPixivURL() {

@@ -249,9 +249,15 @@ struct VisitPlanningScreen: View {
                             .padding(.horizontal, 16)
                             .onChange(of: selectedImage) { _, newItem in
                                 Task {
-                                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                                        thumbnailImage = UIImage(data: data)
-                                        thumbnailData = data
+                                    if let newItem = newItem {
+                                        if let data = try? await newItem.loadTransferable(type: Data.self),
+                                           let image = UIImage(data: data) {
+                                            await MainActor.run {
+                                                self.thumbnailImage = image
+                                                self.thumbnailData = data
+                                                print("DEBUG: Thumbnail loaded successfully - data size: \(data.count) bytes")
+                                            }
+                                        }
                                     }
                                 }
                             }

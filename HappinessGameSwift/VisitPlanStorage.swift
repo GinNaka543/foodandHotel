@@ -121,8 +121,19 @@ class VisitPlanStorage {
         
         // Save plan thumbnail if provided
         if let thumbnailData = planThumbnailData {
-            let thumbnailURL = visitPlansDirectory.appendingPathComponent(planId).appendingPathComponent("plan_thumbnail.jpg")
-            try? thumbnailData.write(to: thumbnailURL)
+            ensureDirectoryExists()
+            let planDirectory = visitPlansDirectory.appendingPathComponent(planId)
+            try? FileManager.default.createDirectory(at: planDirectory, withIntermediateDirectories: true)
+            
+            let thumbnailURL = planDirectory.appendingPathComponent("plan_thumbnail.jpg")
+            do {
+                try thumbnailData.write(to: thumbnailURL)
+                print("[VisitPlanStorage] Successfully saved plan thumbnail for \(planId), size: \(thumbnailData.count) bytes at \(thumbnailURL.path)")
+            } catch {
+                print("[VisitPlanStorage] Failed to save plan thumbnail: \(error)")
+            }
+        } else {
+            print("[VisitPlanStorage] No thumbnail data provided for plan \(planId)")
         }
         
         // Save plan data without images
@@ -221,6 +232,13 @@ class VisitPlanStorage {
         // Delete image directory
         let planDirectory = visitPlansDirectory.appendingPathComponent(planId)
         try? FileManager.default.removeItem(at: planDirectory)
+    }
+    
+    // MARK: - Plan Thumbnail
+    
+    func loadPlanThumbnail(planId: String) -> Data? {
+        let thumbnailURL = visitPlansDirectory.appendingPathComponent(planId).appendingPathComponent("plan_thumbnail.jpg")
+        return try? Data(contentsOf: thumbnailURL)
     }
     
     // MARK: - Migration

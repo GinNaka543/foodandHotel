@@ -1242,7 +1242,7 @@ struct AnimeStyleSpotCard: View {
                     Rectangle()
                         .fill(Color.gray.opacity(0.3))
                         .frame(width: 3)
-                        .frame(maxHeight: .infinity)
+                        .frame(height: 40)
                 }
             }
             .frame(width: 40)
@@ -1408,7 +1408,8 @@ struct AnimeStyleSpotCard: View {
                         .buttonStyle(PlainButtonStyle())
                         .disabled(isReadOnly)
                         .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
+                        .padding(.top, 4)
+                        .padding(.bottom, 0)
                     } else if !isReadOnly {
                         // 交通手段が未設定の場合の追加ボタン
                         Button(action: {
@@ -1429,7 +1430,8 @@ struct AnimeStyleSpotCard: View {
                             )
                         }
                         .padding(.leading, 30)
-                        .padding(.vertical, 8)
+                        .padding(.top, 4)
+                        .padding(.bottom, 0)
                     }
                 }
             }

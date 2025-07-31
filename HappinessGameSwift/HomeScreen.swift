@@ -1231,7 +1231,7 @@ struct AddScheduleSheetForDate: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("日付")) {
+                Section(header: Text(NSLocalizedString("date", comment: "Date"))) {
                     HStack {
                         Image(systemName: "calendar")
                             .foregroundColor(.purple)
@@ -1240,7 +1240,7 @@ struct AddScheduleSheetForDate: View {
                     }
                 }
                 
-                Section(header: Text("アニメ")) {
+                Section(header: Text(NSLocalizedString("anime", comment: "Anime"))) {
                     Button(action: {
                         showAnimeSelection = true
                     }) {
@@ -1263,7 +1263,7 @@ struct AddScheduleSheetForDate: View {
                                     )
                             }
                             
-                            Text(selectedAnime?.title ?? "アニメを選択")
+                            Text(selectedAnime?.title ?? NSLocalizedString("select_anime", comment: "Select anime"))
                                 .foregroundColor(selectedAnime == nil ? .gray : .primary)
                             
                             Spacer()
@@ -1276,16 +1276,16 @@ struct AddScheduleSheetForDate: View {
                 }
                 
                 if selectedAnime != nil {
-                    Section(header: Text("詳細（任意）")) {
+                    Section(header: Text(NSLocalizedString("details_optional", comment: "Details (optional)"))) {
                         HStack {
-                            Text("話数")
+                            Text(NSLocalizedString("episode", comment: "Episode"))
                             TextField(NSLocalizedString("example_12", comment: "e.g. 12"), text: $episode)
                                 .keyboardType(.numberPad)
                                 .multilineTextAlignment(.trailing)
                         }
                         
                         VStack(alignment: .leading) {
-                            Text("メモ")
+                            Text(NSLocalizedString("memo", comment: "Memo"))
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
                             TextEditor(text: $note)

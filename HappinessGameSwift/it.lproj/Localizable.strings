@@ -573,6 +573,7 @@
 "enter_voice_actors" = "Inserisci informazioni sul doppiatore";
 "episode_example" = "e.g. 12";
 "episode_format" = "Episode %d";
+"episodio" = "Episodio";
 "episode_number" = "Episode Number";
 "episode_number_optional" = "Episode Number (Optional)";
 "favorite_anime_quote" = "Favorite Anime Quote";

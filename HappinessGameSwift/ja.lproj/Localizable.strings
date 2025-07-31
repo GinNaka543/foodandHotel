@@ -560,6 +560,7 @@
 "anime" = "アニメ";
 "select_anime" = "アニメを選択";
 "details_optional" = "詳細（任意）";
+"episode" = "話数";
 "episode_number" = "話数";
 "episode_example" = "例: 12";
 "memo" = "メモ";

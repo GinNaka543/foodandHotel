@@ -440,7 +440,7 @@ struct ScheduleView_iPad: View {
         if let anime = animeManager.animes.first(where: { $0.id.uuidString == selectedAnimeId }) {
             return anime.title
         }
-        return "アニメを選択"
+        return NSLocalizedString("select_anime", comment: "Select anime")
     }
 }
 

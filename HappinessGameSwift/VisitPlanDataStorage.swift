@@ -135,10 +135,18 @@ class VisitPlanDataStorage {
             isDraft: metadata["isDraft"] as? Bool ?? false
         )
         
-        // Load thumbnail
-        if metadata["hasThumbnail"] as? Bool == true {
+        // Load thumbnail from VisitPlanStorage if available
+        if let planMetadata = UserDefaults.standard.dictionary(forKey: "visit_plan_\(planId)"),
+           planMetadata["hasPlanThumbnail"] as? Bool == true {
+            planData.thumbnailData = VisitPlanStorage.shared.loadPlanThumbnail(planId: planId)
+            print("[VisitPlanDataStorage] Loaded thumbnail from VisitPlanStorage for plan \(planId), size: \(planData.thumbnailData?.count ?? 0) bytes")
+        } else if metadata["hasThumbnail"] as? Bool == true {
+            // Fallback to loading from VisitPlanDataStorage location
             let thumbnailURL = planThumbnailURL(for: planId)
             planData.thumbnailData = try? Data(contentsOf: thumbnailURL)
+            print("[VisitPlanDataStorage] Loaded thumbnail from VisitPlanDataStorage for plan \(planId), size: \(planData.thumbnailData?.count ?? 0) bytes")
+        } else {
+            print("[VisitPlanDataStorage] No thumbnail found for plan \(planId)")
         }
         
         // Load other properties

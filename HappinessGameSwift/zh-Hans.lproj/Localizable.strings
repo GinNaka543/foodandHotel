@@ -573,6 +573,7 @@
 "enter_voice_actors" = "输入声优信息";
 "episode_example" = "e.g. 12";
 "episode_format" = "Episode %d";
+"episode" = "集数";
 "episode_number" = "Episode Number";
 "episode_number_optional" = "Episode Number (Optional)";
 "favorite_anime_quote" = "Favorite Anime Quote";

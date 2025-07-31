@@ -210,7 +210,7 @@ public struct ListPageScreen: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(character.name)
                     .font(.system(size: 18, weight: .regular))
-                Text("誕生日: \(DateFormatter.monthDayLocalized.string(from: character.birthday))")
+                Text("\(NSLocalizedString("birthday", comment: "Birthday")): \(DateFormatter.monthDayLocalized.string(from: character.birthday))")
                     .font(.system(size: 14))
                     .foregroundColor(.gray)
             }

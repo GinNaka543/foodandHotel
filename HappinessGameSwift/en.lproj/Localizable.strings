@@ -460,6 +460,7 @@
 "anime" = "Anime";
 "select_anime" = "Select Anime";
 "details_optional" = "Details (Optional)";
+"episode" = "Episode";
 "episode_number" = "Episode Number";
 "episode_example" = "e.g. 12";
 "memo" = "Memo";

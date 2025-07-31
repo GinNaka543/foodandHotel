@@ -55,6 +55,12 @@
 "status" = "ステータス";
 "date" = "日付";
 "receipt_number" = "明細書番号";
+"anime" = "アニメ";
+"select_anime" = "アニメを選択";
+"episode" = "話数";
+"memo" = "メモ";
+"details_optional" = "詳細（任意）";
+"birthday" = "誕生日";
 
 /* Errors */
 "error_product_not_found" = "商品が見つかりません";

@@ -101,6 +101,7 @@
 		CC9BB07C2E3414670088E501 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC9BB07B2E3414670088E501 /* StoreKitManager.swift */; };
 		CCCC7EA92E3AC74C00FC0563 /* CurrencyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCC7EA82E3AC74C00FC0563 /* CurrencyPickerView.swift */; };
 		CCCC7EAB2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCC7EAA2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift */; };
+		CCCC7EAD2E3B5ED700FC0563 /* MediaCleanupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCC7EAC2E3B5ED700FC0563 /* MediaCleanupManager.swift */; };
 		CCF665E92E34C99400D86A20 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = CCF665E72E34C99400D86A20 /* Localizable.strings */; };
 		CCF665F32E34CC5D00D86A20 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665F22E34CC5D00D86A20 /* LocalizationManager.swift */; };
 		CCF665F52E34CD8800D86A20 /* LanguageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665F42E34CD8800D86A20 /* LanguageButton.swift */; };
@@ -229,6 +230,7 @@
 		CC9BB07B2E3414670088E501 /* StoreKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitManager.swift; sourceTree = "<group>"; };
 		CCCC7EA82E3AC74C00FC0563 /* CurrencyPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyPickerView.swift; sourceTree = "<group>"; };
 		CCCC7EAA2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialCurrencySelectionView.swift; sourceTree = "<group>"; };
+		CCCC7EAC2E3B5ED700FC0563 /* MediaCleanupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCleanupManager.swift; sourceTree = "<group>"; };
 		CCF665E82E34C99400D86A20 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		CCF665EA2E34C9A000D86A20 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		CCF665EB2E34C9A900D86A20 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -313,6 +315,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCCC7EAC2E3B5ED700FC0563 /* MediaCleanupManager.swift */,
 				CCCC7EAA2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift */,
 				CCCC7EA82E3AC74C00FC0563 /* CurrencyPickerView.swift */,
 				CCF6660B2E38F4D600D86A20 /* AdminLoginView.swift */,
@@ -581,6 +584,7 @@
 				CC20AAB72E26E68D005F4C2A /* CustomRankingModels.swift in Sources */,
 				CC1BB37F2E279DBD006EE695 /* TermsOfServiceView.swift in Sources */,
 				CC1BB3802E279DBD006EE695 /* SpotEditView.swift in Sources */,
+				CCCC7EAD2E3B5ED700FC0563 /* MediaCleanupManager.swift in Sources */,
 				CC20AAB82E26E68D005F4C2A /* CharaScreen.swift in Sources */,
 				CC20AAB92E26E68D005F4C2A /* BirthdayReminderListScreen.swift in Sources */,
 				CC20AABA2E26E68D005F4C2A /* AuthSelectionView.swift in Sources */,

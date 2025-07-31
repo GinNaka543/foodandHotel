@@ -226,9 +226,23 @@ class ArtworkStorage {
     
     // MARK: - Delete Functions
     
-    func deleteArtwork(artworkId: String) {
+    func deleteArtwork(artworkId: String, imagePath: String? = nil) {
+        // Delete custom thumbnail
         let thumbnailURL = self.thumbnailURL(for: artworkId)
         try? FileManager.default.removeItem(at: thumbnailURL)
+        
+        // Delete actual image file if path is provided
+        if let imagePath = imagePath {
+            let imageURL = documentsDirectory.appendingPathComponent(imagePath)
+            if FileManager.default.fileExists(atPath: imageURL.path) {
+                do {
+                    try FileManager.default.removeItem(at: imageURL)
+                    print("✅ [ArtworkStorage] Deleted image file: \(imagePath)")
+                } catch {
+                    print("❌ [ArtworkStorage] Failed to delete image file: \(error)")
+                }
+            }
+        }
     }
     
     // MARK: - Migration

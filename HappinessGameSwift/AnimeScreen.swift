@@ -86,6 +86,24 @@ class AnimeManager: ObservableObject {
     
     func updateAnime(_ updatedAnime: Anime) {
         if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
+            let oldAnime = animes[idx]
+            
+            // Delete old icon if it's different from the new one
+            if let oldImagePath = oldAnime.imageIdentifier,
+               let newImagePath = updatedAnime.imageIdentifier,
+               oldImagePath != newImagePath {
+                deleteAnimeImage(at: oldImagePath)
+                print("✅ [AnimeManager] Deleted old icon: \(oldImagePath)")
+            }
+            
+            // Delete old background if it's different from the new one
+            if let oldBgPath = oldAnime.backgroundImagePath,
+               let newBgPath = updatedAnime.backgroundImagePath,
+               oldBgPath != newBgPath {
+                deleteAnimeImage(at: oldBgPath)
+                print("✅ [AnimeManager] Deleted old background: \(oldBgPath)")
+            }
+            
             animes[idx] = updatedAnime
             saveAnimes()
             DispatchQueue.main.async {
@@ -94,6 +112,24 @@ class AnimeManager: ObservableObject {
             
             // Firebase への保存は行わない（ローカルのみ）
         } else {
+        }
+    }
+    
+    func deleteAnime(_ anime: Anime) {
+        // Delete associated images
+        if let imagePath = anime.imageIdentifier {
+            deleteAnimeImage(at: imagePath)
+            print("✅ [AnimeManager] Deleted anime icon: \(imagePath)")
+        }
+        if let bgPath = anime.backgroundImagePath {
+            deleteAnimeImage(at: bgPath)
+            print("✅ [AnimeManager] Deleted anime background: \(bgPath)")
+        }
+        
+        animes.removeAll { $0.id == anime.id }
+        saveAnimes()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
         }
     }
     
@@ -149,6 +185,34 @@ class AnimeManager: ObservableObject {
         }
     }
     
+    private func deleteAnimeImage(at path: String) {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        // Handle both relative and absolute paths
+        var imagePath: URL
+        if path.hasPrefix("/") {
+            imagePath = URL(fileURLWithPath: path)
+        } else {
+            imagePath = documentsPath.appendingPathComponent(path)
+        }
+        
+        // Check if file exists before deletion
+        if FileManager.default.fileExists(atPath: imagePath.path) {
+            do {
+                try FileManager.default.removeItem(at: imagePath)
+                print("🗑️ [AnimeManager] Successfully deleted image: \(path)")
+                
+                // If the path includes AnirecoImages, log it specifically
+                if path.contains("AnirecoImages") {
+                    print("🗑️ [AnimeManager] Deleted AnirecoImages file: \(imagePath.lastPathComponent)")
+                }
+            } catch {
+                print("❌ [AnimeManager] Failed to delete image \(path): \(error)")
+            }
+        } else {
+            print("⚠️ [AnimeManager] Image not found for deletion: \(path)")
+        }
+    }
 }
 
 
@@ -1434,6 +1498,9 @@ struct AnimeArtworkScreen: View {
                                 onArtworkDeleted: { deletedArtwork in
                                     // 親画面のartworksリストから削除
                                     if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
+                                        // Delete the actual image file and thumbnail
+                                        ArtworkStorage.shared.deleteArtwork(artworkId: deletedArtwork.id.uuidString, imagePath: deletedArtwork.imagePath)
+                                        
                                         artworks.remove(at: idx)
                                         
                                         // Albumタブの画像リストも更新
@@ -1574,6 +1641,9 @@ struct AnimeArtworkScreen: View {
                                 allArtworks: artworks,
                                 onDelete: {
                                     if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                                        // Delete the actual image file and thumbnail
+                                        ArtworkStorage.shared.deleteArtwork(artworkId: artwork.id.uuidString, imagePath: artwork.imagePath)
+                                        
                                         artworks.remove(at: idx)
                                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                                         saveArtworksToUserDefaults()
@@ -3278,6 +3348,15 @@ struct AnimeVideoScreen: View {
     
     private func deleteVideo(id: UUID) {
         if let idx = videos.firstIndex(where: { $0.id == id }) {
+            let video = videos[idx]
+            
+            print("🗑️ [AnimeScreen] Deleting video: \(video.title)")
+            print("🗑️ [AnimeScreen] Video path: \(video.videoPath)")
+            print("🗑️ [AnimeScreen] Video ID: \(video.id.uuidString)")
+            
+            // Delete the actual video file and thumbnail
+            VideoStorage.shared.deleteVideo(videoId: video.id.uuidString, videoPath: video.videoPath)
+            
             videos.remove(at: idx)
             updateAlbumsAfterVideoDeletion(deletedVideoId: id)
             saveVideosToUserDefaults()
@@ -3285,6 +3364,12 @@ struct AnimeVideoScreen: View {
             
             // 動画が削除されたことを通知
             NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
+            
+            // 削除後すぐにクリーンアップを実行
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                print("🧹 [AnimeScreen] Running cleanup after video deletion")
+                MediaCleanupManager.shared.cleanupOrphanedMediaFiles()
+            }
         }
     }
     
@@ -3335,7 +3420,8 @@ struct AnimeVideoScreen: View {
         let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
         guard let documentsURL = urls.first else { return "" }
         
-        let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
+        // Use VideoAlbums directory for video files
+        let appDirectoryURL = documentsURL.appendingPathComponent("VideoAlbums")
         
         do {
             if !fileManager.fileExists(atPath: appDirectoryURL.path) {
@@ -3348,8 +3434,10 @@ struct AnimeVideoScreen: View {
                 try fileManager.removeItem(at: fileURL)
             }
             try fileManager.copyItem(at: url, to: fileURL)
-            return "AnirecoImages/\(fileName)"
+            print("✅ [AnimeScreen] Saved video to: VideoAlbums/\(fileName)")
+            return "VideoAlbums/\(fileName)"
         } catch {
+            print("❌ [AnimeScreen] Failed to save video: \(error)")
             return ""
         }
     }

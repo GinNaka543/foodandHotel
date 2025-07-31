@@ -348,6 +348,11 @@ struct HappinessGameSwiftApp: App {
         // Clean up old data
         DataMigrationManager.shared.cleanupOldData()
         
+        // Debug media files - disabled until MediaCleanupDebugger is added to project
+        #if DEBUG
+        // MediaCleanupDebugger.shared.debugMediaFiles()
+        #endif
+        
         // Debug: Check UserDefaults size (only in debug mode)
         #if DEBUG
         print("=== UserDefaults Size Analysis ===")
@@ -446,6 +451,13 @@ struct HappinessGameSwiftApp: App {
                                     characterManager.loadCharacters()
                                     animeManager.loadAnimes()
                                 }
+                                
+                                // DISABLED: Media cleanup causing video deletion issues
+                                // Clean up orphaned media files after app startup
+                                // DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                                //     print("🧹 [App] Triggering media cleanup...")
+                                //     MediaCleanupManager.shared.cleanupOrphanedMediaFiles()
+                                // }
                             }
                     }
                 } else {

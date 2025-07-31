@@ -139,9 +139,70 @@ class VideoStorage {
         return []
     }
     
-    func deleteVideo(videoId: String) {
+    func deleteVideo(videoId: String, videoPath: String? = nil) {
+        print("🗑️ [VideoStorage] deleteVideo called - videoId: \(videoId), videoPath: \(videoPath ?? "nil")")
+        
+        // Delete thumbnail
         let thumbnailURL = self.thumbnailURL(for: videoId)
-        try? FileManager.default.removeItem(at: thumbnailURL)
+        if FileManager.default.fileExists(atPath: thumbnailURL.path) {
+            do {
+                try FileManager.default.removeItem(at: thumbnailURL)
+                print("✅ [VideoStorage] Deleted thumbnail: \(thumbnailURL.lastPathComponent)")
+            } catch {
+                print("❌ [VideoStorage] Failed to delete thumbnail: \(error)")
+            }
+        } else {
+            print("⚠️ [VideoStorage] Thumbnail not found: \(thumbnailURL.lastPathComponent)")
+        }
+        
+        // Delete actual video file if path is provided
+        if let videoPath = videoPath {
+            // Handle different path formats
+            var videoURL: URL
+            
+            // Check if it's already a full path
+            if videoPath.hasPrefix("/") {
+                videoURL = URL(fileURLWithPath: videoPath)
+            } else {
+                // It's a relative path
+                videoURL = documentsDirectory.appendingPathComponent(videoPath)
+            }
+            
+            print("🔍 [VideoStorage] Looking for video at: \(videoURL.path)")
+            
+            if FileManager.default.fileExists(atPath: videoURL.path) {
+                do {
+                    let fileSize = (try? FileManager.default.attributesOfItem(atPath: videoURL.path)[.size] as? Int64) ?? 0
+                    try FileManager.default.removeItem(at: videoURL)
+                    print("✅ [VideoStorage] Deleted video file: \(videoPath) (size: \(fileSize / 1024 / 1024) MB)")
+                } catch {
+                    print("❌ [VideoStorage] Failed to delete video file: \(error)")
+                }
+            } else {
+                print("❌ [VideoStorage] Video file not found at path: \(videoURL.path)")
+                
+                // Try alternative paths
+                let alternativePaths = [
+                    documentsDirectory.appendingPathComponent("VideoAlbums/\(videoPath)"),
+                    documentsDirectory.appendingPathComponent(URL(fileURLWithPath: videoPath).lastPathComponent)
+                ]
+                
+                for altPath in alternativePaths {
+                    if FileManager.default.fileExists(atPath: altPath.path) {
+                        print("🔍 [VideoStorage] Found video at alternative path: \(altPath.path)")
+                        do {
+                            try FileManager.default.removeItem(at: altPath)
+                            print("✅ [VideoStorage] Deleted video from alternative path")
+                        } catch {
+                            print("❌ [VideoStorage] Failed to delete from alternative path: \(error)")
+                        }
+                        break
+                    }
+                }
+            }
+        } else {
+            print("⚠️ [VideoStorage] No video path provided for deletion")
+        }
     }
     
     // MARK: - Anime Videos

@@ -484,12 +484,19 @@ struct HomeScreen: View {
         }
         .sheet(isPresented: $showingPoints) {
             PointsView()
-}
+        }
         .onAppear {
             if !hasLoadedData {
                 characterManager.loadCharacters()
                 animeManager.loadAnimes()
                 hasLoadedData = true
+                
+                // DISABLED: Media cleanup causing video deletion issues
+                // Run media cleanup after initial data load
+                // DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                //     print("🧹 [HomeScreen] Triggering media cleanup...")
+                //     MediaCleanupManager.shared.cleanupOrphanedMediaFiles()
+                // }
             }
         }
     }

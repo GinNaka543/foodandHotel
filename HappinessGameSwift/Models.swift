@@ -131,6 +131,24 @@ class CharacterManager: ObservableObject {
     
     func updateCharacter(_ character: Character) {
         if let index = characters.firstIndex(where: { $0.id == character.id }) {
+            let oldCharacter = characters[index]
+            
+            // Delete old icon if it's different from the new one
+            if let oldImagePath = oldCharacter.imageIdentifier,
+               let newImagePath = character.imageIdentifier,
+               oldImagePath != newImagePath {
+                deleteImageFromPath(oldImagePath)
+                print("✅ [CharacterManager] Deleted old icon: \(oldImagePath)")
+            }
+            
+            // Delete old background if it's different from the new one
+            if let oldBgPath = oldCharacter.backgroundImagePath,
+               let newBgPath = character.backgroundImagePath,
+               oldBgPath != newBgPath {
+                deleteImageFromPath(oldBgPath)
+                print("✅ [CharacterManager] Deleted old background: \(oldBgPath)")
+            }
+            
             characters[index] = character
             saveCharacters()
             
@@ -142,6 +160,16 @@ class CharacterManager: ObservableObject {
     }
     
     func deleteCharacter(_ character: Character) {
+        // Delete associated images
+        if let imagePath = character.imageIdentifier {
+            deleteImageFromPath(imagePath)
+            print("✅ [CharacterManager] Deleted character icon: \(imagePath)")
+        }
+        if let bgPath = character.backgroundImagePath {
+            deleteImageFromPath(bgPath)
+            print("✅ [CharacterManager] Deleted character background: \(bgPath)")
+        }
+        
         characters.removeAll { $0.id == character.id }
         saveCharacters()
     }
@@ -205,6 +233,7 @@ func saveImageToDocuments(_ image: UIImage) -> String? {
     
     do {
         try data.write(to: filePath)
+        // Return just the filename to maintain compatibility with existing data
         return filename
     } catch {
         print("Error saving image: \(error)")
@@ -214,7 +243,29 @@ func saveImageToDocuments(_ image: UIImage) -> String? {
 
 func deleteImageFromPath(_ path: String) {
     let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-    let imagePath = documentsPath.appendingPathComponent(path)
     
-    try? FileManager.default.removeItem(at: imagePath)
+    // Handle both relative and absolute paths
+    var imagePath: URL
+    if path.hasPrefix("/") {
+        imagePath = URL(fileURLWithPath: path)
+    } else {
+        imagePath = documentsPath.appendingPathComponent(path)
+    }
+    
+    // Check if file exists before deletion
+    if FileManager.default.fileExists(atPath: imagePath.path) {
+        do {
+            try FileManager.default.removeItem(at: imagePath)
+            print("🗑️ [ImageDelete] Successfully deleted image: \(path)")
+            
+            // If the path includes AnirecoImages, log it specifically
+            if path.contains("AnirecoImages") {
+                print("🗑️ [ImageDelete] Deleted AnirecoImages file: \(imagePath.lastPathComponent)")
+            }
+        } catch {
+            print("❌ [ImageDelete] Failed to delete image \(path): \(error)")
+        }
+    } else {
+        print("⚠️ [ImageDelete] Image not found for deletion: \(path)")
+    }
 }

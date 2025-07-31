@@ -394,10 +394,16 @@ struct VideoGalleryScreen: View {
                 anime: nil,
                 onVideoDeleted: { deletedVideo in
                     if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
+                        // Delete the actual video file
+                        VideoStorage.shared.deleteVideo(videoId: deletedVideo.id.uuidString, videoPath: deletedVideo.videoPath)
+                        
+                        // Remove from array
                         videos.remove(at: idx)
                         updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
                         saveVideosToUserDefaults()
                         saveAlbumsToUserDefaults()
+                        
+                        print("✅ [VideoGallery] Deleted video from album: \(deletedVideo.videoPath)")
                     }
                 },
                 onAlbumDeleted: {
@@ -1576,8 +1582,8 @@ struct VideoGalleryScreen: View {
         let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
         guard let documentsURL = urls.first else { return "" }
         
-        // アプリ専用のサブディレクトリを作成
-        let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
+        // Use VideoAlbums directory for video files
+        let appDirectoryURL = documentsURL.appendingPathComponent("VideoAlbums")
         
         do {
             // ディレクトリが存在しない場合は作成
@@ -1597,8 +1603,10 @@ struct VideoGalleryScreen: View {
             resourceValues.isExcludedFromBackup = false
             try fileURL.setResourceValues(resourceValues)
             
-            return "AnirecoImages/\(fileName)"
+            print("✅ [VideoGallery] Saved video to: VideoAlbums/\(fileName)")
+            return "VideoAlbums/\(fileName)"
         } catch {
+            print("❌ [VideoGallery] Failed to save video: \(error)")
             return ""
         }
     }
@@ -1641,6 +1649,12 @@ struct VideoGalleryScreen: View {
     
     private func deleteVideo(id: UUID) {
         if let idx = videos.firstIndex(where: { $0.id == id }) {
+            let video = videos[idx]
+            
+            // Delete the actual video file
+            VideoStorage.shared.deleteVideo(videoId: video.id.uuidString, videoPath: video.videoPath)
+            
+            // Remove from array
             videos.remove(at: idx)
             updateAlbumsAfterVideoDeletion(deletedVideoId: id)
             saveVideosToUserDefaults()
@@ -1648,7 +1662,10 @@ struct VideoGalleryScreen: View {
             
             // ビデオデータが更新されたことを通知
             NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
+            
+            print("✅ [VideoGallery] Deleted video and file: \(video.videoPath)")
         } else {
+            print("❌ [VideoGallery] Video not found for deletion: \(id)")
         }
     }
     
@@ -1960,8 +1977,16 @@ struct VideoAlbumGridView: View {
     
     private func deleteVideo(id: UUID) {
         if let idx = videos.firstIndex(where: { $0.id == id }) {
+            let video = videos[idx]
+            
+            // Delete the actual video file
+            VideoStorage.shared.deleteVideo(videoId: video.id.uuidString, videoPath: video.videoPath)
+            
+            // Remove from array
             videos.remove(at: idx)
             onVideosChanged?()
+            
+            print("✅ [VideoList] Deleted video and file: \(video.videoPath)")
         }
     }
 }

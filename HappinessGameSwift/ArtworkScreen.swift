@@ -458,6 +458,9 @@ struct ArtworkScreen: View {
                                 anime: nil,
                                 onArtworkDeleted: { deletedArtwork in
                                     if let idx = artworks.firstIndex(where: { $0.id == deletedArtwork.id }) {
+                                        // Delete the actual image file and thumbnail
+                                        ArtworkStorage.shared.deleteArtwork(artworkId: deletedArtwork.id.uuidString, imagePath: deletedArtwork.imagePath)
+                                        
                                         artworks.remove(at: idx)
                                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: deletedArtwork.id)
                                         saveArtworksToUserDefaults()
@@ -855,6 +858,9 @@ struct ArtworkScreen: View {
                 allArtworks: artworks,
                 onDelete: {
                     if let idx = artworks.firstIndex(where: { $0.id == artwork.id }) {
+                        // Delete the actual image file and thumbnail
+                        ArtworkStorage.shared.deleteArtwork(artworkId: artwork.id.uuidString, imagePath: artwork.imagePath)
+                        
                         artworks.remove(at: idx)
                         updateAlbumsAfterArtworkDeletion(deletedArtworkId: artwork.id)
                         saveArtworksToUserDefaults()

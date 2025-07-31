@@ -41,9 +41,16 @@ struct VisitPlanningScreen: View {
     // 編集中の下書きデータ
     @State private var editingDraftId: UUID?
     
+    // 編集中のドラフトを保持
+    private let editingDraft: VisitPlanData?
+    
     init(editingDraft: VisitPlanData? = nil) {
+        self.editingDraft = editingDraft
+        
         if let draft = editingDraft {
-            print("DEBUG: Loading draft data - ID: \(draft.id), Title: \(draft.title)")
+            print("DEBUG: Init - Loading draft data - ID: \(draft.id), Title: \(draft.title), Spots: \(draft.spots.count)")
+            print("DEBUG: Init - Draft details - animeName: \(draft.animeName), startTime: \(draft.startTime), numberOfDays: \(draft.numberOfDays)")
+            
             self._editingDraftId = State(initialValue: draft.id)
             self._animeName = State(initialValue: draft.animeName)
             self._planTitle = State(initialValue: draft.title)
@@ -53,6 +60,7 @@ struct VisitPlanningScreen: View {
             self._numberOfDays = State(initialValue: draft.numberOfDays)
             if let thumbnailData = draft.thumbnailData {
                 self._thumbnailImage = State(initialValue: UIImage(data: thumbnailData))
+                print("DEBUG: Init - Thumbnail loaded, size: \(thumbnailData.count) bytes")
             }
         } else {
             self._editingDraftId = State(initialValue: nil)
@@ -459,6 +467,29 @@ struct VisitPlanningScreen: View {
                 .padding(.bottom, 20)
             }
             .navigationBarHidden(true)
+        }
+        .onAppear {
+            // ドラフトデータがある場合、ビューが表示される時に再度設定
+            if let draft = editingDraft {
+                print("DEBUG: onAppear - Reloading draft data")
+                print("DEBUG: onAppear - Title: \(draft.title), Spots: \(draft.spots.count)")
+                
+                // 初回表示時に値が空の場合のみ再設定
+                if animeName.isEmpty && planTitle.isEmpty {
+                    animeName = draft.animeName
+                    planTitle = draft.title
+                    spots = draft.spots
+                    startTime = draft.startTime
+                    numberOfDays = draft.numberOfDays
+                    
+                    if let thumbnailData = draft.thumbnailData {
+                        self.thumbnailData = thumbnailData
+                        self.thumbnailImage = UIImage(data: thumbnailData)
+                    }
+                    
+                    print("DEBUG: onAppear - Data reloaded successfully")
+                }
+            }
         }
         .onDisappear {
             // 画面が消えるときに自動保存（既に保存済みの場合はスキップ）

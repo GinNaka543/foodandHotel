@@ -112,6 +112,7 @@ public struct VisitScreen: View {
                     startTime: plan.startTime,
                     onClose: nil,
                     planId: UUID(uuidString: plan.id),
+                    isReadOnly: false,
                     streamingUrls: plan.streamingUrls,
                     thumbnailUrl: plan.thumbnailUrl
                 )
@@ -962,25 +963,33 @@ public struct VisitScreen: View {
     }
     
     func savePurchasedPlan(_ plan: VisitPlanModel) {
-        // VisitPlanModelをVisitPlanDataに変換（購入プランとしてマーク）
-        let visitPlanData = VisitPlanData(
-            id: UUID(uuidString: plan.id) ?? UUID(),
-            animeName: plan.animeName,
-            title: plan.title,
-            duration: plan.duration,
-            spots: plan.spots,
-            thumbnailData: nil,
-            thumbnailUrl: plan.thumbnailUrl,
-            createdDate: plan.createdDate,
-            startTime: plan.startTime,
-            numberOfDays: plan.numberOfDays,
-            isPurchased: true,
-            streamingUrls: plan.streamingUrls
-        )
-        
-        // 新しいVisitPlanDataStorageシステムを使用して保存
-        VisitPlanDataStorage.shared.savePlanData(visitPlanData)
-        print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
+        // Check if this is a draft being converted to purchased
+        if let existingPlan = savedPlans.first(where: { $0.id.uuidString == plan.id && $0.isDraft }) {
+            // This is a draft being purchased, use the conversion method
+            VisitPlanDataStorage.shared.convertDraftToPurchased(planId: plan.id)
+            print("✅ Converted draft to purchased plan - ID: \(plan.id)")
+        } else {
+            // This is a new purchase, create new plan data
+            let visitPlanData = VisitPlanData(
+                id: UUID(uuidString: plan.id) ?? UUID(),
+                animeName: plan.animeName,
+                title: plan.title,
+                duration: plan.duration,
+                spots: plan.spots,
+                thumbnailData: nil,
+                thumbnailUrl: plan.thumbnailUrl,
+                createdDate: plan.createdDate,
+                startTime: plan.startTime,
+                numberOfDays: plan.numberOfDays,
+                isPurchased: true,
+                isDraft: false,  // 明示的にドラフトではないことを設定
+                streamingUrls: plan.streamingUrls
+            )
+            
+            // 新しいVisitPlanDataStorageシステムを使用して保存
+            VisitPlanDataStorage.shared.savePlanData(visitPlanData)
+            print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
+        }
         
         // 保存済みプランを再読み込み
         DispatchQueue.main.async {

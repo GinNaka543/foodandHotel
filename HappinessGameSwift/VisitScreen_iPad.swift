@@ -22,6 +22,10 @@ struct VisitScreen_iPad: View {
     @State private var isLoadingDraft = false
     @State private var isLoadingPlan = false
     @State private var loadingMessage = NSLocalizedString("loading_plans", comment: "Loading plans")
+    @State private var showLoadingOverlay = false
+    @State private var loadingDraftTitle = ""
+    @State private var showingCurrencySelection = false
+    @State private var selectedPlanCurrency = CurrencyManager.shared.selectedCurrency
     @EnvironmentObject var mainTab: MainTabSelection
     
     // タブ用
@@ -48,7 +52,7 @@ struct VisitScreen_iPad: View {
     @State private var showingPlanningScreen = false
     
     var body: some View {
-        mainView
+        mainViewWithOverlay
     }
     
     private var mainView: some View {
@@ -87,7 +91,7 @@ struct VisitScreen_iPad: View {
                 
                 Section(NSLocalizedString("action_section", comment: "Action section")) {
                     Button(action: {
-                        showingPlanningScreen = true
+                        showingCurrencySelection = true
                     }) {
                         HStack {
                             Image(systemName: "plus.circle.fill")
@@ -169,7 +173,7 @@ struct VisitScreen_iPad: View {
                                     .frame(maxWidth: 400)
                                 
                                 Button(action: {
-                                    showingPlanningScreen = true
+                                    showingCurrencySelection = true
                                 }) {
                                     Label(NSLocalizedString("add_original_plan", comment: "Add original plan"), systemImage: "plus")
                                         .foregroundColor(.white)
@@ -211,7 +215,7 @@ struct VisitScreen_iPad: View {
                     HStack {
                         Spacer()
                         Button(action: {
-                            showingPlanningScreen = true
+                            showingCurrencySelection = true
                         }) {
                             HStack {
                                 Image(systemName: "map.fill")
@@ -263,6 +267,17 @@ struct VisitScreen_iPad: View {
                 VisitPlanningScreen()
             }
         }
+        .sheet(isPresented: $showingCurrencySelection) {
+            InitialCurrencySelectionView(
+                isPresented: $showingCurrencySelection,
+                selectedCurrency: $selectedPlanCurrency,
+                onCurrencySelected: {
+                    // 通貨が選択されたら、CurrencyManagerに設定してプラン作成画面を開く
+                    CurrencyManager.shared.selectedCurrency = selectedPlanCurrency
+                    showingPlanningScreen = true
+                }
+            )
+        }
         .alert(NSLocalizedString("delete_plan", comment: "Delete plan"), isPresented: $showingDeleteConfirmation, presenting: planToDelete) { plan in
             Button(NSLocalizedString("cancel", comment: "Cancel"), role: .cancel) {
                 planToDelete = nil
@@ -312,7 +327,7 @@ struct VisitScreen_iPad: View {
                     selectedPlanForNavigation = nil
                 },
                 planId: UUID(uuidString: plan.id),
-                isReadOnly: true,
+                isReadOnly: false,
                 streamingUrls: plan.streamingUrls,
                 thumbnailUrl: plan.thumbnailUrl
             )
@@ -329,8 +344,53 @@ struct VisitScreen_iPad: View {
     
     private func handlePlanTap(_ plan: VisitPlanModel) {
         if plan.isDraft {
-            selectedDraftPlan = savedPlans.first(where: { $0.id.uuidString == plan.id })
-            showingPlanningScreen = true
+            print("DEBUG: handlePlanTap - Draft plan tapped: \(plan.id)")
+            
+            // ローディング開始
+            showLoadingOverlay = true
+            loadingDraftTitle = plan.title
+            
+            // 少し遅延を入れてローディング画面を表示
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // VisitPlanDataStorageから最新データを読み込む
+                if let freshDraft = VisitPlanDataStorage.shared.loadPlanData(planId: plan.id, isDraft: true) {
+                    print("DEBUG: handlePlanTap - Loaded fresh draft: \(freshDraft.title), spots: \(freshDraft.spots.count)")
+                    self.selectedDraftPlan = freshDraft
+                    
+                    // さらに少し遅延を入れて確実にデータを設定
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        self.showLoadingOverlay = false
+                        self.showingPlanningScreen = true
+                    }
+                } else {
+                    // フォールバック: savedPlansから検索
+                    if let draftData = self.savedPlans.first(where: { $0.id.uuidString == plan.id }) {
+                        print("DEBUG: handlePlanTap - Found draft in savedPlans: \(draftData.title), spots: \(draftData.spots.count)")
+                        self.selectedDraftPlan = draftData
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            self.showLoadingOverlay = false
+                            self.showingPlanningScreen = true
+                        }
+                    } else {
+                        print("DEBUG: handlePlanTap - Draft not found, reloading all plans...")
+                        // データが見つからない場合は再読み込み
+                        self.loadSavedPlans()
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            if let draftData = self.savedPlans.first(where: { $0.id.uuidString == plan.id }) {
+                                print("DEBUG: handlePlanTap - Found draft after reload: \(draftData.title), spots: \(draftData.spots.count)")
+                                self.selectedDraftPlan = draftData
+                                self.showLoadingOverlay = false
+                                self.showingPlanningScreen = true
+                            } else {
+                                print("DEBUG: handlePlanTap - Draft still not found after reload!")
+                                self.showLoadingOverlay = false
+                            }
+                        }
+                    }
+                }
+            }
         } else if plan.price > 0 && !purchasedPlans.contains(where: { $0.id == plan.id }) {
             planToPurchase = plan
         } else {
@@ -341,8 +401,59 @@ struct VisitScreen_iPad: View {
     @ViewBuilder
     private func thumbnailImage(for plan: VisitPlanModel) -> some View {
         ZStack(alignment: .bottomTrailing) {
-            if let thumbnailUrl = plan.thumbnailUrl,
-               let url = URL(string: thumbnailUrl) {
+            // まずローカルのサムネイルデータをチェック
+            if let savedPlan = savedPlans.first(where: { $0.id.uuidString == plan.id }) {
+                // VisitPlanDataStorageから最新のデータを読み込む
+                if let planData = VisitPlanDataStorage.shared.loadPlanData(planId: plan.id, isDraft: plan.isDraft),
+                   let thumbnailData = planData.thumbnailData,
+                   let uiImage = UIImage(data: thumbnailData) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                } else if let thumbnailData = VisitPlanStorage.shared.loadPlanThumbnail(planId: plan.id),
+                          let uiImage = UIImage(data: thumbnailData) {
+                    // VisitPlanStorageからの読み込み（フォールバック）
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                } else if let thumbnailUrl = plan.thumbnailUrl,
+                          let url = URL(string: thumbnailUrl) {
+                    // URLからの読み込み（最後の手段）
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        case .failure(_):
+                            Rectangle()
+                                .fill(Color(.systemGray4))
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(.gray)
+                                )
+                        case .empty:
+                            Rectangle()
+                                .fill(Color(.systemGray4))
+                                .overlay(
+                                    ProgressView()
+                                )
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    Rectangle()
+                        .fill(Color(.systemGray4))
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 40))
+                                .foregroundColor(.gray)
+                        )
+                }
+            } else if let thumbnailUrl = plan.thumbnailUrl,
+                      let url = URL(string: thumbnailUrl) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
@@ -539,79 +650,94 @@ struct VisitScreen_iPad: View {
     
     private func loadSavedPlans() {
         print("DEBUG: loadSavedPlans called")
-        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans") else {
-            print("DEBUG: No saved plans data found")
-            savedPlans = []
-            userOriginalPlans = []
-            return
+        
+        // 新しいVisitPlanDataStorageシステムから読み込み
+        let allSavedPlans = VisitPlanDataStorage.shared.loadAllSavedPlans()
+        let allDraftPlans = VisitPlanDataStorage.shared.loadAllDraftPlans()
+        
+        // デバッグ: ドラフトプランの詳細を出力
+        for draft in allDraftPlans {
+            print("DEBUG: Draft plan - ID: \(draft.id), Title: \(draft.title), Spots count: \(draft.spots.count)")
+            if draft.spots.isEmpty {
+                print("DEBUG: WARNING - Draft has no spots!")
+            }
         }
         
-        do {
-            let plans = try JSONDecoder().decode([VisitPlanData].self, from: data)
-            savedPlans = plans
-            print("DEBUG: Loaded \(plans.count) saved plans")
+        // ドラフトと保存済みプランを結合
+        let combinedPlans = allSavedPlans + allDraftPlans
+        savedPlans = combinedPlans
+        print("DEBUG: Loaded \(allSavedPlans.count) saved plans and \(allDraftPlans.count) draft plans")
+        
+        // 購入されていないプラン（ユーザーのオリジナルプラン）を抽出
+        let originalPlans = combinedPlans.filter { !$0.isPurchased }
+        print("DEBUG: Found \(originalPlans.count) original plans (non-purchased)")
+        
+        userOriginalPlans = originalPlans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+            print("DEBUG: Processing plan - Title: \(plan.title), isDraft: \(plan.isDraft), hasThumbnailData: \(plan.thumbnailData != nil), thumbnailUrl: \(plan.thumbnailUrl ?? "nil")")
             
-            let originalPlans = plans.filter { !$0.isPurchased }
-            print("DEBUG: Found \(originalPlans.count) original plans (non-purchased)")
-            userOriginalPlans = originalPlans.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
-                print("DEBUG: Processing plan - Title: \(plan.title), isDraft: \(plan.isDraft)")
-                return VisitPlanModel(
-                    id: plan.id.uuidString,
-                    userId: currentUserId,
-                    animeName: plan.animeName,
-                    title: plan.title,
-                    description: "",
-                    duration: plan.duration,
-                    spots: plan.spots,
-                    thumbnailUrl: plan.thumbnailUrl,
-                    price: 0,
-                    budget: 0,
-                    createdDate: plan.createdDate,
-                    startTime: plan.startTime,
-                    numberOfDays: plan.numberOfDays,
-                    totalCost: plan.totalCost,
-                    isPublic: false,
-                    purchasedBy: [],
-                    createdAt: plan.createdDate,
-                    updatedAt: plan.createdDate,
-                    isDraft: plan.isDraft,
-                    isConfirmed: nil,
-                    streamingUrls: plan.streamingUrls
-                )
-            }
+            // ローカルプランの場合、サムネイルが存在することを示すダミーURLを設定
+            let thumbnailUrlToUse = plan.thumbnailUrl ?? (plan.thumbnailData != nil ? "local://\(plan.id.uuidString)" : nil)
             
-            // 重複削除を適用
-            userOriginalPlans = removeDuplicatePlans(userOriginalPlans)
-            print("DEBUG: userOriginalPlans updated with \(userOriginalPlans.count) plans after deduplication")
+            return VisitPlanModel(
+                id: plan.id.uuidString,
+                userId: currentUserId,
+                animeName: plan.animeName,
+                title: plan.title,
+                description: "",
+                duration: plan.duration,
+                spots: plan.spots,
+                thumbnailUrl: thumbnailUrlToUse,
+                price: 0,
+                budget: 0,
+                createdDate: plan.createdDate,
+                startTime: plan.startTime,
+                numberOfDays: plan.numberOfDays,
+                totalCost: plan.totalCost,
+                isPublic: false,
+                purchasedBy: [],
+                createdAt: plan.createdDate,
+                updatedAt: plan.createdDate,
+                isDraft: plan.isDraft,
+                isConfirmed: nil,
+                streamingUrls: plan.streamingUrls
+            )
+        }
+        
+        // 重複削除を適用
+        userOriginalPlans = removeDuplicatePlans(userOriginalPlans)
+        print("DEBUG: userOriginalPlans updated with \(userOriginalPlans.count) plans after deduplication")
+        
+        // ローカルの購入済みプランの処理
+        let localPurchasedPlansData = combinedPlans.filter { $0.isPurchased }
+        print("DEBUG: Local purchased plans count: \(localPurchasedPlansData.count)")
+        
+        let localPurchasedPlans = localPurchasedPlansData.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
+            // ローカルプランの場合、サムネイルが存在することを示すダミーURLを設定
+            let thumbnailUrlToUse = plan.thumbnailUrl ?? (plan.thumbnailData != nil ? "local://\(plan.id.uuidString)" : nil)
             
-            // ローカルの購入済みプランの処理
-            let localPurchasedPlansData = plans.filter { $0.isPurchased }
-            print("DEBUG: Local purchased plans count: \(localPurchasedPlansData.count)")
-            
-            let localPurchasedPlans = localPurchasedPlansData.sorted(by: { $0.createdDate > $1.createdDate }).map { plan in
-                return VisitPlanModel(
-                    id: plan.id.uuidString,
-                    userId: currentUserId,
-                    animeName: plan.animeName,
-                    title: plan.title,
-                    description: "",
-                    duration: plan.duration,
-                    spots: plan.spots,
-                    thumbnailUrl: plan.thumbnailUrl,
-                    price: 0, // 既に購入済みなので価格は0
-                    budget: 0,
-                    createdDate: plan.createdDate,
-                    startTime: plan.startTime,
-                    numberOfDays: plan.numberOfDays,
-                    totalCost: plan.totalCost,
-                    isPublic: false,
-                    purchasedBy: [currentUserId],
-                    createdAt: plan.createdDate,
-                    updatedAt: plan.createdDate,
-                    isDraft: plan.isDraft,
-                    isConfirmed: nil,
-                    streamingUrls: plan.streamingUrls
-                )
+            return VisitPlanModel(
+                id: plan.id.uuidString,
+                userId: currentUserId,
+                animeName: plan.animeName,
+                title: plan.title,
+                description: "",
+                duration: plan.duration,
+                spots: plan.spots,
+                thumbnailUrl: thumbnailUrlToUse,
+                price: 0, // 既に購入済みなので価格は0
+                budget: 0,
+                createdDate: plan.createdDate,
+                startTime: plan.startTime,
+                numberOfDays: plan.numberOfDays,
+                totalCost: plan.totalCost,
+                isPublic: false,
+                purchasedBy: [currentUserId],
+                createdAt: plan.createdDate,
+                updatedAt: plan.createdDate,
+                isDraft: plan.isDraft,
+                isConfirmed: nil,
+                streamingUrls: plan.streamingUrls
+            )
             }
             
             // ローカルの購入済みプランを既存の購入済みプランとマージ（重複防止）
@@ -625,11 +751,6 @@ struct VisitScreen_iPad: View {
             // 重複削除を適用
             purchasedPlans = removeDuplicatePlans(purchasedPlans)
             print("DEBUG: Total purchased plans after local merge and deduplication: \(purchasedPlans.count)")
-        } catch {
-            savedPlans = []
-            userOriginalPlans = []
-            purchasedPlans = []
-        }
     }
     
     private func loadFirebasePlans() {
@@ -669,61 +790,131 @@ struct VisitScreen_iPad: View {
     private func purchasePlan(_ plan: VisitPlanModel) {
         print("DEBUG: Purchasing plan - ID: \(plan.id), Title: \(plan.title)")
         
-        // 購入処理の実装
+        let userId = UserDefaults.standard.string(forKey: "userId") ?? UUID().uuidString
+        
+        // 既に購入済みかチェック
+        if savedPlans.contains(where: { $0.id.uuidString == plan.id && $0.isPurchased }) {
+            return
+        }
+        
+        // プランの価格分のポイントを消費
+        firebaseManager.usePoints(userId: userId, points: plan.price, reason: "プラン購入: \(plan.title)") { result in
+            switch result {
+            case .success:
+                // 購入明細書を保存
+                let receipt = PurchaseReceipt(
+                    transactionType: .planPurchase,
+                    amount: plan.price,
+                    points: 0,
+                    paymentMethod: .points,
+                    description: "旅行プラン: \(plan.title)"
+                )
+                PurchaseReceiptManager.shared.addReceipt(receipt)
+                
+                // Firebase に購入記録を保存
+                let purchase = PlanPurchase(
+                    id: UUID().uuidString,
+                    userId: userId,
+                    planId: plan.id,
+                    planOwnerId: plan.userId,
+                    purchasePrice: plan.price,
+                    purchasedAt: Date(),
+                    stripePaymentIntentId: nil
+                )
+                
+                self.firebaseManager.recordPlanPurchase(purchase) { purchaseResult in
+                    // どちらの場合でも一度だけ保存
+                    self.savePurchasedPlan(plan)
+                    self.saveLocalPurchaseRecord(planId: plan.id)
+                    
+                    DispatchQueue.main.async {
+                        self.purchasedPlan = plan
+                        self.showingPurchaseCompletion = true
+                        // 購入後にFirebaseプランをリロード
+                        self.loadFirebasePlans()
+                    }
+                }
+                
+            case .failure(_):
+                DispatchQueue.main.async {
+                    // エラーメッセージを表示する処理をここに追加できます
+                }
+            }
+        }
+    }
+    
+    private func deletePlan(_ plan: VisitPlanModel) {
+        print("DEBUG: Deleting plan - ID: \(plan.id), Title: \(plan.title)")
+        
+        // 新しいVisitPlanDataStorageシステムを使用して削除
+        VisitPlanDataStorage.shared.deletePlanData(planId: plan.id)
+        print("DEBUG: Deleted plan from VisitPlanDataStorage")
+        
+        // userOriginalPlansから削除
+        userOriginalPlans.removeAll(where: { $0.id == plan.id })
+        print("DEBUG: Removed plan from userOriginalPlans")
+        
+        // プランリストをリロードしてUIを更新
+        DispatchQueue.main.async {
+            self.loadSavedPlans()
+        }
+    }
+    
+    private func getSavedPlans() -> [VisitPlanData] {
+        // 新しいVisitPlanDataStorageシステムから読み込み
+        let allSavedPlans = VisitPlanDataStorage.shared.loadAllSavedPlans()
+        let allDraftPlans = VisitPlanDataStorage.shared.loadAllDraftPlans()
+        return allSavedPlans + allDraftPlans
+    }
+    
+    func savePurchasedPlan(_ plan: VisitPlanModel) {
+        // Check if this is a draft being converted to purchased
+        if let existingPlan = savedPlans.first(where: { $0.id.uuidString == plan.id && $0.isDraft }) {
+            // This is a draft being purchased, use the conversion method
+            VisitPlanDataStorage.shared.convertDraftToPurchased(planId: plan.id)
+            print("✅ Converted draft to purchased plan - ID: \(plan.id)")
+        } else {
+            // This is a new purchase, create new plan data
+            let visitPlanData = VisitPlanData(
+                id: UUID(uuidString: plan.id) ?? UUID(),
+                animeName: plan.animeName,
+                title: plan.title,
+                duration: plan.duration,
+                spots: plan.spots,
+                thumbnailData: nil,
+                thumbnailUrl: plan.thumbnailUrl,
+                createdDate: plan.createdDate,
+                startTime: plan.startTime,
+                numberOfDays: plan.numberOfDays,
+                isPurchased: true,
+                isDraft: false,  // 明示的にドラフトではないことを設定
+                streamingUrls: plan.streamingUrls
+            )
+            
+            // 新しいVisitPlanDataStorageシステムを使用して保存
+            VisitPlanDataStorage.shared.savePlanData(visitPlanData)
+            print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
+        }
+        
+        // 保存済みプランを再読み込み
+        DispatchQueue.main.async {
+            self.loadSavedPlans()
+        }
+    }
+    
+    func saveLocalPurchaseRecord(planId: String) {
         var purchasedIds = [String]()
         if let data = UserDefaultsHelper.shared.getData(forKey: "purchasedPlans"),
            let existingIds = try? JSONDecoder().decode([String].self, from: data) {
             purchasedIds = existingIds
         }
         
-        print("DEBUG: Current purchased IDs: \(purchasedIds)")
-        
-        if !purchasedIds.contains(plan.id) {
-            purchasedIds.append(plan.id)
+        if !purchasedIds.contains(planId) {
+            purchasedIds.append(planId)
             if let encoded = try? JSONEncoder().encode(purchasedIds) {
                 UserDefaultsHelper.shared.setData(encoded, forKey: "purchasedPlans")
-                print("DEBUG: Added plan ID to purchased list")
             }
-        } else {
-            print("DEBUG: Plan already purchased")
         }
-        
-        purchasedPlan = plan
-        showingPurchaseCompletion = true
-        
-        // 購入後にFirebaseプランをリロード
-        loadFirebasePlans()
-    }
-    
-    private func deletePlan(_ plan: VisitPlanModel) {
-        print("DEBUG: Deleting plan - ID: \(plan.id), Title: \(plan.title)")
-        
-        // ローカルの保存済みプランから削除
-        var savedPlans = getSavedPlans()
-        if let index = savedPlans.firstIndex(where: { $0.id.uuidString == plan.id }) {
-            savedPlans.remove(at: index)
-            print("DEBUG: Removed plan from saved plans at index \(index)")
-            
-            if let encoded = try? JSONEncoder().encode(savedPlans) {
-                UserDefaultsHelper.shared.setData(encoded, forKey: "savedPlans")
-                print("DEBUG: Successfully saved updated plans to UserDefaults")
-                
-                // UIをリロード
-                DispatchQueue.main.async {
-                    loadSavedPlans()
-                }
-            }
-        } else {
-            print("DEBUG: Plan not found in saved plans")
-        }
-    }
-    
-    private func getSavedPlans() -> [VisitPlanData] {
-        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlans"),
-              let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) else {
-            return []
-        }
-        return plans
     }
     
     // 重複プランを削除する関数
@@ -757,4 +948,41 @@ struct VisitScreen_iPad: View {
         return uniquePlans
     }
     
+    // ローディングオーバーレイを表示するための修正
+    private var mainViewWithOverlay: some View {
+        mainView
+            .overlay(
+                // ローディングオーバーレイ
+                Group {
+                    if showLoadingOverlay {
+                        ZStack {
+                            Color.black.opacity(0.5)
+                                .edgesIgnoringSafeArea(.all)
+                            
+                            VStack(spacing: 20) {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(1.5)
+                                
+                                Text(NSLocalizedString("loading_draft", comment: "Loading draft..."))
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.white)
+                                
+                                if !loadingDraftTitle.isEmpty {
+                                    Text(loadingDraftTitle)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                            }
+                            .padding(40)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color(.systemGray6))
+                                    .shadow(radius: 10)
+                            )
+                        }
+                    }
+                }
+            )
+    }
 }

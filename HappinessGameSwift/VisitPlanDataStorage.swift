@@ -85,7 +85,7 @@ class VisitPlanDataStorage {
         var drafts = loadAllDraftPlansMetadata()
         var plans = loadAllSavedPlansMetadata()
         
-        // Remove from both to prevent duplicates
+        // Always remove from both to prevent duplicates
         drafts.removeValue(forKey: planId)
         plans.removeValue(forKey: planId)
         
@@ -96,28 +96,47 @@ class VisitPlanDataStorage {
             saveDraftPlansMetadata(drafts)
             print("[VisitPlanDataStorage] Saved as draft. Total drafts: \(drafts.count)")
         } else {
-            // Save regular plans
+            // Save regular plans (purchased or confirmed)
             plans[planId] = planDict
             saveSavedPlansMetadata(plans)
             print("[VisitPlanDataStorage] Saved as confirmed plan. Total plans: \(plans.count)")
+            
+            // Ensure it's removed from drafts when saving as non-draft
+            if drafts.count > 0 {
+                print("[VisitPlanDataStorage] Cleaning up drafts after saving confirmed plan")
+                saveDraftPlansMetadata(drafts)
+            }
         }
     }
     
     func loadPlanData(planId: String, isDraft: Bool = false) -> VisitPlanData? {
+        print("[VisitPlanDataStorage] loadPlanData called - planId: \(planId), isDraft: \(isDraft)")
+        
         // Load metadata
         let metadata: [String: Any]
         if isDraft {
             let drafts = loadAllDraftPlansMetadata()
-            guard let draft = drafts[planId] else { return nil }
+            print("[VisitPlanDataStorage] Found \(drafts.count) draft metadata entries")
+            guard let draft = drafts[planId] else { 
+                print("[VisitPlanDataStorage] No draft metadata found for planId: \(planId)")
+                return nil 
+            }
             metadata = draft
         } else {
             let plans = loadAllSavedPlansMetadata()
-            guard let plan = plans[planId] else { return nil }
+            print("[VisitPlanDataStorage] Found \(plans.count) saved plan metadata entries")
+            guard let plan = plans[planId] else { 
+                print("[VisitPlanDataStorage] No saved plan metadata found for planId: \(planId)")
+                return nil 
+            }
             metadata = plan
         }
         
+        print("[VisitPlanDataStorage] Metadata loaded for plan: \(metadata["title"] as? String ?? "Unknown")")
+        
         // Load spots
         let spots = VisitPlanStorage.shared.loadPlan(planId: planId) ?? []
+        print("[VisitPlanDataStorage] Loaded \(spots.count) spots from VisitPlanStorage")
         
         // Create plan data
         var planData = VisitPlanData(
@@ -178,6 +197,31 @@ class VisitPlanDataStorage {
         var plans = loadAllSavedPlansMetadata()
         plans.removeValue(forKey: planId)
         saveSavedPlansMetadata(plans)
+    }
+    
+    // Convert a draft plan to a purchased plan
+    func convertDraftToPurchased(planId: String) {
+        print("[VisitPlanDataStorage] Converting draft \(planId) to purchased plan")
+        
+        // Load the draft
+        if let draftData = loadPlanData(planId: planId, isDraft: true) {
+            // Update the plan to be purchased and not a draft
+            var purchasedPlan = draftData
+            purchasedPlan.isPurchased = true
+            purchasedPlan.isDraft = false
+            
+            // Save as purchased plan
+            savePlanData(purchasedPlan)
+            
+            // Explicitly remove from drafts
+            var drafts = loadAllDraftPlansMetadata()
+            drafts.removeValue(forKey: planId)
+            saveDraftPlansMetadata(drafts)
+            
+            print("[VisitPlanDataStorage] Successfully converted draft to purchased plan")
+        } else {
+            print("[VisitPlanDataStorage] Warning: Could not find draft plan to convert")
+        }
     }
     
     // MARK: - Metadata Storage
@@ -247,9 +291,32 @@ class VisitPlanDataStorage {
     }
     
     func loadAllDraftPlans() -> [VisitPlanData] {
+        // First, clean up any drafts that are also in saved plans
+        cleanupDraftsThatAreSaved()
+        
         let metadata = loadAllDraftPlansMetadata()
         return metadata.compactMap { (planId, _) in
             loadPlanData(planId: planId, isDraft: true)
+        }
+    }
+    
+    // Clean up drafts that have been converted to saved plans
+    private func cleanupDraftsThatAreSaved() {
+        var drafts = loadAllDraftPlansMetadata()
+        let savedPlans = loadAllSavedPlansMetadata()
+        
+        var hasChanges = false
+        for (planId, _) in drafts {
+            if savedPlans[planId] != nil {
+                print("[VisitPlanDataStorage] Removing draft \(planId) that exists in saved plans")
+                drafts.removeValue(forKey: planId)
+                hasChanges = true
+            }
+        }
+        
+        if hasChanges {
+            saveDraftPlansMetadata(drafts)
+            print("[VisitPlanDataStorage] Cleaned up \(savedPlans.count - drafts.count) drafts that were already saved")
         }
     }
     

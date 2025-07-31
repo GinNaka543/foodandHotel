@@ -65,6 +65,7 @@ class VisitPlanStorage {
     
     func savePlan(planId: String, planTitle: String, spots: [VisitSpot], planThumbnailData: Data? = nil) {
         let planKey = "visit_plan_\(planId)"
+        print("[VisitPlanStorage] Saving plan with ID: \(planId), spots count: \(spots.count)")
         
         // Convert spots to dictionary format without image data
         let spotsData = spots.map { spot -> [String: Any] in
@@ -148,11 +149,15 @@ class VisitPlanStorage {
     
     func loadPlan(planId: String) -> [VisitSpot]? {
         let planKey = "visit_plan_\(planId)"
+        print("[VisitPlanStorage] Loading plan with ID: \(planId), key: \(planKey)")
         
         guard let planData = UserDefaults.standard.dictionary(forKey: planKey),
               let spotsData = planData["spots"] as? [[String: Any]] else {
+            print("[VisitPlanStorage] No plan data found for key: \(planKey)")
             return nil
         }
+        
+        print("[VisitPlanStorage] Found plan data with \(spotsData.count) spots")
         
         var restoredSpots: [VisitSpot] = []
         

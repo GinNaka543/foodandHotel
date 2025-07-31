@@ -316,10 +316,24 @@ app.get('/api/points', async (req, res) => {
 // Add points to user
 app.post('/api/admin/add-points', async (req, res) => {
   try {
-    const { userId, points, reason } = req.body;
+    console.log('🎯 Add points endpoint called');
+    console.log('🎯 Request body:', JSON.stringify(req.body));
     
-    if (!userId || points === undefined) {
+    // Support both 'amount' and 'points' for backward compatibility
+    const { userId, amount, points, reason, type, description } = req.body;
+    const pointValue = amount !== undefined ? amount : points;
+    const pointReason = description || reason || 'Admin adjustment';
+    
+    console.log('🎯 Parsed values - userId:', userId, 'pointValue:', pointValue, 'pointReason:', pointReason);
+    
+    if (!userId || pointValue === undefined) {
+      console.error('❌ Missing required fields - userId:', userId, 'pointValue:', pointValue);
       return res.status(400).json({ error: 'userId and points are required' });
+    }
+    
+    if (!db) {
+      console.error('❌ Database not initialized');
+      return res.status(500).json({ error: 'Database not initialized' });
     }
 
     const userPointsRef = db.collection('userPoints').doc(userId);
@@ -330,28 +344,36 @@ app.post('/api/admin/add-points', async (req, res) => {
       currentPoints = doc.data().points || 0;
     }
     
-    const newPoints = currentPoints + parseInt(points);
+    const newPoints = currentPoints + parseInt(pointValue);
     
     await userPointsRef.set({
       points: newPoints,
       lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
       history: admin.firestore.FieldValue.arrayUnion({
-        points: parseInt(points),
-        reason: reason || 'Admin adjustment',
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        points: parseInt(pointValue),
+        reason: pointReason,
+        timestamp: new Date().toISOString(),
+        type: type || 'admin_grant'
       })
     }, { merge: true });
 
+    console.log('✅ Points added successfully - Previous:', currentPoints, 'Added:', parseInt(pointValue), 'New:', newPoints);
+    
     res.json({ 
       success: true, 
       userId, 
       previousPoints: currentPoints,
-      addedPoints: parseInt(points),
-      newTotal: newPoints 
+      addedPoints: parseInt(pointValue),
+      newPoints: newPoints 
     });
   } catch (error) {
-    console.error('Error adding points:', error);
-    res.status(500).json({ error: 'Failed to add points' });
+    console.error('❌ Error adding points:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Failed to add points',
+      message: error.message,
+      code: error.code
+    });
   }
 });
 
@@ -726,3 +748,6 @@ app.use((error, req, res, next) => {
 
 // Export the Express API for Vercel
 module.exports = app;
+
+// Also export as default for Vercel
+module.exports.default = app;

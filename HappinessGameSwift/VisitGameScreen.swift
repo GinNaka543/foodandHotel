@@ -222,6 +222,9 @@ struct VisitGameScreen: View {
     @State private var showAddSpotSheet = false
     @State private var showAddTransportSheet = false
     @State private var selectedSpotForTransport: VisitSpot?
+    @State private var selectedSpot: VisitSpot?
+    @State private var showingDetail = false
+    @State private var isLoadingSpotDetail = false
     let numberOfDays: Int
     let startTime: Date
     let onClose: (() -> Void)?
@@ -321,6 +324,99 @@ struct VisitGameScreen: View {
         .padding(.bottom, 100)
     }
     
+    @ViewBuilder
+    var spotListContent: some View {
+        ZStack(alignment: .leading) {
+            // 背景の縦線（プログレスバーの背景）
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 3)
+                .padding(.leading, 35.5)
+                .padding(.top, 46)
+                .padding(.bottom, 40)
+            
+            LazyVStack(spacing: 0) {
+                let dayFilteredSpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
+                ForEach(Array(dayFilteredSpots.enumerated()), id: \.element.id) { index, spot in
+                    if let realIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
+                        spotCardView(for: spot, at: realIndex, dayIndex: index, totalDaySpots: dayFilteredSpots.count)
+                    }
+                }
+            }
+            .padding(.top, 16)
+            .padding(.bottom, 100)
+        }
+    }
+    
+    @ViewBuilder
+    func spotCardView(for spot: VisitSpot, at realIndex: Int, dayIndex: Int, totalDaySpots: Int) -> some View {
+        let previousDepartureTime = dayIndex > 0 ? viewModel.spots.filter { $0.dayNumber == selectedDay }[dayIndex - 1].departureTime : nil
+        
+        Group {
+            if isReadOnly {
+                // 読み取り専用モードではNavigationLinkを無効化
+                AnimeStyleSpotCard(
+                    spot: viewModel.spots[realIndex],
+                    isCompleted: viewModel.spots[realIndex].isCompleted,
+                    onToggle: {
+                        // 読み取り専用モードでは何もしない
+                    },
+                    onTap: {
+                        // 読み取り専用モードでは何もしない
+                    },
+                    isReadOnly: isReadOnly,
+                    isFirstSpot: dayIndex == 0,
+                    isLastSpot: dayIndex == totalDaySpots - 1,
+                    previousDepartureTime: previousDepartureTime,
+                    onEditTransport: {
+                        // 読み取り専用モードでは何もしない
+                    }
+                )
+            } else {
+                AnimeStyleSpotCard(
+                    spot: viewModel.spots[realIndex],
+                    isCompleted: viewModel.spots[realIndex].isCompleted,
+                    onToggle: {
+                        withAnimation(.spring()) {
+                            viewModel.spots[realIndex].isCompleted.toggle()
+                            if viewModel.spots[realIndex].isCompleted {
+                                newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
+                                }
+                            }
+                            
+                            // 全てのスポットが完了したかチェック
+                            if allSpotsCompleted {
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    showCompletionPopup = true
+                                }
+                            }
+                        }
+                    },
+                    onTap: {
+                        isLoadingSpotDetail = true
+                        selectedSpot = viewModel.spots[realIndex]
+                        
+                        // 少し遅延を入れてUIの更新を確実にする
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            showingDetail = true
+                            isLoadingSpotDetail = false
+                        }
+                    },
+                    isReadOnly: isReadOnly,
+                    isFirstSpot: dayIndex == 0,
+                    isLastSpot: dayIndex == totalDaySpots - 1,
+                    previousDepartureTime: previousDepartureTime,
+                    onEditTransport: {
+                        selectedSpotForTransport = viewModel.spots[realIndex]
+                        showAddTransportSheet = true
+                    }
+                )
+            }
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ZStack(alignment: .top) {
@@ -338,89 +434,8 @@ struct VisitGameScreen: View {
                     
                     // メインコンテンツ
                     ScrollView {
-                    ZStack(alignment: .leading) {
-                        // 背景の縦線（プログレスバーの背景）
-                        Rectangle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(width: 3)
-                            .padding(.leading, 35.5)
-                            .padding(.top, 46)
-                            .padding(.bottom, 40)
-                        
-                        LazyVStack(spacing: 0) {
-                            let dayFilteredSpots = viewModel.spots.filter { $0.dayNumber == selectedDay }
-                            ForEach(Array(dayFilteredSpots.enumerated()), id: \.element.id) { index, spot in
-                                if let realIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
-                                    Group {
-                                        if isReadOnly {
-                                            // 読み取り専用モードではNavigationLinkを無効化
-                                            AnimeStyleSpotCard(
-                                                spot: viewModel.spots[realIndex],
-                                                isCompleted: viewModel.spots[realIndex].isCompleted,
-                                                onToggle: {
-                                                    // 読み取り専用モードでは何もしない
-                                                },
-                                                onTap: {
-                                                    // 読み取り専用モードでは何もしない
-                                                },
-                                                isReadOnly: isReadOnly,
-                                                isFirstSpot: index == 0,
-                                                isLastSpot: index == dayFilteredSpots.count - 1,
-                                                previousDepartureTime: index > 0 ? dayFilteredSpots[index - 1].departureTime : nil,
-                                                onEditTransport: {
-                                                    // 読み取り専用モードでは何もしない
-                                                }
-                                            )
-                                        } else {
-                                            NavigationLink(destination: SpotDetailPageView(
-                                                spot: $viewModel.spots[realIndex],
-                                                spots: $viewModel.spots,
-                                                startTime: startTime,
-                                                savePlanProgress: savePlanProgress
-                                            )) {
-                                                AnimeStyleSpotCard(
-                                                    spot: viewModel.spots[realIndex],
-                                                    isCompleted: viewModel.spots[realIndex].isCompleted,
-                                                    onToggle: {
-                                                        withAnimation(.spring()) {
-                                                            viewModel.spots[realIndex].isCompleted.toggle()
-                                                            if viewModel.spots[realIndex].isCompleted {
-                                                                newlyCompletedSpots.insert(viewModel.spots[realIndex].id)
-                                                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                                                    newlyCompletedSpots.remove(viewModel.spots[realIndex].id)
-                                                                }
-                                                            }
-                                                            
-                                                            // 全てのスポットが完了したかチェック
-                                                            if allSpotsCompleted {
-                                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                                                    showCompletionPopup = true
-                                                                }
-                                                            }
-                                                        }
-                                                    },
-                                            onTap: {
-                                                // NavigationLinkを使用するため、このonTapは使用しない
-                                            },
-                                            isReadOnly: isReadOnly,
-                                            isFirstSpot: index == 0,
-                                            isLastSpot: index == dayFilteredSpots.count - 1,
-                                            previousDepartureTime: index > 0 ? dayFilteredSpots[index - 1].departureTime : nil,
-                                            onEditTransport: {
-                                                selectedSpotForTransport = viewModel.spots[realIndex]
-                                                showAddTransportSheet = true
-                                            }
-                                        )
-                                    }
-                                    .buttonStyle(PlainButtonStyle())
-                                    }
-                                }
-                            }
-                        }
-                        .padding(.top, 16)
-                        .padding(.bottom, 100)
+                        spotListContent
                     }
-                }
                 .background(Color.white)
                 
                 // 下部のアクションボタン
@@ -432,9 +447,36 @@ struct VisitGameScreen: View {
                 }
             }
             .background(Color(.systemBackground))
-            }
         }
         .navigationBarHidden(true)
+        .overlay(
+            // ローディングオーバーレイ
+            Group {
+                if isLoadingSpotDetail {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .edgesIgnoringSafeArea(.all)
+                        
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+                            
+                            Text(NSLocalizedString("loading", comment: "Loading..."))
+                                .foregroundColor(.white)
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .padding(32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.black.opacity(0.8))
+                        )
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: isLoadingSpotDetail)
+                }
+            }
+        )
         .sheet(isPresented: $showSpotEditSheet) {
             if let selectedSpot = selectedSpotForEdit,
                let spotIndex = viewModel.spots.firstIndex(where: { $0.id == selectedSpot.id }) {
@@ -487,6 +529,19 @@ struct VisitGameScreen: View {
                     savePlanProgress()
                 }
             )
+        }
+        .sheet(isPresented: $showingDetail) {
+            if let spot = selectedSpot,
+               let spotIndex = viewModel.spots.firstIndex(where: { $0.id == spot.id }) {
+                NavigationView {
+                    SpotDetailPageView(
+                        spot: $viewModel.spots[spotIndex],
+                        spots: $viewModel.spots,
+                        startTime: startTime,
+                        savePlanProgress: savePlanProgress
+                    )
+                }
+            }
         }
         .sheet(isPresented: $showAddTransportSheet) {
             if let spot = selectedSpotForTransport,
@@ -1345,16 +1400,31 @@ struct AnimeStyleSpotCard: View {
                     Spacer()
                     
                     // 完了ボタン
-                    Button(action: onToggle) {
+                    Button(action: {
+                        if !isReadOnly {
+                            onToggle()
+                        }
+                    }) {
                         Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                             .font(.system(size: 24))
                             .foregroundColor(isCompleted ? .green : .gray)
                     }
+                    .buttonStyle(BorderlessButtonStyle())
                     .disabled(isReadOnly)
-                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
+                .background(Color.white.opacity(0.001)) // タップ可能な領域を明確にする
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if !isReadOnly {
+                        // タップ時の即座のフィードバック
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                        
+                        onTap()
+                    }
+                }
                 
                 // 交通機関情報（次のスポットがある場合）
                 if !isLastSpot {
@@ -1407,7 +1477,7 @@ struct AnimeStyleSpotCard: View {
                                     .fill(Color.orange.opacity(0.05))
                             )
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(BorderlessButtonStyle())
                         .disabled(isReadOnly)
                         .padding(.horizontal, 12)
                         .padding(.top, -4)

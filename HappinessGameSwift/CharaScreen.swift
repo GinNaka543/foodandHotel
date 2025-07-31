@@ -1316,12 +1316,8 @@ struct CharacterDetailView: View {
                                         let fileName = "icon_\(UUID().uuidString).png"
                                         let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
                                         
-                                        // 古い画像ファイルを削除
-                                        if let oldPath = currentCharacter.imageIdentifier {
-                                            // キャッシュをクリア
-                                            ImageCache.shared.removeImage(for: oldPath)
-                                            try? FileManager.default.removeItem(atPath: oldPath)
-                                        }
+                                        // 古い画像ファイルの削除はupdateCharacterに任せる
+                                        print("🔄 [CharaScreen-DetailView] Icon will be updated from \(currentCharacter.imageIdentifier ?? "nil") to \(imagePath ?? "nil")")
                                         
                                         // 最新のデータを取得
                                         if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
@@ -1498,6 +1494,7 @@ struct CharacterDetailView: View {
                                 // 最新のデータを取得
                                 if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
                                     var updatedCharacter = latestCharacter
+                                    print("🔄 [CharaScreen-MainIcon] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
                                     updatedCharacter.imageIdentifier = savedPath
                                     // backgroundImagePathは最新のデータから保持される
                                     characterManager.updateCharacter(updatedCharacter)
@@ -2036,8 +2033,11 @@ struct AboutView: View {
                                     let fileName = "character_\(characters[characterIndex ?? 0].id)_\(Date().timeIntervalSince1970).jpg"
                                     if let savedPath = saveImageToDocuments(image, fileName: fileName),
                                        let idx = characterIndex {
-                                        characters[idx].imageIdentifier = savedPath
-                                        characterManager.updateCharacter(characters[idx])
+                                        var updatedCharacter = characters[idx]
+                                        print("🔄 [CharaScreen-IconSheet] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
+                                        updatedCharacter.imageIdentifier = savedPath
+                                        characters[idx] = updatedCharacter
+                                        characterManager.updateCharacter(updatedCharacter)
                                     }
                                 }
                             }
@@ -2211,13 +2211,13 @@ struct AboutView: View {
         if let savedPath = saveImageToDocuments(iconImage, fileName: fileName) {
             var updatedCharacter = characters[idx]
             
-            // 古いアイコンを削除
-            if let oldPath = updatedCharacter.imageIdentifier {
-                try? FileManager.default.removeItem(atPath: oldPath)
-            }
+            // 古いアイコンの削除はupdateCharacterに任せる
+            // （ここで削除すると、updateCharacter内の処理が動かない）
             
             // 新しいアイコンパスを設定
             updatedCharacter.imageIdentifier = savedPath
+            
+            print("🔄 [CharaScreen] Updating character icon from \(characters[idx].imageIdentifier ?? "nil") to \(savedPath)")
             
             characters[idx] = updatedCharacter
             characterManager.updateCharacter(updatedCharacter)
@@ -3352,10 +3352,8 @@ struct CharacterIconAdjustmentView: View {
                            let uiImage = UIImage(data: data) {
                             let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
                             if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
-                                // 古い画像ファイルを削除
-                                if let oldPath = character.imageIdentifier {
-                                    try? FileManager.default.removeItem(atPath: oldPath)
-                                }
+                                // 古い画像ファイルの削除はupdateCharacterに任せる
+                                print("🔄 [CharaScreen-EditIcon] Icon will be updated from \(character.imageIdentifier ?? "nil") to \(savedPath)")
                                 
                                 // キャラクターを更新
                                 character.imageIdentifier = savedPath

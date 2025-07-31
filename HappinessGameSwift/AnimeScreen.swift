@@ -88,20 +88,22 @@ class AnimeManager: ObservableObject {
         if let idx = animes.firstIndex(where: { $0.id == updatedAnime.id }) {
             let oldAnime = animes[idx]
             
-            // Delete old icon if it's different from the new one
-            if let oldImagePath = oldAnime.imageIdentifier,
-               let newImagePath = updatedAnime.imageIdentifier,
-               oldImagePath != newImagePath {
-                deleteAnimeImage(at: oldImagePath)
-                print("✅ [AnimeManager] Deleted old icon: \(oldImagePath)")
+            // Delete old icon if it's different from the new one or removed
+            if let oldImagePath = oldAnime.imageIdentifier {
+                if updatedAnime.imageIdentifier == nil ||
+                   (updatedAnime.imageIdentifier != nil && oldImagePath != updatedAnime.imageIdentifier) {
+                    deleteAnimeImage(at: oldImagePath)
+                    print("✅ [AnimeManager] Deleted old icon: \(oldImagePath)")
+                }
             }
             
-            // Delete old background if it's different from the new one
-            if let oldBgPath = oldAnime.backgroundImagePath,
-               let newBgPath = updatedAnime.backgroundImagePath,
-               oldBgPath != newBgPath {
-                deleteAnimeImage(at: oldBgPath)
-                print("✅ [AnimeManager] Deleted old background: \(oldBgPath)")
+            // Delete old background if it's different from the new one or removed
+            if let oldBgPath = oldAnime.backgroundImagePath {
+                if updatedAnime.backgroundImagePath == nil ||
+                   (updatedAnime.backgroundImagePath != nil && oldBgPath != updatedAnime.backgroundImagePath) {
+                    deleteAnimeImage(at: oldBgPath)
+                    print("✅ [AnimeManager] Deleted old background: \(oldBgPath)")
+                }
             }
             
             animes[idx] = updatedAnime
@@ -3133,12 +3135,7 @@ struct AnimeVideoScreen: View {
                     title: Text(NSLocalizedString("delete_video_confirm_title", comment: "")),
                     message: Text(NSLocalizedString("delete_video_confirm_message", comment: "")),
                     primaryButton: .destructive(Text(NSLocalizedString("delete", comment: "Delete"))) {
-                        if let idx = videos.firstIndex(where: { $0.id == videoId }) {
-                            videos.remove(at: idx)
-                            updateAlbumsAfterVideoDeletion(deletedVideoId: videoId)
-                            saveVideosToUserDefaults()
-                            saveVideoAlbumsToUserDefaults()
-                        }
+                        deleteVideo(id: videoId)
                     },
                     secondaryButton: .cancel(Text(NSLocalizedString("cancel", comment: "Cancel")))
                 )
@@ -3200,19 +3197,8 @@ struct AnimeVideoScreen: View {
                 character: nil,
                 anime: anime,
                 onVideoDeleted: { deletedVideo in
-                    // 動画リストから削除
-                    if let idx = videos.firstIndex(where: { $0.id == deletedVideo.id }) {
-                        videos.remove(at: idx)
-                        
-                        // Albumタブの動画リストも更新
-                        updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
-                        
-                        saveVideosToUserDefaults()
-                        saveVideoAlbumsToUserDefaults()
-                        
-                        // 動画が削除されたことを通知
-                        NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
-                    }
+                    // deleteVideo関数を使用してファイルも削除
+                    deleteVideo(id: deletedVideo.id)
                 },
                 onAlbumDeleted: {
                     // アルバム全体を削除
@@ -3236,15 +3222,7 @@ struct AnimeVideoScreen: View {
                     }
                 },
                 onDelete: {
-                    if let idx = videos.firstIndex(where: { $0.id == video.id }) {
-                        videos.remove(at: idx)
-                        updateAlbumsAfterVideoDeletion(deletedVideoId: video.id)
-                        saveVideosToUserDefaults()
-                        saveVideoAlbumsToUserDefaults()
-                        
-                        // 動画が削除されたことを通知
-                        NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
-                    }
+                    deleteVideo(id: video.id)
                     selectedVideo = nil
                 },
                 onThumbnailUpdate: { newThumbnailData in
@@ -3365,11 +3343,12 @@ struct AnimeVideoScreen: View {
             // 動画が削除されたことを通知
             NotificationCenter.default.post(name: Notification.Name("VideoDeleted"), object: nil)
             
+            // DISABLED: 自動クリーンアップは無効化中
             // 削除後すぐにクリーンアップを実行
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                print("🧹 [AnimeScreen] Running cleanup after video deletion")
-                MediaCleanupManager.shared.cleanupOrphanedMediaFiles()
-            }
+            // DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            //     print("🧹 [AnimeScreen] Running cleanup after video deletion")
+            //     MediaCleanupManager.shared.cleanupOrphanedMediaFiles()
+            // }
         }
     }
     
@@ -3581,12 +3560,8 @@ struct AnimeVideoScreen: View {
                 character: nil,
                 anime: anime,
                 onVideoDeleted: { deletedVideo in
-                    if let idx = self.videos.firstIndex(where: { $0.id == deletedVideo.id }) {
-                        self.videos.remove(at: idx)
-                        updateAlbumsAfterVideoDeletion(deletedVideoId: deletedVideo.id)
-                        saveVideosToUserDefaults()
-                        saveVideoAlbumsToUserDefaults()
-                    }
+                    // deleteVideo関数を使用してファイルも削除
+                    deleteVideo(id: deletedVideo.id)
                 },
                 onAlbumDeleted: {
                     // アルバム全体を削除

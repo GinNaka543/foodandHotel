@@ -133,20 +133,25 @@ class CharacterManager: ObservableObject {
         if let index = characters.firstIndex(where: { $0.id == character.id }) {
             let oldCharacter = characters[index]
             
-            // Delete old icon if it's different from the new one
-            if let oldImagePath = oldCharacter.imageIdentifier,
-               let newImagePath = character.imageIdentifier,
-               oldImagePath != newImagePath {
-                deleteImageFromPath(oldImagePath)
-                print("✅ [CharacterManager] Deleted old icon: \(oldImagePath)")
+            // Delete old icon if it's different from the new one or removed
+            if let oldImagePath = oldCharacter.imageIdentifier {
+                if character.imageIdentifier == nil || 
+                   (character.imageIdentifier != nil && oldImagePath != character.imageIdentifier) {
+                    print("🔄 [CharacterManager] Icon change detected:")
+                    print("  - Old: \(oldImagePath)")
+                    print("  - New: \(character.imageIdentifier ?? "nil")")
+                    deleteImageFromPath(oldImagePath)
+                    print("✅ [CharacterManager] Deleted old icon: \(oldImagePath)")
+                }
             }
             
-            // Delete old background if it's different from the new one
-            if let oldBgPath = oldCharacter.backgroundImagePath,
-               let newBgPath = character.backgroundImagePath,
-               oldBgPath != newBgPath {
-                deleteImageFromPath(oldBgPath)
-                print("✅ [CharacterManager] Deleted old background: \(oldBgPath)")
+            // Delete old background if it's different from the new one or removed
+            if let oldBgPath = oldCharacter.backgroundImagePath {
+                if character.backgroundImagePath == nil ||
+                   (character.backgroundImagePath != nil && oldBgPath != character.backgroundImagePath) {
+                    deleteImageFromPath(oldBgPath)
+                    print("✅ [CharacterManager] Deleted old background: \(oldBgPath)")
+                }
             }
             
             characters[index] = character

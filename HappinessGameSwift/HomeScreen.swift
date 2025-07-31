@@ -735,8 +735,8 @@ struct ScheduleItemRow: View {
     
     private func getMonthDay(from date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "M月"
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateFormat = DateFormatter.dateFormat(fromTemplate: "MMM", options: 0, locale: Locale.current)
+        formatter.locale = Locale.current
         return formatter.string(from: date)
     }
     
@@ -749,7 +749,7 @@ struct ScheduleItemRow: View {
     private func getWeekday(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "E"
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.locale = Locale.current
         return formatter.string(from: date)
     }
 }
@@ -913,8 +913,8 @@ struct ScheduleCalendarView: View {
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy年M月"
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateFormat = DateFormatter.dateFormat(fromTemplate: "yyyyMMMM", options: 0, locale: Locale.current)
+        formatter.locale = Locale.current
         return formatter
     }()
     
@@ -1172,11 +1172,13 @@ struct DayScheduleDetailView: View {
     let animeManager: AnimeManager
     let deleteAction: (ScheduleItem) -> Void
     @Environment(\.dismiss) var dismiss
+    @State private var showingAddSchedule = false
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "M月d日(E)"
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.locale = Locale.current
         return formatter
     }()
     
@@ -1184,6 +1186,23 @@ struct DayScheduleDetailView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
+                    // Add anime button
+                    Button(action: {
+                        showingAddSchedule = true
+                    }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20))
+                            Text(NSLocalizedString("add_anime", comment: "Add anime"))
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.purple)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.purple.opacity(0.1))
+                        .cornerRadius(10)
+                    }
+                    
                     ForEach(scheduleItems) { item in
                         ScheduleItemRow(item: item) {
                             deleteAction(item)
@@ -1205,6 +1224,30 @@ struct DayScheduleDetailView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showingAddSchedule) {
+                AddScheduleSheetForDate(
+                    animeManager: animeManager,
+                    selectedDate: date
+                ) { anime, episode, note in
+                    // Create and save new schedule item
+                    let newItem = ScheduleItem(
+                        date: date,
+                        animeId: anime.id.uuidString,
+                        animeTitle: anime.title,
+                        episode: episode,
+                        note: note
+                    )
+                    
+                    // Post notification to add the item
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("AddScheduleItem"),
+                        object: nil,
+                        userInfo: ["item": newItem]
+                    )
+                    
+                    showingAddSchedule = false
+                }
+            }
         }
     }
 }
@@ -1223,8 +1266,9 @@ struct AddScheduleSheetForDate: View {
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateFormat = "M月d日(E)"
-        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        formatter.locale = Locale.current
         return formatter
     }()
     

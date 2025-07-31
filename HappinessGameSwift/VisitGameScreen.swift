@@ -1224,7 +1224,7 @@ struct AnimeStyleSpotCard: View {
                 if !isFirstSpot {
                     Rectangle()
                         .fill(isCompleted ? Color.blue : Color.gray.opacity(0.3))
-                        .frame(width: 3, height: 30)
+                        .frame(width: 3, height: 16)
                 }
                 
                 // 円形のマーカー
@@ -1242,13 +1242,13 @@ struct AnimeStyleSpotCard: View {
                     Rectangle()
                         .fill(Color.gray.opacity(0.3))
                         .frame(width: 3)
-                        .frame(height: 40)
+                        .frame(height: spot.transportToNext != nil ? 40 : 20)
                 }
             }
             .frame(width: 40)
             
             // メインコンテンツ
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 0) {
                 // 時刻表示
                 HStack(spacing: 4) {
                     if let arrivalTime = spot.arrivalTime {
@@ -1272,6 +1272,7 @@ struct AnimeStyleSpotCard: View {
                             .foregroundColor(.gray.opacity(0.5))
                     }
                 }
+                .padding(.bottom, 2)
                 
                 // スポット情報カード
                 HStack(spacing: 12) {
@@ -1352,7 +1353,8 @@ struct AnimeStyleSpotCard: View {
                     .disabled(isReadOnly)
                     .buttonStyle(PlainButtonStyle())
                 }
-                .padding(12)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 
                 // 交通機関情報（次のスポットがある場合）
                 if !isLastSpot {
@@ -1398,18 +1400,18 @@ struct AnimeStyleSpotCard: View {
                                         .foregroundColor(.orange.opacity(0.6))
                                 }
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(isReadOnly ? Color.clear : Color.orange.opacity(0.05))
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color.orange.opacity(0.05))
                             )
                         }
                         .buttonStyle(PlainButtonStyle())
                         .disabled(isReadOnly)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 4)
-                        .padding(.bottom, 0)
+                        .padding(.horizontal, 12)
+                        .padding(.top, -4)
+                        .padding(.bottom, 4)
                     } else if !isReadOnly {
                         // 交通手段が未設定の場合の追加ボタン
                         Button(action: {
@@ -1430,14 +1432,15 @@ struct AnimeStyleSpotCard: View {
                             )
                         }
                         .padding(.leading, 30)
-                        .padding(.top, 4)
-                        .padding(.bottom, 0)
+                        .padding(.top, -4)
+                        .padding(.bottom, 4)
                     }
                 }
             }
             .padding(.trailing, 16)
         }
         .padding(.leading, 16)
+        .padding(.vertical, 0)
     }
 }
 

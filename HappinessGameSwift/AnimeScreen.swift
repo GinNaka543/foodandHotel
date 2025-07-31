@@ -4653,6 +4653,9 @@ struct AnimeAboutView: View {
         animes[idx] = updatedAnime
         animeManager.updateAnime(updatedAnime)
         anime = updatedAnime
+        
+        // Delete the actual soundtrack files from disk
+        SoundtrackStorage.shared.deleteSoundtrack(id: soundtrack.id.uuidString)
     }
 }
 

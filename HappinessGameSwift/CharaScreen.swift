@@ -2237,6 +2237,9 @@ struct AboutView: View {
         updatedCharacter.soundtracks = soundtracks
         characters[idx] = updatedCharacter
         characterManager.updateCharacter(updatedCharacter)
+        
+        // Delete the actual soundtrack files from disk
+        SoundtrackStorage.shared.deleteSoundtrack(id: soundtrack.id.uuidString)
     }
 }
 

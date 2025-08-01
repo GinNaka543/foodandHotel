@@ -218,20 +218,21 @@ struct ArtworkPlayerScreen: View {
                                     Spacer()
                                     HStack {
                                         Spacer()
-                                        Button(action: {
+                                        // Pixiv link button using onTapGesture for iPad compatibility
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "link")
+                                                .font(.caption)
+                                            Text("Pixiv")
+                                                .font(.caption)
+                                        }
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(Color.black.opacity(0.7))
+                                        .cornerRadius(8)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
                                             showPixivRedirect = true
-                                        }) {
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "link")
-                                                    .font(.caption)
-                                                Text("Pixiv")
-                                                    .font(.caption)
-                                            }
-                                            .foregroundColor(.white)
-                                            .padding(.horizontal, 8)
-                                            .padding(.vertical, 4)
-                                            .background(Color.black.opacity(0.7))
-                                            .cornerRadius(8)
                                         }
                                         .padding(.trailing, 12)
                                         .padding(.bottom, 8)
@@ -278,9 +279,8 @@ struct ArtworkPlayerScreen: View {
                                             if idx > 0 {
                                                 Spacer().frame(height: 15.9)
                                             }
-                                            Button(action: {
-                                                selectedArtwork = relatedArtwork
-                                            }) {
+                                            // Using onTapGesture for iPad compatibility
+                                            VStack(alignment: .leading, spacing: 8) {
                                                 VStack(alignment: .leading, spacing: 8) {
                                                     // サムネイル
                                                     ZStack {
@@ -357,7 +357,10 @@ struct ArtworkPlayerScreen: View {
                                                     .padding(.horizontal, 16)
                                                 }
                                             }
-                                            .buttonStyle(PlainButtonStyle())
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                selectedArtwork = relatedArtwork
+                                            }
                                         }
                                 }
                                 .padding(.bottom, 100) // 戻るボタンのためのスペースを確保
@@ -387,17 +390,18 @@ struct ArtworkPlayerScreen: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        Button(action: {
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            Text(NSLocalizedString("back", comment: "Back"))
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(Color.black.opacity(0.8))
-                                .cornerRadius(20)
-                        }
+                        // Back button using onTapGesture for iPad compatibility
+                        Text(NSLocalizedString("back", comment: "Back"))
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.8))
+                            .cornerRadius(20)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                presentationMode.wrappedValue.dismiss()
+                            }
                         .padding(.trailing, 24)
                         .padding(.bottom, 24)
                     }
@@ -604,15 +608,18 @@ struct FullScreenArtworkView: View {
             VStack {
                 HStack {
                     Spacer()
-                    Button(action: { onDismiss() }) {
-                        Text(NSLocalizedString("back", comment: "Back"))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(Color.black.opacity(0.8))
-                            .cornerRadius(20)
-                    }
+                    // Back button in fullscreen using onTapGesture for iPad compatibility
+                    Text(NSLocalizedString("back", comment: "Back"))
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(20)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            onDismiss()
+                        }
                     .padding(.trailing, 24)
                     .padding(.top, 24)
                 }
@@ -724,32 +731,31 @@ private struct ArtworkInfoView: View {
                 
                 Spacer(minLength: 0)
                 
-                Button(action: {
-                    showMenuSheet()
-                }) {
-                    Text(NSLocalizedString("edit", comment: "Edit"))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(20)
-                }
-                .buttonStyle(PlainButtonStyle())
+                // Edit button using onTapGesture for iPad compatibility
+                Text(NSLocalizedString("edit", comment: "Edit"))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(20)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showMenuSheet()
+                    }
                 
-                // Fullscreen button
-                Button(action: {
-                    showFullscreen()
-                }) {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 18))
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.gray.opacity(0.2))
-                        .cornerRadius(20)
-                }
-                .buttonStyle(PlainButtonStyle())
+                // Fullscreen button using onTapGesture for iPad compatibility
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 18))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(20)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showFullscreen()
+                    }
             }
             
         }

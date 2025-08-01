@@ -153,7 +153,7 @@ struct ArtworkScreen: View {
                 if let imageIdentifier = currentCharacter.imageIdentifier {
                     OptimizedFileImage(
                         path: imageIdentifier,
-                        targetSize: CGSize(width: bannerWidth, height: bannerHeight)
+                        targetSize: CGSize(width: bannerWidth * UIScreen.main.scale, height: bannerHeight * UIScreen.main.scale * 2)
                     )
                     .aspectRatio(contentMode: .fill)
                     .frame(width: bannerWidth, height: bannerHeight)

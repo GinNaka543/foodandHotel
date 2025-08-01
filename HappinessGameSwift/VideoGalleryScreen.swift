@@ -196,7 +196,7 @@ struct VideoGalleryScreen: View {
                     
                     OptimizedFileImage(
                         path: imageIdentifier,
-                        targetSize: CGSize(width: UIScreen.main.bounds.width, height: 60)
+                        targetSize: CGSize(width: UIScreen.main.bounds.width * UIScreen.main.scale, height: 60 * UIScreen.main.scale * 2)
                     )
                     .aspectRatio(contentMode: .fill)
                     .frame(width: (UIScreen.main.bounds.width - 32) * CGFloat(latestCharacter.iconScale), 
@@ -217,6 +217,7 @@ struct VideoGalleryScreen: View {
         .onTapGesture {
             print("🔍 [VideoGallery] Banner tapped - Current scale: \(currentCharacter.iconScale), offsetX: \(currentCharacter.iconOffsetX), offsetY: \(currentCharacter.iconOffsetY)")
             print("🔍 [VideoGallery] Latest character scale: \(characterManager.characters.first(where: { $0.id == character.id })?.iconScale ?? -1)")
+            showIconAdjustment = true
         }
     }
     
@@ -841,10 +842,6 @@ struct VideoGalleryScreen: View {
                 VStack(spacing: 0) {
                     // Banner (no header)
                     bannerView
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            showIconAdjustment = true
-                        }
                         .id("\(currentCharacter.iconScale)_\(currentCharacter.iconOffsetX)_\(currentCharacter.iconOffsetY)") // 追加：変更を反映
                     
                     // Profile section

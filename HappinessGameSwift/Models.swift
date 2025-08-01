@@ -101,7 +101,7 @@ class CharacterManager: ObservableObject {
     }
     
     @objc private func onUserDataSynced() {
-        print("📱 [CharacterManager] User data synced notification received")
+        // print("📱 [CharacterManager] User data synced notification received")
         loadCharacters()
     }
     
@@ -137,11 +137,11 @@ class CharacterManager: ObservableObject {
             if let oldImagePath = oldCharacter.imageIdentifier {
                 if character.imageIdentifier == nil || 
                    (character.imageIdentifier != nil && oldImagePath != character.imageIdentifier) {
-                    print("🔄 [CharacterManager] Icon change detected:")
+                    // print("🔄 [CharacterManager] Icon change detected:")
                     print("  - Old: \(oldImagePath)")
                     print("  - New: \(character.imageIdentifier ?? "nil")")
                     deleteImageFromPath(oldImagePath)
-                    print("✅ [CharacterManager] Deleted old icon: \(oldImagePath)")
+                    // print("✅ [CharacterManager] Deleted old icon: \(oldImagePath)")
                 }
             }
             
@@ -150,7 +150,7 @@ class CharacterManager: ObservableObject {
                 if character.backgroundImagePath == nil ||
                    (character.backgroundImagePath != nil && oldBgPath != character.backgroundImagePath) {
                     deleteImageFromPath(oldBgPath)
-                    print("✅ [CharacterManager] Deleted old background: \(oldBgPath)")
+                    // print("✅ [CharacterManager] Deleted old background: \(oldBgPath)")
                 }
             }
             
@@ -168,11 +168,11 @@ class CharacterManager: ObservableObject {
         // Delete associated images
         if let imagePath = character.imageIdentifier {
             deleteImageFromPath(imagePath)
-            print("✅ [CharacterManager] Deleted character icon: \(imagePath)")
+            // print("✅ [CharacterManager] Deleted character icon: \(imagePath)")
         }
         if let bgPath = character.backgroundImagePath {
             deleteImageFromPath(bgPath)
-            print("✅ [CharacterManager] Deleted character background: \(bgPath)")
+            // print("✅ [CharacterManager] Deleted character background: \(bgPath)")
         }
         
         characters.removeAll { $0.id == character.id }
@@ -261,16 +261,16 @@ func deleteImageFromPath(_ path: String) {
     if FileManager.default.fileExists(atPath: imagePath.path) {
         do {
             try FileManager.default.removeItem(at: imagePath)
-            print("🗑️ [ImageDelete] Successfully deleted image: \(path)")
+            // print("🗑️ [ImageDelete] Successfully deleted image: \(path)")
             
             // If the path includes AnirecoImages, log it specifically
             if path.contains("AnirecoImages") {
-                print("🗑️ [ImageDelete] Deleted AnirecoImages file: \(imagePath.lastPathComponent)")
+                // print("🗑️ [ImageDelete] Deleted AnirecoImages file: \(imagePath.lastPathComponent)")
             }
         } catch {
-            print("❌ [ImageDelete] Failed to delete image \(path): \(error)")
+            // print("❌ [ImageDelete] Failed to delete image \(path): \(error)")
         }
     } else {
-        print("⚠️ [ImageDelete] Image not found for deletion: \(path)")
+        // print("⚠️ [ImageDelete] Image not found for deletion: \(path)")
     }
 }

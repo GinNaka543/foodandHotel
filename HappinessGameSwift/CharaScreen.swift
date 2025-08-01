@@ -46,9 +46,9 @@ class CharacterManager: ObservableObject {
                 FirebaseManager.shared.saveUserProfile(userProfile) { result in
                     switch result {
                     case .success():
-                        print("✅ User profile saved to Firebase")
-                    case .failure(let error):
-                        print("❌ Failed to save user profile: \(error)")
+                        break // print("✅ User profile saved to Firebase")
+                    case .failure(_):
+                        break // print("❌ Failed to save user profile: \(error)")
                     }
                 }
             } else {
@@ -60,14 +60,14 @@ class CharacterManager: ObservableObject {
                 // } else {
                 //     print("⚠️ No user ID found - characters saved locally only")
                 // }
-                print("✅ Characters saved locally only (Firebase sync disabled)")
+                // print("✅ Characters saved locally only (Firebase sync disabled)")
                 print("📝 Characters saved: \(characters.count) items")
                 for (index, character) in characters.enumerated() {
                     print("  \(index + 1). \(character.name) (ID: \(character.id))")
                 }
             }
         } else {
-            print("❌ Failed to encode characters")
+            // print("❌ Failed to encode characters")
         }
     }
     
@@ -456,7 +456,7 @@ struct CharaScreen: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDataUpdated"))) { _ in
             // 動画データが更新された時にバナーを更新
-            print("🔄 [CharaScreen] Received VideoDataUpdated notification - refreshing banner")
+            // print("🔄 [CharaScreen] Received VideoDataUpdated notification - refreshing banner")
             bannerVideo = nil  // 現在のバナーをクリア
             displayedVideoIds.removeAll()  // 表示履歴をリセット
             allYouTubeVideos = []  // 既存の動画リストをクリア
@@ -509,17 +509,17 @@ struct CharaScreen: View {
     
     // バナービュー（簡素化版 - デバッグ用）
     private var bannerView: some View {
-        let _ = print("🎯 [CharaScreen] bannerView called. bannerVideo exists: \(bannerVideo != nil)")
+        // let _ = print("🎯 [CharaScreen] bannerView called. bannerVideo exists: \(bannerVideo != nil)")
         
         return Group {
             if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
-                let _ = print("🔍 [CharaScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
+                // let _ = print("🔍 [CharaScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
                 
                 VStack {
                     // First check for custom thumbnail data
                     if let thumbnailData = video.thumbnailData,
                        let thumbnailImage = UIImage(data: thumbnailData) {
-                        let _ = print("🖼️ [CharaScreen] Using custom thumbnail data")
+                        // let _ = print("🖼️ [CharaScreen] Using custom thumbnail data")
                         Image(uiImage: thumbnailImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -527,7 +527,7 @@ struct CharaScreen: View {
                             .clipped()
                             .id("\(video.id)_\(video.thumbnailData?.hashValue ?? 0)") // Force view refresh when thumbnail changes
                     } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
-                        let _ = print("🖼️ [CharaScreen] Using YouTube thumbnail: \(thumbnailURL)")
+                        // let _ = print("🖼️ [CharaScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
                             image
                                 .resizable()
@@ -546,7 +546,7 @@ struct CharaScreen: View {
                     } else {
                         // youtubeThumbnailURLが空の場合、URLから自動生成
                         let generatedThumbnailURL = getYouTubeThumbnailURLForBanner(from: youtubeURL)
-                        let _ = print("🎬 [CharaScreen] Generated thumbnail URL from video URL: \(generatedThumbnailURL)")
+                        // let _ = print("🎬 [CharaScreen] Generated thumbnail URL from video URL: \(generatedThumbnailURL)")
                         
                         AsyncImage(url: URL(string: generatedThumbnailURL)) { image in
                             image
@@ -657,39 +657,39 @@ struct CharaScreen: View {
     
     // YouTube動画を収集
     private func loadYouTubeVideos() {
-        print("🔍 [CharaScreen] Loading YouTube videos...")
-        print("🔍 [CharaScreen] Total characters available: \(characterManager.characters.count)")
+        // print("🔍 [CharaScreen] Loading YouTube videos...")
+        // print("🔍 [CharaScreen] Total characters available: \(characterManager.characters.count)")
         
         // UserDefaultsの全キーを確認
         let allKeys = UserDefaults.standard.dictionaryRepresentation().keys
         let videoKeys = allKeys.filter { $0.contains("video") }
-        print("🔍 [CharaScreen] All video-related keys in UserDefaults: \(videoKeys)")
+        // print("🔍 [CharaScreen] All video-related keys in UserDefaults: \(videoKeys)")
         
         allYouTubeVideos = []
         for character in characterManager.characters {
             // VideoStorage.swiftを使用して動画を取得
             let videos = VideoStorage.shared.loadVideos(for: character.id.uuidString)
-            print("🔍 [CharaScreen] VideoStorage returned \(videos.count) videos for character: \(character.name)")
+            // print("🔍 [CharaScreen] VideoStorage returned \(videos.count) videos for character: \(character.name)")
             if !videos.isEmpty {
-                print("🔍 [CharaScreen] Found \(videos.count) total videos for character: \(character.name)")
+                // print("🔍 [CharaScreen] Found \(videos.count) total videos for character: \(character.name)")
                 // YouTube URLを持つ動画のみをフィルタリング
                 let youtubeVideos = videos.filter { $0.youtubeURL != nil && !$0.youtubeURL!.isEmpty }
                 allYouTubeVideos.append(contentsOf: youtubeVideos)
-                print("🔍 [CharaScreen] Found \(youtubeVideos.count) YouTube videos for character: \(character.name)")
+                // print("🔍 [CharaScreen] Found \(youtubeVideos.count) YouTube videos for character: \(character.name)")
                 
                 // 個別の動画情報も出力
                 for video in videos {
                     if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                         print("🎥 [CharaScreen] YouTube video: \(video.title) - URL: \(youtubeURL)")
                     } else {
-                        print("📱 [CharaScreen] Local video: \(video.title)")
+                        // print("📱 [CharaScreen] Local video: \(video.title)")
                     }
                 }
             } else {
-                print("❌ [CharaScreen] No video data found for character: \(character.name)")
+                // print("❌ [CharaScreen] No video data found for character: \(character.name)")
             }
         }
-        print("🔍 [CharaScreen] Total YouTube videos found: \(allYouTubeVideos.count)")
+        // print("🔍 [CharaScreen] Total YouTube videos found: \(allYouTubeVideos.count)")
         
         // 初回のバナー動画を選択
         if !allYouTubeVideos.isEmpty {
@@ -1317,7 +1317,7 @@ struct CharacterDetailView: View {
                                         let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
                                         
                                         // 古い画像ファイルの削除はupdateCharacterに任せる
-                                        print("🔄 [CharaScreen-DetailView] Icon will be updated from \(currentCharacter.imageIdentifier ?? "nil") to \(imagePath ?? "nil")")
+                                        // print("🔄 [CharaScreen-DetailView] Icon will be updated from \(currentCharacter.imageIdentifier ?? "nil") to \(imagePath ?? "nil")")
                                         
                                         // 最新のデータを取得
                                         if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
@@ -1376,7 +1376,7 @@ struct CharacterDetailView: View {
             }
             .fullScreenCover(isPresented: $showVideo, onDismiss: {
                 // VideoGalleryScreenから戻った時に強制的にリフレッシュ
-                print("🔄 [CharacterDetailView] VideoGalleryScreen dismissed - force refreshing")
+                // print("🔄 [CharacterDetailView] VideoGalleryScreen dismissed - force refreshing")
                 bannerVideo = nil
                 allYouTubeVideos = []
                 displayedVideoIds.removeAll()
@@ -1458,7 +1458,7 @@ struct CharacterDetailView: View {
                 object: nil,
                 queue: .main
             ) { _ in
-                print("🔄 [CharacterDetailView] Received VideoDataUpdated notification")
+                // print("🔄 [CharacterDetailView] Received VideoDataUpdated notification")
                 // バナーを強制的にクリアしてから再読み込み
                 bannerVideo = nil
                 allYouTubeVideos = []
@@ -1494,7 +1494,7 @@ struct CharacterDetailView: View {
                                 // 最新のデータを取得
                                 if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
                                     var updatedCharacter = latestCharacter
-                                    print("🔄 [CharaScreen-MainIcon] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
+                                    // print("🔄 [CharaScreen-MainIcon] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
                                     updatedCharacter.imageIdentifier = savedPath
                                     // backgroundImagePathは最新のデータから保持される
                                     characterManager.updateCharacter(updatedCharacter)
@@ -1515,7 +1515,7 @@ struct CharacterDetailView: View {
     
     // MARK: - Banner Management Functions
     private func loadYouTubeVideosForDetail() {
-        print("🎬 [CharacterDetailView] Loading YouTube videos for banner")
+        // print("🎬 [CharacterDetailView] Loading YouTube videos for banner")
         
         // VideoStorage経由で動画を取得
         let videos = VideoStorage.shared.loadVideos(for: character.id.uuidString)
@@ -1524,7 +1524,7 @@ struct CharacterDetailView: View {
             !video.youtubeURL!.isEmpty
         }
         
-        print("🎬 [CharacterDetailView] Found \(allYouTubeVideos.count) YouTube videos")
+        // print("🎬 [CharacterDetailView] Found \(allYouTubeVideos.count) YouTube videos")
         
         // 最初のランダム動画を選択
         selectRandomYouTubeVideoForDetail()
@@ -1535,7 +1535,7 @@ struct CharacterDetailView: View {
     
     private func selectRandomYouTubeVideoForDetail() {
         guard !allYouTubeVideos.isEmpty else {
-            print("❌ [CharacterDetailView] No YouTube videos available")
+            // print("❌ [CharacterDetailView] No YouTube videos available")
             bannerVideo = nil
             return
         }
@@ -1548,12 +1548,12 @@ struct CharacterDetailView: View {
         if let randomVideo = availableVideos.randomElement() {
             bannerVideo = randomVideo
             displayedVideoIds.insert(randomVideo.id)
-            print("🎬 [CharacterDetailView] Selected random video: \(randomVideo.title)")
+            // print("🎬 [CharacterDetailView] Selected random video: \(randomVideo.title)")
             
             // 全動画を表示し終わったらリセット
             if displayedVideoIds.count >= allYouTubeVideos.count {
                 displayedVideoIds.removeAll()
-                print("🔄 [CharacterDetailView] Reset displayed videos list")
+                // print("🔄 [CharacterDetailView] Reset displayed videos list")
             }
         }
     }
@@ -1564,12 +1564,12 @@ struct CharacterDetailView: View {
         
         // 動画が2つ以上ある場合のみローテーション
         guard allYouTubeVideos.count > 1 else {
-            print("🔄 [CharacterDetailView] Not enough videos for rotation")
+            // print("🔄 [CharacterDetailView] Not enough videos for rotation")
             return
         }
         
         bannerTimer = Timer.scheduledTimer(withTimeInterval: 8.0, repeats: true) { _ in
-            print("🔄 [CharacterDetailView] Timer triggered - selecting next video")
+            // print("🔄 [CharacterDetailView] Timer triggered - selecting next video")
             selectRandomYouTubeVideoForDetail()
         }
         
@@ -2040,7 +2040,7 @@ struct AboutView: View {
                                     if let savedPath = saveImageToDocuments(image, fileName: fileName),
                                        let idx = characterIndex {
                                         var updatedCharacter = characters[idx]
-                                        print("🔄 [CharaScreen-IconSheet] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
+                                        // print("🔄 [CharaScreen-IconSheet] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
                                         updatedCharacter.imageIdentifier = savedPath
                                         characters[idx] = updatedCharacter
                                         characterManager.updateCharacter(updatedCharacter)
@@ -2234,7 +2234,7 @@ struct AboutView: View {
             // 新しいアイコンパスを設定
             updatedCharacter.imageIdentifier = savedPath
             
-            print("🔄 [CharaScreen] Updating character icon from \(characters[idx].imageIdentifier ?? "nil") to \(savedPath)")
+            // print("🔄 [CharaScreen] Updating character icon from \(characters[idx].imageIdentifier ?? "nil") to \(savedPath)")
             
             characters[idx] = updatedCharacter
             characterManager.updateCharacter(updatedCharacter)
@@ -3192,7 +3192,7 @@ struct EditTitleTagBackgroundView: View {
         print("🎥 [DEBUG] Extracted video ID: \(videoId)")
         
         if videoId.isEmpty {
-            print("❌ [ERROR] Failed to extract video ID from URL: \(youtubeURL)")
+            // print("❌ [ERROR] Failed to extract video ID from URL: \(youtubeURL)")
             return ""
         }
         
@@ -3211,7 +3211,7 @@ struct EditTitleTagBackgroundView: View {
     }
     
     private func extractVideoId(from url: String) -> String {
-        print("🔍 [DEBUG] Extracting video ID from: \(url)")
+        // print("🔍 [DEBUG] Extracting video ID from: \(url)")
         
         // 各種YouTube URLフォーマットに対応
         let patterns = [
@@ -3229,16 +3229,16 @@ struct EditTitleTagBackgroundView: View {
                     let videoIdRange = match.range(at: 1)
                     if let swiftRange = Range(videoIdRange, in: url) {
                         let videoId = String(url[swiftRange])
-                        print("✅ [DEBUG] Successfully extracted video ID: \(videoId)")
+                        // print("✅ [DEBUG] Successfully extracted video ID: \(videoId)")
                         return videoId
                     }
                 }
             } catch {
-                print("❌ [ERROR] Regex error for pattern \(pattern): \(error)")
+                // print("❌ [ERROR] Regex error for pattern \(pattern): \(error)")
             }
         }
         
-        print("❌ [ERROR] No video ID found in URL: \(url)")
+        // print("❌ [ERROR] No video ID found in URL: \(url)")
         return ""
     }
 }
@@ -3373,7 +3373,7 @@ struct CharacterIconAdjustmentView: View {
                             let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
                             if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
                                 // 古い画像ファイルの削除はupdateCharacterに任せる
-                                print("🔄 [CharaScreen-EditIcon] Icon will be updated from \(character.imageIdentifier ?? "nil") to \(savedPath)")
+                                // print("🔄 [CharaScreen-EditIcon] Icon will be updated from \(character.imageIdentifier ?? "nil") to \(savedPath)")
                                 
                                 // キャラクターを更新
                                 character.imageIdentifier = savedPath

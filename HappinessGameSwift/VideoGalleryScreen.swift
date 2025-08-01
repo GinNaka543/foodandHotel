@@ -215,8 +215,8 @@ struct VideoGalleryScreen: View {
         .cornerRadius(12)
         .padding(.horizontal, 16)
         .onTapGesture {
-            print("🔍 [VideoGallery] Banner tapped - Current scale: \(currentCharacter.iconScale), offsetX: \(currentCharacter.iconOffsetX), offsetY: \(currentCharacter.iconOffsetY)")
-            print("🔍 [VideoGallery] Latest character scale: \(characterManager.characters.first(where: { $0.id == character.id })?.iconScale ?? -1)")
+            // print("🔍 [VideoGallery] Banner tapped - Current scale: \(currentCharacter.iconScale), offsetX: \(currentCharacter.iconOffsetX), offsetY: \(currentCharacter.iconOffsetY)")
+            // print("🔍 [VideoGallery] Latest character scale: \(characterManager.characters.first(where: { $0.id == character.id })?.iconScale ?? -1)")
             showIconAdjustment = true
         }
     }
@@ -404,7 +404,7 @@ struct VideoGalleryScreen: View {
                         saveVideosToUserDefaults()
                         saveAlbumsToUserDefaults()
                         
-                        print("✅ [VideoGallery] Deleted video from album: \(deletedVideo.videoPath)")
+                        // print("✅ [VideoGallery] Deleted video from album: \(deletedVideo.videoPath)")
                     }
                 },
                 onAlbumDeleted: {
@@ -894,8 +894,8 @@ struct VideoGalleryScreen: View {
             }
         )
         .onAppear {
-            print("📱 [VideoGallery] onAppear called for character: \(character.name)")
-            print("📱 [VideoGallery] Character ID: \(character.id.uuidString)")
+            // print("📱 [VideoGallery] onAppear called for character: \(character.name)")
+            // print("📱 [VideoGallery] Character ID: \(character.id.uuidString)")
             loadVideos()
             loadAlbumsFromUserDefaults()
             setupBackgroundObserver()
@@ -908,23 +908,23 @@ struct VideoGalleryScreen: View {
             
             // Debug: Try to load directly if albums are empty
             if albums.isEmpty {
-                print("📱 [VideoGallery] Albums are empty after load, checking for data issues...")
+                // print("📱 [VideoGallery] Albums are empty after load, checking for data issues...")
                 
                 // Try to load and decode directly
                 if let data = UserDefaults.standard.data(forKey: expectedKey) {
                     do {
                         let decoded = try JSONDecoder().decode([Album].self, from: data)
-                        print("📱 [VideoGallery] Direct decode successful: \(decoded.count) albums")
-                        print("⚠️ [VideoGallery] loadAlbumsFromUserDefaults may have failed, using direct decode")
+                        // print("📱 [VideoGallery] Direct decode successful: \(decoded.count) albums")
+                        // print("⚠️ [VideoGallery] loadAlbumsFromUserDefaults may have failed, using direct decode")
                         albums = decoded
                     } catch {
-                        print("📱 [VideoGallery] Direct decode failed: \(error)")
+                        // print("📱 [VideoGallery] Direct decode failed: \(error)")
                     }
                 }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDataUpdated"))) { _ in
-            print("🔄 [VideoGallery] Received VideoDataUpdated notification - reloading data")
+            // print("🔄 [VideoGallery] Received VideoDataUpdated notification - reloading data")
             // ビデオデータを再読み込み
             loadVideos()
             loadAlbumsFromUserDefaults()
@@ -932,7 +932,7 @@ struct VideoGalleryScreen: View {
             refreshID = UUID()
         }
         .onDisappear {
-            print("📱 [VideoGallery] onDisappear - saving albums before view dismisses")
+            // print("📱 [VideoGallery] onDisappear - saving albums before view dismisses")
             saveAlbumsToUserDefaults()
             removeBackgroundObserver()
         }
@@ -1061,16 +1061,16 @@ struct VideoGalleryScreen: View {
                     let tagVideos = videos.filter { $0.tags.contains(where: { $0 == tag }) }
                     if !tagVideos.isEmpty {
                         let newAlbum = Album(tag: tag, videos: tagVideos)
-                        print("📱 [VideoGallery] Creating new album '\(tag)' with \(tagVideos.count) videos")
-                        print("📱 [VideoGallery] New album ID: \(newAlbum.id)")
+                        // print("📱 [VideoGallery] Creating new album '\(tag)' with \(tagVideos.count) videos")
+                        // print("📱 [VideoGallery] New album ID: \(newAlbum.id)")
                         albums.append(newAlbum)
-                        print("📱 [VideoGallery] Total albums after adding: \(albums.count)")
+                        // print("📱 [VideoGallery] Total albums after adding: \(albums.count)")
                         saveAlbumsToUserDefaults()
                     } else {
-                        print("📱 [VideoGallery] No videos found with tag '\(tag)'")
+                        // print("📱 [VideoGallery] No videos found with tag '\(tag)'")
                     }
                 } else {
-                    print("📱 [VideoGallery] Tag is empty, not creating album")
+                    // print("📱 [VideoGallery] Tag is empty, not creating album")
                 }
                 newTag = ""
                 activeSheet = nil
@@ -1600,10 +1600,10 @@ struct VideoGalleryScreen: View {
             resourceValues.isExcludedFromBackup = false
             try fileURL.setResourceValues(resourceValues)
             
-            print("✅ [VideoGallery] Saved video to: VideoAlbums/\(fileName)")
+            // print("✅ [VideoGallery] Saved video to: VideoAlbums/\(fileName)")
             return "VideoAlbums/\(fileName)"
         } catch {
-            print("❌ [VideoGallery] Failed to save video: \(error)")
+            // print("❌ [VideoGallery] Failed to save video: \(error)")
             return ""
         }
     }
@@ -1617,18 +1617,18 @@ struct VideoGalleryScreen: View {
     }
     
     private func saveAlbumsToUserDefaults() {
-        print("📱 [VideoGallery] Saving \(albums.count) albums for character: \(character.name) (ID: \(character.id.uuidString))")
+        // print("📱 [VideoGallery] Saving \(albums.count) albums for character: \(character.name) (ID: \(character.id.uuidString))")
         
         // Log album details before saving
         for album in albums {
-            print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
+            // print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
         }
         
         VideoStorage.shared.saveAlbums(for: character.id.uuidString, albums: albums)
     }
     
     private func loadAlbumsFromUserDefaults() {
-        print("📱 [VideoGallery] Loading albums for character: \(character.name) (ID: \(character.id.uuidString))")
+        // print("📱 [VideoGallery] Loading albums for character: \(character.name) (ID: \(character.id.uuidString))")
         
         // Debug print all album keys before loading
         VideoStorage.shared.debugPrintAllAlbumKeys()
@@ -1636,11 +1636,11 @@ struct VideoGalleryScreen: View {
         // Removed test album persistence to prevent interfering with actual data
         
         albums = VideoStorage.shared.loadAlbums(for: character.id.uuidString)
-        print("📱 [VideoGallery] Loaded \(albums.count) albums")
+        // print("📱 [VideoGallery] Loaded \(albums.count) albums")
         
         // Debug print loaded albums
         for album in albums {
-            print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
+            // print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
         }
     }
     
@@ -1648,7 +1648,7 @@ struct VideoGalleryScreen: View {
         if let idx = videos.firstIndex(where: { $0.id == id }) {
             let video = videos[idx]
             
-            print("🗑️ [VideoGallery] Starting video deletion:")
+            // print("🗑️ [VideoGallery] Starting video deletion:")
             print("  - Video: \(video.title)")
             print("  - YouTube URL: \(video.youtubeURL ?? "none")")
             print("  - Video Path: \(video.videoPath)")
@@ -1670,9 +1670,9 @@ struct VideoGalleryScreen: View {
             // ビデオデータが更新されたことを通知
             NotificationCenter.default.post(name: NSNotification.Name("VideoDataUpdated"), object: nil)
             
-            print("✅ [VideoGallery] Successfully deleted video")
+            // print("✅ [VideoGallery] Successfully deleted video")
         } else {
-            print("❌ [VideoGallery] Video not found for deletion: \(id)")
+            // print("❌ [VideoGallery] Video not found for deletion: \(id)")
         }
     }
     
@@ -1732,7 +1732,7 @@ struct VideoGalleryScreen: View {
             object: nil,
             queue: .main
         ) { _ in
-            print("📱 [VideoGallery] App entering background - saving albums")
+            // print("📱 [VideoGallery] App entering background - saving albums")
             saveAlbumsToUserDefaults()
         }
     }
@@ -1993,7 +1993,7 @@ struct VideoAlbumGridView: View {
             videos.remove(at: idx)
             onVideosChanged?()
             
-            print("✅ [VideoList] Deleted video and file: \(video.videoPath)")
+            // print("✅ [VideoList] Deleted video and file: \(video.videoPath)")
         }
     }
 }

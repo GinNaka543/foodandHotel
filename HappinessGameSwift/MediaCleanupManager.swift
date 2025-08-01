@@ -14,20 +14,20 @@ class MediaCleanupManager {
     // MARK: - Cleanup Orphaned Files
     
     func cleanupOrphanedMediaFiles() {
-        print("🧹 [MediaCleanup] Starting orphaned media files cleanup...")
+        // print("🧹 [MediaCleanup] Starting orphaned media files cleanup...")
         
         // TEMPORARILY DISABLED: Auto cleanup causing issues
         // Use manualCleanup() instead
-        print("⚠️ [MediaCleanup] Auto cleanup is disabled. Use manual cleanup instead.")
+        // print("⚠️ [MediaCleanup] Auto cleanup is disabled. Use manual cleanup instead.")
         return
         
         // Run cleanup in all modes, but with safety restrictions
-        print("🧹 [MediaCleanup] Running cleanup - limited to safe directories")
+        // print("🧹 [MediaCleanup] Running cleanup - limited to safe directories")
         
         // Log current date/time for debugging
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        print("🧹 [MediaCleanup] Cleanup started at: \(dateFormatter.string(from: Date()))")
+        // print("🧹 [MediaCleanup] Cleanup started at: \(dateFormatter.string(from: Date()))")
         
         let startTime = Date()
         var deletedFilesCount = 0
@@ -42,8 +42,8 @@ class MediaCleanupManager {
         // Find orphaned files (files that exist but are not referenced)
         let orphanedFiles = allMediaFiles.subtracting(referencedFiles)
         
-        print("📊 [MediaCleanup] Total media files: \(allMediaFiles.count)")
-        print("📊 [MediaCleanup] Referenced files: \(referencedFiles.count)")
+        // print("📊 [MediaCleanup] Total media files: \(allMediaFiles.count)")
+        // print("📊 [MediaCleanup] Referenced files: \(referencedFiles.count)")
         
         // Debug: Show some referenced files
         if !referencedFiles.isEmpty {
@@ -53,7 +53,7 @@ class MediaCleanupManager {
             }
         }
         
-        print("📊 [MediaCleanup] Orphaned files: \(orphanedFiles.count)")
+        // print("📊 [MediaCleanup] Orphaned files: \(orphanedFiles.count)")
         
         // Only delete files in safe directories
         let safeDirectoryPrefixes = ["VideoThumbnails/", "ArtworkThumbnails/", "Soundtracks/", "VideoAlbums/"]
@@ -65,7 +65,7 @@ class MediaCleanupManager {
             let isRootVideoFile = !filePath.contains("/") && filePath.hasSuffix(".mp4")
             
             if !isInSafeDirectory && !isRootVideoFile {
-                print("⚠️ [MediaCleanup] Skipping file not in safe directory: \(filePath)")
+                // print("⚠️ [MediaCleanup] Skipping file not in safe directory: \(filePath)")
                 continue
             }
             
@@ -83,7 +83,7 @@ class MediaCleanupManager {
                     
                     // Additional safety: Log large files but still delete them if orphaned
                     if fileSize > 50 * 1024 * 1024 {
-                        print("⚠️ [MediaCleanup] Large file (>50MB) will be deleted: \(filePath) - Size: \(formatBytes(fileSize))")
+                        // print("⚠️ [MediaCleanup] Large file (>50MB) will be deleted: \(filePath) - Size: \(formatBytes(fileSize))")
                     }
                     
                     // Delete the file
@@ -92,17 +92,17 @@ class MediaCleanupManager {
                     deletedFilesCount += 1
                     freedSpace += fileSize
                     
-                    print("🗑️ [MediaCleanup] Deleted orphaned file: \(filePath) (size: \(formatBytes(fileSize)))")
+                    // print("🗑️ [MediaCleanup] Deleted orphaned file: \(filePath) (size: \(formatBytes(fileSize)))")
                 } catch {
-                    print("❌ [MediaCleanup] Failed to delete file \(filePath): \(error)")
+                    // print("❌ [MediaCleanup] Failed to delete file \(filePath): \(error)")
                 }
             }
         }
         
         let duration = Date().timeIntervalSince(startTime)
-        print("✅ [MediaCleanup] Cleanup completed in \(String(format: "%.2f", duration)) seconds")
-        print("✅ [MediaCleanup] Deleted \(deletedFilesCount) orphaned files")
-        print("✅ [MediaCleanup] Freed \(formatBytes(freedSpace)) of space")
+        // print("✅ [MediaCleanup] Cleanup completed in \(String(format: "%.2f", duration)) seconds")
+        // print("✅ [MediaCleanup] Deleted \(deletedFilesCount) orphaned files")
+        // print("✅ [MediaCleanup] Freed \(formatBytes(freedSpace)) of space")
     }
     
     // MARK: - Helper Methods
@@ -112,7 +112,7 @@ class MediaCleanupManager {
         
         do {
             // First, list all files in Documents directory for debugging
-            print("🔍 [MediaCleanup] Scanning Documents directory...")
+            // print("🔍 [MediaCleanup] Scanning Documents directory...")
             let documentsContents = try FileManager.default.contentsOfDirectory(
                 at: documentsDirectory,
                 includingPropertiesForKeys: nil,
@@ -190,15 +190,15 @@ class MediaCleanupManager {
                         }
                     }
                     
-                    print("📊 [MediaCleanup] \(subdirectory): \(mediaFileCount) media files, \(nonMediaFileCount) non-media files")
+                    // print("📊 [MediaCleanup] \(subdirectory): \(mediaFileCount) media files, \(nonMediaFileCount) non-media files")
                 } else {
-                    print("⚠️ [MediaCleanup] Directory does not exist: \(subdirectory)")
+                    // print("⚠️ [MediaCleanup] Directory does not exist: \(subdirectory)")
                 }
             }
             
-            print("📊 [MediaCleanup] Found \(mediaFiles.count) total media files")
+            // print("📊 [MediaCleanup] Found \(mediaFiles.count) total media files")
         } catch {
-            print("❌ [MediaCleanup] Error scanning for media files: \(error)")
+            // print("❌ [MediaCleanup] Error scanning for media files: \(error)")
         }
         
         return mediaFiles
@@ -266,9 +266,9 @@ class MediaCleanupManager {
                     referencedFiles.insert(normalizedPath)
                     
                     // Debug log to see video paths
-                    print("🎬 [MediaCleanup] Referenced anime video: \(video.videoPath) -> normalized: \(normalizedPath)")
+                    // print("🎬 [MediaCleanup] Referenced anime video: \(video.videoPath) -> normalized: \(normalizedPath)")
                 } else if video.youtubeURL != nil {
-                    print("🎬 [MediaCleanup] Skipping YouTube video: \(video.title)")
+                    // print("🎬 [MediaCleanup] Skipping YouTube video: \(video.title)")
                 }
                 
                 // Add thumbnail reference
@@ -393,7 +393,7 @@ class MediaCleanupManager {
                 let videoAlbumsPath = "VideoAlbums/\(normalizedPath)"
                 let fullVideoAlbumsURL = documentsDirectory.appendingPathComponent(videoAlbumsPath)
                 if FileManager.default.fileExists(atPath: fullVideoAlbumsURL.path) {
-                    print("🔧 [MediaCleanup] Found video in VideoAlbums: \(normalizedPath) -> \(videoAlbumsPath)")
+                    // print("🔧 [MediaCleanup] Found video in VideoAlbums: \(normalizedPath) -> \(videoAlbumsPath)")
                     return videoAlbumsPath
                 }
             }
@@ -402,14 +402,14 @@ class MediaCleanupManager {
             let anirecoPath = "AnirecoImages/\(normalizedPath)"
             let fullAnirecoURL = documentsDirectory.appendingPathComponent(anirecoPath)
             if FileManager.default.fileExists(atPath: fullAnirecoURL.path) {
-                print("🔧 [MediaCleanup] Found image in AnirecoImages: \(normalizedPath) -> \(anirecoPath)")
+                // print("🔧 [MediaCleanup] Found image in AnirecoImages: \(normalizedPath) -> \(anirecoPath)")
                 return anirecoPath
             }
             
             // Check if file exists in root Documents directory (legacy icons)
             let rootURL = documentsDirectory.appendingPathComponent(normalizedPath)
             if FileManager.default.fileExists(atPath: rootURL.path) {
-                print("🔧 [MediaCleanup] Found legacy file in root: \(normalizedPath)")
+                // print("🔧 [MediaCleanup] Found legacy file in root: \(normalizedPath)")
                 // Return as-is for legacy files in root
                 return normalizedPath
             }
@@ -471,7 +471,7 @@ class MediaCleanupManager {
     // MARK: - Debug Functions
     
     private func debugCleanupWithVideoFocus() {
-        print("🔍 [MediaCleanup DEBUG] Analyzing video file references...")
+        // print("🔍 [MediaCleanup DEBUG] Analyzing video file references...")
         
         // Get all video files in VideoAlbums
         let videoAlbumsURL = documentsDirectory.appendingPathComponent("VideoAlbums")
@@ -500,9 +500,9 @@ class MediaCleanupManager {
                 if !video.videoPath.isEmpty {
                     let normalizedPath = normalizeFilePath(video.videoPath)
                     referencedVideoPaths.insert(normalizedPath)
-                    print("👤 [DEBUG] Character '\(character.name)' video: \(video.videoPath) -> normalized: \(normalizedPath)")
+                    // print("👤 [DEBUG] Character '\(character.name)' video: \(video.videoPath) -> normalized: \(normalizedPath)")
                 } else if video.youtubeURL != nil {
-                    print("👤 [DEBUG] Character '\(character.name)' YouTube video: \(video.title)")
+                    // print("👤 [DEBUG] Character '\(character.name)' YouTube video: \(video.title)")
                 }
             }
         }
@@ -515,9 +515,9 @@ class MediaCleanupManager {
                 if !video.videoPath.isEmpty {
                     let normalizedPath = normalizeFilePath(video.videoPath)
                     referencedVideoPaths.insert(normalizedPath)
-                    print("🎬 [DEBUG] Anime '\(anime.title)' video: \(video.videoPath) -> normalized: \(normalizedPath)")
+                    // print("🎬 [DEBUG] Anime '\(anime.title)' video: \(video.videoPath) -> normalized: \(normalizedPath)")
                 } else if video.youtubeURL != nil {
-                    print("🎬 [DEBUG] Anime '\(anime.title)' YouTube video: \(video.title)")
+                    // print("🎬 [DEBUG] Anime '\(anime.title)' YouTube video: \(video.title)")
                 }
             }
         }
@@ -552,23 +552,23 @@ class MediaCleanupManager {
     }
     
     private func debugCleanup() {
-        print("🔍 [MediaCleanup DEBUG] Starting debug analysis...")
+        // print("🔍 [MediaCleanup DEBUG] Starting debug analysis...")
         
         // Get all media files
         let allMediaFiles = getAllMediaFiles()
-        print("📊 [MediaCleanup DEBUG] Total media files found: \(allMediaFiles.count)")
+        // print("📊 [MediaCleanup DEBUG] Total media files found: \(allMediaFiles.count)")
         
         // Get all referenced files
         let referencedFiles = getAllReferencedFiles()
-        print("📊 [MediaCleanup DEBUG] Total referenced files: \(referencedFiles.count)")
+        // print("📊 [MediaCleanup DEBUG] Total referenced files: \(referencedFiles.count)")
         
         // Find orphaned files
         let orphanedFiles = allMediaFiles.subtracting(referencedFiles)
-        print("📊 [MediaCleanup DEBUG] Orphaned files that would be deleted: \(orphanedFiles.count)")
+        // print("📊 [MediaCleanup DEBUG] Orphaned files that would be deleted: \(orphanedFiles.count)")
         
         // Show sample of files that would be deleted
         if !orphanedFiles.isEmpty {
-            print("🗑️ [MediaCleanup DEBUG] Files that would be deleted:")
+            // print("🗑️ [MediaCleanup DEBUG] Files that would be deleted:")
             for (index, file) in orphanedFiles.prefix(10).enumerated() {
                 print("  \(index + 1). \(file)")
             }
@@ -580,7 +580,7 @@ class MediaCleanupManager {
         // Show AnirecoImages files specifically
         let anirecoOrphaned = orphanedFiles.filter { $0.hasPrefix("AnirecoImages/") }
         if !anirecoOrphaned.isEmpty {
-            print("⚠️ [MediaCleanup DEBUG] AnirecoImages files that would be deleted: \(anirecoOrphaned.count)")
+            // print("⚠️ [MediaCleanup DEBUG] AnirecoImages files that would be deleted: \(anirecoOrphaned.count)")
             for file in anirecoOrphaned.prefix(5) {
                 print("  - \(file)")
             }
@@ -618,7 +618,7 @@ class MediaCleanupManager {
     // MARK: - Manual Cleanup
     
     func manualCleanup() {
-        print("🧹 [MediaCleanup] Starting MANUAL cleanup...")
+        // print("🧹 [MediaCleanup] Starting MANUAL cleanup...")
         
         // Get all media files
         let allMediaFiles = getAllMediaFiles()
@@ -629,7 +629,7 @@ class MediaCleanupManager {
         // Find orphaned files
         let orphanedFiles = allMediaFiles.subtracting(referencedFiles)
         
-        print("📊 [MediaCleanup] Manual cleanup summary:")
+        // print("📊 [MediaCleanup] Manual cleanup summary:")
         print("  - Total media files: \(allMediaFiles.count)")
         print("  - Referenced files: \(referencedFiles.count)")
         print("  - Orphaned files to delete: \(orphanedFiles.count)")
@@ -657,15 +657,15 @@ class MediaCleanupManager {
                         deletedCount += 1
                         freedSpace += fileSize
                         
-                        print("🗑️ [MediaCleanup] Deleted: \(filePath) (size: \(formatBytes(fileSize)))")
+                        // print("🗑️ [MediaCleanup] Deleted: \(filePath) (size: \(formatBytes(fileSize)))")
                     } catch {
-                        print("❌ [MediaCleanup] Failed to delete: \(filePath) - \(error)")
+                        // print("❌ [MediaCleanup] Failed to delete: \(filePath) - \(error)")
                     }
                 }
             }
         }
         
-        print("✅ [MediaCleanup] Manual cleanup completed:")
+        // print("✅ [MediaCleanup] Manual cleanup completed:")
         print("  - Deleted \(deletedCount) files")
         print("  - Freed \(formatBytes(freedSpace)) of space")
     }
@@ -674,7 +674,7 @@ class MediaCleanupManager {
     
     func scheduleAutomaticCleanup() {
         // DISABLED: Automatic cleanup is disabled
-        print("⚠️ [MediaCleanup] Automatic cleanup is disabled")
+        // print("⚠️ [MediaCleanup] Automatic cleanup is disabled")
         // cleanupOrphanedMediaFiles()
         
         // Periodic cleanup is disabled to prevent unexpected deletions

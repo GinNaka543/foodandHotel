@@ -24,7 +24,7 @@ class NetworkManager: ObservableObject {
                 if path.status == .satisfied {
                     print("🌐 Network connected via \(self?.connectionType?.description ?? "unknown")")
                 } else {
-                    print("❌ Network disconnected")
+                    // print("❌ Network disconnected")
                 }
             }
         }
@@ -38,7 +38,7 @@ class NetworkManager: ObservableObject {
     
     // ネットワーク問題を診断する機能
     func diagnoseNetworkIssues() {
-        print("🔍 [Network Diagnostic] Starting network diagnosis...")
+        // print("🔍 [Network Diagnostic] Starting network diagnosis...")
         
         let testURLs = [
             "https://www.google.com",
@@ -54,7 +54,7 @@ class NetworkManager: ObservableObject {
     
     private func testConnection(to urlString: String) {
         guard let url = URL(string: urlString) else {
-            print("❌ [Network Test] Invalid URL: \(urlString)")
+            // print("❌ [Network Test] Invalid URL: \(urlString)")
             return
         }
         
@@ -65,7 +65,7 @@ class NetworkManager: ObservableObject {
         URLSession.shared.dataTask(with: request) { _, response, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    print("❌ [Network Test] \(urlString): \(error.localizedDescription)")
+                    // print("❌ [Network Test] \(urlString): \(error.localizedDescription)")
                     
                     // 特定のエラータイプをチェック
                     if let nsError = error as NSError? {
@@ -85,7 +85,7 @@ class NetworkManager: ObservableObject {
                         }
                     }
                 } else if let httpResponse = response as? HTTPURLResponse {
-                    print("✅ [Network Test] \(urlString): HTTP \(httpResponse.statusCode)")
+                    // print("✅ [Network Test] \(urlString): HTTP \(httpResponse.statusCode)")
                 }
             }
         }.resume()
@@ -93,7 +93,7 @@ class NetworkManager: ObservableObject {
     
     // 接続再試行機能
     func retryConnection(completion: @escaping (Bool) -> Void) {
-        print("🔄 [Network] Retrying connection...")
+        // print("🔄 [Network] Retrying connection...")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             completion(self.isConnected)

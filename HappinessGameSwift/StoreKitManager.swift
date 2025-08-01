@@ -175,11 +175,11 @@ class StoreKitManager: NSObject, ObservableObject {
                 switch result {
                 case .success():
                     #if DEBUG
-                    print("✅ Premium status saved to Firebase successfully")
+                    // print("✅ Premium status saved to Firebase successfully")
                     #endif
                 case .failure(let error):
                     #if DEBUG
-                    print("❌ Failed to save premium status to Firebase: \(error)")
+                    // print("❌ Failed to save premium status to Firebase: \(error)")
                     #endif
                 }
             }
@@ -230,16 +230,16 @@ extension StoreKitManager: SKProductsRequestDelegate {
             print("Loaded \(self.products.count) products from App Store")
             
             if self.products.isEmpty {
-                print("❌ No products loaded. Check App Store Connect configuration.")
+                // print("❌ No products loaded. Check App Store Connect configuration.")
             } else {
-                print("✅ Valid products:")
+                // print("✅ Valid products:")
                 for product in self.products {
                     print("  - \(product.productIdentifier): \(product.localizedTitle) - \(product.price)")
                 }
             }
             
             if !response.invalidProductIdentifiers.isEmpty {
-                print("❌ Invalid product identifiers:")
+                // print("❌ Invalid product identifiers:")
                 for invalidId in response.invalidProductIdentifiers {
                     print("  - \(invalidId)")
                 }

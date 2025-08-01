@@ -159,7 +159,7 @@ public struct VisitScreen: View {
                 loadPurchasedPlansFromFirebase()
             }
             .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ReloadVisitPlans"))) { _ in
-                print("📱 [VisitScreen] Received ReloadVisitPlans notification - reloading all plans")
+                // print("📱 [VisitScreen] Received ReloadVisitPlans notification - reloading all plans")
                 loadSavedPlans()
                 loadFirebasePlans()
                 loadPurchasedPlansFromFirebase()
@@ -964,10 +964,10 @@ public struct VisitScreen: View {
     
     func savePurchasedPlan(_ plan: VisitPlanModel) {
         // Check if this is a draft being converted to purchased
-        if let existingPlan = savedPlans.first(where: { $0.id.uuidString == plan.id && $0.isDraft }) {
+        if savedPlans.contains(where: { $0.id.uuidString == plan.id && $0.isDraft }) {
             // This is a draft being purchased, use the conversion method
             VisitPlanDataStorage.shared.convertDraftToPurchased(planId: plan.id)
-            print("✅ Converted draft to purchased plan - ID: \(plan.id)")
+            // print("✅ Converted draft to purchased plan - ID: \(plan.id)")
         } else {
             // This is a new purchase, create new plan data
             let visitPlanData = VisitPlanData(
@@ -988,7 +988,7 @@ public struct VisitScreen: View {
             
             // 新しいVisitPlanDataStorageシステムを使用して保存
             VisitPlanDataStorage.shared.savePlanData(visitPlanData)
-            print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
+            // print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
         }
         
         // 保存済みプランを再読み込み
@@ -1051,9 +1051,9 @@ public struct VisitScreen: View {
             firebaseManager.savePurchasedPlanIds(userId: currentUserId, planIds: purchasedPlanIds) { result in
                 switch result {
                 case .success:
-                    print("✅ Purchased plan IDs synced to Firebase")
-                case .failure(let error):
-                    print("❌ Failed to sync purchased plan IDs: \(error)")
+                    break // print("✅ Purchased plan IDs synced to Firebase")
+                case .failure(_):
+                    break // print("❌ Failed to sync purchased plan IDs: \(error)")
                 }
             }
         }
@@ -1068,13 +1068,13 @@ public struct VisitScreen: View {
     
     // Firebaseから購入済みプランを読み込む
     func loadPurchasedPlansFromFirebase() {
-        print("📱 Loading purchased plans from Firebase...")
+        // print("📱 Loading purchased plans from Firebase...")
         
         // 購入済みプランの同期を実行
         firebaseManager.syncPurchasedPlans(userId: currentUserId) { result in
             switch result {
             case .success:
-                print("✅ Successfully synced purchased plans")
+                // print("✅ Successfully synced purchased plans")
                 
                 // 同期後、ローカルの購入済みプランIDを取得
                 let purchasedPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(self.currentUserId)") ?? []
@@ -1084,8 +1084,8 @@ public struct VisitScreen: View {
                     self.downloadAndSavePurchasedPlan(planId: planId)
                 }
                 
-            case .failure(let error):
-                print("❌ Failed to sync purchased plans: \(error)")
+            case .failure(_):
+                break // print("❌ Failed to sync purchased plans: \(error)")
             }
         }
     }
@@ -1184,21 +1184,21 @@ public struct VisitScreen: View {
         // 古い "savedPlans" キーが存在する場合は削除
         if UserDefaults.standard.object(forKey: "savedPlans") != nil {
             UserDefaults.standard.removeObject(forKey: "savedPlans")
-            print("🧹 Cleaned up old UserDefaults savedPlans data")
+            // print("🧹 Cleaned up old UserDefaults savedPlans data")
         }
     }
     
     // 緊急修正: Test3の重複を強制的に削除
     private func emergencyCleanupTest3Duplicates() {
-        print("🚨 EMERGENCY CLEANUP: Removing Test3 duplicates...")
+        // print("🚨 EMERGENCY CLEANUP: Removing Test3 duplicates...")
         
         // UserDefaultsから直接メタデータを取得
         guard let metadata = UserDefaults.standard.dictionary(forKey: "savedPlansMetadata") as? [String: [String: Any]] else {
-            print("❌ No metadata found")
+            // print("❌ No metadata found")
             return
         }
         
-        print("📊 Found \(metadata.count) total plans in metadata")
+        // print("📊 Found \(metadata.count) total plans in metadata")
         
         var cleanedMetadata: [String: [String: Any]] = [:]
         var test3Found = false
@@ -1216,9 +1216,9 @@ public struct VisitScreen: View {
                     cleanedMetadata[planId] = planData
                     test3Found = true
                     keptPlanId = planId
-                    print("✅ Keeping first Test3 plan with ID: \(planId)")
+                    // print("✅ Keeping first Test3 plan with ID: \(planId)")
                 } else {
-                    print("🗑️ Removing duplicate Test3 plan with ID: \(planId)")
+                    // print("🗑️ Removing duplicate Test3 plan with ID: \(planId)")
                     // プランディレクトリも削除
                     deleteplanDirectory(planId: planId)
                 }
@@ -1228,14 +1228,14 @@ public struct VisitScreen: View {
             }
         }
         
-        print("📊 Test3 duplicates found: \(test3Count), keeping only 1")
-        print("📊 Final plan count: \(cleanedMetadata.count) (removed \(metadata.count - cleanedMetadata.count) plans)")
+        // print("📊 Test3 duplicates found: \(test3Count), keeping only 1")
+        // print("📊 Final plan count: \(cleanedMetadata.count) (removed \(metadata.count - cleanedMetadata.count) plans)")
         
         // クリーンなメタデータを保存
         UserDefaults.standard.set(cleanedMetadata, forKey: "savedPlansMetadata")
         UserDefaults.standard.synchronize()
         
-        print("✅ EMERGENCY CLEANUP COMPLETE")
+        // print("✅ EMERGENCY CLEANUP COMPLETE")
     }
     
     // プランディレクトリを削除
@@ -1247,10 +1247,10 @@ public struct VisitScreen: View {
         do {
             if FileManager.default.fileExists(atPath: planDirectory.path) {
                 try FileManager.default.removeItem(at: planDirectory)
-                print("🗑️ Deleted plan directory: \(planId)")
+                // print("🗑️ Deleted plan directory: \(planId)")
             }
         } catch {
-            print("❌ Failed to delete plan directory: \(error)")
+            // print("❌ Failed to delete plan directory: \(error)")
         }
     }
     

@@ -151,9 +151,9 @@ class FirebaseManager: ObservableObject {
                 
                 characterRef.setData(characterData, merge: true) { error in
                     if let error = error {
-                        print("❌ [Firebase] Error saving character: \(error)")
+                        // print("❌ [Firebase] Error saving character: \(error)")
                     } else {
-                        print("✅ [Firebase] Character saved: \(character.name)")
+                        // print("✅ [Firebase] Character saved: \(character.name)")
                     }
                 }
             }
@@ -184,7 +184,7 @@ class FirebaseManager: ObservableObject {
                 }
             }
         } else {
-            print("⚠️ [Firebase] No characters found to save")
+            // print("⚠️ [Firebase] No characters found to save")
         }
         
         // アニメデータを保存
@@ -211,14 +211,14 @@ class FirebaseManager: ObservableObject {
                 
                 animeRef.setData(animeData, merge: true) { error in
                     if let error = error {
-                        print("❌ [Firebase] Error saving anime: \(error)")
+                        // print("❌ [Firebase] Error saving anime: \(error)")
                     } else {
-                        print("✅ [Firebase] Anime saved: \(anime.title)")
+                        // print("✅ [Firebase] Anime saved: \(anime.title)")
                     }
                 }
             }
         } else {
-            print("⚠️ [Firebase] No animes found to save")
+            // print("⚠️ [Firebase] No animes found to save")
         }
     }
     
@@ -661,24 +661,24 @@ class FirebaseManager: ObservableObject {
     // ユーザーのキャラクターデータをFirebaseから取得
     // DISABLED: Privacy policy updated - user content no longer stored in Firebase
     private func loadUserCharacters_DISABLED(userId: String, completion: @escaping (Result<[Character], Error>) -> Void) {
-        print("📱 Loading characters for userId: \(userId)")
+        // print("📱 Loading characters for userId: \(userId)")
         
         db.collection("userCharacters")
             .whereField("userId", isEqualTo: userId)
             .getDocuments(completion: { snapshot, error in
                 if let error = error {
-                    print("❌ Error loading characters: \(error)")
+                    // print("❌ Error loading characters: \(error)")
                     completion(.failure(error))
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ No character documents found")
+                    // print("⚠️ No character documents found")
                     completion(.success([]))
                     return
                 }
                 
-                print("✅ Found \(documents.count) character documents")
+                // print("✅ Found \(documents.count) character documents")
                 
                 var characters: [Character] = []
                 
@@ -720,24 +720,24 @@ class FirebaseManager: ObservableObject {
     // ユーザーのアニメデータをFirebaseから取得
     // DISABLED: Privacy policy updated - user content no longer stored in Firebase
     private func loadUserAnimes_DISABLED(userId: String, completion: @escaping (Result<[Anime], Error>) -> Void) {
-        print("📱 Loading animes for userId: \(userId)")
+        // print("📱 Loading animes for userId: \(userId)")
         
         db.collection("userAnimes")
             .whereField("userId", isEqualTo: userId)
             .getDocuments(completion: { snapshot, error in
                 if let error = error {
-                    print("❌ Error loading animes: \(error)")
+                    // print("❌ Error loading animes: \(error)")
                     completion(.failure(error))
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ No anime documents found")
+                    // print("⚠️ No anime documents found")
                     completion(.success([]))
                     return
                 }
                 
-                print("✅ Found \(documents.count) anime documents")
+                // print("✅ Found \(documents.count) anime documents")
                 
                 var animes: [Anime] = []
                 
@@ -1035,12 +1035,12 @@ class FirebaseManager: ObservableObject {
                     // インデックスエラーの場合は詳細なメッセージを表示
                     let nsError = error as NSError
                     if nsError.domain == "FIRFirestoreErrorDomain" && nsError.code == 9 {
-                        print("⚠️ Firebase Index Required!")
-                        print("⚠️ Please create an index for this query.")
-                        print("⚠️ Collection: pointTransactions")
-                        print("⚠️ Fields: userId (Ascending), createdAt (Descending)")
-                        print("⚠️ Check the console for a direct link to create the index.")
-                        print("🔄 Falling back to basic query without ordering...")
+                        // print("⚠️ Firebase Index Required!")
+                        // print("⚠️ Please create an index for this query.")
+                        // print("⚠️ Collection: pointTransactions")
+                        // print("⚠️ Fields: userId (Ascending), createdAt (Descending)")
+                        // print("⚠️ Check the console for a direct link to create the index.")
+                        // print("🔄 Falling back to basic query without ordering...")
                         
                         // フォールバック: ソートなしでクエリを実行
                         self?.getPointTransactionsFallback(userId: userId, completion: completion)
@@ -1078,14 +1078,14 @@ class FirebaseManager: ObservableObject {
     
     // フォールバック: インデックスが作成されるまでの代替クエリ
     private func getPointTransactionsFallback(userId: String, completion: @escaping (Result<[PointTransactionModel], Error>) -> Void) {
-        print("🔄 Using fallback query for point transactions...")
+        // print("🔄 Using fallback query for point transactions...")
         
         db.collection("pointTransactions")
             .whereField("userId", isEqualTo: userId)
             .limit(to: 50)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Fallback query also failed: \(error)")
+                    // print("❌ Fallback query also failed: \(error)")
                     completion(.failure(error))
                     return
                 }
@@ -1111,7 +1111,7 @@ class FirebaseManager: ObservableObject {
                 
                 // クライアントサイドでソート（インデックスがないため）
                 let sortedTransactions = transactions.sorted { $0.createdAt > $1.createdAt }
-                print("✅ Fallback query successful, returned \(sortedTransactions.count) transactions")
+                // print("✅ Fallback query successful, returned \(sortedTransactions.count) transactions")
                 completion(.success(sortedTransactions))
             }
     }
@@ -1170,13 +1170,13 @@ class FirebaseManager: ObservableObject {
     
     // ユーザーの購入済みプランIDリストを取得
     func fetchUserPurchasedPlanIds(userId: String, completion: @escaping (Result<[String], Error>) -> Void) {
-        print("📱 Fetching purchased plan IDs for userId: \(userId)")
+        // print("📱 Fetching purchased plan IDs for userId: \(userId)")
         
         db.collection("planPurchases")
             .whereField("userId", isEqualTo: userId)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching purchased plans: \(error)")
+                    // print("❌ Error fetching purchased plans: \(error)")
                     completion(.failure(error))
                     return
                 }
@@ -1185,7 +1185,7 @@ class FirebaseManager: ObservableObject {
                     doc.data()["planId"] as? String
                 } ?? []
                 
-                print("✅ Found \(planIds.count) purchased plans")
+                // print("✅ Found \(planIds.count) purchased plans")
                 completion(.success(planIds))
             }
     }
@@ -1201,10 +1201,10 @@ class FirebaseManager: ObservableObject {
             "updatedAt": FieldValue.serverTimestamp()
         ], merge: true) { error in
             if let error = error {
-                print("❌ Error saving purchased plan IDs: \(error)")
+                // print("❌ Error saving purchased plan IDs: \(error)")
                 completion(.failure(error))
             } else {
-                print("✅ Successfully saved purchased plan IDs")
+                // print("✅ Successfully saved purchased plan IDs")
                 completion(.success(()))
             }
         }
@@ -1228,7 +1228,7 @@ class FirebaseManager: ObservableObject {
                 defer { dispatchGroup.leave() }
                 
                 if let error = error {
-                    print("❌ Error fetching plan \(planId): \(error)")
+                    // print("❌ Error fetching plan \(planId): \(error)")
                     hasError = true
                     return
                 }
@@ -1236,7 +1236,7 @@ class FirebaseManager: ObservableObject {
                 guard let document = snapshot, document.exists,
                       let data = document.data(),
                       let plan = VisitPlanModel(dictionary: data) else {
-                    print("⚠️ Could not parse plan \(planId)")
+                    // print("⚠️ Could not parse plan \(planId)")
                     return
                 }
                 
@@ -1279,7 +1279,7 @@ class FirebaseManager: ObservableObject {
                 // 更新されたプランリストを保存
                 if let encodedData = try? JSONEncoder().encode(savedPlans) {
                     UserDefaults.standard.set(encodedData, forKey: "savedPlans")
-                    print("✅ Saved \(fetchedPlans.count) purchased plans to local storage")
+                    // print("✅ Saved \(fetchedPlans.count) purchased plans to local storage")
                 }
             }
             
@@ -1310,14 +1310,14 @@ class FirebaseManager: ObservableObject {
                         self?.savePurchasedPlanIds(userId: userId, planIds: allPlanIds) { saveResult in
                             switch saveResult {
                             case .success:
-                                print("✅ Successfully synced purchased plans")
+                                // print("✅ Successfully synced purchased plans")
                                 completion(.success(()))
                             case .failure(let error):
                                 completion(.failure(error))
                             }
                         }
                     case .failure(let error):
-                        print("⚠️ Failed to fetch plan details, but continuing: \(error)")
+                        // print("⚠️ Failed to fetch plan details, but continuing: \(error)")
                         // 詳細データの取得に失敗してもIDの同期は成功として扱う
                         completion(.success(()))
                     }

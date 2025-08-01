@@ -23,12 +23,12 @@ class UserDefaultsHelper {
         UserDefaults.standard.set(data, forKey: userKey)
         // 即座に同期して確実に保存
         let success = UserDefaults.standard.synchronize()
-        print("💾 [UserDefaultsHelper] Saved data for key '\(key)' (userKey: '\(userKey)'), size: \(data?.count ?? 0) bytes, sync success: \(success)")
+        // print("💾 [UserDefaultsHelper] Saved data for key '\(key)' (userKey: '\(userKey)'), size: \(data?.count ?? 0) bytes, sync success: \(success)")
         
         // デバッグ用：savedPlansの内容を確認
         if key == "savedPlans", let data = data {
             if let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) {
-                print("💾 [UserDefaultsHelper] Saved \(plans.count) plans:")
+                // print("💾 [UserDefaultsHelper] Saved \(plans.count) plans:")
                 for plan in plans {
                     print("  - \(plan.title) (ID: \(plan.id), Draft: \(plan.isDraft), Spots: \(plan.spots.count))")
                 }
@@ -40,12 +40,12 @@ class UserDefaultsHelper {
     func getData(forKey key: String) -> Data? {
         let userKey = keyForUser(key)
         let data = UserDefaults.standard.data(forKey: userKey)
-        print("📖 [UserDefaultsHelper] Loading data for key '\(key)' (userKey: '\(userKey)'), size: \(data?.count ?? 0) bytes, found: \(data != nil)")
+        // print("📖 [UserDefaultsHelper] Loading data for key '\(key)' (userKey: '\(userKey)'), size: \(data?.count ?? 0) bytes, found: \(data != nil)")
         
         // デバッグ用：savedPlansの内容を確認
         if key == "savedPlans", let data = data {
             if let plans = try? JSONDecoder().decode([VisitPlanData].self, from: data) {
-                print("📖 [UserDefaultsHelper] Loaded \(plans.count) plans:")
+                // print("📖 [UserDefaultsHelper] Loaded \(plans.count) plans:")
                 for plan in plans {
                     print("  - \(plan.title) (ID: \(plan.id), Draft: \(plan.isDraft), Spots: \(plan.spots.count))")
                 }

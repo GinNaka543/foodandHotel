@@ -237,9 +237,9 @@ class ArtworkStorage {
             if FileManager.default.fileExists(atPath: imageURL.path) {
                 do {
                     try FileManager.default.removeItem(at: imageURL)
-                    print("✅ [ArtworkStorage] Deleted image file: \(imagePath)")
+                    // print("✅ [ArtworkStorage] Deleted image file: \(imagePath)")
                 } catch {
-                    print("❌ [ArtworkStorage] Failed to delete image file: \(error)")
+                    // print("❌ [ArtworkStorage] Failed to delete image file: \(error)")
                 }
             }
         }

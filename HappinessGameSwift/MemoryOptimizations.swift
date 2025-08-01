@@ -144,7 +144,7 @@ struct MemoryMonitoringModifier: ViewModifier {
             
             if memoryUsage > 150 {
                 #if DEBUG
-                print("⚠️ High memory usage detected: \(memoryUsage)MB - Performing cleanup")
+                // print("⚠️ High memory usage detected: \(memoryUsage)MB - Performing cleanup")
                 #endif
                 AppOptimizationManager.shared.performAggressiveMemoryCleanup()
             } else if memoryUsage > 100 {

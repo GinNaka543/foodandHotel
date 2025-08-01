@@ -39,27 +39,27 @@ class AnimeManager: ObservableObject {
             object: nil,
             queue: .main
         ) { _ in
-            print("📱 [AnimeManager] User data synced notification received")
+            // print("📱 [AnimeManager] User data synced notification received")
             self.loadAnimes()
         }
     }
     
     func loadAnimes() {
-        print("📖 [AnimeManager] loadAnimes called")
+        // print("📖 [AnimeManager] loadAnimes called")
         if let data = UserDefaultsHelper.shared.getData(forKey: "animes"),
            let decoded = try? JSONDecoder().decode([Anime].self, from: data) {
             animes = decoded
-            print("✅ [AnimeManager] Loaded \(animes.count) animes from UserDefaults")
+            // print("✅ [AnimeManager] Loaded \(animes.count) animes from UserDefaults")
             
             // 各アニメのキャラクターIDをログ出力
             for anime in animes {
                 if !anime.characterIds.isEmpty {
-                    print("📖 Anime '\(anime.title)' has \(anime.characterIds.count) character IDs: \(anime.characterIds)")
+                    // print("📖 Anime '\(anime.title)' has \(anime.characterIds.count) character IDs: \(anime.characterIds)")
                 }
             }
         } else {
             animes = []
-            print("⚠️ [AnimeManager] No animes found in UserDefaults")
+            // print("⚠️ [AnimeManager] No animes found in UserDefaults")
         }
     }
     
@@ -75,12 +75,12 @@ class AnimeManager: ObservableObject {
         
         if let data = try? JSONEncoder().encode(animes) {
             UserDefaultsHelper.shared.setData(data, forKey: "animes")
-            print("✅ [AnimeManager] Animes saved to UserDefaults")
+            // print("✅ [AnimeManager] Animes saved to UserDefaults")
             
             // Firebaseへの保存は行わない（ローカルのみ）
-            print("💾 Animes saved locally only (Firebase sync disabled)")
+            // print("💾 Animes saved locally only (Firebase sync disabled)")
         } else {
-            print("❌ Failed to encode animes")
+            // print("❌ Failed to encode animes")
         }
     }
     
@@ -93,7 +93,7 @@ class AnimeManager: ObservableObject {
                 if updatedAnime.imageIdentifier == nil ||
                    (updatedAnime.imageIdentifier != nil && oldImagePath != updatedAnime.imageIdentifier) {
                     deleteAnimeImage(at: oldImagePath)
-                    print("✅ [AnimeManager] Deleted old icon: \(oldImagePath)")
+                    // print("✅ [AnimeManager] Deleted old icon: \(oldImagePath)")
                 }
             }
             
@@ -102,7 +102,7 @@ class AnimeManager: ObservableObject {
                 if updatedAnime.backgroundImagePath == nil ||
                    (updatedAnime.backgroundImagePath != nil && oldBgPath != updatedAnime.backgroundImagePath) {
                     deleteAnimeImage(at: oldBgPath)
-                    print("✅ [AnimeManager] Deleted old background: \(oldBgPath)")
+                    // print("✅ [AnimeManager] Deleted old background: \(oldBgPath)")
                 }
             }
             
@@ -121,11 +121,11 @@ class AnimeManager: ObservableObject {
         // Delete associated images
         if let imagePath = anime.imageIdentifier {
             deleteAnimeImage(at: imagePath)
-            print("✅ [AnimeManager] Deleted anime icon: \(imagePath)")
+            // print("✅ [AnimeManager] Deleted anime icon: \(imagePath)")
         }
         if let bgPath = anime.backgroundImagePath {
             deleteAnimeImage(at: bgPath)
-            print("✅ [AnimeManager] Deleted anime background: \(bgPath)")
+            // print("✅ [AnimeManager] Deleted anime background: \(bgPath)")
         }
         
         animes.removeAll { $0.id == anime.id }
@@ -202,17 +202,17 @@ class AnimeManager: ObservableObject {
         if FileManager.default.fileExists(atPath: imagePath.path) {
             do {
                 try FileManager.default.removeItem(at: imagePath)
-                print("🗑️ [AnimeManager] Successfully deleted image: \(path)")
+                // print("🗑️ [AnimeManager] Successfully deleted image: \(path)")
                 
                 // If the path includes AnirecoImages, log it specifically
                 if path.contains("AnirecoImages") {
-                    print("🗑️ [AnimeManager] Deleted AnirecoImages file: \(imagePath.lastPathComponent)")
+                    // print("🗑️ [AnimeManager] Deleted AnirecoImages file: \(imagePath.lastPathComponent)")
                 }
             } catch {
-                print("❌ [AnimeManager] Failed to delete image \(path): \(error)")
+                // print("❌ [AnimeManager] Failed to delete image \(path): \(error)")
             }
         } else {
-            print("⚠️ [AnimeManager] Image not found for deletion: \(path)")
+            // print("⚠️ [AnimeManager] Image not found for deletion: \(path)")
         }
     }
 }
@@ -616,17 +616,17 @@ struct AnimeScreen: View {
     
     // バナービュー（簡素化版 - デバッグ用）
     private var bannerView: some View {
-        let _ = print("🎯 [AnimeScreen] bannerView called. bannerVideo exists: \(bannerVideo != nil)")
+        // let _ = print("🎯 [AnimeScreen] bannerView called. bannerVideo exists: \(bannerVideo != nil)")
         
         return Group {
             if let video = bannerVideo, let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
-                let _ = print("🔍 [AnimeScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
+                // let _ = print("🔍 [AnimeScreen] Found banner video: \(video.title) with YouTube URL: \(youtubeURL)")
                 
                 VStack {
                     // First check for custom thumbnail data
                     if let thumbnailData = video.thumbnailData,
                        let thumbnailImage = UIImage(data: thumbnailData) {
-                        let _ = print("🖼️ [AnimeScreen] Using custom thumbnail data")
+                        // let _ = print("🖼️ [AnimeScreen] Using custom thumbnail data")
                         Image(uiImage: thumbnailImage)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
@@ -634,7 +634,7 @@ struct AnimeScreen: View {
                             .clipped()
                             .id("\(video.id)_\(video.thumbnailData?.hashValue ?? 0)") // Force view refresh when thumbnail changes
                     } else if let thumbnailURL = video.youtubeThumbnailURL, !thumbnailURL.isEmpty {
-                        let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
+                        // let _ = print("🖼️ [AnimeScreen] Using YouTube thumbnail: \(thumbnailURL)")
                         AsyncImage(url: URL(string: thumbnailURL)) { image in
                             image
                                 .resizable()
@@ -862,7 +862,7 @@ struct AnimeScreen: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("VideoDataUpdated"))) { _ in
             // 動画データが更新された時にバナーを更新
-            print("🔄 [AnimeScreen] Received VideoDataUpdated notification - refreshing banner")
+            // print("🔄 [AnimeScreen] Received VideoDataUpdated notification - refreshing banner")
             bannerVideo = nil  // 現在のバナーをクリア
             displayedVideoIds.removeAll()  // 表示履歴をリセット
             allYouTubeVideos = []  // 既存の動画リストをクリア
@@ -955,20 +955,20 @@ struct AnimeScreen: View {
     
     // YouTube動画を収集
     private func loadYouTubeVideos() {
-        print("🔍 [AnimeScreen] Loading YouTube videos for tab: \(selectedTab)")
-        print("🔍 [AnimeScreen] Total animes available: \(animeManager.animes.count)")
+        // print("🔍 [AnimeScreen] Loading YouTube videos for tab: \(selectedTab)")
+        // print("🔍 [AnimeScreen] Total animes available: \(animeManager.animes.count)")
         allYouTubeVideos = []
         
         // 現在のタブに基づいてアニメをフィルタリング
         let filteredAnimesForVideos = filteredAnimes
-        print("🔍 [AnimeScreen] Filtered animes count: \(filteredAnimesForVideos.count)")
+        // print("🔍 [AnimeScreen] Filtered animes count: \(filteredAnimesForVideos.count)")
         
         for anime in filteredAnimesForVideos {
             // VideoStorage.swiftを使用して動画を取得  
             let videos = VideoStorage.shared.loadAnimeVideos(for: anime.id.uuidString)
-            print("🔍 [AnimeScreen] VideoStorage returned \(videos.count) videos for anime: \(anime.title)")
+            // print("🔍 [AnimeScreen] VideoStorage returned \(videos.count) videos for anime: \(anime.title)")
             if !videos.isEmpty {
-                print("🔍 [AnimeScreen] Found \(videos.count) total videos for anime: \(anime.title)")
+                // print("🔍 [AnimeScreen] Found \(videos.count) total videos for anime: \(anime.title)")
                 // YouTube URLを持つ動画のみをフィルタリング
                 let youtubeVideos = videos.filter { video in
                     if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
@@ -977,21 +977,21 @@ struct AnimeScreen: View {
                     return false
                 }
                 allYouTubeVideos.append(contentsOf: youtubeVideos)
-                print("🔍 [AnimeScreen] Found \(youtubeVideos.count) YouTube videos for anime: \(anime.title)")
+                // print("🔍 [AnimeScreen] Found \(youtubeVideos.count) YouTube videos for anime: \(anime.title)")
                 
                 // 個別の動画情報も出力
                 for video in videos {
                     if let youtubeURL = video.youtubeURL, !youtubeURL.isEmpty {
                         print("🎥 [AnimeScreen] YouTube video: \(video.title) - URL: \(youtubeURL)")
                     } else {
-                        print("📱 [AnimeScreen] Local video: \(video.title)")
+                        // print("📱 [AnimeScreen] Local video: \(video.title)")
                     }
                 }
             } else {
-                print("❌ [AnimeScreen] No video data found for anime: \(anime.title)")
+                // print("❌ [AnimeScreen] No video data found for anime: \(anime.title)")
             }
         }
-        print("🔍 [AnimeScreen] Total YouTube videos found for current tab: \(allYouTubeVideos.count)")
+        // print("🔍 [AnimeScreen] Total YouTube videos found for current tab: \(allYouTubeVideos.count)")
     }
     
     // ランダムなYouTube動画を選択
@@ -2430,7 +2430,7 @@ struct AnimeArtworkScreen: View {
         
         // Reload albums to include the new artwork
         loadAlbumsFromUserDefaults()
-        print("🔄 [AnimeScreen] Reloaded albums after adding new artwork")
+        // print("🔄 [AnimeScreen] Reloaded albums after adding new artwork")
         
         selectedImage = nil
         photoTitle = ""
@@ -2504,9 +2504,9 @@ struct AnimeArtworkScreen: View {
         if let encodedData = try? JSONEncoder().encode(albums) {
             // Save using UserDefaultsHelper to ensure consistency
             UserDefaultsHelper.shared.setData(encodedData, forKey: key)
-            print("💾 [ArtworkAlbum] Saved \(albums.count) albums to UserDefaults with key: \(key)")
+            // print("💾 [ArtworkAlbum] Saved \(albums.count) albums to UserDefaults with key: \(key)")
         } else {
-            print("❌ [ArtworkAlbum] Failed to encode albums for saving")
+            // print("❌ [ArtworkAlbum] Failed to encode albums for saving")
         }
     }
     
@@ -2522,13 +2522,13 @@ struct AnimeArtworkScreen: View {
                 }
                 return ArtworkAlbum(tag: album.tag, videos: currentArtworks, characterImageName: album.characterImageName)
             }
-            print("💾 [ArtworkAlbum] Loaded and rebuilt \(albums.count) albums from UserDefaults with key: \(key)")
+            // print("💾 [ArtworkAlbum] Loaded and rebuilt \(albums.count) albums from UserDefaults with key: \(key)")
             for album in albums {
                 print("  - Album '\(album.tag)' with \(album.videos.count) artworks")
             }
         } else {
             albums = []
-            print("💾 [ArtworkAlbum] No albums found or failed to decode. Starting with empty array.")
+            // print("💾 [ArtworkAlbum] No albums found or failed to decode. Starting with empty array.")
         }
     }
     
@@ -2586,7 +2586,7 @@ struct AnimeArtworkScreen: View {
         
         // Reload albums to include the new artwork
         loadAlbumsFromUserDefaults()
-        print("🔄 [AnimeScreen] Reloaded albums after adding new Pixiv artwork")
+        // print("🔄 [AnimeScreen] Reloaded albums after adding new Pixiv artwork")
         
         // フォームをリセット
         photoTitle = ""
@@ -3327,9 +3327,9 @@ struct AnimeVideoScreen: View {
         if let idx = videos.firstIndex(where: { $0.id == id }) {
             let video = videos[idx]
             
-            print("🗑️ [AnimeScreen] Deleting video: \(video.title)")
-            print("🗑️ [AnimeScreen] Video path: \(video.videoPath)")
-            print("🗑️ [AnimeScreen] Video ID: \(video.id.uuidString)")
+            // print("🗑️ [AnimeScreen] Deleting video: \(video.title)")
+            // print("🗑️ [AnimeScreen] Video path: \(video.videoPath)")
+            // print("🗑️ [AnimeScreen] Video ID: \(video.id.uuidString)")
             
             // Delete the actual video file and thumbnail
             VideoStorage.shared.deleteVideo(videoId: video.id.uuidString, videoPath: video.videoPath)
@@ -3412,10 +3412,10 @@ struct AnimeVideoScreen: View {
                 try fileManager.removeItem(at: fileURL)
             }
             try fileManager.copyItem(at: url, to: fileURL)
-            print("✅ [AnimeScreen] Saved video to: VideoAlbums/\(fileName)")
+            // print("✅ [AnimeScreen] Saved video to: VideoAlbums/\(fileName)")
             return "VideoAlbums/\(fileName)"
         } catch {
-            print("❌ [AnimeScreen] Failed to save video: \(error)")
+            // print("❌ [AnimeScreen] Failed to save video: \(error)")
             return ""
         }
     }
@@ -4583,7 +4583,7 @@ struct AnimeAboutView: View {
         // 即座に保存して永続化
         animeManager.saveAnimes()
         
-        print("✅ [AnimeAboutView] Anime saved with \(updatedAnime.characterIds.count) character IDs")
+        // print("✅ [AnimeAboutView] Anime saved with \(updatedAnime.characterIds.count) character IDs")
     }
     
     // アイコン保存機能

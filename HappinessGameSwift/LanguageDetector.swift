@@ -154,7 +154,7 @@ class LanguageDetector {
             #endif
         }
         
-        print("🔍 Language Detection Debug:")
+        // print("🔍 Language Detection Debug:")
         print("  Title: \"\(title)\"")
         print("  Detected: \(detected)")
         print("  Current App Language: \(current)")

@@ -256,7 +256,7 @@ struct ThumbnailPickerView: View {
                         if originalImage != nil {
                             updateThumbnailData()
                         }
-                        print("💾 [ThumbnailPicker] Saving thumbnail with data size: \(selectedThumbnailData?.count ?? 0) bytes")
+                        // print("💾 [ThumbnailPicker] Saving thumbnail with data size: \(selectedThumbnailData?.count ?? 0) bytes")
                         onSave(selectedThumbnailData)
                     }
                     .disabled(isGeneratingThumbnails)
@@ -367,7 +367,7 @@ struct ThumbnailPickerView: View {
         let targetSize = CGSize(width: thumbnailWidth, height: thumbnailHeight)
         
         // デバッグログ
-        print("🎨 [ThumbnailPicker] Applying adjustments - Scale: \(thumbnailScale), OffsetX: \(thumbnailOffsetX), OffsetY: \(thumbnailOffsetY)")
+        // print("🎨 [ThumbnailPicker] Applying adjustments - Scale: \(thumbnailScale), OffsetX: \(thumbnailOffsetX), OffsetY: \(thumbnailOffsetY)")
         
         // リサイズ実行
         UIGraphicsBeginImageContextWithOptions(targetSize, true, 0.0)
@@ -415,7 +415,7 @@ struct ThumbnailPickerView: View {
         let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
         
-        print("🎨 [ThumbnailPicker] Final draw rect - X: \(x), Y: \(y), Width: \(drawWidth), Height: \(drawHeight)")
+        // print("🎨 [ThumbnailPicker] Final draw rect - X: \(x), Y: \(y), Width: \(drawWidth), Height: \(drawHeight)")
         
         return resizedImage ?? image
     }

@@ -210,9 +210,9 @@ struct RankingSelectionView: View {
                                 // ランキング画像
                                 if let imageURL = ranking.imageURL, !imageURL.isEmpty {
                                     let convertedURL = convertGitHubUrl(imageURL)
-                                    let _ = print("🖼️ [RankingSelection] ランキング: \(ranking.title)")
-                                    let _ = print("🖼️ [RankingSelection] 元URL: \(imageURL)")
-                                    let _ = print("🖼️ [RankingSelection] 変換後URL: \(convertedURL)")
+                                    // let _ = print("🖼️ [RankingSelection] ランキング: \(ranking.title)")
+                                    // let _ = print("🖼️ [RankingSelection] 元URL: \(imageURL)")
+                                    // let _ = print("🖼️ [RankingSelection] 変換後URL: \(convertedURL)")
                                     AsyncImage(url: URL(string: convertedURL)) { phase in
                                         switch phase {
                                         case .success(let image):

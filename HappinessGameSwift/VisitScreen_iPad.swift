@@ -872,7 +872,7 @@ struct VisitScreen_iPad: View {
         if let existingPlan = savedPlans.first(where: { $0.id.uuidString == plan.id && $0.isDraft }) {
             // This is a draft being purchased, use the conversion method
             VisitPlanDataStorage.shared.convertDraftToPurchased(planId: plan.id)
-            print("✅ Converted draft to purchased plan - ID: \(plan.id)")
+            // print("✅ Converted draft to purchased plan - ID: \(plan.id)")
         } else {
             // This is a new purchase, create new plan data
             let visitPlanData = VisitPlanData(
@@ -893,7 +893,7 @@ struct VisitScreen_iPad: View {
             
             // 新しいVisitPlanDataStorageシステムを使用して保存
             VisitPlanDataStorage.shared.savePlanData(visitPlanData)
-            print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
+            // print("✅ Purchased plan saved using VisitPlanDataStorage - ID: \(plan.id)")
         }
         
         // 保存済みプランを再読み込み

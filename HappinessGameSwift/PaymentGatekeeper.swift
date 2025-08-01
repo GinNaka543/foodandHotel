@@ -120,7 +120,7 @@ class PaymentGatekeeper: ObservableObject {
         let trialDuration = freeTrialDuration
         
         #if DEBUG
-        print("🔍 PaymentGatekeeper Debug:")
+        // print("🔍 PaymentGatekeeper Debug:")
         print("  - Install Date: \(installDate)")
         print("  - Time Elapsed: \(Int(timeElapsed)) seconds")
         print("  - Trial Duration: \(Int(trialDuration)) seconds")
@@ -150,7 +150,7 @@ class PaymentGatekeeper: ObservableObject {
                 switch result {
                 case .success(let (isPremium, purchaseDate)):
                     #if DEBUG
-                    print("✅ Premium status synced from Firebase: isPremium=\(isPremium)")
+                    // print("✅ Premium status synced from Firebase: isPremium=\(isPremium)")
                     #endif
                     
                     // ローカルのプレミアムステータスを更新
@@ -168,7 +168,7 @@ class PaymentGatekeeper: ObservableObject {
                     
                 case .failure(let error):
                     #if DEBUG
-                    print("❌ Failed to sync premium status from Firebase: \(error)")
+                    // print("❌ Failed to sync premium status from Firebase: \(error)")
                     #endif
                     // Firebaseからの取得に失敗した場合はローカルの情報を使用
                 }
@@ -204,9 +204,9 @@ class PaymentGatekeeper: ObservableObject {
                 #if DEBUG
                 switch result {
                 case .success():
-                    print("✅ Premium status marked and saved to Firebase successfully")
-                case .failure(let error):
-                    print("❌ Failed to save premium status to Firebase: \(error)")
+                    break // print("✅ Premium status marked and saved to Firebase successfully")
+                case .failure(_):
+                    break // print("❌ Failed to save premium status to Firebase: \(error)")
                 }
                 #endif
             }
@@ -276,7 +276,7 @@ class PaymentGatekeeper: ObservableObject {
                 switch result {
                 case .success(let (isPremium, purchaseDate)):
                     #if DEBUG
-                    print("✅ Premium status synced on login: isPremium=\(isPremium)")
+                    // print("✅ Premium status synced on login: isPremium=\(isPremium)")
                     #endif
                     
                     // ローカルのプレミアムステータスを更新
@@ -289,9 +289,9 @@ class PaymentGatekeeper: ObservableObject {
                     // 支払い状態を再チェック
                     self.checkPaymentStatus()
                     
-                case .failure(let error):
+                case .failure(_):
                     #if DEBUG
-                    print("❌ Failed to sync premium status on login: \(error)")
+                    // print("❌ Failed to sync premium status on login: \(error)")
                     #endif
                     // Firebaseからの取得に失敗した場合はローカルの情報を使用
                     self.checkPaymentStatus()

@@ -8,7 +8,7 @@ class VideoStorage {
     private let sessionId = UUID().uuidString.prefix(8)
     
     private init() {
-        print("🌟 [VideoStorage] Initialized with session ID: \(sessionId)")
+        // print("🌟 [VideoStorage] Initialized with session ID: \(sessionId)")
         
         // Register for app lifecycle notifications
         NotificationCenter.default.addObserver(
@@ -20,7 +20,7 @@ class VideoStorage {
     }
     
     @objc private func applicationWillTerminate() {
-        print("⚠️ [VideoStorage] App will terminate - forcing UserDefaults synchronization")
+        // print("⚠️ [VideoStorage] App will terminate - forcing UserDefaults synchronization")
         UserDefaults.standard.synchronize()
     }
     
@@ -62,7 +62,7 @@ class VideoStorage {
     // MARK: - Save and Load Functions
     
     func saveVideos(for characterId: String, videos: [MemoryVideo]) {
-        print("💾 [VideoStorage] Saving \(videos.count) videos for character: \(characterId)")
+        // print("💾 [VideoStorage] Saving \(videos.count) videos for character: \(characterId)")
         ensureDirectoryExists()
         
         var metadataArray: [VideoMetadata] = []
@@ -73,9 +73,9 @@ class VideoStorage {
                 let thumbnailURL = self.thumbnailURL(for: video.id.uuidString)
                 do {
                     try thumbnailData.write(to: thumbnailURL)
-                    print("💾 [VideoStorage] Saved thumbnail for video: \(video.id.uuidString)")
+                    // print("💾 [VideoStorage] Saved thumbnail for video: \(video.id.uuidString)")
                 } catch {
-                    print("❌ [VideoStorage] Failed to save thumbnail: \(error)")
+                    // print("❌ [VideoStorage] Failed to save thumbnail: \(error)")
                 }
             }
             
@@ -102,9 +102,9 @@ class VideoStorage {
             let data = try JSONEncoder().encode(metadataArray)
             UserDefaults.standard.set(data, forKey: key)
             UserDefaults.standard.synchronize()
-            print("✅ [VideoStorage] Successfully saved \(metadataArray.count) video metadata")
+            // print("✅ [VideoStorage] Successfully saved \(metadataArray.count) video metadata")
         } catch {
-            print("❌ [VideoStorage] Failed to save videos: \(error)")
+            // print("❌ [VideoStorage] Failed to save videos: \(error)")
         }
     }
     
@@ -151,26 +151,26 @@ class VideoStorage {
     }
     
     func deleteVideo(videoId: String, videoPath: String? = nil) {
-        print("🗑️ [VideoStorage] deleteVideo called - videoId: \(videoId), videoPath: \(videoPath ?? "nil")")
+        // print("🗑️ [VideoStorage] deleteVideo called - videoId: \(videoId), videoPath: \(videoPath ?? "nil")")
         
         // Delete thumbnail - wrap in do-catch to prevent crashes
         do {
             let thumbnailURL = self.thumbnailURL(for: videoId)
             if FileManager.default.fileExists(atPath: thumbnailURL.path) {
                 try FileManager.default.removeItem(at: thumbnailURL)
-                print("✅ [VideoStorage] Deleted thumbnail: \(thumbnailURL.lastPathComponent)")
+                // print("✅ [VideoStorage] Deleted thumbnail: \(thumbnailURL.lastPathComponent)")
             } else {
-                print("⚠️ [VideoStorage] Thumbnail not found: \(thumbnailURL.lastPathComponent)")
+                // print("⚠️ [VideoStorage] Thumbnail not found: \(thumbnailURL.lastPathComponent)")
             }
             
             // Also try to delete YouTube custom thumbnail if exists
             let youtubeThumbnailURL = videoThumbnailsDirectory.appendingPathComponent("youtube_\(videoId)_thumbnail.jpg")
             if FileManager.default.fileExists(atPath: youtubeThumbnailURL.path) {
                 try FileManager.default.removeItem(at: youtubeThumbnailURL)
-                print("✅ [VideoStorage] Deleted YouTube custom thumbnail")
+                // print("✅ [VideoStorage] Deleted YouTube custom thumbnail")
             }
         } catch {
-            print("❌ [VideoStorage] Error during thumbnail deletion: \(error)")
+            // print("❌ [VideoStorage] Error during thumbnail deletion: \(error)")
             // Continue with video deletion even if thumbnail deletion fails
         }
         
@@ -187,18 +187,18 @@ class VideoStorage {
                 videoURL = documentsDirectory.appendingPathComponent(videoPath)
             }
             
-            print("🔍 [VideoStorage] Looking for video at: \(videoURL.path)")
+            // print("🔍 [VideoStorage] Looking for video at: \(videoURL.path)")
             
             if FileManager.default.fileExists(atPath: videoURL.path) {
                 do {
                     let fileSize = (try? FileManager.default.attributesOfItem(atPath: videoURL.path)[.size] as? Int64) ?? 0
                     try FileManager.default.removeItem(at: videoURL)
-                    print("✅ [VideoStorage] Deleted video file: \(videoPath) (size: \(fileSize / 1024 / 1024) MB)")
+                    // print("✅ [VideoStorage] Deleted video file: \(videoPath) (size: \(fileSize / 1024 / 1024) MB)")
                 } catch {
-                    print("❌ [VideoStorage] Failed to delete video file: \(error)")
+                    // print("❌ [VideoStorage] Failed to delete video file: \(error)")
                 }
             } else {
-                print("❌ [VideoStorage] Video file not found at path: \(videoURL.path)")
+                // print("❌ [VideoStorage] Video file not found at path: \(videoURL.path)")
                 
                 // Try alternative paths
                 let alternativePaths = [
@@ -208,26 +208,26 @@ class VideoStorage {
                 
                 for altPath in alternativePaths {
                     if FileManager.default.fileExists(atPath: altPath.path) {
-                        print("🔍 [VideoStorage] Found video at alternative path: \(altPath.path)")
+                        // print("🔍 [VideoStorage] Found video at alternative path: \(altPath.path)")
                         do {
                             try FileManager.default.removeItem(at: altPath)
-                            print("✅ [VideoStorage] Deleted video from alternative path")
+                            // print("✅ [VideoStorage] Deleted video from alternative path")
                         } catch {
-                            print("❌ [VideoStorage] Failed to delete from alternative path: \(error)")
+                            // print("❌ [VideoStorage] Failed to delete from alternative path: \(error)")
                         }
                         break
                     }
                 }
             }
         } else {
-            print("⚠️ [VideoStorage] No video path provided for deletion")
+            // print("⚠️ [VideoStorage] No video path provided for deletion")
         }
     }
     
     // MARK: - Anime Videos
     
     func saveAnimeVideos(for animeId: String, videos: [MemoryVideo]) {
-        print("💾 [VideoStorage] Saving \(videos.count) videos for anime: \(animeId)")
+        // print("💾 [VideoStorage] Saving \(videos.count) videos for anime: \(animeId)")
         ensureDirectoryExists()
         
         var metadataArray: [VideoMetadata] = []
@@ -238,9 +238,9 @@ class VideoStorage {
                 let thumbnailURL = self.thumbnailURL(for: video.id.uuidString)
                 do {
                     try thumbnailData.write(to: thumbnailURL)
-                    print("💾 [VideoStorage] Saved thumbnail for video: \(video.id.uuidString)")
+                    // print("💾 [VideoStorage] Saved thumbnail for video: \(video.id.uuidString)")
                 } catch {
-                    print("❌ [VideoStorage] Failed to save thumbnail: \(error)")
+                    // print("❌ [VideoStorage] Failed to save thumbnail: \(error)")
                 }
             }
             
@@ -267,9 +267,9 @@ class VideoStorage {
             let data = try JSONEncoder().encode(metadataArray)
             UserDefaults.standard.set(data, forKey: key)
             UserDefaults.standard.synchronize()
-            print("✅ [VideoStorage] Successfully saved \(metadataArray.count) anime video metadata")
+            // print("✅ [VideoStorage] Successfully saved \(metadataArray.count) anime video metadata")
         } catch {
-            print("❌ [VideoStorage] Failed to save anime videos: \(error)")
+            // print("❌ [VideoStorage] Failed to save anime videos: \(error)")
         }
     }
     
@@ -333,43 +333,43 @@ class VideoStorage {
     
     func saveAlbums(for characterId: String, albums: [Album]) {
         let key = "video_albums_\(characterId)"
-        print("💾 [VideoAlbum] Session \(sessionId) - Attempting to save \(albums.count) albums for character: \(characterId)")
-        print("💾 [VideoAlbum] Save key: \(key)")
+        // print("💾 [VideoAlbum] Session \(sessionId) - Attempting to save \(albums.count) albums for character: \(characterId)")
+        // print("💾 [VideoAlbum] Save key: \(key)")
         
         do {
             let encodedData = try JSONEncoder().encode(albums)
-            print("💾 [VideoAlbum] Successfully encoded \(encodedData.count) bytes")
+            // print("💾 [VideoAlbum] Successfully encoded \(encodedData.count) bytes")
             
             UserDefaults.standard.set(encodedData, forKey: key)
             
             // Force synchronize to ensure data is written immediately
             let syncResult = UserDefaults.standard.synchronize()
-            print("💾 [VideoAlbum] Synchronize result: \(syncResult)")
+            // print("💾 [VideoAlbum] Synchronize result: \(syncResult)")
             
             // Additional force save using CFPreferences
             CFPreferencesSetAppValue(key as CFString, encodedData as CFPropertyList, kCFPreferencesCurrentApplication)
             let cfSyncResult = CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication)
-            print("💾 [VideoAlbum] CFPreferences sync result: \(cfSyncResult)")
+            // print("💾 [VideoAlbum] CFPreferences sync result: \(cfSyncResult)")
             
-            print("💾 [VideoAlbum] Saved \(albums.count) video albums to UserDefaults with key: \(key)")
+            // print("💾 [VideoAlbum] Saved \(albums.count) video albums to UserDefaults with key: \(key)")
             
             // Verify the save was successful
             if let verifyData = UserDefaults.standard.data(forKey: key) {
-                print("✅ [VideoAlbum] Verified save: data exists with \(verifyData.count) bytes")
+                // print("✅ [VideoAlbum] Verified save: data exists with \(verifyData.count) bytes")
                 
                 // Double-check by trying to decode
                 if let verifiedAlbums = try? JSONDecoder().decode([Album].self, from: verifyData) {
-                    print("✅ [VideoAlbum] Verified decode: \(verifiedAlbums.count) albums")
+                    // print("✅ [VideoAlbum] Verified decode: \(verifiedAlbums.count) albums")
                 } else {
-                    print("⚠️ [VideoAlbum] Warning: Saved data cannot be decoded")
+                    // print("⚠️ [VideoAlbum] Warning: Saved data cannot be decoded")
                 }
             } else {
-                print("⚠️ [VideoAlbum] Warning: Could not verify saved data")
+                // print("⚠️ [VideoAlbum] Warning: Could not verify saved data")
             }
             
             // Log album details
             for album in albums {
-                print("  - Saved Album '\(album.tag)' with \(album.videos.count) videos, ID: \(album.id)")
+                // print("  - Saved Album '\(album.tag)' with \(album.videos.count) videos, ID: \(album.id)")
             }
             
             // Also save to file as backup
@@ -377,47 +377,47 @@ class VideoStorage {
             let fileURL = albumFileURL(for: characterId)
             do {
                 try encodedData.write(to: fileURL)
-                print("💾 [VideoAlbum] Also saved to file: \(fileURL.lastPathComponent)")
+                // print("💾 [VideoAlbum] Also saved to file: \(fileURL.lastPathComponent)")
             } catch {
-                print("⚠️ [VideoAlbum] Failed to save to file: \(error)")
+                // print("⚠️ [VideoAlbum] Failed to save to file: \(error)")
             }
         } catch {
-            print("❌ [VideoAlbum] Failed to encode albums for character \(characterId)")
-            print("❌ [VideoAlbum] Encoding error: \(error)")
+            // print("❌ [VideoAlbum] Failed to encode albums for character \(characterId)")
+            // print("❌ [VideoAlbum] Encoding error: \(error)")
         }
     }
     
     func loadAlbums(for characterId: String) -> [Album] {
         let key = "video_albums_\(characterId)"
-        print("🔍 [VideoAlbum] Session \(sessionId) - Attempting to load albums with key: \(key)")
-        print("🔍 [VideoAlbum] Character ID: \(characterId)")
+        // print("🔍 [VideoAlbum] Session \(sessionId) - Attempting to load albums with key: \(key)")
+        // print("🔍 [VideoAlbum] Character ID: \(characterId)")
         
         // Check if UserDefaults is accessible
         let userDefaults = UserDefaults.standard
-        print("🔍 [VideoAlbum] Using UserDefaults.standard")
+        // print("🔍 [VideoAlbum] Using UserDefaults.standard")
         
         // Also check for legacy keys with app ID prefix
         let allKeys = userDefaults.dictionaryRepresentation().keys
         let possibleKeys = allKeys.filter { $0.contains("album") && $0.contains(characterId) }
         if !possibleKeys.isEmpty {
-            print("🔍 [VideoAlbum] Found possible album keys containing characterId:")
+            // print("🔍 [VideoAlbum] Found possible album keys containing characterId:")
             for possibleKey in possibleKeys {
-                print("  - \(possibleKey)")
+                // print("  - \(possibleKey)")
                 
                 // Try to migrate data from legacy keys
                 if possibleKey.contains("anime_artwork_albums") && possibleKey.contains(characterId) {
-                    print("🔄 [VideoAlbum] Attempting to migrate from legacy key: \(possibleKey)")
+                    // print("🔄 [VideoAlbum] Attempting to migrate from legacy key: \(possibleKey)")
                     if let legacyData = userDefaults.data(forKey: possibleKey) {
                         do {
                             // Try to decode as ArtworkAlbum array first
                             if let artworkAlbums = try? JSONDecoder().decode([ArtworkAlbum].self, from: legacyData) {
-                                print("🔄 [VideoAlbum] Migrating \(artworkAlbums.count) artwork albums to video albums")
+                                // print("🔄 [VideoAlbum] Migrating \(artworkAlbums.count) artwork albums to video albums")
                                 // Convert ArtworkAlbum to Album (video album)
                                 // This is a placeholder - actual conversion would depend on the data structure
                             } else {
                                 // Try to decode as Album array directly
                                 let albums = try JSONDecoder().decode([Album].self, from: legacyData)
-                                print("🔄 [VideoAlbum] Successfully migrated \(albums.count) albums")
+                                // print("🔄 [VideoAlbum] Successfully migrated \(albums.count) albums")
                                 // Save to the correct key
                                 saveAlbums(for: characterId, albums: albums)
                                 // Remove the legacy key
@@ -426,7 +426,7 @@ class VideoStorage {
                                 return albums
                             }
                         } catch {
-                            print("🔄 [VideoAlbum] Migration failed: \(error)")
+                            // print("🔄 [VideoAlbum] Migration failed: \(error)")
                         }
                     }
                 }
@@ -437,54 +437,54 @@ class VideoStorage {
         var data = userDefaults.data(forKey: key)
         
         if data == nil {
-            print("🔍 [VideoAlbum] Trying CFPreferences...")
+            // print("🔍 [VideoAlbum] Trying CFPreferences...")
             if let cfData = CFPreferencesCopyAppValue(key as CFString, kCFPreferencesCurrentApplication) as? Data {
                 data = cfData
-                print("📦 [VideoAlbum] Found data via CFPreferences with \(cfData.count) bytes")
+                // print("📦 [VideoAlbum] Found data via CFPreferences with \(cfData.count) bytes")
             }
         }
         
         if let data = data {
-            print("📦 [VideoAlbum] Found data with \(data.count) bytes")
+            // print("📦 [VideoAlbum] Found data with \(data.count) bytes")
             
             do {
                 let decodedAlbums = try JSONDecoder().decode([Album].self, from: data)
-                print("📂 [VideoAlbum] Successfully loaded \(decodedAlbums.count) video albums from UserDefaults")
+                // print("📂 [VideoAlbum] Successfully loaded \(decodedAlbums.count) video albums from UserDefaults")
                 
                 // Log album details for debugging
                 for album in decodedAlbums {
-                    print("  - Album '\(album.tag)' with \(album.videos.count) videos")
-                    print("    Album ID: \(album.id)")
+                    // print("  - Album '\(album.tag)' with \(album.videos.count) videos")
+                    // print("    Album ID: \(album.id)")
                 }
                 
                 return decodedAlbums
             } catch {
-                print("❌ [VideoAlbum] Failed to decode albums: \(error)")
-                print("❌ [VideoAlbum] Error details: \(String(describing: error))")
+                // print("❌ [VideoAlbum] Failed to decode albums: \(error)")
+                // print("❌ [VideoAlbum] Error details: \(String(describing: error))")
                 
                 // Try to decode as old format if exists
-                print("🔄 [VideoAlbum] Attempting to check data integrity...")
+                // print("🔄 [VideoAlbum] Attempting to check data integrity...")
                 if let jsonObject = try? JSONSerialization.jsonObject(with: data, options: []) {
-                    print("📋 [VideoAlbum] Raw JSON: \(jsonObject)")
+                    // print("📋 [VideoAlbum] Raw JSON: \(jsonObject)")
                 }
                 
                 return []
             }
         } else {
-            print("📂 [VideoAlbum] No albums found in UserDefaults for character \(characterId)")
+            // print("📂 [VideoAlbum] No albums found in UserDefaults for character \(characterId)")
             
             // Try to load from file as fallback
             let fileURL = albumFileURL(for: characterId)
             if FileManager.default.fileExists(atPath: fileURL.path) {
-                print("🔍 [VideoAlbum] Found album file: \(fileURL.lastPathComponent)")
+                // print("🔍 [VideoAlbum] Found album file: \(fileURL.lastPathComponent)")
                 do {
                     let fileData = try Data(contentsOf: fileURL)
                     let albums = try JSONDecoder().decode([Album].self, from: fileData)
-                    print("📂 [VideoAlbum] Successfully loaded \(albums.count) albums from file")
+                    // print("📂 [VideoAlbum] Successfully loaded \(albums.count) albums from file")
                     
                     // Log album details
                     for album in albums {
-                        print("  - Loaded Album '\(album.tag)' with \(album.videos.count) videos from file")
+                        // print("  - Loaded Album '\(album.tag)' with \(album.videos.count) videos from file")
                     }
                     
                     // Restore to UserDefaults
@@ -492,23 +492,23 @@ class VideoStorage {
                     
                     return albums
                 } catch {
-                    print("❌ [VideoAlbum] Failed to load from file: \(error)")
+                    // print("❌ [VideoAlbum] Failed to load from file: \(error)")
                 }
             } else {
-                print("📂 [VideoAlbum] No album file found at: \(fileURL.lastPathComponent)")
+                // print("📂 [VideoAlbum] No album file found at: \(fileURL.lastPathComponent)")
             }
             
             // List all keys to debug
             let allKeys = userDefaults.dictionaryRepresentation().keys
             let albumKeys = allKeys.filter { $0.contains("album") }
-            print("🔍 [VideoAlbum] All album-related keys in UserDefaults: \(albumKeys)")
-            print("🔍 [VideoAlbum] Total keys in UserDefaults: \(allKeys.count)")
+            // print("🔍 [VideoAlbum] All album-related keys in UserDefaults: \(albumKeys)")
+            // print("🔍 [VideoAlbum] Total keys in UserDefaults: \(allKeys.count)")
             
             // Check if the key exists but has nil value
             if userDefaults.object(forKey: key) == nil {
-                print("⚠️ [VideoAlbum] Key '\(key)' does not exist in UserDefaults")
+                // print("⚠️ [VideoAlbum] Key '\(key)' does not exist in UserDefaults")
             } else {
-                print("⚠️ [VideoAlbum] Key '\(key)' exists but data is nil")
+                // print("⚠️ [VideoAlbum] Key '\(key)' exists but data is nil")
             }
             
             return []
@@ -522,33 +522,33 @@ class VideoStorage {
         let allKeys = userDefaults.dictionaryRepresentation().keys
         let albumKeys = allKeys.filter { $0.contains("video_albums_") }
         
-        print("🔧 [VideoAlbum DEBUG] === UserDefaults Album Keys Debug ===")
-        print("🔧 [VideoAlbum DEBUG] Total keys in UserDefaults: \(allKeys.count)")
-        print("🔧 [VideoAlbum DEBUG] Album-related keys: \(albumKeys.count)")
+        // print("🔧 [VideoAlbum DEBUG] === UserDefaults Album Keys Debug ===")
+        // print("🔧 [VideoAlbum DEBUG] Total keys in UserDefaults: \(allKeys.count)")
+        // print("🔧 [VideoAlbum DEBUG] Album-related keys: \(albumKeys.count)")
         
         for key in albumKeys {
             if let data = userDefaults.data(forKey: key) {
-                print("🔧 [VideoAlbum DEBUG] Key: \(key) - Data size: \(data.count) bytes")
+                // print("🔧 [VideoAlbum DEBUG] Key: \(key) - Data size: \(data.count) bytes")
                 
                 // Try to decode to check validity
                 if let albums = try? JSONDecoder().decode([Album].self, from: data) {
-                    print("🔧 [VideoAlbum DEBUG]   ✅ Valid data: \(albums.count) albums")
+                    // print("🔧 [VideoAlbum DEBUG]   ✅ Valid data: \(albums.count) albums")
                     for album in albums {
-                        print("🔧 [VideoAlbum DEBUG]     - Album '\(album.tag)' with \(album.videos.count) videos")
+                        // print("🔧 [VideoAlbum DEBUG]     - Album '\(album.tag)' with \(album.videos.count) videos")
                     }
                 } else {
-                    print("🔧 [VideoAlbum DEBUG]   ❌ Invalid/corrupted data")
+                    // print("🔧 [VideoAlbum DEBUG]   ❌ Invalid/corrupted data")
                 }
             } else {
-                print("🔧 [VideoAlbum DEBUG] Key: \(key) - No data")
+                // print("🔧 [VideoAlbum DEBUG] Key: \(key) - No data")
             }
         }
-        print("🔧 [VideoAlbum DEBUG] =================================")
+        // print("🔧 [VideoAlbum DEBUG] =================================")
     }
     
     func testAlbumPersistence(characterId: String) {
-        print("🧪 [VideoAlbum TEST] === Testing Album Persistence ===")
-        print("🧪 [VideoAlbum TEST] Character ID: \(characterId)")
+        // print("🧪 [VideoAlbum TEST] === Testing Album Persistence ===")
+        // print("🧪 [VideoAlbum TEST] Character ID: \(characterId)")
         
         // Create test album
         let testVideo = MemoryVideo(
@@ -565,36 +565,36 @@ class VideoStorage {
         )
         
         let testAlbum = Album(tag: "Test Album", videos: [testVideo])
-        print("🧪 [VideoAlbum TEST] Created test album with ID: \(testAlbum.id)")
+        // print("🧪 [VideoAlbum TEST] Created test album with ID: \(testAlbum.id)")
         
         // Save it
         saveAlbums(for: characterId, albums: [testAlbum])
         
         // Try to load it back immediately
         let loadedAlbums = loadAlbums(for: characterId)
-        print("🧪 [VideoAlbum TEST] Loaded \(loadedAlbums.count) albums immediately after save")
+        // print("🧪 [VideoAlbum TEST] Loaded \(loadedAlbums.count) albums immediately after save")
         
         if loadedAlbums.count > 0 {
-            print("🧪 [VideoAlbum TEST] ✅ Persistence test PASSED")
+            // print("🧪 [VideoAlbum TEST] ✅ Persistence test PASSED")
         } else {
-            print("🧪 [VideoAlbum TEST] ❌ Persistence test FAILED")
+            // print("🧪 [VideoAlbum TEST] ❌ Persistence test FAILED")
             
             // Additional debugging
             let key = "video_albums_\(characterId)"
             if let data = UserDefaults.standard.data(forKey: key) {
-                print("🧪 [VideoAlbum TEST] Data exists but decode failed")
-                print("🧪 [VideoAlbum TEST] Data size: \(data.count) bytes")
+                // print("🧪 [VideoAlbum TEST] Data exists but decode failed")
+                // print("🧪 [VideoAlbum TEST] Data size: \(data.count) bytes")
             } else {
-                print("🧪 [VideoAlbum TEST] No data found for key: \(key)")
+                // print("🧪 [VideoAlbum TEST] No data found for key: \(key)")
             }
         }
         
-        print("🧪 [VideoAlbum TEST] =================================")
+        // print("🧪 [VideoAlbum TEST] =================================")
     }
     
     // Clean up any corrupted or duplicate album keys
     func cleanupAlbumData() {
-        print("🧹 [VideoAlbum CLEANUP] Starting album data cleanup...")
+        // print("🧹 [VideoAlbum CLEANUP] Starting album data cleanup...")
         
         let userDefaults = UserDefaults.standard
         let allKeys = userDefaults.dictionaryRepresentation().keys
@@ -610,7 +610,7 @@ class VideoStorage {
                     validKeys.insert(key)
                 } else {
                     corruptedKeys.append(key)
-                    print("🧹 [VideoAlbum CLEANUP] Found corrupted key: \(key)")
+                    // print("🧹 [VideoAlbum CLEANUP] Found corrupted key: \(key)")
                 }
             }
         }
@@ -618,21 +618,21 @@ class VideoStorage {
         // Remove corrupted keys
         for key in corruptedKeys {
             userDefaults.removeObject(forKey: key)
-            print("🧹 [VideoAlbum CLEANUP] Removed corrupted key: \(key)")
+            // print("🧹 [VideoAlbum CLEANUP] Removed corrupted key: \(key)")
         }
         
         if corruptedKeys.count > 0 {
             userDefaults.synchronize()
-            print("🧹 [VideoAlbum CLEANUP] Cleanup complete. Removed \(corruptedKeys.count) corrupted keys")
+            // print("🧹 [VideoAlbum CLEANUP] Cleanup complete. Removed \(corruptedKeys.count) corrupted keys")
         } else {
-            print("🧹 [VideoAlbum CLEANUP] No corrupted keys found")
+            // print("🧹 [VideoAlbum CLEANUP] No corrupted keys found")
         }
     }
     
     // MARK: - Debug and Testing
     
     func testAlbumPersistence(for characterId: String) {
-        print("🧪 [VideoAlbum] Starting persistence test for character: \(characterId)")
+        // print("🧪 [VideoAlbum] Starting persistence test for character: \(characterId)")
         
         // Use a test-specific ID to avoid conflicts
         let testCharacterId = "TEST_\(characterId)"
@@ -654,23 +654,23 @@ class VideoStorage {
         let testAlbum = Album(tag: "test", videos: [testVideo])
         
         // Save the test album with test ID
-        print("🧪 [VideoAlbum] Saving test album with test ID...")
+        // print("🧪 [VideoAlbum] Saving test album with test ID...")
         saveAlbums(for: testCharacterId, albums: [testAlbum])
         
         // Immediately try to load it
-        print("🧪 [VideoAlbum] Loading test album...")
+        // print("🧪 [VideoAlbum] Loading test album...")
         let loadedAlbums = loadAlbums(for: testCharacterId)
         
         if loadedAlbums.count == 1 && loadedAlbums[0].tag == "test" {
-            print("✅ [VideoAlbum] Persistence test PASSED")
-            print("✅ [VideoAlbum] Test album successfully saved and loaded")
+            // print("✅ [VideoAlbum] Persistence test PASSED")
+            // print("✅ [VideoAlbum] Test album successfully saved and loaded")
         } else {
-            print("❌ [VideoAlbum] Persistence test FAILED")
-            print("❌ [VideoAlbum] Expected 1 album with tag 'test', got \(loadedAlbums.count) albums")
+            // print("❌ [VideoAlbum] Persistence test FAILED")
+            // print("❌ [VideoAlbum] Expected 1 album with tag 'test', got \(loadedAlbums.count) albums")
         }
         
         // Clean up test data
-        print("🧪 [VideoAlbum] Cleaning up test data...")
+        // print("🧪 [VideoAlbum] Cleaning up test data...")
         UserDefaults.standard.removeObject(forKey: "video_albums_\(testCharacterId)")
         UserDefaults.standard.synchronize()
         

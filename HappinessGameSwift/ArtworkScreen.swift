@@ -708,17 +708,17 @@ struct ArtworkScreen: View {
             }
         )
         .onAppear {
-            print("🎨 [ArtworkScreen] onAppear called for character: \(character.name)")
+            // print("🎨 [ArtworkScreen] onAppear called for character: \(character.name)")
             loadArtworks()
             loadAlbumsFromUserDefaults()
-            print("🎨 [ArtworkScreen] Loaded \(artworks.count) artworks and \(albums.count) albums")
+            // print("🎨 [ArtworkScreen] Loaded \(artworks.count) artworks and \(albums.count) albums")
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ArtworkDataUpdated"))) { notification in
             // Only reload if the notification is from a different source
             if let userInfo = notification.userInfo, 
                let source = userInfo["source"] as? String,
                source != "currentView" {
-                print("🔄 [ArtworkScreen] Received ArtworkDataUpdated notification from \(source) - reloading data")
+                // print("🔄 [ArtworkScreen] Received ArtworkDataUpdated notification from \(source) - reloading data")
                 loadArtworks()
                 loadAlbumsFromUserDefaults()
                 refreshID = UUID()
@@ -997,13 +997,13 @@ struct ArtworkScreen: View {
                 }
                 return ArtworkAlbum(tag: album.tag, videos: currentArtworks, characterImageName: album.characterImageName)
             }
-            print("📖 [ArtworkScreen] Loaded and rebuilt \(albums.count) albums from UserDefaults")
+            // print("📖 [ArtworkScreen] Loaded and rebuilt \(albums.count) albums from UserDefaults")
             for album in albums {
-                print("  - Album '\(album.tag)' with \(album.videos.count) artworks")
+                // print("  - Album '\(album.tag)' with \(album.videos.count) artworks")
             }
         } else {
             albums = []
-            print("📖 [ArtworkScreen] No albums found for key: \(key)")
+            // print("📖 [ArtworkScreen] No albums found for key: \(key)")
         }
     }
     
@@ -1025,7 +1025,7 @@ struct ArtworkScreen: View {
         
         // Reload albums to include the new artwork
         loadAlbumsFromUserDefaults()
-        print("🔄 [ArtworkScreen] Reloaded albums after adding new artwork")
+        // print("🔄 [ArtworkScreen] Reloaded albums after adding new artwork")
         
         selectedImage = nil
         photoTitle = ""
@@ -1052,7 +1052,7 @@ struct ArtworkScreen: View {
         
         // Reload albums to include the new artwork
         loadAlbumsFromUserDefaults()
-        print("🔄 [ArtworkScreen] Reloaded albums after adding new Pixiv artwork")
+        // print("🔄 [ArtworkScreen] Reloaded albums after adding new Pixiv artwork")
         
         photoTitle = ""
         photoTags = ""

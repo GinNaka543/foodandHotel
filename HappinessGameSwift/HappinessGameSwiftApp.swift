@@ -15,12 +15,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
     
     func applicationWillTerminate(_ application: UIApplication) {
-        print("⚠️ App will terminate - forcing UserDefaults synchronization")
+        // print("⚠️ App will terminate - forcing UserDefaults synchronization")
         UserDefaults.standard.synchronize()
     }
     
     func applicationDidEnterBackground(_ application: UIApplication) {
-        print("📱 App did enter background - synchronizing UserDefaults")
+        // print("📱 App did enter background - synchronizing UserDefaults")
         UserDefaults.standard.synchronize()
     }
 }
@@ -443,10 +443,10 @@ struct HappinessGameSwiftApp: App {
                                     
                                     // 購入済みプランも同期
                                     FirebaseManager.shared.syncPurchasedPlans(userId: userId) { _ in
-                                        print("✅ Purchased plans sync completed")
+                                        // print("✅ Purchased plans sync completed")
                                     }
                                 } else {
-                                    print("⚠️ No user logged in")
+                                    // print("⚠️ No user logged in")
                                     // ログインしていなくてもローカルデータを読み込む
                                     characterManager.loadCharacters()
                                     animeManager.loadAnimes()
@@ -484,7 +484,7 @@ struct HappinessGameSwiftApp: App {
                 switch newPhase {
                 case .background:
                     // アプリがバックグラウンドに移行する時に UserDefaults を同期
-                    print("📱 App moving to background - synchronizing UserDefaults")
+                    // print("📱 App moving to background - synchronizing UserDefaults")
                     UserDefaults.standard.synchronize()
                     
                     // Visit plansの保存を確実にする
@@ -508,22 +508,22 @@ struct HappinessGameSwiftApp: App {
             .onAppear {
                 // アプリ起動時に一度だけマイグレーションを実行
                 if !UserDefaults.standard.bool(forKey: "hasPerformedVisitPlanMigration") {
-                    print("📱 Performing one-time visit plan migration...")
+                    // print("📱 Performing one-time visit plan migration...")
                     VisitPlanDataStorage.shared.migrateOldSavedPlans()
                     UserDefaults.standard.set(true, forKey: "hasPerformedVisitPlanMigration")
                 }
                 
                 // データクリーンアップを実行（重複を削除）
                 let stats = VisitPlanDataStorage.shared.getStorageStatistics()
-                print("📊 Visit Plan Storage Stats - Plans: \(stats.totalPlans), Drafts: \(stats.totalDrafts), Duplicate Plans: \(stats.duplicatePlans), Duplicate Drafts: \(stats.duplicateDrafts)")
+                // print("📊 Visit Plan Storage Stats - Plans: \(stats.totalPlans), Drafts: \(stats.totalDrafts), Duplicate Plans: \(stats.duplicatePlans), Duplicate Drafts: \(stats.duplicateDrafts)")
                 
                 if stats.duplicatePlans > 0 || stats.duplicateDrafts > 0 {
-                    print("🧹 Cleaning up duplicate visit plans...")
+                    // print("🧹 Cleaning up duplicate visit plans...")
                     VisitPlanDataStorage.shared.cleanupDuplicatePlans()
                     
                     // Verify cleanup
                     let newStats = VisitPlanDataStorage.shared.getStorageStatistics()
-                    print("✅ Cleanup complete - Plans: \(newStats.totalPlans), Drafts: \(newStats.totalDrafts)")
+                    // print("✅ Cleanup complete - Plans: \(newStats.totalPlans), Drafts: \(newStats.totalDrafts)")
                 }
             }
         }

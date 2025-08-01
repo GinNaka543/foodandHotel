@@ -498,7 +498,7 @@ struct VisitPlanningScreen: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SaveAllDrafts"))) { _ in
-            print("📱 [VisitPlanningScreen] Received SaveAllDrafts notification")
+            // print("📱 [VisitPlanningScreen] Received SaveAllDrafts notification")
             // アプリがバックグラウンドに行くときに強制的に下書き保存
             if hasUnsavedChanges() {
                 saveDraftOnDisappear()

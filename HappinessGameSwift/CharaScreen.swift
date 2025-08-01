@@ -1614,6 +1614,9 @@ struct AboutView: View {
     @State private var newIconImage: UIImage?
     @State private var showIconAdjustment: Bool = false
     
+    // Debouncing用のタイマー
+    @State private var saveDebounceTimer: Timer?
+    
     // シート管理用のenum
     enum ActiveSheet: Identifiable {
         case soundtrackEdit
@@ -1736,22 +1739,22 @@ struct AboutView: View {
                         VStack(spacing: 0) {
                             if isEditingProfile {
                                 editableProfileRow(label: NSLocalizedString("name", comment: ""), text: $editedName)
-                                    .onChange(of: editedName) { saveCharacter() }
+                                    .onChange(of: editedName) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("tag", comment: ""), text: $editedTag)
-                                    .onChange(of: editedTag) { saveCharacter() }
+                                    .onChange(of: editedTag) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
                                 dateProfileRow(label: NSLocalizedString("birthday", comment: ""), date: $editedBirthday)
-                                    .onChange(of: editedBirthday) { saveCharacter() }
+                                    .onChange(of: editedBirthday) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("age", comment: ""), text: $editedAge)
-                                    .onChange(of: editedAge) { saveCharacter() }
+                                    .onChange(of: editedAge) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("favorite_food", comment: ""), text: $editedFavoriteFood)
-                                    .onChange(of: editedFavoriteFood) { saveCharacter() }
+                                    .onChange(of: editedFavoriteFood) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("voice_actor", comment: ""), text: $editedVoiceActor)
-                                    .onChange(of: editedVoiceActor) { saveCharacter() }
+                                    .onChange(of: editedVoiceActor) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
                                 // Cup size removed
                             } else {
@@ -1800,7 +1803,7 @@ struct AboutView: View {
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 12)
                                     .frame(minHeight: 200)
-                                    .onChange(of: profileDescription) { saveCharacter() }
+                                    .onChange(of: profileDescription) { debouncedSaveCharacter() }
                                     .scrollContentBackground(.hidden)
                                     .background(Color.clear)
                                     .autocorrectionDisabled(true)
@@ -1907,6 +1910,9 @@ struct AboutView: View {
             }
         }
         .onDisappear {
+            // Cancel any pending save timer
+            saveDebounceTimer?.invalidate()
+            // Save immediately when leaving the view
             saveCharacter()
         }
         /* .sheet(isPresented: $showIconPicker) {
@@ -2160,6 +2166,17 @@ struct AboutView: View {
         if let customFields = character.customFields,
            let descriptionField = customFields.first(where: { $0.name == "概要" }) {
             profileDescription = descriptionField.value
+        }
+    }
+    
+    // Debounced save function
+    private func debouncedSaveCharacter() {
+        // Cancel previous timer
+        saveDebounceTimer?.invalidate()
+        
+        // Start new timer with 0.5 second delay
+        saveDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+            saveCharacter()
         }
     }
     

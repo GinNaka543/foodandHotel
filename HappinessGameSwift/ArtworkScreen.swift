@@ -95,6 +95,7 @@ struct ArtworkScreen: View {
     @State private var r18ArtworkTitles: [String] = []
     @State private var isShowingFullDescription = false
     @State private var refreshID = UUID()
+    @State private var showIconAdjustment = false
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -145,23 +146,32 @@ struct ArtworkScreen: View {
         let bannerWidth = UIScreen.main.bounds.width - 32
         let bannerHeight: CGFloat = 60
         
-        return Group {
-            if let imageIdentifier = currentCharacter.imageIdentifier {
-                OptimizedFileImage(
-                    path: imageIdentifier,
-                    targetSize: CGSize(width: bannerWidth, height: bannerHeight)
-                )
-                .aspectRatio(contentMode: .fill)
-                .frame(width: bannerWidth, height: bannerHeight)
-                .clipped()
-            } else {
-                Rectangle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(maxWidth: .infinity, maxHeight: bannerHeight)
+        return Button(action: {
+            showIconAdjustment = true
+        }) {
+            Group {
+                if let imageIdentifier = currentCharacter.imageIdentifier {
+                    OptimizedFileImage(
+                        path: imageIdentifier,
+                        targetSize: CGSize(width: bannerWidth, height: bannerHeight)
+                    )
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: bannerWidth, height: bannerHeight)
+                    .scaleEffect(CGFloat(currentCharacter.iconScale))
+                    .offset(x: CGFloat(currentCharacter.iconOffsetX), y: CGFloat(currentCharacter.iconOffsetY))
+                    .clipped()
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(maxWidth: .infinity, maxHeight: bannerHeight)
+                }
             }
+            .cornerRadius(12)
         }
-        .cornerRadius(12)
+        .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        .id("\(currentCharacter.id)_\(currentCharacter.iconScale)_\(currentCharacter.iconOffsetX)_\(currentCharacter.iconOffsetY)")
     }
     
     // Profile icon view
@@ -875,6 +885,24 @@ struct ArtworkScreen: View {
                         saveArtworksToUserDefaults()
                     }
                 }
+            )
+        }
+        .sheet(isPresented: $showIconAdjustment, onDismiss: {
+            // アイコン調整後にUIを更新
+            characterManager.refreshUI()
+            refreshID = UUID()
+        }) {
+            CharacterIconAdjustmentView(
+                character: Binding(
+                    get: { currentCharacter },
+                    set: { updatedCharacter in
+                        if let idx = characterManager.characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
+                            characterManager.characters[idx] = updatedCharacter
+                            characterManager.updateCharacter(updatedCharacter)
+                        }
+                    }
+                ),
+                characterManager: characterManager
             )
         }
     }

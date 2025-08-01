@@ -234,6 +234,7 @@ struct AddPhotoView: View {
                         } else {
                             // 手動アップロードの保存処理
                             onSave()
+                            // dismiss() を削除 - ArtworkScreen側でactiveSheetをnilにすることで自動的に閉じる
                         }
                     }
                     .disabled(selectedUploadMethod == .pixiv ? 

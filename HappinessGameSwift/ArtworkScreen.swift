@@ -96,6 +96,8 @@ struct ArtworkScreen: View {
     @State private var isShowingFullDescription = false
     @State private var refreshID = UUID()
     @State private var showIconAdjustment = false
+    @State private var addButtonID = UUID() // ボタンの再描画を強制するためのID
+    @State private var showAddPhotoFullScreen = false // iPad用のfullScreenCover制御
     
     // 最新のキャラクター情報を取得
     private var currentCharacter: Character {
@@ -276,27 +278,22 @@ struct ArtworkScreen: View {
                 }
                 
                 // Add button moved here - changes based on tab
-                Button(action: { 
-                    if showAlbum {
-                        // アルバムタブの場合：アルバム作成
-                        showTagInput = true
-                    } else {
-                        // アートワークタブの場合：画像追加
-                        photoTitle = ""
-                        photoTags = ""
-                        activeSheet = .addPhoto
+                AddArtworkButton(
+                    showAlbum: showAlbum,
+                    activeSheet: $activeSheet,
+                    action: {
+                        if showAlbum {
+                            showTagInput = true
+                        } else {
+                            photoTitle = ""
+                            photoTags = ""
+                        }
                     }
-                }) {
-                    Text(showAlbum ? NSLocalizedString("create_album", comment: "Create album") : NSLocalizedString("add_photo", comment: "Add photo"))
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10.4)  // 12 / 1.15 = 10.4
-                        .background(Color.black)
-                        .cornerRadius(20)
-                }
-                .padding(.horizontal, 16)  // Same as banner padding
+                )
+                .id(addButtonID) // ボタンにIDを付けて再描画を制御
+                .padding(.horizontal, 16)
                 .padding(.bottom, 16)
+                .zIndex(999) // ボタンを最前面に配置
                 
                 // タブバー - カプセル型デザイン（左寄せ）
                 HStack {
@@ -713,6 +710,9 @@ struct ArtworkScreen: View {
             loadAlbumsFromUserDefaults()
             // print("🎨 [ArtworkScreen] Loaded \(artworks.count) artworks and \(albums.count) albums")
         }
+        .onChange(of: activeSheet) { newValue in
+            print("🔄 [activeSheet] Changed to: \(String(describing: newValue))")
+        }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ArtworkDataUpdated"))) { notification in
             // Only reload if the notification is from a different source
             if let userInfo = notification.userInfo, 
@@ -728,7 +728,12 @@ struct ArtworkScreen: View {
             AboutView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
                 .environmentObject(characterManager)
         }
-        .sheet(item: $activeSheet) { sheetType in
+        .sheet(item: Binding<ArtworkScreen.SheetType?>(
+            get: { UIDevice.current.userInterfaceIdiom == .pad ? nil : activeSheet },
+            set: { activeSheet = $0 }
+        ), onDismiss: {
+            print("📋 [Sheet] Dismissed")
+        }) { sheetType in
             switch sheetType {
             case .addPhoto:
                 AddPhotoView(
@@ -859,6 +864,24 @@ struct ArtworkScreen: View {
                 }
             }
             .padding(32)
+        }
+        .fullScreenCover(isPresented: Binding<Bool>(
+            get: { UIDevice.current.userInterfaceIdiom == .pad && activeSheet == .addPhoto },
+            set: { if !$0 { activeSheet = nil } }
+        )) {
+            AddPhotoView(
+                selectedImage: $selectedImage, 
+                photoTitle: $photoTitle, 
+                photoTags: $photoTags,
+                onSave: {
+                    if !photoTitle.trimmingCharacters(in: .whitespaces).isEmpty && !photoTags.trimmingCharacters(in: .whitespaces).isEmpty {
+                        saveArtwork()
+                    }
+                },
+                onPixivSave: { pixivURL, title, imageURL, tags in
+                    savePixivArtwork(pixivURL: pixivURL, title: title, imageURL: imageURL, tags: tags)
+                }
+            )
         }
         .fullScreenCover(item: $selectedArtwork) { artwork in
             ArtworkPlayerScreen(
@@ -1008,7 +1031,11 @@ struct ArtworkScreen: View {
     }
     
     func saveArtwork() {
-        guard let image = selectedImage else { return }
+        print("💾 [SaveArtwork] Starting save process")
+        guard let image = selectedImage else { 
+            print("⚠️ [SaveArtwork] No selected image, returning")
+            return 
+        }
         let tags = photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         let fileName = "character_artwork_\(UUID().uuidString).png"
         let path = saveImageToDocuments(image, fileName: fileName)
@@ -1022,15 +1049,20 @@ struct ArtworkScreen: View {
         )
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
+        print("✅ [SaveArtwork] Artwork saved successfully")
         
         // Reload albums to include the new artwork
         loadAlbumsFromUserDefaults()
-        // print("🔄 [ArtworkScreen] Reloaded albums after adding new artwork")
         
+        // Reset state
         selectedImage = nil
         photoTitle = ""
         photoTags = ""
-        activeSheet = nil
+        
+        // メインスレッドで確実にactiveSheetをnilにする
+        DispatchQueue.main.async {
+            activeSheet = nil
+        }
     }
     
     func savePixivArtwork(pixivURL: String, title: String, imageURL: String?, tags: String) {
@@ -1052,8 +1084,8 @@ struct ArtworkScreen: View {
         
         // Reload albums to include the new artwork
         loadAlbumsFromUserDefaults()
-        // print("🔄 [ArtworkScreen] Reloaded albums after adding new Pixiv artwork")
         
+        // Reset state
         photoTitle = ""
         photoTags = ""
         activeSheet = nil
@@ -1096,5 +1128,43 @@ struct ArtworkNavigationButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundColor(configuration.isPressed ? .black : .gray)
+    }
+}
+
+// 独立したボタンコンポーネント
+struct AddArtworkButton: View {
+    let showAlbum: Bool
+    @Binding var activeSheet: ArtworkScreen.SheetType?
+    let action: () -> Void
+    
+    var body: some View {
+        // Textビューをタップ可能にする
+        Text(showAlbum ? NSLocalizedString("create_album", comment: "Create album") : NSLocalizedString("add_photo", comment: "Add photo"))
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10.4)
+            .background(Color.black)
+            .cornerRadius(20)
+            .contentShape(Rectangle()) // タップ領域を明示的に設定
+            .onTapGesture {
+                print("🔘 [AddArtworkButton] onTapGesture - showAlbum: \(showAlbum), activeSheet: \(String(describing: activeSheet))")
+                
+                if !showAlbum {
+                    // アートワークモードの場合
+                    if activeSheet == nil {
+                        action()
+                        // 少し遅延させてからactiveSheetを設定
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            activeSheet = .addPhoto
+                        }
+                    } else {
+                        print("⚠️ [AddArtworkButton] activeSheet is not nil, skipping")
+                    }
+                } else {
+                    // アルバムモードの場合
+                    action()
+                }
+            }
     }
 }

@@ -438,12 +438,11 @@ struct HomeScreen: View {
                     .padding(.top, 12)
                     .padding(.bottom, 20)
                 
-                // 人気キャラランキングセクション
-                // タイトルはCharacterRankingScrollView内で表示
-                CharacterRankingScrollView()
-                    .frame(height: 140) // 1.4倍サイズ用に高さ調整
+                // 今日見るアニメセクション
+                TodayAnimeScrollView()
                     .padding(.top, 1)
-                    .padding(.bottom, 6)
+                    .padding(.bottom, 20)
+                
             }
         }
         .background(Color.white)
@@ -792,6 +791,7 @@ struct ScheduleView: View {
     @State private var showingAddSchedule = false
     @State private var selectedDate = Date()
     @State private var selectedAnimeId: String = ""
+    @State private var selectedAnimeIds: Set<String> = []
     @State private var episode: String = ""
     @State private var note: String = ""
     
@@ -824,16 +824,13 @@ struct ScheduleView: View {
             }
         }
         .sheet(isPresented: $showingAddSchedule) {
-            AddScheduleSheet(
+            MultiAddScheduleSheet(
                 animeManager: animeManager,
                 selectedDate: $selectedDate,
-                selectedAnimeId: $selectedAnimeId,
-                episode: $episode,
-                note: $note,
+                selectedAnimeIds: $selectedAnimeIds,
                 showingAddSchedule: $showingAddSchedule,
-                addAction: addScheduleItem,
-                resetAction: resetForm,
-                getSelectedAnimeTitle: getSelectedAnimeTitle
+                addAction: addMultipleScheduleItems,
+                resetAction: resetForm
             )
         }
     }
@@ -862,6 +859,27 @@ struct ScheduleView: View {
         resetForm()
     }
     
+    private func addMultipleScheduleItems() {
+        for animeId in selectedAnimeIds {
+            if let anime = animeManager.animes.first(where: { $0.id.uuidString == animeId }) {
+                let newItem = ScheduleItem(
+                    date: selectedDate,
+                    animeId: animeId,
+                    animeTitle: anime.title,
+                    episode: nil,
+                    note: nil
+                )
+                scheduleItems.append(newItem)
+            }
+        }
+        saveScheduleItems()
+        
+        // スケジュール更新の通知を送信
+        NotificationCenter.default.post(name: NSNotification.Name("ScheduleUpdated"), object: nil)
+        
+        resetForm()
+    }
+    
     private func deleteScheduleItem(_ item: ScheduleItem) {
         scheduleItems.removeAll(where: { $0.id == item.id })
         saveScheduleItems()
@@ -870,6 +888,7 @@ struct ScheduleView: View {
     private func resetForm() {
         selectedDate = Date()
         selectedAnimeId = ""
+        selectedAnimeIds = []
         episode = ""
         note = ""
     }
@@ -885,6 +904,9 @@ struct ScheduleView: View {
         if let data = try? JSONEncoder().encode(scheduleItems) {
             UserDefaults.standard.set(data, forKey: userDefaultsKey)
         }
+        
+        // スケジュール更新の通知を送信
+        NotificationCenter.default.post(name: NSNotification.Name("ScheduleUpdated"), object: nil)
     }
 }
 
@@ -1252,15 +1274,13 @@ struct DayScheduleDetailView: View {
     }
 }
 
-// 特定の日付用スケジュール追加シート
+// 特定の日付用スケジュール追加シート（複数選択対応）
 struct AddScheduleSheetForDate: View {
     let animeManager: AnimeManager
     let selectedDate: Date
     let onAdd: (Anime, Int?, String?) -> Void
     
-    @State private var selectedAnime: Anime?
-    @State private var episode = ""
-    @State private var note = ""
+    @State private var selectedAnimeIds: Set<String> = []
     @State private var showAnimeSelection = false
     @Environment(\.dismiss) var dismiss
     
@@ -1284,59 +1304,68 @@ struct AddScheduleSheetForDate: View {
                     }
                 }
                 
-                Section(header: Text(NSLocalizedString("anime", comment: "Anime"))) {
-                    Button(action: {
-                        showAnimeSelection = true
-                    }) {
-                        HStack {
-                            if let anime = selectedAnime,
-                               let imagePath = anime.imageIdentifier,
-                               let uiImage = loadImageFromPath(imagePath) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 40, height: 40)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                            } else {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.purple.opacity(0.1))
-                                    .frame(width: 40, height: 40)
-                                    .overlay(
-                                        Image(systemName: "tv")
-                                            .foregroundColor(.purple.opacity(0.5))
-                                    )
+                Section {
+                    HStack {
+                        Text(NSLocalizedString("anime", comment: "Anime"))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        Spacer()
+                        Text("\(selectedAnimeIds.count) " + NSLocalizedString("items_selected", comment: "items selected"))
+                            .font(.system(size: 12))
+                            .foregroundColor(.purple)
+                    }
+                    .padding(.bottom, 8)
+                    
+                    let validAnimes = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    if validAnimes.isEmpty {
+                        Text(NSLocalizedString("no_anime_registered", comment: "No anime registered"))
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        ForEach(validAnimes) { anime in
+                            HStack {
+                                if let imagePath = anime.imageIdentifier,
+                                   let uiImage = loadImageFromPath(imagePath) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fill)
+                                        .frame(width: 40, height: 40)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                } else {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.purple.opacity(0.1))
+                                        .frame(width: 40, height: 40)
+                                        .overlay(
+                                            Image(systemName: "tv")
+                                                .foregroundColor(.purple.opacity(0.5))
+                                        )
+                                }
+                                
+                                Text(anime.title)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.primary)
+                                    .lineLimit(1)
+                                
+                                Spacer()
+                                
+                                Image(systemName: selectedAnimeIds.contains(anime.id.uuidString) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(selectedAnimeIds.contains(anime.id.uuidString) ? .purple : .gray)
+                                    .font(.system(size: 20))
                             }
-                            
-                            Text(selectedAnime?.title ?? NSLocalizedString("select_anime", comment: "Select anime"))
-                                .foregroundColor(selectedAnime == nil ? .gray : .primary)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if selectedAnimeIds.contains(anime.id.uuidString) {
+                                    selectedAnimeIds.remove(anime.id.uuidString)
+                                } else {
+                                    selectedAnimeIds.insert(anime.id.uuidString)
+                                }
+                            }
                         }
                     }
                 }
                 
-                if selectedAnime != nil {
-                    Section(header: Text(NSLocalizedString("details_optional", comment: "Details (optional)"))) {
-                        HStack {
-                            Text(NSLocalizedString("episode", comment: "Episode"))
-                            TextField(NSLocalizedString("example_12", comment: "e.g. 12"), text: $episode)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.trailing)
-                        }
-                        
-                        VStack(alignment: .leading) {
-                            Text(NSLocalizedString("memo", comment: "Memo"))
-                                .font(.system(size: 14))
-                                .foregroundColor(.gray)
-                            TextEditor(text: $note)
-                                .frame(minHeight: 60)
-                        }
-                    }
-                }
             }
             .navigationTitle(NSLocalizedString("add_watch_schedule", comment: "Add watch schedule"))
             .navigationBarTitleDisplayMode(.inline)
@@ -1348,20 +1377,19 @@ struct AddScheduleSheetForDate: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(NSLocalizedString("add", comment: "Add")) {
-                        if let anime = selectedAnime {
-                            onAdd(anime, Int(episode), note.isEmpty ? nil : note)
-                            dismiss()
+                        // 複数のアニメを追加
+                        for animeId in selectedAnimeIds {
+                            if let anime = animeManager.animes.first(where: { $0.id.uuidString == animeId }) {
+                                onAdd(anime, nil, nil)
+                            }
                         }
+                        // スケジュール更新の通知を送信
+                        NotificationCenter.default.post(name: NSNotification.Name("ScheduleUpdated"), object: nil)
+                        dismiss()
                     }
-                    .disabled(selectedAnime == nil)
+                    .disabled(selectedAnimeIds.isEmpty)
                 }
             }
-        }
-        .sheet(isPresented: $showAnimeSelection) {
-            AnimeSelectionView(
-                animes: animeManager.animes,
-                selectedAnime: $selectedAnime
-            )
         }
     }
 }
@@ -1436,7 +1464,107 @@ struct AnimeSelectionView: View {
     }
 }
 
-// スケジュール追加シート
+// 複数アニメ選択対応のスケジュール追加シート
+struct MultiAddScheduleSheet: View {
+    let animeManager: AnimeManager
+    @Binding var selectedDate: Date
+    @Binding var selectedAnimeIds: Set<String>
+    @Binding var showingAddSchedule: Bool
+    let addAction: () -> Void
+    let resetAction: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                // 日付選択
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("watch_schedule_date", comment: "Watch schedule date"))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.gray)
+                    DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                        .datePickerStyle(GraphicalDatePickerStyle())
+                        .frame(height: 320)
+                }
+                .padding(.horizontal)
+                
+                // アニメ選択（複数選択可能）
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(NSLocalizedString("anime", comment: "Anime"))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.gray)
+                        Spacer()
+                        Text("\(selectedAnimeIds.count) " + NSLocalizedString("items_selected", comment: "items selected"))
+                            .font(.system(size: 12))
+                            .foregroundColor(.purple)
+                    }
+                    
+                    let validAnimes = animeManager.animes.filter { !$0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                    if validAnimes.isEmpty {
+                        Text(NSLocalizedString("no_anime_registered", comment: "No anime registered"))
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                ForEach(validAnimes) { anime in
+                                    HStack {
+                                        Text(anime.title)
+                                            .font(.system(size: 15))
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Image(systemName: selectedAnimeIds.contains(anime.id.uuidString) ? "checkmark.circle.fill" : "circle")
+                                            .foregroundColor(selectedAnimeIds.contains(anime.id.uuidString) ? .purple : .gray)
+                                            .font(.system(size: 20))
+                                    }
+                                    .padding()
+                                    .background(selectedAnimeIds.contains(anime.id.uuidString) ? Color.purple.opacity(0.1) : Color.clear)
+                                    .onTapGesture {
+                                        if selectedAnimeIds.contains(anime.id.uuidString) {
+                                            selectedAnimeIds.remove(anime.id.uuidString)
+                                        } else {
+                                            selectedAnimeIds.insert(anime.id.uuidString)
+                                        }
+                                    }
+                                    
+                                    if anime.id != validAnimes.last?.id {
+                                        Divider()
+                                    }
+                                }
+                            }
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        .frame(maxHeight: 300)
+                    }
+                }
+                .padding(.horizontal)
+                
+                Spacer()
+            }
+            .navigationTitle(NSLocalizedString("schedule_add_title", comment: "Add Schedule"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                        showingAddSchedule = false
+                        resetAction()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(NSLocalizedString("add", comment: "Add")) {
+                        addAction()
+                        showingAddSchedule = false
+                    }
+                    .disabled(selectedAnimeIds.isEmpty)
+                }
+            }
+        }
+    }
+}
+
+// スケジュール追加シート（旧版、互換性のため残す）
 struct AddScheduleSheet: View {
     let animeManager: AnimeManager
     @Binding var selectedDate: Date
@@ -1542,6 +1670,127 @@ struct AddScheduleSheet: View {
                     }
                     .disabled(selectedAnimeId.isEmpty)
                 }
+            }
+        }
+    }
+}
+
+// 今日見るアニメセクション
+struct TodayAnimeScrollView: View {
+    @EnvironmentObject var animeManager: AnimeManager
+    private let userDefaultsKey = "scheduleItems"
+    @State private var scheduleItems: [ScheduleItem] = []
+    
+    var todayScheduleItems: [ScheduleItem] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        return scheduleItems.filter { item in
+            calendar.isDate(item.date, inSameDayAs: today)
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // タイトル
+            Text(NSLocalizedString("today_anime_title", comment: "Today's Anime"))
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.purple)
+                .padding(.horizontal, 20)
+            
+            if todayScheduleItems.isEmpty {
+                // 今日のスケジュールがない場合
+                VStack(spacing: 8) {
+                    Image(systemName: "calendar.badge.exclamationmark")
+                        .font(.system(size: 30))
+                        .foregroundColor(.gray.opacity(0.5))
+                    Text(NSLocalizedString("no_anime_today", comment: "No anime scheduled for today"))
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 100)
+                .padding(.horizontal, 20)
+            } else {
+                // アニメサムネイルの横スクロール
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 15) {
+                        ForEach(todayScheduleItems, id: \.id) { item in
+                            TodayAnimeCard(item: item)
+                                .environmentObject(animeManager)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
+            }
+        }
+        .onAppear {
+            loadScheduleItems()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ScheduleUpdated"))) { _ in
+            loadScheduleItems()
+        }
+    }
+    
+    private func loadScheduleItems() {
+        if let data = UserDefaults.standard.data(forKey: userDefaultsKey),
+           let items = try? JSONDecoder().decode([ScheduleItem].self, from: data) {
+            scheduleItems = items
+        }
+    }
+}
+
+struct TodayAnimeCard: View {
+    let item: ScheduleItem
+    @EnvironmentObject var animeManager: AnimeManager
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // アニメサムネイル
+            if let anime = animeManager.animes.first(where: { $0.id.uuidString == item.animeId }),
+               let imagePath = anime.imageIdentifier,
+               let uiImage = loadImageFromPath(imagePath) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 100, height: 140)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.purple.opacity(0.3), lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+            } else {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(LinearGradient(
+                        gradient: Gradient(colors: [Color.purple.opacity(0.2), Color.purple.opacity(0.1)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 100, height: 140)
+                    .overlay(
+                        Image(systemName: "tv")
+                            .font(.system(size: 30))
+                            .foregroundColor(.purple.opacity(0.5))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.purple.opacity(0.3), lineWidth: 1.5)
+                    )
+            }
+            
+            // アニメタイトル
+            Text(item.animeTitle)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .frame(width: 100)
+            
+            // エピソード番号（もしあれば）
+            if let episode = item.episode {
+                Text("第\(episode)話")
+                    .font(.system(size: 11))
+                    .foregroundColor(.gray)
             }
         }
     }

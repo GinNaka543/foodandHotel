@@ -304,6 +304,9 @@
 "schedule_add" = "Adicionar programação";
 "schedule_add_title" = "Adicionar programação";
 "anime_select" = "Selecionar anime";
+"date" = "Data";
+"today_anime_title" = "Anime de hoje";
+"no_anime_today" = "Nenhum anime agendado para hoje";
 
 /* Plan Publishing */
 "plan_publish" = "Publicar plano";

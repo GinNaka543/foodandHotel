@@ -425,6 +425,9 @@
 "schedule_add" = "スケジュールを追加";
 "schedule_add_title" = "スケジュール追加";
 "anime_select" = "アニメを選択";
+"today_anime_title" = "今日見るアニメ";
+"no_anime_today" = "今日の視聴予定はありません";
+"items_selected" = "件選択中";
 
 /* Plan Publishing */
 "plan_publish" = "プランを公開";

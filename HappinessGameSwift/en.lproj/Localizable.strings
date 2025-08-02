@@ -350,6 +350,9 @@
 "schedule_add_title" = "Add Schedule";
 "anime_select" = "Select Anime";
 "date" = "Date";
+"today_anime_title" = "Today's Anime";
+"no_anime_today" = "No anime scheduled for today";
+"items_selected" = "items selected";
 
 /* Plan Publishing */
 "plan_publish" = "Publish Plan";

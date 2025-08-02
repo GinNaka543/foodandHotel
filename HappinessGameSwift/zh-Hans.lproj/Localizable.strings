@@ -305,6 +305,9 @@
 "schedule_add" = "添加时间表";
 "schedule_add_title" = "添加时间表";
 "anime_select" = "选择动漫";
+"date" = "日期";
+"today_anime_title" = "今日动画";
+"no_anime_today" = "今天没有预定的动画";
 
 /* Plan Publishing */
 "plan_publish" = "发布计划";

@@ -305,6 +305,8 @@
 "schedule_add" = "스케줄 추가";
 "schedule_add_title" = "스케줄 추가";
 "anime_select" = "애니메이션 선택";
+"today_anime_title" = "오늘의 애니메이션";
+"no_anime_today" = "오늘 예정된 애니메이션이 없습니다";
 
 /* Plan Publishing */
 "plan_publish" = "플랜 공개";

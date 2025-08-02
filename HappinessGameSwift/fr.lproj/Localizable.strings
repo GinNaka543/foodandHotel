@@ -122,6 +122,7 @@
 "profile" = "Profil";
 "voice_actors" = "Doubleurs";
 "characters" = "Personnages";
+"favorite_characters" = "favorite chara";
 "watch_link" = "Lien de visionnage";
 "not_set" = "Non défini";
 "description" = "Description";

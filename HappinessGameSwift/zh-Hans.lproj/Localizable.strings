@@ -122,6 +122,7 @@
 "profile" = "个人资料";
 "voice_actors" = "配音演员";
 "characters" = "角色";
+"favorite_characters" = "favorite chara";
 "watch_link" = "观看链接";
 "not_set" = "未设置";
 "description" = "描述";

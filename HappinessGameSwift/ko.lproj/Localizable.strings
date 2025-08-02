@@ -122,6 +122,7 @@
 "profile" = "프로필";
 "voice_actors" = "성우";
 "characters" = "출연 캐릭터";
+"favorite_characters" = "favorite chara";
 "watch_link" = "시청 링크";
 "not_set" = "미설정";
 "description" = "개요";

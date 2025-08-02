@@ -151,6 +151,7 @@
 "voice_actors" = "声優";
 "enter_voice_actors" = "声優情報を入力";
 "characters" = "出演キャラ";
+"favorite_characters" = "favorite chara";
 "enter_characters" = "キャラクター情報を入力";
 "watch_link" = "視聴リンク";
 "not_set" = "未設定";

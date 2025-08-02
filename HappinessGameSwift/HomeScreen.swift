@@ -365,7 +365,7 @@ struct HomeScreen: View {
                             color: Color.gray.opacity(0.3)
                         )
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(NSLocalizedString("characters", comment: "Characters"))
+                            Text(NSLocalizedString("favorite_characters", comment: "Favorite Characters"))
                                 .font(.system(size: 16, weight: .semibold))
                             Text(getCharacterNamesText())
                                 .font(.system(size: 13))

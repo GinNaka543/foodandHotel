@@ -119,6 +119,11 @@ class CharacterManager: ObservableObject {
         }
     }
     
+    func refreshUI() {
+        // UIを強制的に更新
+        objectWillChange.send()
+    }
+    
     func addCharacter(_ character: Character) {
         characters.append(character)
         saveCharacters()

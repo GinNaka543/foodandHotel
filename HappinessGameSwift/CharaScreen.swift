@@ -468,7 +468,10 @@ struct CharaScreen: View {
         }
         .fullScreenCover(item: $selectedCharacter) { character in
             CharacterDetailView(character: Binding(
-                get: { character },
+                get: { 
+                    // 常に最新のデータを返す
+                    characterManager.characters.first(where: { $0.id == character.id }) ?? character
+                },
                 set: { newCharacter in
                     if let idx = characterManager.characters.firstIndex(where: { $0.id == character.id }) {
                         characterManager.characters[idx] = newCharacter
@@ -1087,6 +1090,8 @@ struct CharacterDetailView: View {
     @State private var tempIconImage: UIImage? = nil
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var backgroundImage: UIImage? = nil
+    @State private var isProcessingIcon = false
+    @State private var showIconUpdateSuccess = false
     
     // バナー管理用の変数を追加
     @State private var bannerVideo: MemoryVideo? = nil
@@ -1102,33 +1107,37 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var backgroundView: some View {
-        
-        if let backgroundPath = currentCharacter.backgroundImagePath,
-           let bgImage = loadImageFromPath(backgroundPath) {
-            GeometryReader { geo in
-                Image(uiImage: bgImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: geo.size.width, height: geo.size.height)
-                    .clipped()
+        Button(action: { showEditBackgroundModal = true }) {
+            if let backgroundPath = currentCharacter.backgroundImagePath,
+               let bgImage = loadImageFromPath(backgroundPath) {
+                GeometryReader { geo in
+                    Image(uiImage: bgImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                }
+                .ignoresSafeArea()
+                .overlay(Color.black.opacity(0.35).ignoresSafeArea())
+            } else {
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
             }
-            .ignoresSafeArea()
-            .overlay(Color.black.opacity(0.35).ignoresSafeArea())
-        } else {
-            LinearGradient(
-                gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
         }
+        .buttonStyle(PlainButtonStyle())
     }
     
     @ViewBuilder
     private var profileIconView: some View {
         PhotosPicker(selection: $iconPickerItem, matching: .images) {
             ZStack {
-                if let imageIdentifier = currentCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
+                // 常に最新のデータを表示
+                let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
+                if let imageIdentifier = latestCharacter.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -1151,6 +1160,35 @@ struct CharacterDetailView: View {
                 }
             }
             .contentShape(Rectangle())
+        }
+        .id(characterManager.characters.first(where: { $0.id == character.id })?.imageIdentifier ?? UUID().uuidString)
+        .onChange(of: iconPickerItem) { _, newValue in
+            if let newItem = newValue {
+                Task {
+                    if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
+                        let fileName = "icon_\(UUID().uuidString).png"
+                        let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
+                        
+                        // 最新のデータを取得
+                        if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
+                            var updatedCharacter = latestCharacter
+                            updatedCharacter.imageIdentifier = imagePath
+                            
+                            // CharacterManagerを通じて更新
+                            characterManager.updateCharacter(updatedCharacter)
+                            characterManager.refreshUI()
+                            
+                            // Bindingも更新
+                            character = updatedCharacter
+                            
+                            // charactersリストも更新
+                            if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
+                                characters[idx] = updatedCharacter
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     
@@ -1325,9 +1363,17 @@ struct CharacterDetailView: View {
                                             updatedCharacter.imageIdentifier = imagePath
                                             // backgroundImagePathは最新のデータから保持される
                                             
-                                            // Bindingを通じて更新（これがsetterを呼び出す）
+                                            // CharacterManagerを通じて更新
+                                            characterManager.updateCharacter(updatedCharacter)
+                                            characterManager.refreshUI()
+                                            
+                                            // Bindingも更新
                                             character = updatedCharacter
                                             
+                                            // charactersリストも更新
+                                            if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
+                                                characters[idx] = updatedCharacter
+                                            }
                                         }
                                         
                                         // モーダルを自動的に閉じる
@@ -1355,19 +1401,21 @@ struct CharacterDetailView: View {
                     iconPickerItem = nil
                 }
             }
-            .sheet(isPresented: $showEditBackgroundModal) {
-                // 最新のキャラクター情報を取得
-                if let updatedCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
-                    EditBackgroundView(character: Binding(
-                        get: { updatedCharacter },
-                        set: { newValue in
-                            character = newValue
-                            characterManager.updateCharacter(newValue)
+            .sheet(isPresented: $showEditBackgroundModal, onDismiss: {
+                // 背景編集モーダルが閉じた時の処理
+                // CharacterManagerから最新のデータを取得するだけで、characterは更新しない
+                // （EditBackgroundViewが既に更新しているはずなので）
+                if let latestChar = characterManager.characters.first(where: { $0.id == character.id }) {
+                    // characterの背景が古い場合のみ更新
+                    if character.backgroundImagePath != latestChar.backgroundImagePath {
+                        character = latestChar
+                        if let idx = characters.firstIndex(where: { $0.id == latestChar.id }) {
+                            characters[idx] = latestChar
                         }
-                    ), characterManager: characterManager)
-                } else {
-                    EditBackgroundView(character: $character, characterManager: characterManager)
+                    }
                 }
+            }) {
+                EditBackgroundView(character: $character, characterManager: characterManager)
             }
             .fullScreenCover(isPresented: $showArtwork) {
                 // 最新のキャラクター情報を渡す
@@ -1483,29 +1531,6 @@ struct CharacterDetailView: View {
         .overlay(
             PlayMusicButtonViewForCharacter(character: currentCharacter)
         )
-        .onChange(of: iconPickerItem) { _, newValue in
-            Task {
-                if let newValue = newValue {
-                    if let data = try? await newValue.loadTransferable(type: Data.self) {
-                        if let uiImage = UIImage(data: data) {
-                            // 画像を保存
-                            let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
-                            if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
-                                // 最新のデータを取得
-                                if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
-                                    var updatedCharacter = latestCharacter
-                                    // print("🔄 [CharaScreen-MainIcon] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
-                                    updatedCharacter.imageIdentifier = savedPath
-                                    // backgroundImagePathは最新のデータから保持される
-                                    characterManager.updateCharacter(updatedCharacter)
-                                    character = updatedCharacter
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
         .onDisappear {
             // ページから離れる時に音楽を完全に停止してリセット
             SoundtrackManager.shared.stopPlayback()
@@ -2855,7 +2880,10 @@ struct EditBackgroundView: View {
                                         var updatedCharacter = character
                                         updatedCharacter.backgroundImagePath = imagePath
                                         
-                                        // Bindingを通じて更新
+                                        // CharacterManagerを通じて更新
+                                        characterManager.updateCharacter(updatedCharacter)
+                                        
+                                        // Bindingも更新
                                         character = updatedCharacter
                                         
                                         // モーダルを自動的に閉じる

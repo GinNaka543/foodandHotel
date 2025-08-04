@@ -1107,33 +1107,30 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var backgroundView: some View {
-        Button(action: { showEditBackgroundModal = true }) {
-            if let backgroundPath = currentCharacter.backgroundImagePath,
-               let bgImage = loadImageFromPath(backgroundPath) {
-                GeometryReader { geo in
-                    Image(uiImage: bgImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: geo.size.width, height: geo.size.height)
-                        .clipped()
-                }
-                .ignoresSafeArea()
-                .overlay(Color.black.opacity(0.35).ignoresSafeArea())
-            } else {
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+        if let backgroundPath = currentCharacter.backgroundImagePath,
+           let bgImage = loadImageFromPath(backgroundPath) {
+            GeometryReader { geo in
+                Image(uiImage: bgImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
             }
+            .ignoresSafeArea()
+            .overlay(Color.black.opacity(0.35).ignoresSafeArea())
+        } else {
+            LinearGradient(
+                gradient: Gradient(colors: [Color(red: 0.4, green: 0.6, blue: 0.9), Color(red: 0.3, green: 0.5, blue: 0.8)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
         }
-        .buttonStyle(PlainButtonStyle())
     }
     
     @ViewBuilder
     private var profileIconView: some View {
-        PhotosPicker(selection: $iconPickerItem, matching: .images) {
+        Button(action: { showEditIconModal = true }) {
             ZStack {
                 // 常に最新のデータを表示
                 let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) ?? character
@@ -1161,35 +1158,8 @@ struct CharacterDetailView: View {
             }
             .contentShape(Rectangle())
         }
+        .buttonStyle(PlainButtonStyle())
         .id(characterManager.characters.first(where: { $0.id == character.id })?.imageIdentifier ?? UUID().uuidString)
-        .onChange(of: iconPickerItem) { _, newValue in
-            if let newItem = newValue {
-                Task {
-                    if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
-                        let fileName = "icon_\(UUID().uuidString).png"
-                        let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
-                        
-                        // 最新のデータを取得
-                        if let latestCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
-                            var updatedCharacter = latestCharacter
-                            updatedCharacter.imageIdentifier = imagePath
-                            
-                            // CharacterManagerを通じて更新
-                            characterManager.updateCharacter(updatedCharacter)
-                            characterManager.refreshUI()
-                            
-                            // Bindingも更新
-                            character = updatedCharacter
-                            
-                            // charactersリストも更新
-                            if let idx = characters.firstIndex(where: { $0.id == updatedCharacter.id }) {
-                                characters[idx] = updatedCharacter
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
     
     @ViewBuilder

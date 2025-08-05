@@ -276,13 +276,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		3181521879F3EBF6C743F9D8 /* HappinessGameSwift */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = HappinessGameSwift;
-			sourceTree = "<group>";
-		};
 		5D7F3282768988288E89E3E7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -304,7 +297,6 @@
 		8F7DBBC39F2D4E379E0D6B9A = {
 			isa = PBXGroup;
 			children = (
-				3181521879F3EBF6C743F9D8 /* HappinessGameSwift */,
 				B09124C7F033D3979C85F1E2 /* HappinessGameSwift */,
 				B134C81479DD80F70B4045DE /* Frameworks */,
 				5D7F3282768988288E89E3E7 /* Products */,
@@ -790,15 +782,17 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "ANICOLLE!";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "画像を撮影するためにカメラへのアクセスが必要です。";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画撮影時に音声を録音するために使用します";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像をアップロードするために写真ライブラリへのアクセスが必要です。";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した画像や動画を保存するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像を選択・保存するためにフォトライブラリへのアクセスが必要です。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				INFOPLIST_KEY_UIStatusBarHidden = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -806,7 +800,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
 				PRODUCT_NAME = "ANICOLLE!";
 				SDKROOT = iphoneos;
@@ -899,15 +893,17 @@
 				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "ANICOLLE!";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "画像を撮影するためにカメラへのアクセスが必要です。";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画撮影時に音声を録音するために使用します";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像をアップロードするために写真ライブラリへのアクセスが必要です。";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した画像や動画を保存するために使用します。";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像を選択・保存するためにフォトライブラリへのアクセスが必要です。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				INFOPLIST_KEY_UIStatusBarHidden = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -915,7 +911,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
 				PRODUCT_NAME = "ANICOLLE!";
 				SDKROOT = iphoneos;

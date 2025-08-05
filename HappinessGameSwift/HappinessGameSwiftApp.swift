@@ -2,7 +2,6 @@ import SwiftUI
 import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
-//import StripePaymentSheet
 import UIKit
 import BackgroundTasks
 
@@ -360,8 +359,6 @@ struct HappinessGameSwiftApp: App {
         print("===================================")
         #endif
         
-        // Stripe決済の事前初期化
-        preloadStripePayment()
         
         #if DEBUG
         // End launch tracking
@@ -395,10 +392,6 @@ struct HappinessGameSwiftApp: App {
         }
     }
     #endif
-    
-    private func preloadStripePayment() {
-        // Stripeは使用しないため、この機能は無効化
-    }
     
     var body: some Scene {
         WindowGroup {

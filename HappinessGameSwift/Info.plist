@@ -32,8 +32,6 @@
 	<string>画像を選択・保存するためにフォトライブラリへのアクセスが必要です。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>撮影した画像や動画を保存するために使用します。</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>広告の関連性を高めるために使用します。</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.entertainment</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>

@@ -7,7 +7,7 @@ final class ImageCache {
     
     private let memoryCache = NSCache<NSString, UIImage>()
     private let diskCacheURL: URL
-    private let ioQueue = DispatchQueue(label: "com.happinessgame.imagecache", attributes: .concurrent)
+    private let ioQueue = DispatchQueue(label: "com.nakajima.HappinessGameSwift.imagecache", attributes: .concurrent)
     
     // Cache size limits - Further reduced for better memory management
     private let maxMemoryCost = 10 * 1024 * 1024 // 10MB

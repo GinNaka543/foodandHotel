@@ -6,7 +6,7 @@ final class OptimizedNetworkManager {
     static let shared = OptimizedNetworkManager()
     
     private let session: URLSession
-    private let requestQueue = DispatchQueue(label: "com.happinessgame.network", qos: .userInitiated, attributes: .concurrent)
+    private let requestQueue = DispatchQueue(label: "com.nakajima.HappinessGameSwift.network", qos: .userInitiated, attributes: .concurrent)
     private var activeTasks: [UUID: URLSessionTask] = [:]
     private let taskLock = NSLock()
     

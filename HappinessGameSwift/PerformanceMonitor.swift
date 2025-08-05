@@ -7,9 +7,9 @@ import os.log
 final class PerformanceMonitor {
     static let shared = PerformanceMonitor()
     
-    private let logger = Logger(subsystem: "com.happinessgame", category: "Performance")
+    private let logger = Logger(subsystem: "com.nakajima.HappinessGameSwift", category: "Performance")
     private var metrics: [String: PerformanceMetric] = [:]
-    private let metricsQueue = DispatchQueue(label: "com.happinessgame.performance", attributes: .concurrent)
+    private let metricsQueue = DispatchQueue(label: "com.nakajima.HappinessGameSwift.performance", attributes: .concurrent)
     
     // Memory tracking
     private var memoryWarningCount = 0

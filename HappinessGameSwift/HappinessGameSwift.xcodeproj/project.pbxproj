@@ -102,6 +102,7 @@
 		CCCC7EA92E3AC74C00FC0563 /* CurrencyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCC7EA82E3AC74C00FC0563 /* CurrencyPickerView.swift */; };
 		CCCC7EAB2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCC7EAA2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift */; };
 		CCCC7EAD2E3B5ED700FC0563 /* MediaCleanupManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCC7EAC2E3B5ED700FC0563 /* MediaCleanupManager.swift */; };
+		CCCC7EAF2E42318700FC0563 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CCCC7EAE2E42318700FC0563 /* LaunchScreen.storyboard */; };
 		CCF665E92E34C99400D86A20 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = CCF665E72E34C99400D86A20 /* Localizable.strings */; };
 		CCF665F32E34CC5D00D86A20 /* LocalizationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665F22E34CC5D00D86A20 /* LocalizationManager.swift */; };
 		CCF665F52E34CD8800D86A20 /* LanguageButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCF665F42E34CD8800D86A20 /* LanguageButton.swift */; };
@@ -231,6 +232,7 @@
 		CCCC7EA82E3AC74C00FC0563 /* CurrencyPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyPickerView.swift; sourceTree = "<group>"; };
 		CCCC7EAA2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialCurrencySelectionView.swift; sourceTree = "<group>"; };
 		CCCC7EAC2E3B5ED700FC0563 /* MediaCleanupManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaCleanupManager.swift; sourceTree = "<group>"; };
+		CCCC7EAE2E42318700FC0563 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		CCF665E82E34C99400D86A20 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Localizable.strings; sourceTree = "<group>"; };
 		CCF665EA2E34C9A000D86A20 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		CCF665EB2E34C9A900D86A20 /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -307,6 +309,7 @@
 		B09124C7F033D3979C85F1E2 /* HappinessGameSwift */ = {
 			isa = PBXGroup;
 			children = (
+				CCCC7EAE2E42318700FC0563 /* LaunchScreen.storyboard */,
 				CCCC7EAC2E3B5ED700FC0563 /* MediaCleanupManager.swift */,
 				CCCC7EAA2E3ACA8800FC0563 /* InitialCurrencySelectionView.swift */,
 				CCCC7EA82E3AC74C00FC0563 /* CurrencyPickerView.swift */,
@@ -502,6 +505,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2480D714018A706C8BA4A325 /* Assets.xcassets in Resources */,
+				CCCC7EAF2E42318700FC0563 /* LaunchScreen.storyboard in Resources */,
 				CCF665E92E34C99400D86A20 /* Localizable.strings in Resources */,
 				33E5EDB3B81EC36DBB4E8A33 /* GoogleService-Info.plist in Resources */,
 			);
@@ -785,6 +789,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "画像を撮影するためにカメラへのアクセスが必要です。";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画撮影時に音声を録音するために使用します";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した画像や動画を保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像を選択・保存するためにフォトライブラリへのアクセスが必要です。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -896,6 +901,7 @@
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "画像を撮影するためにカメラへのアクセスが必要です。";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "動画撮影時に音声を録音するために使用します";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した画像や動画を保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像を選択・保存するためにフォトライブラリへのアクセスが必要です。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

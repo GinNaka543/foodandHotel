@@ -6,7 +6,7 @@ import ImageIO
 final class ImageOptimizer {
     static let shared = ImageOptimizer()
     
-    private let processingQueue = DispatchQueue(label: "com.happinessgame.imageprocessing", qos: .userInitiated)
+    private let processingQueue = DispatchQueue(label: "com.nakajima.HappinessGameSwift.imageprocessing", qos: .userInitiated)
     
     private init() {}
     

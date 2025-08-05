@@ -13,7 +13,7 @@ class KeepAliveManager: ObservableObject {
     private var lastPingTime: Date?
     
     // Background task identifier for BGTaskScheduler
-    private let backgroundTaskIdentifier = "com.happinessgame.keepalive"
+    private let backgroundTaskIdentifier = "com.nakajima.HappinessGameSwift.keepalive"
     
     private init() {
         setupBackgroundTasks()

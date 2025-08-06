@@ -1,6 +1,6 @@
 const config = {
   API_BASE_URL: process.env.NODE_ENV === 'production' 
-    ? '' // Vercelでは同じドメインを使用
+    ? 'https://happiness-game-api.vercel.app' // デプロイ済みのサーバーURL
     : 'http://localhost:5002'
 };
 

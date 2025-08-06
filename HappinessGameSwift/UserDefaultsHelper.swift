@@ -85,6 +85,9 @@ class UserDefaultsHelper {
             "characters",
             "animes",
             "savedPlans",
+            "savedPlansMetadata",  // プランメタデータ追加
+            "draftPlansMetadata",  // ドラフトプランメタデータ追加
+            "purchasedPlans",  // 購入済みプランも追加
             "characterRankings",
             "animeRankings",
             "artworks",
@@ -113,6 +116,9 @@ class UserDefaultsHelper {
             "characters",
             "animes",
             "savedPlans",
+            "savedPlansMetadata",  // プランメタデータ追加
+            "draftPlansMetadata",  // ドラフトプランメタデータ追加
+            "purchasedPlans",  // 購入済みプランも移行対象に追加
             "characterRankings",
             "animeRankings",
             "artworks",

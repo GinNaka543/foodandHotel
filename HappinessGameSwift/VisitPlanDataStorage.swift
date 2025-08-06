@@ -227,19 +227,31 @@ class VisitPlanDataStorage {
     // MARK: - Metadata Storage
     
     private func loadAllSavedPlansMetadata() -> [String: [String: Any]] {
-        UserDefaults.standard.dictionary(forKey: "savedPlansMetadata") as? [String: [String: Any]] ?? [:]
+        if let data = UserDefaultsHelper.shared.getData(forKey: "savedPlansMetadata"),
+           let metadata = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] {
+            return metadata
+        }
+        return [:]
     }
     
     private func saveSavedPlansMetadata(_ metadata: [String: [String: Any]]) {
-        UserDefaults.standard.set(metadata, forKey: "savedPlansMetadata")
+        if let data = try? JSONSerialization.data(withJSONObject: metadata) {
+            UserDefaultsHelper.shared.setData(data, forKey: "savedPlansMetadata")
+        }
     }
     
     private func loadAllDraftPlansMetadata() -> [String: [String: Any]] {
-        UserDefaults.standard.dictionary(forKey: "draftPlansMetadata") as? [String: [String: Any]] ?? [:]
+        if let data = UserDefaultsHelper.shared.getData(forKey: "draftPlansMetadata"),
+           let metadata = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] {
+            return metadata
+        }
+        return [:]
     }
     
     private func saveDraftPlansMetadata(_ metadata: [String: [String: Any]]) {
-        UserDefaults.standard.set(metadata, forKey: "draftPlansMetadata")
+        if let data = try? JSONSerialization.data(withJSONObject: metadata) {
+            UserDefaultsHelper.shared.setData(data, forKey: "draftPlansMetadata")
+        }
     }
     
     // MARK: - Migration from old format
@@ -379,8 +391,7 @@ class VisitPlanDataStorage {
         // クリーンなデータを保存
         saveSavedPlansMetadata(cleanPlans)
         
-        // UserDefaultsを同期
-        UserDefaults.standard.synchronize()
+        // UserDefaultsを同期（UserDefaultsHelperが自動的に同期）
         
         // 不要なファイルも削除
         cleanupOrphanedPlanFiles(keepingPlanIds: Set(cleanPlans.keys))

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './TravelPlans.css';
+import config from '../config';
 
 function convertGitHubUrl(url) {
   if (!url) return '';
@@ -84,7 +85,7 @@ const TravelPlans = () => {
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch('http://localhost:5002/api/travel-plans');
+      const response = await fetch(`${config.API_BASE_URL}/api/travel-plans`);
       const data = await response.json();
       setPlans(data);
     } catch (error) {
@@ -308,8 +309,8 @@ const TravelPlans = () => {
       };
 
       const url = editingPlan 
-        ? `http://localhost:5002/api/travel-plans/${editingPlan.id}`
-        : 'http://localhost:5002/api/travel-plans';
+        ? `${config.API_BASE_URL}/api/travel-plans/${editingPlan.id}`
+        : `${config.API_BASE_URL}/api/travel-plans`;
       
       const method = editingPlan ? 'PUT' : 'POST';
 
@@ -337,7 +338,7 @@ const TravelPlans = () => {
   const deletePlan = async (planId) => {
     if (window.confirm('このプランを削除しますか？')) {
       try {
-        const response = await fetch(`http://localhost:5002/api/travel-plans/${planId}`, {
+        const response = await fetch(`${config.API_BASE_URL}/api/travel-plans/${planId}`, {
           method: 'DELETE',
         });
 

@@ -17,7 +17,43 @@ class FirebaseManager: ObservableObject {
     
     private init() {}
     
-    // ユーザー認証を確認
+    // ユーザーIDの利用可能性をチェック
+    func checkUserIdAvailability(userId: String, completion: @escaping (Bool) -> Void) {
+        db.collection("users").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("Error checking user ID availability: \(error)")
+                completion(false)
+                return
+            }
+            
+            // ドキュメントが存在しない場合は利用可能
+            completion(!(snapshot?.exists ?? false))
+        }
+    }
+    
+    // パスワードを使用したユーザー認証
+    func verifyUserWithPassword(username: String, password: String, completion: @escaping (Result<(Bool, String?), Error>) -> Void) {
+        db.collection("users")
+            .whereField("username", isEqualTo: username)
+            .whereField("password", isEqualTo: password)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+                
+                guard let documents = snapshot?.documents,
+                      !documents.isEmpty,
+                      let userId = documents.first?.documentID else {
+                    completion(.success((false, nil)))
+                    return
+                }
+                
+                completion(.success((true, userId)))
+            }
+    }
+    
+    // 旧バージョンのユーザー認証（互換性のため残す）
     func verifyUser(username: String, userId: String, completion: @escaping (Result<Bool, Error>) -> Void) {
         
         db.collection("users").document(userId).getDocument { [weak self] snapshot, error in

@@ -400,6 +400,8 @@
 "default_username" = "ANICOLLE";
 "enter_username" = "Inserisci nome utente";
 "user_id" = "ID utente";
+"password_user_id" = "Password (ID utente)";
+"enter_password_user_id" = "Inserisci password (ID utente)";
 "enter_user_id" = "Inserisci ID utente";
 "your_user_id_save" = "Il tuo ID utente (salvalo)";
 "copied" = "Copiato";

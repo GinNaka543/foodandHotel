@@ -426,6 +426,8 @@
 "default_username" = "ANICOLLE";
 "enter_username" = "Benutzername eingeben";
 "user_id" = "Benutzer-ID";
+"password_user_id" = "Passwort (Benutzer-ID)";
+"enter_password_user_id" = "Passwort (Benutzer-ID) eingeben";
 "enter_user_id" = "Benutzer-ID eingeben";
 "your_user_id_save" = "Ihre Benutzer-ID (bitte speichern)";
 "copied" = "Kopiert";

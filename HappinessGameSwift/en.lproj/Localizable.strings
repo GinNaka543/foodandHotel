@@ -533,6 +533,8 @@
 "username" = "Username";
 "enter_username" = "Enter username";
 "user_id" = "User ID";
+"password_user_id" = "Password (User ID)";
+"enter_password_user_id" = "Enter Password (User ID)";
 "enter_user_id" = "Enter user ID";
 "user_id_help" = "You can check your User ID from Profile Edit on the home page";
 "your_user_id_save" = "Your User ID (Please save it)";

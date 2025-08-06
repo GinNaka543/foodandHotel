@@ -399,6 +399,8 @@
 "default_username" = "ANICOLLE";
 "enter_username" = "Inserir nome de usuário";
 "user_id" = "ID do usuário";
+"password_user_id" = "Senha (ID do usuário)";
+"enter_password_user_id" = "Digite a senha (ID do usuário)";
 "enter_user_id" = "Inserir ID do usuário";
 "your_user_id_save" = "Seu ID de usuário (por favor, salve)";
 "copied" = "Copiado";

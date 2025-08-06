@@ -400,6 +400,8 @@
 "default_username" = "ANICOLLE";
 "enter_username" = "输入用户名";
 "user_id" = "用户ID";
+"password_user_id" = "密码（用户ID）";
+"enter_password_user_id" = "输入密码（用户ID）";
 "enter_user_id" = "输入用户ID";
 "your_user_id_save" = "您的用户ID（请保存）";
 "copied" = "已复制";

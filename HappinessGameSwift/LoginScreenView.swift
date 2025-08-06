@@ -68,13 +68,13 @@ struct LoginScreenView: View {
                                     .autocapitalization(.none)
                             }
                             
-                            // ユーザーID
+                            // パスワード（ユーザーID）
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(NSLocalizedString("user_id", comment: ""))
+                                Text(NSLocalizedString("password_user_id", comment: "Password (User ID)"))
                                     .font(.system(size: 14))
                                     .foregroundColor(.gray)
                                 
-                                TextField(NSLocalizedString("enter_user_id", comment: ""), text: $userId)
+                                SecureField(NSLocalizedString("enter_password_user_id", comment: "Enter Password (User ID)"), text: $userId)
                                     .font(.system(size: 16))
                                     .padding()
                                     .background(Color(.systemGray6))
@@ -168,6 +168,16 @@ struct LoginScreenView: View {
     
     private func login() {
         isLoading = true
+        
+        // デモアカウントチェック（Apple審査用）
+        if username == "Ginsei" && userId == "demo1234" {
+            // デモアカウントログイン
+            saveUserData(username: username, userId: userId)
+            UserDefaults.standard.set(true, forKey: "isDemoAccount")
+            authManager.login()
+            dismiss()
+            return
+        }
         
         FirebaseManager.shared.verifyUser(username: username, userId: userId) { result in
             DispatchQueue.main.async {

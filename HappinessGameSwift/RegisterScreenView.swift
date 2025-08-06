@@ -131,7 +131,7 @@ struct RegisterScreenView: View {
     
     private func register() {
         isLoading = true
-        generatedUserId = UUID().uuidString
+        generatedUserId = UUID().uuidString  // 自動生成
         
         let profile = UserProfile(
             id: generatedUserId,
@@ -141,7 +141,7 @@ struct RegisterScreenView: View {
         )
         
         FirebaseManager.shared.saveUserProfile(profile) { result in
-            DispatchQueue.main.async {
+                DispatchQueue.main.async {
                 switch result {
                 case .success:
                     // デバイスで初回登録かチェック

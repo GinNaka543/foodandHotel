@@ -399,6 +399,8 @@
 "default_username" = "ANICOLLE";
 "enter_username" = "사용자명 입력";
 "user_id" = "사용자 ID";
+"password_user_id" = "비밀번호 (사용자 ID)";
+"enter_password_user_id" = "비밀번호 (사용자 ID) 입력";
 "enter_user_id" = "사용자 ID 입력";
 "your_user_id_save" = "귀하의 사용자 ID (저장해 주세요)";
 "copied" = "복사됨";

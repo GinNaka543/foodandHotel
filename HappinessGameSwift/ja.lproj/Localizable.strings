@@ -521,6 +521,8 @@
 "username" = "ユーザー名";
 "enter_username" = "ユーザー名を入力";
 "user_id" = "ユーザーID";
+"password_user_id" = "パスワード（ユーザーID）";
+"enter_password_user_id" = "パスワード（ユーザーID）を入力";
 "enter_user_id" = "ユーザーIDを入力";
 "user_id_help" = "ユーザーIDはホームページのプロフィール編集から確認できます";
 "your_user_id_save" = "あなたのユーザーID（必ず保存してください）";

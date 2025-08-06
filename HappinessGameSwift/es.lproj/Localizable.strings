@@ -398,6 +398,8 @@
 "default_username" = "ANICOLLE";
 "enter_username" = "Ingresar nombre de usuario";
 "user_id" = "ID de usuario";
+"password_user_id" = "Contraseña (ID de usuario)";
+"enter_password_user_id" = "Ingrese contraseña (ID de usuario)";
 "enter_user_id" = "Ingresar ID de usuario";
 "your_user_id_save" = "Su ID de usuario (por favor guárdelo)";
 "copied" = "Copiado";

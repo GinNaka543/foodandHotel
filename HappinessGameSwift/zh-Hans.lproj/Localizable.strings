@@ -4,6 +4,7 @@
 "app_name" = "动漫收藏！";
 "done" = "完成";
 "cancel" = "取消";
+"please_select_currency" = "请选择货币";
 "save" = "保存";
 "delete" = "删除";
 "edit" = "编辑";
@@ -62,6 +63,8 @@
 "terms_article_12_content" = "运营方在认为必要时可以不通知用户而变更本条款。修订后的条款在本应用内发布时生效。";
 "terms_article_13_title" = "第13条（准据法和管辖法院）";
 "terms_article_13_content" = "1. 本条款以日本法为准据法。\n2. 与本应用相关的任何争议应由运营方总部所在地的管辖法院专属管辖。";
+"terms_article_14_title" = "第14条（设备间同步限制）";
+"terms_article_14_content" = "重要提示：购买的计划和创建的内容仅保存在当前设备上。从不同设备登录时，购买的计划和创建的内容将不会同步。您需要在每个设备上单独购买和创建内容。";
 "privacy_policy" = "隐私政策";
 
 /* Privacy Policy */

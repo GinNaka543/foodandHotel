@@ -107,6 +107,16 @@ struct TermsOfServiceView: View {
                         Text(NSLocalizedString("terms_article_13_content", comment: ""))
                             .font(.body)
                     }
+                    
+                    // デバイス間同期の制限について
+                    Group {
+                        Text(NSLocalizedString("terms_article_14_title", comment: ""))
+                            .font(.headline)
+                            .padding(.top)
+                        Text(NSLocalizedString("terms_article_14_content", comment: ""))
+                            .font(.body)
+                            .foregroundColor(.red)
+                    }
                 }
                 .padding()
             }

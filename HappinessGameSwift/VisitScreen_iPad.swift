@@ -196,10 +196,12 @@ struct VisitScreen_iPad: View {
                         .padding(.top, 100)
                     } else {
                         LazyVGrid(columns: [
-                            GridItem(.adaptive(minimum: 300, maximum: 400), spacing: 20)
+                            GridItem(.flexible(), spacing: 20),
+                            GridItem(.flexible(), spacing: 20)
                         ], spacing: 20) {
                             ForEach(displayPlans) { plan in
                                 planCard_iPad(for: plan)
+                                    .frame(minHeight: 300)
                             }
                         }
                         .padding()
@@ -494,7 +496,13 @@ struct VisitScreen_iPad: View {
     private func planCardContent(for plan: VisitPlanModel) -> some View {
             VStack(alignment: .leading, spacing: 0) {
                 // サムネイル画像
-                thumbnailImage(for: plan)
+                ZStack {
+                    Rectangle()
+                        .fill(Color(.systemGray5))
+                    
+                    thumbnailImage(for: plan)
+                }
+                .frame(maxWidth: .infinity)
                 .frame(height: 200)
                 .clipped()
                 .overlay(

@@ -79,6 +79,22 @@ class UserDefaultsHelper {
         return UserDefaults.standard.bool(forKey: userKey)
     }
     
+    // 文字列配列の保存
+    func setStringArray(_ array: [String]?, forKey key: String) {
+        let userKey = keyForUser(key)
+        UserDefaults.standard.set(array, forKey: userKey)
+        UserDefaults.standard.synchronize()
+        print("💾 [UserDefaultsHelper] Saved string array for key '\(key)' (userKey: '\(userKey)'), count: \(array?.count ?? 0)")
+    }
+    
+    // 文字列配列の読み込み
+    func getStringArray(forKey key: String) -> [String]? {
+        let userKey = keyForUser(key)
+        let array = UserDefaults.standard.stringArray(forKey: userKey)
+        print("📖 [UserDefaultsHelper] Loading string array for key '\(key)' (userKey: '\(userKey)'), count: \(array?.count ?? 0)")
+        return array
+    }
+    
     // 特定のユーザーのデータをクリア
     func clearUserData(for userId: String) {
         let keysToCheck = [
@@ -88,6 +104,7 @@ class UserDefaultsHelper {
             "savedPlansMetadata",  // プランメタデータ追加
             "draftPlansMetadata",  // ドラフトプランメタデータ追加
             "purchasedPlans",  // 購入済みプランも追加
+            "purchasedPlanIds",  // 購入済みプランIDリスト追加
             "characterRankings",
             "animeRankings",
             "artworks",
@@ -119,6 +136,7 @@ class UserDefaultsHelper {
             "savedPlansMetadata",  // プランメタデータ追加
             "draftPlansMetadata",  // ドラフトプランメタデータ追加
             "purchasedPlans",  // 購入済みプランも移行対象に追加
+            "purchasedPlanIds",  // 購入済みプランIDリスト追加
             "characterRankings",
             "animeRankings",
             "artworks",
@@ -134,6 +152,16 @@ class UserDefaultsHelper {
                     UserDefaults.standard.set(oldData, forKey: newKey)
                     // 古いデータは削除しない（他のユーザーのデータの可能性があるため）
                 }
+            }
+        }
+        
+        // purchasedPlanIds_userIdの形式のキーからも移行
+        let oldPurchasedPlanIdsKey = "purchasedPlanIds_\(userId)"
+        if let oldPlanIds = UserDefaults.standard.stringArray(forKey: oldPurchasedPlanIdsKey) {
+            let newKey = keyForUser("purchasedPlanIds")
+            if UserDefaults.standard.stringArray(forKey: newKey) == nil {
+                UserDefaults.standard.set(oldPlanIds, forKey: newKey)
+                print("📦 Migrated purchasedPlanIds from '\(oldPurchasedPlanIdsKey)' to '\(newKey)': \(oldPlanIds.count) plans")
             }
         }
     }

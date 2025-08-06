@@ -4,6 +4,7 @@
 "app_name" = "ANICOLLE!";
 "done" = "Hecho";
 "cancel" = "Cancelar";
+"please_select_currency" = "Por favor seleccione la moneda";
 "save" = "Guardar";
 "delete" = "Eliminar";
 "edit" = "Editar";
@@ -62,6 +63,8 @@
 "terms_article_12_content" = "El operador puede cambiar estos Términos sin notificar a los usuarios cuando lo considere necesario. Los Términos revisados entrarán en vigor cuando se publiquen dentro de la Aplicación.";
 "terms_article_13_title" = "Artículo 13 (Ley Aplicable y Jurisdicción)";
 "terms_article_13_content" = "1. Estos Términos se regirán por la ley japonesa.\n2. Cualquier disputa que surja en relación con la Aplicación estará sujeta a la jurisdicción exclusiva del tribunal que tenga jurisdicción sobre la ubicación de la oficina central del operador.";
+"terms_article_14_title" = "Artículo 14 (Limitaciones de Sincronización entre Dispositivos)";
+"terms_article_14_content" = "IMPORTANTE: Los planes comprados y el contenido creado se guardan solo en el dispositivo actual. Al iniciar sesión desde un dispositivo diferente, los planes comprados y el contenido creado NO se sincronizarán. Deberá comprar y crear contenido por separado en cada dispositivo.";
 "privacy_policy" = "Política de privacidad";
 
 /* Privacy Policy */

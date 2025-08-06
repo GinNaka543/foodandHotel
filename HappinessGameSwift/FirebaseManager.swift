@@ -665,6 +665,18 @@ class FirebaseManager: ObservableObject {
                 return
             }
             
+            // userPurchasedPlansコレクションも更新
+            let userPurchasesRef = self.db.collection("userPurchasedPlans").document(purchase.userId)
+            userPurchasesRef.setData([
+                "userId": purchase.userId,
+                "planIds": FieldValue.arrayUnion([purchase.planId]),
+                "updatedAt": FieldValue.serverTimestamp()
+            ], merge: true) { error in
+                if let error = error {
+                    print("⚠️ Failed to update userPurchasedPlans: \(error)")
+                    // エラーでも続行
+                }
+            }
             
             // プランの購入者リストを更新
             let planRef = self.db.collection("visitPlans").document(purchase.planId)
@@ -1206,24 +1218,49 @@ class FirebaseManager: ObservableObject {
     
     // ユーザーの購入済みプランIDリストを取得
     func fetchUserPurchasedPlanIds(userId: String, completion: @escaping (Result<[String], Error>) -> Void) {
-        // print("📱 Fetching purchased plan IDs for userId: \(userId)")
+        print("📱 Fetching purchased plan IDs for userId: \(userId)")
         
-        db.collection("planPurchases")
-            .whereField("userId", isEqualTo: userId)
-            .getDocuments { snapshot, error in
-                if let error = error {
-                    // print("❌ Error fetching purchased plans: \(error)")
-                    completion(.failure(error))
-                    return
-                }
-                
-                let planIds = snapshot?.documents.compactMap { doc in
-                    doc.data()["planId"] as? String
-                } ?? []
-                
-                // print("✅ Found \(planIds.count) purchased plans")
-                completion(.success(planIds))
+        // まずuserPurchasedPlansコレクションから取得を試みる
+        db.collection("userPurchasedPlans").document(userId).getDocument { snapshot, error in
+            if let error = error {
+                print("❌ Error fetching from userPurchasedPlans: \(error)")
+                completion(.failure(error))
+                return
             }
+            
+            if let data = snapshot?.data(),
+               let planIds = data["planIds"] as? [String] {
+                print("✅ Found \(planIds.count) purchased plans from userPurchasedPlans")
+                completion(.success(planIds))
+            } else {
+                // フォールバック: planPurchasesコレクションから取得
+                print("⚠️ No data in userPurchasedPlans, checking planPurchases...")
+                self.db.collection("planPurchases")
+                    .whereField("userId", isEqualTo: userId)
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            print("❌ Error fetching from planPurchases: \(error)")
+                            completion(.failure(error))
+                            return
+                        }
+                        
+                        let planIds = snapshot?.documents.compactMap { doc in
+                            doc.data()["planId"] as? String
+                        } ?? []
+                        
+                        print("✅ Found \(planIds.count) purchased plans from planPurchases")
+                        
+                        // 見つかったプランIDをuserPurchasedPlansに保存
+                        if !planIds.isEmpty {
+                            self.savePurchasedPlanIds(userId: userId, planIds: planIds) { _ in
+                                print("📝 Migrated plan IDs to userPurchasedPlans")
+                            }
+                        }
+                        
+                        completion(.success(planIds))
+                    }
+            }
+        }
     }
     
     // ユーザーの購入済みプランIDをFirebaseに保存
@@ -1325,18 +1362,24 @@ class FirebaseManager: ObservableObject {
     
     // 購入済みプランの同期（ローカルとFirebase）
     func syncPurchasedPlans(userId: String, completion: @escaping (Result<Void, Error>) -> Void) {
-        // ローカルの購入済みプランIDを取得
-        let localPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(userId)") ?? []
+        // ローカルの購入済みプランIDを取得（UserDefaultsHelperを使用）
+        let localPlanIds = UserDefaultsHelper.shared.getStringArray(forKey: "purchasedPlanIds") ?? []
+        
+        print("📱 Syncing purchased plans for user: \(userId)")
+        print("📱 Local plan IDs: \(localPlanIds)")
         
         // Firebaseから購入済みプランIDを取得
         fetchUserPurchasedPlanIds(userId: userId) { [weak self] result in
             switch result {
             case .success(let firebasePlanIds):
+                print("☁️ Firebase plan IDs: \(firebasePlanIds)")
+                
                 // ローカルとFirebaseのプランIDをマージ
                 let allPlanIds = Array(Set(localPlanIds + firebasePlanIds))
+                print("🔄 Merged plan IDs: \(allPlanIds)")
                 
-                // マージしたリストをローカルに保存
-                UserDefaults.standard.set(allPlanIds, forKey: "purchasedPlanIds_\(userId)")
+                // マージしたリストをローカルに保存（UserDefaultsHelperを使用）
+                UserDefaultsHelper.shared.setStringArray(allPlanIds, forKey: "purchasedPlanIds")
                 
                 // 購入済みプランの詳細データを取得してローカルに保存
                 self?.fetchAndSavePurchasedPlanDetails(userId: userId, planIds: allPlanIds) { detailsResult in

@@ -7,6 +7,7 @@
 "next" = "Next";
 "back" = "Back";
 "cancel" = "Cancel";
+"please_select_currency" = "Please select currency";
 "save" = "Save";
 "delete" = "Delete";
 "edit" = "Edit";
@@ -61,6 +62,8 @@
 "terms_article_12_content" = "The operator may change these Terms without notifying users when deemed necessary. The revised Terms shall take effect when posted within the App.";
 "terms_article_13_title" = "Article 13 (Governing Law and Jurisdiction)";
 "terms_article_13_content" = "1. These Terms shall be governed by Japanese law.\n2. Any disputes arising in connection with the App shall be subject to the exclusive jurisdiction of the court having jurisdiction over the location of the operator's head office.";
+"terms_article_14_title" = "Article 14 (Cross-Device Sync Limitations)";
+"terms_article_14_content" = "IMPORTANT: Purchased plans and created content are saved only on the current device. When logging in from a different device, purchased plans and created content will NOT be synchronized. You will need to purchase and create content separately on each device.";
 "privacy_policy" = "Privacy Policy";
 "privacy_policy_title" = "Privacy Policy";
 "privacy_info_we_collect_title" = "1. Information We Collect";

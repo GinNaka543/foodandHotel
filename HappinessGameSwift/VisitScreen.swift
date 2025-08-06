@@ -1042,10 +1042,10 @@ public struct VisitScreen: View {
     
     // ローカル購入記録を保存
     func saveLocalPurchaseRecord(planId: String) {
-        var purchasedPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(currentUserId)") ?? []
+        var purchasedPlanIds = UserDefaultsHelper.shared.getStringArray(forKey: "purchasedPlanIds") ?? []
         if !purchasedPlanIds.contains(planId) {
             purchasedPlanIds.append(planId)
-            UserDefaults.standard.set(purchasedPlanIds, forKey: "purchasedPlanIds_\(currentUserId)")
+            UserDefaultsHelper.shared.setStringArray(purchasedPlanIds, forKey: "purchasedPlanIds")
             
             // Firebaseにも同期
             firebaseManager.savePurchasedPlanIds(userId: currentUserId, planIds: purchasedPlanIds) { result in
@@ -1061,7 +1061,7 @@ public struct VisitScreen: View {
     
     // ローカル購入記録をチェック
     func checkLocalPurchaseRecord(planId: String) -> Bool {
-        let purchasedPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(currentUserId)") ?? []
+        let purchasedPlanIds = UserDefaultsHelper.shared.getStringArray(forKey: "purchasedPlanIds") ?? []
         let isPurchased = purchasedPlanIds.contains(planId)
         return isPurchased
     }
@@ -1076,8 +1076,8 @@ public struct VisitScreen: View {
             case .success:
                 // print("✅ Successfully synced purchased plans")
                 
-                // 同期後、ローカルの購入済みプランIDを取得
-                let purchasedPlanIds = UserDefaults.standard.stringArray(forKey: "purchasedPlanIds_\(self.currentUserId)") ?? []
+                // 同期後、ローカルの購入済みプランIDを取得（UserDefaultsHelperを使用）
+                let purchasedPlanIds = UserDefaultsHelper.shared.getStringArray(forKey: "purchasedPlanIds") ?? []
                 
                 // 購入したプランをFirebaseから取得してローカルに保存
                 for planId in purchasedPlanIds {

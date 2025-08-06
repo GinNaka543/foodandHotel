@@ -36,12 +36,8 @@ struct InitialCurrencySelectionView: View {
                         .foregroundColor(.purple)
                         .padding(.top, 20)
                     
-                    Text(NSLocalizedString("select_currency_title", comment: "Select Currency"))
-                        .font(.system(size: 24, weight: .bold))
-                    
-                    Text(NSLocalizedString("select_currency_description", comment: "Which currency would you like to use for this plan?"))
-                        .font(.system(size: 16))
-                        .foregroundColor(.gray)
+                    Text(NSLocalizedString("please_select_currency", comment: "Please select currency"))
+                        .font(.system(size: 20, weight: .semibold))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
                         .padding(.bottom, 20)

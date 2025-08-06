@@ -1109,8 +1109,10 @@ public struct VisitScreen: View {
             let existingPlan = self.savedPlans.first { $0.id.uuidString == planId }
             if existingPlan == nil {
                 // ローカルに保存
+                print("📥 Downloading and saving new purchased plan: \(plan.title) with ID: \(planId)")
                 self.savePurchasedPlan(plan)
             } else {
+                print("✅ Plan already exists locally: \(existingPlan!.title) with ID: \(planId)")
             }
         }
     }
@@ -1190,50 +1192,51 @@ public struct VisitScreen: View {
     
     // 緊急修正: Test3の重複を強制的に削除
     private func emergencyCleanupTest3Duplicates() {
-        // print("🚨 EMERGENCY CLEANUP: Removing Test3 duplicates...")
+        // print("🚨 EMERGENCY CLEANUP: Removing duplicate purchased plans...")
         
-        // UserDefaultsから直接メタデータを取得
-        guard let metadata = UserDefaults.standard.dictionary(forKey: "savedPlansMetadata") as? [String: [String: Any]] else {
+        // UserDefaultsHelperを使用してユーザー固有のメタデータを取得
+        guard let data = UserDefaultsHelper.shared.getData(forKey: "savedPlansMetadata"),
+              let metadata = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] else {
             // print("❌ No metadata found")
             return
         }
         
-        // print("📊 Found \(metadata.count) total plans in metadata")
+        print("📊 Found \(metadata.count) total plans in metadata")
         
         var cleanedMetadata: [String: [String: Any]] = [:]
-        var test3Found = false
-        var test3Count = 0
-        var keptPlanId: String?
+        var titleTracker: [String: String] = [:] // title -> planId のマッピング
+        var removedCount = 0
         
-        // Test3プランをカウントして、最初の1つだけ保持
+        // 各プランをチェックして、同じタイトルの重複を削除
         for (planId, planData) in metadata {
             if let title = planData["title"] as? String,
                let isPurchased = planData["isPurchased"] as? Bool,
-               isPurchased && title == "Test3" {
-                test3Count += 1
-                if !test3Found {
-                    // 最初のTest3プランだけを保持
-                    cleanedMetadata[planId] = planData
-                    test3Found = true
-                    keptPlanId = planId
-                    // print("✅ Keeping first Test3 plan with ID: \(planId)")
-                } else {
-                    // print("🗑️ Removing duplicate Test3 plan with ID: \(planId)")
-                    // プランディレクトリも削除
+               isPurchased {
+                // 購入済みプランの場合
+                if titleTracker[title] != nil {
+                    // 同じタイトルのプランが既に存在する場合
+                    print("🗑️ Removing duplicate purchased plan - Title: \(title), ID: \(planId)")
                     deleteplanDirectory(planId: planId)
+                    removedCount += 1
+                } else {
+                    // 最初のプランを保持
+                    titleTracker[title] = planId
+                    cleanedMetadata[planId] = planData
+                    print("✅ Keeping purchased plan - Title: \(title), ID: \(planId)")
                 }
             } else {
-                // Test3以外のプランは全て保持
+                // 購入済みでないプランは全て保持
                 cleanedMetadata[planId] = planData
             }
         }
         
-        // print("📊 Test3 duplicates found: \(test3Count), keeping only 1")
-        // print("📊 Final plan count: \(cleanedMetadata.count) (removed \(metadata.count - cleanedMetadata.count) plans)")
+        print("📊 Removed \(removedCount) duplicate purchased plans")
+        print("📊 Final plan count: \(cleanedMetadata.count)")
         
         // クリーンなメタデータを保存
-        UserDefaults.standard.set(cleanedMetadata, forKey: "savedPlansMetadata")
-        UserDefaults.standard.synchronize()
+        if let cleanData = try? JSONSerialization.data(withJSONObject: cleanedMetadata) {
+            UserDefaultsHelper.shared.setData(cleanData, forKey: "savedPlansMetadata")
+        }
         
         // print("✅ EMERGENCY CLEANUP COMPLETE")
     }

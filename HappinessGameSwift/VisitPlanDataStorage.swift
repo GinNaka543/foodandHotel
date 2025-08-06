@@ -351,47 +351,45 @@ class VisitPlanDataStorage {
         
         // 購入されたプランを特定（同じタイトルで複数ある場合は1つだけ残す）
         var cleanPlans: [String: [String: Any]] = [:]
-        var test3Plans: [(String, [String: Any])] = []
+        var titleTracker: [String: String] = [:] // title -> planId のマッピング
+        var removedCount = 0
         
-        // Test3プランを全て収集
+        // 各プランをチェックして重複を削除
         for (planId, planData) in plansMetadata {
-            guard let title = planData["title"] as? String,
-                  let isPurchased = planData["isPurchased"] as? Bool else {
+            guard let title = planData["title"] as? String else {
+                // タイトルがないプランは保持
+                cleanPlans[planId] = planData
                 continue
             }
             
-            if isPurchased && title == "Test3" {
-                test3Plans.append((planId, planData))
+            let isPurchased = planData["isPurchased"] as? Bool ?? false
+            
+            if isPurchased {
+                // 購入済みプランの場合、同じタイトルのプランは1つだけ保持
+                if titleTracker[title] != nil {
+                    // 同じタイトルのプランが既に存在する場合は削除
+                    print("[VisitPlanDataStorage] 🗑️ Deleting duplicate purchased plan - Title: \(title), ID: \(planId)")
+                    // プランディレクトリも削除
+                    let planDir = planDirectory(for: planId)
+                    try? FileManager.default.removeItem(at: planDir)
+                    removedCount += 1
+                } else {
+                    // 最初のプランを保持
+                    titleTracker[title] = planId
+                    cleanPlans[planId] = planData
+                    print("[VisitPlanDataStorage] ✅ Keeping purchased plan - Title: \(title), ID: \(planId)")
+                }
             } else {
-                // Test3以外のプランは全て保持
+                // 購入済みでないプランは全て保持
                 cleanPlans[planId] = planData
             }
         }
         
-        print("[VisitPlanDataStorage] Found \(test3Plans.count) Test3 duplicate plans")
-        
-        // Test3プランは最初の1つだけ保持
-        if !test3Plans.isEmpty {
-            let (firstId, firstData) = test3Plans[0]
-            cleanPlans[firstId] = firstData
-            print("[VisitPlanDataStorage] Keeping only first Test3 plan with ID: \(firstId)")
-            
-            // 残りのTest3プランを削除
-            for i in 1..<test3Plans.count {
-                let (planId, _) = test3Plans[i]
-                print("[VisitPlanDataStorage] 🗑️ Deleting duplicate Test3 plan: \(planId)")
-                // プランディレクトリも削除
-                let planDir = planDirectory(for: planId)
-                try? FileManager.default.removeItem(at: planDir)
-            }
-        }
-        
-        print("[VisitPlanDataStorage] Cleaned plans count: \(cleanPlans.count) (removed \(plansMetadata.count - cleanPlans.count) duplicates)")
+        print("[VisitPlanDataStorage] Removed \(removedCount) duplicate purchased plans")
+        print("[VisitPlanDataStorage] Cleaned plans count: \(cleanPlans.count)")
         
         // クリーンなデータを保存
         saveSavedPlansMetadata(cleanPlans)
-        
-        // UserDefaultsを同期（UserDefaultsHelperが自動的に同期）
         
         // 不要なファイルも削除
         cleanupOrphanedPlanFiles(keepingPlanIds: Set(cleanPlans.keys))

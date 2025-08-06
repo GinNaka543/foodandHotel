@@ -868,15 +868,27 @@ struct VisitScreen_iPad: View {
     }
     
     func savePurchasedPlan(_ plan: VisitPlanModel) {
+        // 既に購入済みのプランが存在するかチェック
+        if savedPlans.contains(where: { $0.id.uuidString == plan.id && $0.isPurchased }) {
+            print("⚠️ Plan already purchased, skipping save - ID: \(plan.id)")
+            return
+        }
+        
         // Check if this is a draft being converted to purchased
         if let existingPlan = savedPlans.first(where: { $0.id.uuidString == plan.id && $0.isDraft }) {
             // This is a draft being purchased, use the conversion method
             VisitPlanDataStorage.shared.convertDraftToPurchased(planId: plan.id)
             // print("✅ Converted draft to purchased plan - ID: \(plan.id)")
         } else {
+            // プランIDは必ず元のIDを使用し、新しいUUIDを生成しない
+            guard let planUUID = UUID(uuidString: plan.id) else {
+                print("❌ Invalid plan ID: \(plan.id)")
+                return
+            }
+            
             // This is a new purchase, create new plan data
             let visitPlanData = VisitPlanData(
-                id: UUID(uuidString: plan.id) ?? UUID(),
+                id: planUUID,  // 元のIDを保持
                 animeName: plan.animeName,
                 title: plan.title,
                 duration: plan.duration,
@@ -921,7 +933,7 @@ struct VisitScreen_iPad: View {
     private func removeDuplicatePlans(_ plans: [VisitPlanModel]) -> [VisitPlanModel] {
         var uniquePlans: [VisitPlanModel] = []
         var seenPlanIds: Set<String> = []
-        var seenPlanKeys: Set<String> = []
+        var seenPlanTitles: Set<String> = []
         
         for plan in plans {
             // まずIDで重複チェック
@@ -930,16 +942,15 @@ struct VisitScreen_iPad: View {
                 continue
             }
             
-            // タイトル、アニメ名、作成日で重複判定
-            let planKey = "\(plan.title)_\(plan.animeName)_\(plan.createdDate.timeIntervalSince1970)"
-            if seenPlanKeys.contains(planKey) {
-                print("DEBUG: Removed duplicate plan by content - Title: \(plan.title), Key: \(planKey)")
+            // タイトルでも重複チェック（同じタイトルのプランは1つだけ表示）
+            if seenPlanTitles.contains(plan.title) {
+                print("DEBUG: Removed duplicate plan by title - Title: \(plan.title), ID: \(plan.id)")
                 continue
             }
             
             // 重複でない場合は追加
             seenPlanIds.insert(plan.id)
-            seenPlanKeys.insert(planKey)
+            seenPlanTitles.insert(plan.title)
             uniquePlans.append(plan)
             print("DEBUG: Added unique plan - Title: \(plan.title), ID: \(plan.id)")
         }

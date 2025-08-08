@@ -6,6 +6,7 @@
 "continue" = "続ける";
 "next" = "次へ";
 "back" = "戻る";
+"go_back" = "戻る";
 "cancel" = "キャンセル";
 "please_select_currency" = "通貨を選択してください";
 "save" = "保存";

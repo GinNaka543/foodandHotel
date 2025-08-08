@@ -1,6 +1,100 @@
 import UIKit
 
-// 画像をドキュメントディレクトリに保存し、ファイルパスを返す
+// 画像をキャラクター専用フォルダーに保存
+func saveImageToCharacterFolder(_ image: UIImage, characterId: String, fileName: String, quality: CGFloat = 0.8) -> String? {
+    guard let data = image.pngData() else { 
+        return nil 
+    }
+    
+    let fileManager = FileManager.default
+    let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+    guard let documentsURL = urls.first else { 
+        return nil 
+    }
+    
+    // キャラクター専用のartworksフォルダーを作成
+    let characterArtworksURL = documentsURL.appendingPathComponent("AnirecoImages/characters/\(characterId)/artworks")
+    
+    do {
+        // ディレクトリが存在しない場合は作成
+        if !fileManager.fileExists(atPath: characterArtworksURL.path) {
+            try fileManager.createDirectory(at: characterArtworksURL, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        var fileURL = characterArtworksURL.appendingPathComponent(fileName)
+        
+        // 既存ファイルがある場合は削除
+        if fileManager.fileExists(atPath: fileURL.path) {
+            try fileManager.removeItem(at: fileURL)
+        }
+        
+        try data.write(to: fileURL)
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
+        
+        // ファイルが実際に保存されたか確認
+        if fileManager.fileExists(atPath: fileURL.path) {
+            let relativePath = "AnirecoImages/characters/\(characterId)/artworks/\(fileName)"
+            return relativePath
+        } else {
+            return nil
+        }
+    } catch {
+        return nil
+    }
+}
+
+// 画像をアニメ専用フォルダーに保存
+func saveImageToAnimeFolder(_ image: UIImage, animeId: String, fileName: String, quality: CGFloat = 0.8) -> String? {
+    guard let data = image.pngData() else { 
+        return nil 
+    }
+    
+    let fileManager = FileManager.default
+    let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+    guard let documentsURL = urls.first else { 
+        return nil 
+    }
+    
+    // アニメ専用のartworksフォルダーを作成
+    let animeArtworksURL = documentsURL.appendingPathComponent("AnirecoImages/anime/\(animeId)/artworks")
+    
+    do {
+        // ディレクトリが存在しない場合は作成
+        if !fileManager.fileExists(atPath: animeArtworksURL.path) {
+            try fileManager.createDirectory(at: animeArtworksURL, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        var fileURL = animeArtworksURL.appendingPathComponent(fileName)
+        
+        // 既存ファイルがある場合は削除
+        if fileManager.fileExists(atPath: fileURL.path) {
+            try fileManager.removeItem(at: fileURL)
+        }
+        
+        try data.write(to: fileURL)
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
+        
+        // ファイルが実際に保存されたか確認
+        if fileManager.fileExists(atPath: fileURL.path) {
+            let relativePath = "AnirecoImages/anime/\(animeId)/artworks/\(fileName)"
+            return relativePath
+        } else {
+            return nil
+        }
+    } catch {
+        return nil
+    }
+}
+
+// 画像をドキュメントディレクトリに保存し、ファイルパスを返す（旧バージョン、互換性のため）
 func saveImageToDocuments(_ image: UIImage, fileName: String, quality: CGFloat = 0.8) -> String? {
     // PNG形式で保存を試行
     guard let data = image.pngData() else { 
@@ -48,7 +142,91 @@ func saveImageToDocuments(_ image: UIImage, fileName: String, quality: CGFloat =
     }
 }
 
-// JPEG形式で画像を保存
+// JPEG形式で画像をキャラクターフォルダーに保存
+func saveImageToCharacterFolderAsJPEG(_ image: UIImage, characterId: String, fileName: String, quality: CGFloat = 0.8) -> String? {
+    guard let data = image.jpegData(compressionQuality: quality) else { 
+        return nil 
+    }
+    
+    let fileManager = FileManager.default
+    let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+    guard let documentsURL = urls.first else { 
+        return nil 
+    }
+    
+    // キャラクター専用のartworksフォルダーを作成
+    let characterArtworksURL = documentsURL.appendingPathComponent("AnirecoImages/characters/\(characterId)/artworks")
+    
+    do {
+        // ディレクトリが存在しない場合は作成
+        if !fileManager.fileExists(atPath: characterArtworksURL.path) {
+            try fileManager.createDirectory(at: characterArtworksURL, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        var fileURL = characterArtworksURL.appendingPathComponent(fileName)
+        
+        // 既存ファイルがある場合は削除
+        if fileManager.fileExists(atPath: fileURL.path) {
+            try fileManager.removeItem(at: fileURL)
+        }
+        
+        try data.write(to: fileURL)
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
+        
+        let relativePath = "AnirecoImages/characters/\(characterId)/artworks/\(fileName)"
+        return relativePath
+    } catch {
+        return nil
+    }
+}
+
+// JPEG形式で画像をアニメフォルダーに保存
+func saveImageToAnimeFolderAsJPEG(_ image: UIImage, animeId: String, fileName: String, quality: CGFloat = 0.8) -> String? {
+    guard let data = image.jpegData(compressionQuality: quality) else { 
+        return nil 
+    }
+    
+    let fileManager = FileManager.default
+    let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
+    guard let documentsURL = urls.first else { 
+        return nil 
+    }
+    
+    // アニメ専用のartworksフォルダーを作成
+    let animeArtworksURL = documentsURL.appendingPathComponent("AnirecoImages/anime/\(animeId)/artworks")
+    
+    do {
+        // ディレクトリが存在しない場合は作成
+        if !fileManager.fileExists(atPath: animeArtworksURL.path) {
+            try fileManager.createDirectory(at: animeArtworksURL, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        var fileURL = animeArtworksURL.appendingPathComponent(fileName)
+        
+        // 既存ファイルがある場合は削除
+        if fileManager.fileExists(atPath: fileURL.path) {
+            try fileManager.removeItem(at: fileURL)
+        }
+        
+        try data.write(to: fileURL)
+        
+        // iCloudバックアップを有効にする
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = false
+        try fileURL.setResourceValues(resourceValues)
+        
+        let relativePath = "AnirecoImages/anime/\(animeId)/artworks/\(fileName)"
+        return relativePath
+    } catch {
+        return nil
+    }
+}
+
+// JPEG形式で画像を保存（旧バージョン、互換性のため）
 func saveImageToDocumentsAsJPEG(_ image: UIImage, fileName: String, quality: CGFloat = 0.8) -> String? {
     guard let data = image.jpegData(compressionQuality: quality) else { 
         return nil 

@@ -560,6 +560,11 @@
 "registration_error" = "Registration Error";
 "username_can_be_changed_later" = "※Username can be changed later";
 "already_have_account" = "Already have an account? Sign in here";
+"important_save_id_title" = "⚠️ Important - Save Your ID";
+"important_save_id_message" = "This ID is your password! Please save it securely:\n\n%@\n\n⚠️ You cannot recover this ID if lost!";
+"copy_id" = "Copy ID";
+"bonus_received_title" = "🎉 Bonus Received!";
+"bonus_received_message" = "50 points have been added to your account as a new registration bonus!";
 
 /* Character Screen */
 "add_character" = "Add Character";
@@ -622,10 +627,10 @@
 "video" = "Video";
 "rank_format" = "Rank %d";
 "background_image" = "Background Image";
-"character_order_title" = "Change Character Order";
+"character_order_title" = "Change/Delete Character Order";
 "drag_drop_to_reorder" = "Drag & drop to reorder";
-"character_order_menu" = "Change Character Order";
-"anime_order_menu" = "Change Anime Order";
+"character_order_menu" = "Change/Delete Character Order";
+"anime_order_menu" = "Change/Delete Anime Order";
 
 /* Anime Screen */
 "none_status" = "None";
@@ -714,7 +719,9 @@
 "artwork_count_format" = "%d artworks";
 "delete_video_confirm_title" = "Delete video?";
 "delete_video_confirm_message" = "This video will be permanently deleted.";
-"anime_order_title" = "Change Anime Order";
+"anime_order_title" = "Change/Delete Anime Order";
+"delete_character_confirmation" = "Are you sure you want to delete this character? All associated photos and videos will also be deleted.";
+"delete_anime_confirmation" = "Are you sure you want to delete this anime? All associated photos and videos will also be deleted.";
 /* Product Screen */
 "wishlist_items" = "Wishlist";
 "add_product" = "Add Product";

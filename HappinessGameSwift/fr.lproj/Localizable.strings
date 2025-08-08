@@ -419,11 +419,11 @@
 "registration_bonus" = "Bonus d'inscription";
 "registration_complete_with_bonus" = "Veuillez sauvegarder votre ID utilisateur:\n\n%@\n\n🎉 50 points ont été attribués comme bonus de nouvelle inscription!\n\nCet ID est nécessaire pour votre prochaine connexion.";
 "registration_complete_message" = "Veuillez sauvegarder votre ID utilisateur:\n\n%@\n\nCet ID est nécessaire pour votre prochaine connexion.";
-"character_order_title" = "Modifier l'ordre des personnages";
-"anime_order_title" = "Modifier l'ordre des anime";
+"character_order_title" = "Ordre des personnages/Supprimer";
+"anime_order_title" = "Ordre des anime/Supprimer";
 "drag_drop_to_reorder" = "Glisser-déposer pour réorganiser";
-"character_order_menu" = "Modifier l'ordre des personnages";
-"anime_order_menu" = "Modifier l'ordre des anime";
+"character_order_menu" = "Modifier/Supprimer l'ordre des personnages";
+"anime_order_menu" = "Modifier/Supprimer l'ordre des anime";
 "registration_error" = "Erreur d'inscription";
 "user_id_issued" = "L'ID utilisateur a été émis.";
 "user_id_label_format" = "ID utilisateur : %@";
@@ -431,6 +431,11 @@
 "save_with_memo_or_screenshot" = "Assurez-vous de le sauvegarder avec une note ou une capture d'écran.";
 "username_can_be_changed_later" = "※Le nom d'utilisateur peut être modifié plus tard";
 "already_have_account" = "Vous avez déjà un compte ? Connectez-vous ici";
+"important_save_id_title" = "⚠️ Important - Sauvegardez votre ID";
+"important_save_id_message" = "Cet ID est votre mot de passe ! Veuillez le sauvegarder en sécurité :\n\n%@\n\n⚠️ Vous ne pouvez pas récupérer cet ID s'il est perdu !";
+"copy_id" = "Copier l'ID";
+"bonus_received_title" = "🎉 Bonus Reçu !";
+"bonus_received_message" = "50 points ont été ajoutés à votre compte comme bonus de nouvelle inscription !";
 
 /* Home Screen */
 "no_characters_registered" = "Aucun personnage enregistré";
@@ -943,10 +948,10 @@
 "product_page" = "Page de produits";
 
 /* Order Menu */
-"character_order_menu" = "Modifier l'ordre des personnages";
-"anime_order_menu" = "Modifier l'ordre des animes";
-"character_order_title" = "Modifier l'ordre des personnages";
-"anime_order_title" = "Modifier l'ordre des animes";
+"character_order_menu" = "Modifier/Supprimer l'ordre des personnages";
+"anime_order_menu" = "Modifier/Supprimer l'ordre des animes";
+"character_order_title" = "Ordre des personnages/Supprimer";
+"anime_order_title" = "Ordre des anime/Supprimer";
 
 "member_list" = "Liste des membres";
 "cancel" = "Annuler";
@@ -1030,3 +1035,7 @@
 "no_soundtrack_title" = "Aucune bande sonore enregistrée";
 "add_soundtrack_from_about" = "Veuillez ajouter une bande sonore depuis la page À propos";
 "ok" = "OK";
+
+"drag_drop_to_reorder" = "Glisser-déposer pour réorganiser";
+"delete_character_confirmation" = "Supprimer ce personnage ?";
+"delete_anime_confirmation" = "Supprimer cet anime ?";

@@ -418,11 +418,11 @@
 "registration_bonus" = "등록 보너스";
 "registration_complete_with_bonus" = "사용자 ID를 저장해 주세요:\n\n%@\n\n🎉 신규 등록 보너스로 50 포인트가 지급되었습니다!\n\n이 ID는 다음 로그인 시 필요합니다.";
 "registration_complete_message" = "사용자 ID를 저장해 주세요:\n\n%@\n\n이 ID는 다음 로그인 시 필요합니다.";
-"character_order_title" = "캐릭터 순서 변경";
-"anime_order_title" = "애니메이션 순서 변경";
+"character_order_title" = "캐릭터 순서/삭제";
+"anime_order_title" = "애니메이션 순서/삭제";
 "drag_drop_to_reorder" = "드래그 앤 드롭으로 재정렬";
-"character_order_menu" = "캐릭터 순서 변경";
-"anime_order_menu" = "애니메이션 순서 변경";
+"character_order_menu" = "캐릭터 순서 변경/삭제";
+"anime_order_menu" = "애니메이션 순서 변경/삭제";
 "registration_error" = "등록 오류";
 "user_id_issued" = "사용자 ID가 발급되었습니다.";
 "user_id_label_format" = "사용자 ID: %@";
@@ -430,6 +430,11 @@
 "save_with_memo_or_screenshot" = "메모나 스크린샷으로 저장해 주세요.";
 "username_can_be_changed_later" = "※사용자명은 나중에 변경할 수 있습니다";
 "already_have_account" = "이미 계정이 있으신가요? 여기서 로그인";
+"important_save_id_title" = "⚠️ 중요 - ID를 저장하세요";
+"important_save_id_message" = "이 ID는 비밀번호 대신 사용됩니다! 안전하게 저장해주세요:\n\n%@\n\n⚠️ 분실하면 복구할 수 없습니다!";
+"copy_id" = "ID 복사";
+"bonus_received_title" = "🎉 보너스 획득!";
+"bonus_received_message" = "신규 등록 보너스로 50포인트가 지급되었습니다!";
 
 /* Home Screen */
 "no_characters_registered" = "등록된 캐릭터가 없습니다";
@@ -941,10 +946,10 @@
 "product_page" = "제품 페이지";
 
 /* Order Menu */
-"character_order_menu" = "캐릭터 순서 변경";
-"anime_order_menu" = "애니메이션 순서 변경";
-"character_order_title" = "캐릭터 순서 변경";
-"anime_order_title" = "애니메이션 순서 변경";
+"character_order_menu" = "캐릭터 순서 변경/삭제";
+"anime_order_menu" = "애니메이션 순서 변경/삭제";
+"character_order_title" = "캐릭터 순서/삭제";
+"anime_order_title" = "애니메이션 순서/삭제";
 
 "member_list" = "멤버 리스트";
 "cancel" = "취소";
@@ -1028,3 +1033,7 @@
 "no_soundtrack_title" = "사운드트랙이 등록되지 않음";
 "add_soundtrack_from_about" = "정보 페이지에서 사운드트랙을 추가해주세요";
 "ok" = "확인";
+
+"drag_drop_to_reorder" = "드래그 앤 드롭으로 순서를 변경하세요";
+"delete_character_confirmation" = "이 캐릭터를 삭제하시겠습니까?";
+"delete_anime_confirmation" = "이 애니메를 삭제하시겠습니까?";

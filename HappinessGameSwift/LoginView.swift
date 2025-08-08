@@ -9,6 +9,9 @@ struct LoginView: View {
     @State private var alertMessage = ""
     @State private var generatedUserId = ""
     @State private var isLoading = false
+    @State private var showingIdAlert = false
+    @State private var showingBonusAlert = false
+    @State private var savedUserId = ""
     @ObservedObject var authManager: AuthenticationManager
     
     var body: some View {
@@ -130,17 +133,31 @@ struct LoginView: View {
             .ignoresSafeArea(edges: .bottom)
         }
         .alert(alertTitle, isPresented: $showingAlert) {
-            if alertTitle == NSLocalizedString("registration_complete", comment: "Registration Complete") {
-                Button("OK") {
-                    // 登録完了後、自動ログイン
-                    saveUserData(username: username, userId: generatedUserId)
-                    authManager.login()
-                }
-            } else {
-                Button("OK") {}
-            }
+            Button("OK") {}
         } message: {
             Text(alertMessage)
+        }
+        .alert(NSLocalizedString("important_save_id_title", comment: "⚠️ Important - Save Your ID"), isPresented: $showingIdAlert) {
+            Button(NSLocalizedString("copy_id", comment: "Copy ID")) {
+                UIPasteboard.general.string = savedUserId
+                // ボーナスアラートを表示
+                showingBonusAlert = true
+            }
+            Button("OK") {
+                // ボーナスアラートを表示
+                showingBonusAlert = true
+            }
+        } message: {
+            Text(String(format: NSLocalizedString("important_save_id_message", comment: "This ID is your password! Please save it securely:\n\n%@\n\n⚠️ You cannot recover this ID if lost!"), savedUserId))
+        }
+        .alert(NSLocalizedString("bonus_received_title", comment: "🎉 Bonus Received!"), isPresented: $showingBonusAlert) {
+            Button("OK") {
+                // 登録完了後、自動ログイン
+                saveUserData(username: username, userId: savedUserId)
+                authManager.login()
+            }
+        } message: {
+            Text(NSLocalizedString("bonus_received_message", comment: "50 points have been added to your account as a new registration bonus!"))
         }
     }
     
@@ -202,14 +219,12 @@ struct LoginView: View {
                                 case .success:
                                     // ボーナス付与済みフラグを設定
                                     UserDefaults.standard.set(true, forKey: "hasReceivedFirstTimeBonus")
-                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
-                                    alertMessage = String(format: NSLocalizedString("registration_complete_with_bonus", comment: "Please save your User ID: %@\n\n🎉 50 points have been awarded as a new registration bonus!\n\nThis ID is required for your next login."), generatedUserId)
-                                    showingAlert = true
+                                    savedUserId = generatedUserId
+                                    showingIdAlert = true
                                 case .failure(let error):
                                     // ポイント付与に失敗してもユーザー登録は成功しているので続行
-                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
-                                    alertMessage = String(format: NSLocalizedString("registration_complete_message", comment: "Please save your User ID: %@\n\nThis ID is required for your next login."), generatedUserId)
-                                    showingAlert = true
+                                    savedUserId = generatedUserId
+                                    showingIdAlert = true
                                 }
                             }
                         }

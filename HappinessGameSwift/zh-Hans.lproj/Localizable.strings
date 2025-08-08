@@ -419,11 +419,11 @@
 "registration_bonus" = "注册奖励";
 "registration_complete_with_bonus" = "请保存您的用户ID：\n\n%@\n\n🎉 新注册奖励已发放50积分！\n\n下次登录时需要此ID。";
 "registration_complete_message" = "请保存您的用户ID：\n\n%@\n\n下次登录时需要此ID。";
-"character_order_title" = "更改角色顺序";
-"anime_order_title" = "更改动画顺序";
+"character_order_title" = "角色顺序/删除";
+"anime_order_title" = "动画顺序/删除";
 "drag_drop_to_reorder" = "拖放以重新排序";
-"character_order_menu" = "更改角色顺序";
-"anime_order_menu" = "更改动画顺序";
+"character_order_menu" = "更改/删除角色顺序";
+"anime_order_menu" = "更改/删除动画顺序";
 "registration_error" = "注册错误";
 "user_id_issued" = "用户ID已发放。";
 "user_id_label_format" = "用户ID：%@";
@@ -431,6 +431,11 @@
 "save_with_memo_or_screenshot" = "请用备忘录或截图保存。";
 "username_can_be_changed_later" = "※用户名可以稍后更改";
 "already_have_account" = "已有账号？在此登录";
+"important_save_id_title" = "⚠️ 重要 - 保存您的ID";
+"important_save_id_message" = "此ID是您的密码！请妥善保存：\n\n%@\n\n⚠️ 丢失后无法恢复！";
+"copy_id" = "复制ID";
+"bonus_received_title" = "🎉 获得奖励！";
+"bonus_received_message" = "新注册奖励50积分已添加到您的账户！";
 
 /* Home Screen */
 "no_characters_registered" = "未注册任何角色";
@@ -942,10 +947,10 @@
 "product_page" = "产品页面";
 
 /* Order Menu */
-"character_order_menu" = "更改角色顺序";
-"anime_order_menu" = "更改动漫顺序";
-"character_order_title" = "更改角色顺序";
-"anime_order_title" = "更改动漫顺序";
+"character_order_menu" = "更改/删除角色顺序";
+"anime_order_menu" = "更改/删除动漫顺序";
+"character_order_title" = "角色顺序/删除";
+"anime_order_title" = "动漫顺序/删除";
 
 "member_list" = "成员列表";
 "cancel" = "取消";
@@ -1035,3 +1040,7 @@
 "no_soundtrack_title" = "未注册音轨";
 "add_soundtrack_from_about" = "请从关于页面添加音轨";
 "ok" = "确定";
+
+"drag_drop_to_reorder" = "拖拽排列顺序";
+"delete_character_confirmation" = "您要删除这个角色吗?";
+"delete_anime_confirmation" = "您要删除这个动漫吗?";

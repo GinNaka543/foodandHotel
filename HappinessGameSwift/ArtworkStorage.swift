@@ -17,8 +17,21 @@ class ArtworkStorage {
         documentsDirectory.appendingPathComponent("ArtworkThumbnails")
     }
     
+    // New directory structure
+    private func characterArtworksDirectory(for characterId: String) -> URL {
+        documentsDirectory.appendingPathComponent("AnirecoImages/characters/\(characterId)/artworks")
+    }
+    
+    private func animeArtworksDirectory(for animeId: String) -> URL {
+        documentsDirectory.appendingPathComponent("AnirecoImages/anime/\(animeId)/artworks")
+    }
+    
     private func ensureDirectoryExists() {
         try? FileManager.default.createDirectory(at: artworkThumbnailsDirectory, withIntermediateDirectories: true)
+    }
+    
+    private func ensureDirectoryExists(at url: URL) {
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     }
     
     // MARK: - File Management
@@ -46,6 +59,8 @@ class ArtworkStorage {
     
     func saveArtworks(for characterId: String, artworks: [Artwork]) {
         ensureDirectoryExists()
+        let artworksDir = characterArtworksDirectory(for: characterId)
+        ensureDirectoryExists(at: artworksDir)
         
         var metadataArray: [ArtworkMetadata] = []
         
@@ -137,6 +152,8 @@ class ArtworkStorage {
     
     func saveAnimeArtworks(for animeId: String, artworks: [Artwork]) {
         ensureDirectoryExists()
+        let artworksDir = animeArtworksDirectory(for: animeId)
+        ensureDirectoryExists(at: artworksDir)
         
         var metadataArray: [ArtworkMetadata] = []
         
@@ -245,9 +262,23 @@ class ArtworkStorage {
         }
     }
     
+    // MARK: - Helper Functions
+    
+    func createCharacterFolder(for characterId: String) {
+        let artworksDir = characterArtworksDirectory(for: characterId)
+        ensureDirectoryExists(at: artworksDir)
+    }
+    
+    func createAnimeFolder(for animeId: String) {
+        let artworksDir = animeArtworksDirectory(for: animeId)
+        ensureDirectoryExists(at: artworksDir)
+    }
+    
     // MARK: - Migration
     
     func migrateAllArtworks() {
+        print("🔄 Starting migration to new folder structure...")
+        
         let userDefaults = UserDefaults.standard
         let allKeys = userDefaults.dictionaryRepresentation().keys
         
@@ -258,6 +289,7 @@ class ArtworkStorage {
             !$0.contains("anime") 
         }
         
+        print("📁 Creating folders for \(characterArtworkKeys.count) character collections...")
         for key in characterArtworkKeys {
             let characterId: String
             if key.hasPrefix("character_artworks_") {
@@ -265,23 +297,22 @@ class ArtworkStorage {
             } else {
                 characterId = key.replacingOccurrences(of: "artworks_", with: "")
             }
-            _ = loadArtworks(for: characterId) // This will trigger migration
+            
+            // Just create the folder structure for now
+            createCharacterFolder(for: characterId)
         }
         
         // Migrate anime artworks
         let animeArtworkKeys = allKeys.filter { 
-            ($0.hasPrefix("anime_artworks_") || ($0.hasPrefix("artworks_") && !allKeys.contains("character_artworks_\($0.replacingOccurrences(of: "artworks_", with: ""))"))) &&
-            !$0.contains("metadata")
+            $0.hasPrefix("anime_artworks_") && !$0.contains("metadata")
         }
         
+        print("📁 Creating folders for \(animeArtworkKeys.count) anime collections...")
         for key in animeArtworkKeys {
-            let animeId: String
-            if key.hasPrefix("anime_artworks_") {
-                animeId = key.replacingOccurrences(of: "anime_artworks_", with: "")
-            } else {
-                animeId = key.replacingOccurrences(of: "artworks_", with: "")
-            }
-            _ = loadAnimeArtworks(for: animeId) // This will trigger migration
+            let animeId = key.replacingOccurrences(of: "anime_artworks_", with: "")
+            createAnimeFolder(for: animeId)
         }
+        
+        print("✅ Folder structure created for organized storage")
     }
 }

@@ -93,6 +93,28 @@ class CharacterManager: ObservableObject {
         }
     }
     
+    func deleteCharacter(_ character: Character) {
+        // Delete associated images
+        if let imagePath = character.imageIdentifier {
+            deleteImageFromPath(imagePath)
+        }
+        if let bgPath = character.backgroundImagePath {
+            deleteImageFromPath(bgPath)
+        }
+        
+        characters.removeAll { $0.id == character.id }
+        saveCharacters()
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+        }
+    }
+    
+    private func deleteImageFromPath(_ imagePath: String) {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let imageURL = documentsPath.appendingPathComponent(imagePath)
+        try? FileManager.default.removeItem(at: imageURL)
+    }
+    
     // UI更新用のメソッド
     func refreshUI() {
         DispatchQueue.main.async {
@@ -867,6 +889,8 @@ struct AddCharacterSheet: View {
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var image: UIImage? = nil
     @State private var savedImagePath: String? = nil
+    // 事前にキャラクターIDを生成
+    @State private var characterId: String = UUID().uuidString
     // 月日Picker用
     @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var selectedDay: Int = Calendar.current.component(.day, from: Date())
@@ -902,7 +926,7 @@ struct AddCharacterSheet: View {
                             let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
                             let calendar = Calendar.current
                             let date = calendar.date(from: components) ?? Date()
-                            let newChar = Character(id: UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, seichi: "", height: "", customFields: nil)
+                            let newChar = Character(id: UUID(uuidString: characterId) ?? UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, seichi: "", height: "", customFields: nil)
                             characterManager.addCharacterAtTop(newChar)
                             dismiss()
                         }) {
@@ -973,8 +997,9 @@ struct AddCharacterSheet: View {
                                 Task {
                                     if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                         image = uiImage
-                                        let fileName = "icon_\(UUID().uuidString).png"
-                                        if let path = saveImageToDocuments(uiImage, fileName: fileName) {
+                                        // 事前に生成されたキャラクターIDを使用
+                                        let fileName = "character_icon_\(UUID().uuidString).png"
+                                        if let path = saveImageToCharacterFolder(uiImage, characterId: characterId, fileName: fileName) {
                                             savedImagePath = path
                                         }
                                     }
@@ -1321,8 +1346,8 @@ struct CharacterDetailView: View {
                                 Task {
                                     if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                         tempIconImage = uiImage
-                                        let fileName = "icon_\(UUID().uuidString).png"
-                                        let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
+                                        let fileName = "character_icon_\(UUID().uuidString).png"
+                                        let imagePath = saveImageToCharacterFolder(uiImage, characterId: currentCharacter.id.uuidString, fileName: fileName)
                                         
                                         // 古い画像ファイルの削除はupdateCharacterに任せる
                                         // print("🔄 [CharaScreen-DetailView] Icon will be updated from \(currentCharacter.imageIdentifier ?? "nil") to \(imagePath ?? "nil")")
@@ -2031,8 +2056,8 @@ struct AboutView: View {
                                 if let data = try? await newValue.loadTransferable(type: Data.self),
                                    let image = UIImage(data: data) {
                                     // 画像を保存
-                                    let fileName = "character_\(characters[characterIndex ?? 0].id)_\(Date().timeIntervalSince1970).jpg"
-                                    if let savedPath = saveImageToDocuments(image, fileName: fileName),
+                                    let fileName = "character_icon_\(Date().timeIntervalSince1970).jpg"
+                                    if let savedPath = saveImageToCharacterFolderAsJPEG(image, characterId: characters[characterIndex ?? 0].id.uuidString, fileName: fileName),
                                        let idx = characterIndex {
                                         var updatedCharacter = characters[idx]
                                         // print("🔄 [CharaScreen-IconSheet] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
@@ -2220,7 +2245,7 @@ struct AboutView: View {
         
         // 画像をDocumentsディレクトリに保存
         let fileName = "character_icon_\(UUID().uuidString).png"
-        if let savedPath = saveImageToDocuments(iconImage, fileName: fileName) {
+        if let savedPath = saveImageToCharacterFolder(iconImage, characterId: characters[idx].id.uuidString, fileName: fileName) {
             var updatedCharacter = characters[idx]
             
             // 古いアイコンの削除はupdateCharacterに任せる
@@ -2839,8 +2864,8 @@ struct EditBackgroundView: View {
                                     backgroundImage = uiImage
                                     
                                     // 即座に背景を更新
-                                    let fileName = "bg_\(UUID().uuidString).png"
-                                    if let imagePath = saveImageToDocuments(uiImage, fileName: fileName) {
+                                    let fileName = "character_bg_\(UUID().uuidString).png"
+                                    if let imagePath = saveImageToCharacterFolder(uiImage, characterId: character.id.uuidString, fileName: fileName) {
                                         // 古い画像を削除
                                         if let oldPath = character.backgroundImagePath {
                                             try? FileManager.default.removeItem(atPath: oldPath)
@@ -3145,8 +3170,8 @@ struct EditTitleTagBackgroundView: View {
         
         // 背景画像の保存
         if let tempBackgroundImage = tempBackgroundImage {
-            let fileName = "background_\(UUID().uuidString).png"
-            let imagePath = saveImageToDocuments(tempBackgroundImage, fileName: fileName)
+            let fileName = "character_background_\(UUID().uuidString).png"
+            let imagePath = saveImageToCharacterFolder(tempBackgroundImage, characterId: character.id.uuidString, fileName: fileName)
             
             // 古い背景画像を削除
             if let oldPath = character.backgroundImagePath {
@@ -3368,8 +3393,8 @@ struct CharacterIconAdjustmentView: View {
                     Task {
                         if let data = try? await newValue.loadTransferable(type: Data.self),
                            let uiImage = UIImage(data: data) {
-                            let fileName = "character_\(character.id)_\(Date().timeIntervalSince1970).jpg"
-                            if let savedPath = saveImageToDocuments(uiImage, fileName: fileName) {
+                            let fileName = "character_icon_\(Date().timeIntervalSince1970).jpg"
+                            if let savedPath = saveImageToCharacterFolderAsJPEG(uiImage, characterId: character.id.uuidString, fileName: fileName) {
                                 // 古い画像ファイルの削除はupdateCharacterに任せる
                                 // print("🔄 [CharaScreen-EditIcon] Icon will be updated from \(character.imageIdentifier ?? "nil") to \(savedPath)")
                                 

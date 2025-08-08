@@ -544,6 +544,11 @@
 "registration_error" = "登録エラー";
 "username_can_be_changed_later" = "※ユーザー名は後から変更できます";
 "already_have_account" = "すでにアカウントをお持ちの方はこちら";
+"important_save_id_title" = "⚠️ 重要 - IDを保存してください";
+"important_save_id_message" = "このIDはパスワードの代わりです！大切に保存してください：\n\n%@\n\n⚠️ 紛失すると復元できません！";
+"copy_id" = "IDをコピー";
+"bonus_received_title" = "🎉 ボーナス獲得！";
+"bonus_received_message" = "新規登録ボーナスとして50ポイントが付与されました！";
 
 /* Home Screen */
 "date_format_long" = "yyyy年M月d日";
@@ -793,10 +798,13 @@
 "add_character_button" = "キャラ追加";
 
 /* Order Menu */
-"character_order_menu" = "キャラクター順序変更";
-"anime_order_menu" = "アニメ順序変更";
-"character_order_title" = "キャラクター順序変更";
-"anime_order_title" = "アニメ順序変更";
+"character_order_menu" = "キャラクター順序変更/削除";
+"anime_order_menu" = "アニメ順序変更/削除";
+"character_order_title" = "キャラクター順序変更/削除";
+"anime_order_title" = "アニメ順序変更/削除";
+"drag_drop_to_reorder" = "ドラッグ&ドロップで並び替え";
+"delete_character_confirmation" = "このキャラクターを削除してもよろしいですか？関連する写真や動画も全て削除されます。";
+"delete_anime_confirmation" = "このアニメを削除してもよろしいですか？関連する写真や動画も全て削除されます。";
 "cancel" = "キャンセル";
 
 /* Thumbnail Picker */

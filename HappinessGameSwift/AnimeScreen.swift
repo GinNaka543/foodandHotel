@@ -2423,7 +2423,7 @@ struct AnimeArtworkScreen: View {
         let tags = photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         // 画像を保存
         let fileName = "anime_artwork_\(UUID().uuidString).png"
-        let path = saveImageToDocuments(image, fileName: fileName)
+        let path = saveImageToAnimeFolder(image, animeId: anime.id.uuidString, fileName: fileName)
         let newArtwork = Artwork(id: UUID(), characterId: anime.id, imagePath: path, title: photoTitle, tags: tags, createdAt: Date())
         artworks.insert(newArtwork, at: 0)
         saveArtworksToUserDefaults()
@@ -4596,7 +4596,7 @@ struct AnimeAboutView: View {
         
         // 画像をDocumentsディレクトリに保存
         let fileName = "anime_icon_\(UUID().uuidString).png"
-        if let savedPath = saveImageToDocuments(iconImage, fileName: fileName) {
+        if let savedPath = saveImageToAnimeFolder(iconImage, animeId: anime.id.uuidString, fileName: fileName) {
             var updatedAnime = latestAnime
             
             // 古いアイコンを削除
@@ -4618,31 +4618,7 @@ struct AnimeAboutView: View {
         iconPickerItem = nil
     }
     
-    // 画像をDocumentsディレクトリに保存
-    private func saveImageToDocuments(_ image: UIImage, fileName: String) -> String? {
-        guard let data = image.jpegData(compressionQuality: 0.8) else { return nil }
-        
-        let fileManager = FileManager.default
-        let urls = fileManager.urls(for: .documentDirectory, in: .userDomainMask)
-        guard let documentsURL = urls.first else { return nil }
-        
-        // アプリ専用のサブディレクトリを作成
-        let appDirectoryURL = documentsURL.appendingPathComponent("AnirecoImages")
-        
-        do {
-            // ディレクトリが存在しない場合は作成
-            if !fileManager.fileExists(atPath: appDirectoryURL.path) {
-                try fileManager.createDirectory(at: appDirectoryURL, withIntermediateDirectories: true, attributes: nil)
-            }
-            
-            let fileURL = appDirectoryURL.appendingPathComponent(fileName)
-            
-            try data.write(to: fileURL)
-            return "AnirecoImages/\(fileName)"
-        } catch {
-            return nil
-        }
-    }
+    // 注: saveImageToDocuments関数はImageUtils.swiftのものを使用します
     
     private func deleteSoundtrack(_ soundtrack: Soundtrack) {
         guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
@@ -4672,6 +4648,8 @@ struct AddAnimeSheet: View {
     @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
     @State private var selectedDay: Int = Calendar.current.component(.day, from: Date())
     @State private var savedImagePath: String? = nil
+    // 事前にアニメIDを生成
+    @State private var animeId: String = UUID().uuidString
     @State private var selectedWatchStatuses: Set<WatchStatus> = []
     var body: some View {
         NavigationView {
@@ -4701,7 +4679,7 @@ struct AddAnimeSheet: View {
                         Spacer()
                         
                         Button(action: {
-                            let newAnime = Anime(id: UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: Date(), watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
+                            let newAnime = Anime(id: UUID(uuidString: animeId) ?? UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: Date(), watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
                             animeManager.addAnimeAtTop(newAnime)
                             dismiss()
                         }) {
@@ -4773,7 +4751,7 @@ struct AddAnimeSheet: View {
                                     if let data = try? await newItem.loadTransferable(type: Data.self), let uiImage = UIImage(data: data) {
                                         image = uiImage
                                         let fileName = "anime_icon_\(UUID().uuidString).png"
-                                        if let path = saveImageToDocuments(uiImage, fileName: fileName) {
+                                        if let path = saveImageToAnimeFolder(uiImage, animeId: animeId, fileName: fileName) {
                                             savedImagePath = path
                                         }
                                     }
@@ -5355,7 +5333,7 @@ struct AnimeDetailView: View {
                                 
                                 // Save background image if changed
                                 if let newBackgroundImage = backgroundImage {
-                                    let backgroundPath = saveImageToDocuments(newBackgroundImage, fileName: "anime_bg_\(anime.id.uuidString).png")
+                                    let backgroundPath = saveImageToAnimeFolder(newBackgroundImage, animeId: anime.id.uuidString, fileName: "anime_bg_\(anime.id.uuidString).png")
                                     updatedAnime.backgroundImagePath = backgroundPath
                                 } else if backgroundImage == nil && backgroundPickerItem == nil && anime.backgroundImagePath != nil {
                                     // User deleted the background
@@ -5656,8 +5634,8 @@ struct AnimeDetailView: View {
                                     tempIconImage = uiImage
                                     currentDisplayedIcon = uiImage // 即座にUI更新
                                     
-                                    let fileName = "icon_\(UUID().uuidString).png"
-                                    let imagePath = saveImageToDocuments(uiImage, fileName: fileName)
+                                    let fileName = "anime_icon_\(UUID().uuidString).png"
+                                    let imagePath = saveImageToAnimeFolder(uiImage, animeId: anime.id.uuidString, fileName: fileName)
                                     
                                     // 新しいAnimeオブジェクトを作成して更新（backgroundImagePathを保持）
                                     // 最新のデータから取得

@@ -1038,7 +1038,7 @@ struct ArtworkScreen: View {
         }
         let tags = photoTags.isEmpty ? [] : photoTags.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         let fileName = "character_artwork_\(UUID().uuidString).png"
-        let path = saveImageToDocuments(image, fileName: fileName)
+        let path = saveImageToCharacterFolder(image, characterId: character.id.uuidString, fileName: fileName)
         let newArtwork = Artwork(
             id: UUID(),
             characterId: character.id,

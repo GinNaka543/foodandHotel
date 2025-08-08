@@ -34,8 +34,21 @@ class VideoStorage {
         documentsDirectory.appendingPathComponent("VideoThumbnails")
     }
     
+    // New directory structure
+    private func characterVideosDirectory(for characterId: String) -> URL {
+        documentsDirectory.appendingPathComponent("AnirecoImages/characters/\(characterId)/videos")
+    }
+    
+    private func animeVideosDirectory(for animeId: String) -> URL {
+        documentsDirectory.appendingPathComponent("AnirecoImages/anime/\(animeId)/videos")
+    }
+    
     private func ensureDirectoryExists() {
         try? FileManager.default.createDirectory(at: videoThumbnailsDirectory, withIntermediateDirectories: true)
+    }
+    
+    private func ensureDirectoryExists(at url: URL) {
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
     }
     
     // MARK: - File Management
@@ -64,6 +77,8 @@ class VideoStorage {
     func saveVideos(for characterId: String, videos: [MemoryVideo]) {
         // print("💾 [VideoStorage] Saving \(videos.count) videos for character: \(characterId)")
         ensureDirectoryExists()
+        let videosDir = characterVideosDirectory(for: characterId)
+        ensureDirectoryExists(at: videosDir)
         
         var metadataArray: [VideoMetadata] = []
         
@@ -229,6 +244,8 @@ class VideoStorage {
     func saveAnimeVideos(for animeId: String, videos: [MemoryVideo]) {
         // print("💾 [VideoStorage] Saving \(videos.count) videos for anime: \(animeId)")
         ensureDirectoryExists()
+        let videosDir = animeVideosDirectory(for: animeId)
+        ensureDirectoryExists(at: videosDir)
         
         var metadataArray: [VideoMetadata] = []
         

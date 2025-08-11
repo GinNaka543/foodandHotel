@@ -1,0 +1,40 @@
+name: iOS Build
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    # GoogleService-Info.plist を GitHub Secrets から復元
+    - name: Restore GoogleService-Info.plist
+      env:
+        GOOGLE_SERVICE_INFO_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_BASE64 }}
+        GOOGLE_SERVICE_INFO_HAPPINESS: ${{ secrets.GOOGLE_SERVICE_INFO_HAPPINESS_BASE64 }}
+      run: |
+        # ルートディレクトリ用
+        echo "$GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > GoogleService-Info.plist
+        # HappinessGameSwift ディレクトリ用
+        echo "$GOOGLE_SERVICE_INFO_HAPPINESS" | base64 --decode > HappinessGameSwift/GoogleService-Info.plist
+        
+    # CocoaPods インストール
+    - name: Install CocoaPods
+      run: |
+        pod install
+        
+    # ビルド
+    - name: Build
+      run: |
+        xcodebuild -workspace HappinessGameSwift.xcworkspace \
+          -scheme HappinessGameSwift \
+          -sdk iphonesimulator \
+          -configuration Debug \
+          -destination 'platform=iOS Simulator,name=iPhone 14' \
+          build

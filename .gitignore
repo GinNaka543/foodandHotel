@@ -1,17 +1,140 @@
+# OS generated files
 .DS_Store
-HappinessGameSwift/DerivedData
-HappinessGameSwift/HappinessGameSwift.xcodeproj
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Xcode
+DerivedData/
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+*.xcworkspace
+
+# CocoaPods - already in repository but ignore future changes
+# Pods/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Firebase service account keys - CRITICAL TO EXCLUDE
+**/serviceAccountKey.json
+**/GoogleService-Info*.plist
+**/*firebase-adminsdk*.json
+**/ani-reco-firebase-adminsdk*.json
+
+# API Keys and Credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.p8
+
+# Build outputs
+build/
+dist/
+.next/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Logs
+*.log
+logs/
+*.log.*
+server.log
+client.log
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output
+
+# Cache directories
+.cache/
+.parcel-cache/
+.vercel/
+.claude/
+
+# iOS specific
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Android specific
+*.apk
+*.aab
+*.hprof
+.gradle/
+local.properties
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Web app specific files (if not needed in repo)
 app.js
 index.html
 styles.css
-HappinessGameSwift/project.pbxproj.xml.backup
-HappinessGameSwift/build
-HappinessGameSwift.xcodeproj/project.xcworkspace
-build
-happiness-game-admin/client/node_modules/.cache
-HappinessGameSwift.xcworkspace/xcuserdata/nakajimaginsei.xcuserdatad/UserInterfaceState.xcuserstate
-HappinessGameSwift.xcodeproj/project.pbxproj
-HappinessGameSwift/Assets.xcassets
-DerivedData
-node_modules
-LandingPage
+
+# Large asset directories (optional - evaluate based on need)
+# HappinessGameSwift/Assets.xcassets/
+# LandingPage/
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# User-specific project files
+HappinessGameSwift/HappinessGameSwift.xcodeproj/project.xcworkspace/
+HappinessGameSwift/HappinessGameSwift.xcodeproj/xcuserdata/
+HappinessGameSwift.xcworkspace/xcuserdata/
+
+# Admin panel sensitive data
+happiness-game-admin/.env
+happiness-game-admin/server/.env
+happiness-game-admin/client/.env
+happiness-game-admin/**/*.log
+admin-panel/.vercel/
+
+# Untitled folder (development)
+untitled folder/

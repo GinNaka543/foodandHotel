@@ -1,0 +1,63 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // ユーザー認証が必要
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // ファイルサイズ制限（10MB）
+    function isValidImageSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // 画像ファイルの検証
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // 動画ファイルの検証
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+    
+    // ユーザー自身のフォルダのみアクセス可能
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.auth.uid == userId &&
+        (isImage() || isVideo()) &&
+        isValidImageSize();
+      allow delete: if isAuthenticated() && 
+        request.auth.uid == userId;
+    }
+    
+    // キャラクター画像
+    match /characters/{characterId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        isImage() &&
+        isValidImageSize();
+      allow delete: if isAuthenticated();
+    }
+    
+    // アニメ画像（公開）
+    match /anime/{animeId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+        isImage() &&
+        isValidImageSize();
+    }
+    
+    // 公開画像
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if false; // 管理者のみ（サーバー側）
+    }
+    
+    // デフォルト：すべて拒否
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

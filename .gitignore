@@ -44,7 +44,7 @@ yarn-error.log*
 
 # Firebase service account keys - CRITICAL TO EXCLUDE
 **/serviceAccountKey.json
-**/GoogleService-Info*.plist
+# **/GoogleService-Info*.plist  # Commented out to allow in repo for CI/CD
 **/*firebase-adminsdk*.json
 **/ani-reco-firebase-adminsdk*.json
 

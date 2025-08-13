@@ -5431,6 +5431,7 @@ struct AnimeDetailView: View {
                         .font(.headline)
                     ScrollView {
                         VStack(spacing: 12) {
+                            // デフォルトジャンル
                             ForEach(AnimeGenre.allCases, id: \.self) { genre in
                                 Button(action: {
                                     if editGenres.contains(genre) {
@@ -5459,42 +5460,48 @@ struct AnimeDetailView: View {
                                     )
                                 }
                             }
-                        }
-                    }
-                    .frame(maxHeight: 400)
-                    
-                    // 既存のカスタムジャンル表示
-                    if !editCustomGenres.isEmpty {
-                        VStack(spacing: 8) {
-                            Text(NSLocalizedString("custom_genres", comment: "Custom genres"))
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.gray)
-                                .frame(maxWidth: .infinity, alignment: .leading)
                             
-                            VStack(spacing: 12) {
-                                ForEach(Array(editCustomGenres), id: \.self) { customGenre in
+                            // すべてのアニメから収集したカスタムジャンル
+                            let allAvailableCustomGenres = Set(animeManager.animes.flatMap { $0.customGenres }).sorted()
+                            if !allAvailableCustomGenres.isEmpty {
+                                Text(NSLocalizedString("custom_genres", comment: "Custom genres"))
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.gray)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 8)
+                                
+                                ForEach(allAvailableCustomGenres, id: \.self) { customGenre in
                                     Button(action: {
-                                        editCustomGenres.remove(customGenre)
+                                        if editCustomGenres.contains(customGenre) {
+                                            editCustomGenres.remove(customGenre)
+                                        } else {
+                                            editCustomGenres.insert(customGenre)
+                                        }
                                     }) {
                                         HStack {
                                             Text(customGenre)
                                                 .font(.system(size: 16, weight: .medium))
                                                 .foregroundColor(.black)
                                             Spacer()
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.purple)
+                                            if editCustomGenres.contains(customGenre) {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .foregroundColor(.purple)
+                                            } else {
+                                                Image(systemName: "circle")
+                                                    .foregroundColor(.gray)
+                                            }
                                         }
                                         .padding()
                                         .background(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .fill(Color.purple.opacity(0.1))
+                                                .fill(editCustomGenres.contains(customGenre) ? Color.purple.opacity(0.1) : Color(.systemGray6))
                                         )
                                     }
                                 }
                             }
                         }
-                        .padding(.horizontal)
                     }
+                    .frame(maxHeight: 400)
                     
                     // カスタムジャンル作成ボタン
                     Button(action: {

@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyAjKmPES5u7iuoxVX-UCiR4KmmTUB_5YM4</string>
+	<string>AIzaSyAhjO1sIJnxJuBE0KEvfIah6_DRbVtWik0</string>
 	<key>GCM_SENDER_ID</key>
-	<string>868000972632</string>
+	<string>136083725650</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>GinseiKurei.Seichi</string>
+	<string>com.nakajima.HappinessGameSwift</string>
 	<key>PROJECT_ID</key>
-	<string>anivisist</string>
+	<string>ani-reco</string>
 	<key>STORAGE_BUCKET</key>
-	<string>anivisist.firebasestorage.app</string>
+	<string>ani-reco.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:868000972632:ios:a6fc172706cc69dd9aef2d</string>
+	<string>1:136083725650:ios:e98d243d4f381dbc7b2e8b</string>
 </dict>
 </plist>

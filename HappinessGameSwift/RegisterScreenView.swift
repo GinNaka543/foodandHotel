@@ -133,65 +133,17 @@ struct RegisterScreenView: View {
         isLoading = true
         generatedUserId = UUID().uuidString  // 自動生成
         
-        let profile = UserProfile(
-            id: generatedUserId,
-            username: username,
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-        
-        FirebaseManager.shared.saveUserProfile(profile) { result in
-                DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    // デバイスで初回登録かチェック
-                    let hasReceivedBonus = UserDefaults.standard.bool(forKey: "hasReceivedFirstTimeBonus")
-                    
-                    if !hasReceivedBonus {
-                        // 初回登録時のみ50ポイントを付与
-                        FirebaseManager.shared.addPointsToUser(
-                            userId: generatedUserId,
-                            points: 50,
-                            description: NSLocalizedString("registration_bonus", comment: "Registration bonus")
-                        ) { pointsResult in
-                            DispatchQueue.main.async {
-                                isLoading = false
-                                switch pointsResult {
-                                case .success:
-                                    // ボーナス付与済みフラグを設定
-                                    UserDefaults.standard.set(true, forKey: "hasReceivedFirstTimeBonus")
-                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
-                                    alertMessage = String(format: NSLocalizedString("registration_complete_with_bonus", comment: "Registration complete with bonus"), generatedUserId)
-                                    showingAlert = true
-                                case .failure(let error):
-                                    // ポイント付与に失敗してもユーザー登録は成功しているので続行
-                                    alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
-                                    alertMessage = String(format: NSLocalizedString("registration_complete_message", comment: "Registration complete message"), generatedUserId)
-                                    showingAlert = true
-                                }
-                            }
-                        }
-                    } else {
-                        // 2回目以降の登録（ボーナスなし）
-                        isLoading = false
-                        alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
-                        alertMessage = """
-                        \(NSLocalizedString("user_id_issued", comment: "User ID has been issued"))
-                        
-                        \(String(format: NSLocalizedString("user_id_label_format", comment: "User ID: %@"), generatedUserId))
-                        
-                        \(NSLocalizedString("id_required_for_next_login", comment: "This ID is required for next login"))
-                        \(NSLocalizedString("save_with_memo_or_screenshot", comment: "Save with memo or screenshot"))
-                        """
-                        showingAlert = true
-                    }
-                case .failure(let error):
-                    isLoading = false
-                    alertTitle = NSLocalizedString("registration_error", comment: "Registration Error")
-                    alertMessage = error.localizedDescription
-                    showingAlert = true
-                }
-            }
+        // Firebase を使わないローカル登録
+        DispatchQueue.main.async {
+            self.isLoading = false
+            // ローカルにユーザーIDを保存
+            UserDefaults.standard.set(self.generatedUserId, forKey: "userId")
+            UserDefaults.standard.set(self.username, forKey: "username")
+            UserDefaults.standard.set(true, forKey: "isLoggedIn")
+            
+            self.alertTitle = NSLocalizedString("registration_complete", comment: "Registration Complete")
+            self.alertMessage = String(format: NSLocalizedString("registration_complete_message", comment: "Registration complete message"), self.generatedUserId)
+            self.showingAlert = true
         }
     }
     

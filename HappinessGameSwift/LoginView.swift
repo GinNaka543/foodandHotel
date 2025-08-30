@@ -191,57 +191,16 @@ struct LoginView: View {
         isLoading = true
         generatedUserId = UUID().uuidString
         
-        // 新規ユーザーを作成
-        let profile = UserProfile(
-            id: generatedUserId,
-            username: username,
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-        
-        FirebaseManager.shared.saveUserProfile(profile) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    // デバイスで初回登録かチェック
-                    let hasReceivedBonus = UserDefaults.standard.bool(forKey: "hasReceivedFirstTimeBonus")
-                    
-                    if !hasReceivedBonus {
-                        // 初回登録時のみ50ポイントを付与
-                        FirebaseManager.shared.addPointsToUser(
-                            userId: generatedUserId,
-                            points: 50,
-                            description: NSLocalizedString("registration_bonus", comment: "Registration bonus")
-                        ) { pointsResult in
-                            DispatchQueue.main.async {
-                                isLoading = false
-                                switch pointsResult {
-                                case .success:
-                                    // ボーナス付与済みフラグを設定
-                                    UserDefaults.standard.set(true, forKey: "hasReceivedFirstTimeBonus")
-                                    savedUserId = generatedUserId
-                                    showingIdAlert = true
-                                case .failure(let error):
-                                    // ポイント付与に失敗してもユーザー登録は成功しているので続行
-                                    savedUserId = generatedUserId
-                                    showingIdAlert = true
-                                }
-                            }
-                        }
-                    } else {
-                        // 2回目以降の登録（ボーナスなし）
-                        isLoading = false
-                        alertTitle = "登録完了"
-                        alertMessage = "ユーザーIDを必ず保存してください：\n\n\(generatedUserId)\n\nこのIDは次回ログイン時に必要です。"
-                        showingAlert = true
-                    }
-                case .failure(let error):
-                    isLoading = false
-                    alertTitle = NSLocalizedString("registration_error", comment: "Registration Error")
-                    alertMessage = error.localizedDescription
-                    showingAlert = true
-                }
-            }
+        // ユーザー登録処理（UserProfile機能は削除済み）
+        DispatchQueue.main.async {
+            self.isLoading = false
+            // ローカル登録
+            UserDefaults.standard.set(self.generatedUserId, forKey: "userId")
+            UserDefaults.standard.set(self.username, forKey: "username")
+            UserDefaults.standard.set(true, forKey: "isLoggedIn")
+            
+            self.savedUserId = self.generatedUserId
+            self.showingIdAlert = true
         }
     }
     

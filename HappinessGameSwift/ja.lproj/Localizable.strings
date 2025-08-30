@@ -33,8 +33,8 @@
 "ranking" = "ランキング";
 "ranking_selection" = "ランキング選択";
 "visit" = "聖地旅";
-"character" = "キャラ";
-"anime" = "アニメ";
+"character" = "グルメ";
+"anime" = "旅館/ホテル";
 "artwork" = "アートワーク";
 "video" = "ビデオ";
 "album" = "アルバム";
@@ -103,7 +103,7 @@
 "free_trial_ended" = "無料期間が終了しました";
 "premium_upgrade_title" = "プレミアムプランへのアップグレード";
 "free_trial_ended_message" = "無料期間が終了しました";
-"unlimited_anime_registration" = "無制限のアニメ登録";
+"unlimited_anime_registration" = "無制限の旅館/ホテル登録";
 "access_all_features" = "すべての機能へのアクセス";
 "regular_updates" = "定期的なアップデート";
 "support_developer" = "開発者をサポート";
@@ -111,7 +111,7 @@
 "later" = "後で";
 "product_not_found" = "商品が見つかりません";
 "error" = "エラー";
-"premium_features_unlimited" = "無制限のアニメ登録";
+"premium_features_unlimited" = "無制限の旅館/ホテル登録";
 "premium_features_all_access" = "すべての機能へのアクセス";
 "premium_features_updates" = "定期的なアップデート";
 "premium_features_support" = "開発者をサポート";
@@ -132,8 +132,8 @@
 "pt" = "pt";
 
 /* Anime Page */
-"watch_anime" = "アニメを見る";
-"anime_title" = "アニメタイトル";
+"watch_anime" = "旅館/ホテルを見る";
+"anime_title" = "旅館/ホテルタイトル";
 "no_artworks_anime" = "まだアートワークがありません";
 "no_albums_anime" = "まだアルバムがありません";
 "create_album_same_tag" = "同じタグでアルバムを作成できます";
@@ -154,9 +154,9 @@
 "profile" = "プロフィール";
 "voice_actors" = "声優";
 "enter_voice_actors" = "声優情報を入力";
-"characters" = "出演キャラ";
-"favorite_characters" = "favorite chara";
-"enter_characters" = "キャラクター情報を入力";
+"characters" = "出演グルメ";
+"favorite_characters" = "favorite グルメ";
+"enter_characters" = "グルメ情報を入力";
 "watch_link" = "視聴リンク";
 "not_set" = "未設定";
 "description" = "概要";
@@ -166,10 +166,10 @@
 "soundtrack_not_set" = "サントラが未設定です";
 "select_icon" = "アイコンを選択";
 "select_image" = "画像を選択";
-"character_name" = "キャラクター名";
+"character_name" = "グルメ名";
 "select_icon_image" = "アイコン画像を選択";
-"add_anime" = "アニメ追加";
-"anime_info_edit" = "アニメ情報を編集";
+"add_anime" = "旅館/ホテル追加";
+"anime_info_edit" = "旅館/ホテル情報を編集";
 "background_image" = "背景画像";
 "delete_background_image" = "背景画像を削除";
 "select_background_image" = "背景画像を選択";
@@ -181,8 +181,8 @@
 "genre_name" = "ジャンル名";
 "create" = "作成";
 "custom_genres" = "カスタムジャンル";
-"anime_list" = "アニメリスト";
-"character_list" = "キャラクターリスト";
+"anime_list" = "旅館/ホテルリスト";
+"character_list" = "グルメリスト";
 "birthday_list" = "バースデーリスト";
 "date_format_month_day" = "M月d日";
 "member_list" = "メンバーリスト";
@@ -198,9 +198,9 @@
 "reset" = "リセット";
 
 /* Anime Screen */
-"register_favorite_anime" = "お気に入りのアニメを登録";
+"register_favorite_anime" = "お気に入りの旅館/ホテルを登録";
 "manage_viewing_status" = "視聴状況を管理して見逃しを防ぐ";
-"add_anime_button" = "アニメ追加";
+"add_anime_button" = "旅館/ホテル追加";
 
 /* Anime Status */
 "watching_status" = "視聴中";
@@ -234,7 +234,7 @@
 "max_5_people" = "最大5人まで（カンマ区切り）";
 "max_5_characters" = "最大5人まで（カンマ区切り）";
 "tap_image_to_change" = "画像をタップして変更";
-"delete_anime_confirm" = "このアニメを削除してもよろしいですか？";
+"delete_anime_confirm" = "この旅館/ホテルを削除してもよろしいですか？";
 "r18_images_removed" = "以下の画像は読み込めないため削除されました：\n%@\n\nR18作品のサムネイルは表示できないため、自動的に削除されます。";
 
 /* Pixiv Content Messages */
@@ -344,7 +344,7 @@
 "about" = "アバウト";
 "profile" = "プロフィール";
 "name" = "名前";
-"tag" = "出演アニメ";
+"tag" = "出演旅館/ホテル";
 "age" = "年齢";
 "favorite_food" = "好きな食べ物";
 "voice_actor" = "声優";
@@ -429,8 +429,8 @@
 "schedule_empty" = "スケジュールが登録されていません";
 "schedule_add" = "スケジュールを追加";
 "schedule_add_title" = "スケジュール追加";
-"anime_select" = "アニメを選択";
-"today_anime_title" = "今日見るアニメ";
+"anime_select" = "旅館/ホテルを選択";
+"today_anime_title" = "今日見る旅館/ホテル";
 "no_anime_today" = "今日の視聴予定はありません";
 "items_selected" = "件選択中";
 
@@ -563,17 +563,17 @@
 "weekday_thu" = "木";
 "weekday_fri" = "金";
 "weekday_sat" = "土";
-"no_characters_registered" = "キャラクターが登録されていません";
-"no_anime_registered" = "アニメが登録されていません";
+"no_characters_registered" = "グルメが登録されていません";
+"no_anime_registered" = "旅館/ホテルが登録されていません";
 "default_username" = "ANICOLLE";
-"set_anime_quote" = "好きなアニメのセリフを設定";
+"set_anime_quote" = "好きな旅館/ホテルのセリフを設定";
 "set_birthday" = "誕生日を設定";
-"favorite_anime_quote" = "好きなアニメのセリフ";
+"favorite_anime_quote" = "好きな旅館/ホテルのセリフ";
 "select_birthday" = "誕生日を選択";
 "username" = "ユーザー名";
 "episode_format" = "第%d話";
-"anime" = "アニメ";
-"select_anime" = "アニメを選択";
+"anime" = "旅館/ホテル";
+"select_anime" = "旅館/ホテルを選択";
 "details_optional" = "詳細（任意）";
 "episode" = "話数";
 "episode_number" = "話数";
@@ -581,8 +581,8 @@
 "memo" = "メモ";
 "add_viewing_schedule" = "視聴予定を追加";
 "add" = "追加";
-"search_anime" = "アニメを検索";
-"select_anime_title" = "アニメを選択";
+"search_anime" = "旅館/ホテルを検索";
+"select_anime_title" = "旅館/ホテルを選択";
 "viewing_date" = "視聴予定日";
 "episode_number_optional" = "エピソード番号（オプション）";
 "memo_optional" = "メモ（オプション）";
@@ -595,8 +595,8 @@
 "enter_name" = "名前を入力";
 "birthday" = "誕生日";
 "set_birthday" = "誕生日を設定";
-"favorite_anime_quote" = "好きなアニメのセリフ";
-"enter_anime_quote" = "アニメのセリフを入力";
+"favorite_anime_quote" = "好きな旅館/ホテルのセリフ";
+"enter_anime_quote" = "旅館/ホテルのセリフを入力";
 "user_id_label" = "ユーザーID:";
 "select_birthday" = "誕生日を選択";
 "id_not_found" = "IDが見つかりません";
@@ -623,11 +623,11 @@
 "no_purchased_plans" = "購入したプランがありません";
 "create_original_plan" = "オリジナルの旅行プランを作ろう";
 "no_plans_yet" = "まだプランがありません";
-"create_anime_pilgrimage_plan" = "アニメの聖地を巡る、あなただけの旅行プランを作成しましょう";
+"create_anime_pilgrimage_plan" = "旅館/ホテルの聖地を巡る、あなただけの旅行プランを作成しましょう";
 "add_original_plan" = "オリジナルプランを追加";
-"purchase_favorite_plan_message" = "お気に入りのプランを購入して\nアニメの世界を体験しよう";
+"purchase_favorite_plan_message" = "お気に入りのプランを購入して\n旅館/ホテルの世界を体験しよう";
 "purchase_plan" = "プランを購入する";
-"search_by_title_or_anime" = "タイトルもしくはアニメから検索";
+"search_by_title_or_anime" = "タイトルもしくは旅館/ホテルから検索";
 "filter_section" = "フィルター";
 "action_section" = "アクション";
 "create_new_plan" = "新規プラン作成";
@@ -647,7 +647,7 @@
 "delivery_days_format" = "%d日で配達";
 "plan_title" = "プラン名";
 "plan_title_placeholder" = "例：京都聖地巡礼";
-"anime_name" = "アニメ名";
+"anime_name" = "旅館/ホテル名";
 "anime_name_placeholder" = "例：響け！ユーフォニアム";
 "required" = "必須";
 "timeline" = "タイムライン";
@@ -713,11 +713,11 @@
 "route_info_placeholder" = "経路情報（例：JR山手線→東西線）";
 "transportation" = "交通手段";
 "congratulations" = "🎉 お疲れ様でした！";
-"anime_label" = "アニメ：%@";
+"anime_label" = "旅館/ホテル：%@";
 "complete" = "完了";
 "streaming_not_configured" = "ストリーミングサービスが設定されていません";
 "admin_setup_required" = "管理者による設定が必要です";
-"watch_anime" = "アニメを観る";
+"watch_anime" = "旅館/ホテルを観る";
 "tap_to_watch" = "タップして視聴";
 
 /* Spot Addition Screen */
@@ -754,13 +754,13 @@
 
 /* Page Names */
 "home_page" = "ホームページ";
-"character_page" = "キャラページ";
+"character_page" = "グルメページ";
 "product_page" = "プロダクトページ";
 
 /* Product Search and Management */
-"search_by_anime_or_character" = "アニメやキャラクターで検索";
+"search_by_anime_or_character" = "旅館/ホテルやグルメで検索";
 "register_wishlist_items" = "欲しい商品を登録";
-"register_favorite_character_anime_products" = "好きなキャラクターやアニメの\n商品を登録・管理";
+"register_favorite_character_anime_products" = "好きなグルメや旅館/ホテルの\n商品を登録・管理";
 "add_product_button" = "商品を追加";
 "add_product" = "商品を追加";
 "add_first_product" = "最初の商品を追加";
@@ -768,7 +768,7 @@
 "add_products_instruction" = "右上の「商品を追加」ボタンから追加";
 
 /* Product Modal UI */
-"add_new_character_anime" = "新しいキャラクター・アニメを追加";
+"add_new_character_anime" = "新しいグルメ・旅館/ホテルを追加";
 "specify_product_owner" = "この商品の所有者を指定してください";
 "product_count_format" = "%d個の商品";
 "add_site_name" = "サイト名を追加";
@@ -776,7 +776,7 @@
 "tap_to_add_memo" = "タップしてメモを追加";
 "view_product" = "商品を見る";
 "or_text" = "または";
-"select_existing_character_anime" = "既存のキャラクター・アニメを選択";
+"select_existing_character_anime" = "既存のグルメ・旅館/ホテルを選択";
 "select_banner_image" = "バナー画像を選択";
 "change_banner_image" = "バナー画像を変更";
 "first_product_required" = "最初の商品（必須）";
@@ -793,19 +793,19 @@
 "name_label" = "名前";
 
 /* Character Screen */
-"add_character" = "キャラ追加";
-"add_favorite_character" = "お気に入りのキャラクターを追加";
-"manage_character_info" = "お気に入りのキャラクター情報を管理していつでも確認";
-"add_character_button" = "キャラ追加";
+"add_character" = "グルメ追加";
+"add_favorite_character" = "お気に入りのグルメを追加";
+"manage_character_info" = "お気に入りのグルメ情報を管理していつでも確認";
+"add_character_button" = "グルメ追加";
 
 /* Order Menu */
-"character_order_menu" = "キャラクター順序変更/削除";
-"anime_order_menu" = "アニメ順序変更/削除";
-"character_order_title" = "キャラクター順序変更/削除";
-"anime_order_title" = "アニメ順序変更/削除";
+"character_order_menu" = "グルメ順序変更/削除";
+"anime_order_menu" = "旅館/ホテル順序変更/削除";
+"character_order_title" = "グルメ順序変更/削除";
+"anime_order_title" = "旅館/ホテル順序変更/削除";
 "drag_drop_to_reorder" = "ドラッグ&ドロップで並び替え";
-"delete_character_confirmation" = "このキャラクターを削除してもよろしいですか？関連する写真や動画も全て削除されます。";
-"delete_anime_confirmation" = "このアニメを削除してもよろしいですか？関連する写真や動画も全て削除されます。";
+"delete_character_confirmation" = "このグルメを削除してもよろしいですか？関連する写真や動画も全て削除されます。";
+"delete_anime_confirmation" = "この旅館/ホテルを削除してもよろしいですか？関連する写真や動画も全て削除されます。";
 "cancel" = "キャンセル";
 
 /* Thumbnail Picker */
@@ -847,7 +847,7 @@
 
 /* Welcome Screen */
 "welcome_to_anireco" = "アニコレへようこそ";
-"welcome_description" = "好きなキャラクターやアニメを\n記録して管理しましょう";
+"welcome_description" = "好きなグルメや旅館/ホテルを\n記録して管理しましょう";
 "swipe_to_continue" = "スワイプして続ける";
 "important_notice" = "重要なお知らせ";
 "first_2_months_free" = "最初の40日間は無料";
@@ -886,7 +886,7 @@
 /* Login Screen Details */
 "no_account_yet" = "アカウントをお持ちでない方はこちら";
 "forgot_id_username" = "IDとユーザー名を忘れた場合";
-"recreate_account_message" = "もう一度アカウントを作成してください。\n※画像と登録したキャラクターの復元はできません。";
+"recreate_account_message" = "もう一度アカウントを作成してください。\n※画像と登録したグルメの復元はできません。";
 "register_from_youtube" = "YouTubeから登録しよう";
 "from_youtube" = "YouTubeから";
 "register_video" = "動画を登録";

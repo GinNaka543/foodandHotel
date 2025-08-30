@@ -4,40 +4,16 @@ import SwiftUI
 // サポートする言語
 enum AppLanguage: String, CaseIterable {
     case japanese = "ja"
-    case english = "en"
-    case french = "fr"
-    case german = "de"
-    case korean = "ko"
-    case simplifiedChinese = "zh-Hans"
-    case italian = "it"
-    case spanish = "es"
-    case portuguese = "pt"
     
     var displayName: String {
         switch self {
         case .japanese: return "日本語"
-        case .english: return "English"
-        case .french: return "Français"
-        case .german: return "Deutsch"
-        case .korean: return "한국어"
-        case .simplifiedChinese: return "简体中文"
-        case .italian: return "Italiano"
-        case .spanish: return "Español"
-        case .portuguese: return "Português"
         }
     }
     
     var flag: String {
         switch self {
         case .japanese: return "🇯🇵"
-        case .english: return "🇺🇸"
-        case .french: return "🇫🇷"
-        case .german: return "🇩🇪"
-        case .korean: return "🇰🇷"
-        case .simplifiedChinese: return "🇨🇳"
-        case .italian: return "🇮🇹"
-        case .spanish: return "🇪🇸"
-        case .portuguese: return "🇵🇹"
         }
     }
 }
@@ -53,29 +29,9 @@ class LocalizationManager: ObservableObject {
     }
     
     init() {
-        // 保存された言語設定を読み込む
-        if let savedLanguage = UserDefaults.standard.string(forKey: "selectedLanguage"),
-           let language = AppLanguage(rawValue: savedLanguage) {
-            self.currentLanguage = language
-        } else {
-            // デバイスの言語設定から初期言語を決定
-            let deviceLanguage = Locale.current.languageCode ?? "en"
-            
-            // デバイスの言語がサポートされているか確認
-            if let matchedLanguage = AppLanguage.allCases.first(where: { 
-                $0.rawValue == deviceLanguage || 
-                $0.rawValue.hasPrefix(deviceLanguage) ||
-                deviceLanguage.hasPrefix($0.rawValue)
-            }) {
-                self.currentLanguage = matchedLanguage
-            } else {
-                // デフォルトは日本語（このアプリは日本語ベース）
-                self.currentLanguage = .japanese
-            }
-            
-            // 初期言語を保存
-            UserDefaults.standard.set(currentLanguage.rawValue, forKey: "selectedLanguage")
-        }
+        // 常に日本語に設定
+        self.currentLanguage = .japanese
+        UserDefaults.standard.set(currentLanguage.rawValue, forKey: "selectedLanguage")
         
         // Bundle言語設定を適用
         Bundle.setLanguage(currentLanguage.rawValue)
@@ -147,6 +103,6 @@ class AliasBundle: Bundle, @unchecked Sendable {
     }
     
     private var currentLanguage: String {
-        return objc_getAssociatedObject(self, &bundleKey) as? String ?? "en"
+        return objc_getAssociatedObject(self, &bundleKey) as? String ?? "ja"
     }
 }

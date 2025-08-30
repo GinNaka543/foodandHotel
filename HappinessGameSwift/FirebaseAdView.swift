@@ -84,7 +84,7 @@ struct FirebaseAdView: View {
                                         image
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
-                                    case .failure(let error):
+                                    case .failure(_):
                                         Color(.systemGray5)
                                             .overlay(
                                                 Text("画像エラー")
@@ -127,7 +127,7 @@ struct FirebaseAdView: View {
                                         image
                                             .resizable()
                                             .aspectRatio(contentMode: .fill)
-                                    case .failure(let error):
+                                    case .failure(_):
                                         Color(.systemGray5)
                                             .overlay(
                                                 Text("画像エラー")
@@ -337,7 +337,7 @@ struct FirebaseAdView: View {
                                             image
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
-                                        case .failure(let error):
+                                        case .failure(_):
                                             Color(.systemGray5)
                                                 .overlay(
                                                     Text("画像エラー")
@@ -396,7 +396,7 @@ struct FirebaseAdView: View {
                 
                 let userAnimes = animeManager.animes.map { $0.title }
                 let userCharacters = characterManager.characters.map { $0.name }
-                let userHashtags = (animeManager.animes.map { $0.hashtag } + characterManager.characters.map { $0.tag }).filter { !$0.isEmpty }
+                let userHashtags = animeManager.animes.map { $0.hashtag }.filter { !$0.isEmpty }
                 
                 
                 let targetAds = ads.filter { ad in
@@ -458,7 +458,7 @@ struct FirebaseAdView: View {
                 DispatchQueue.main.async {
                     self.startTimer()
                 }
-            case .failure(let error):
+            case .failure(_):
                 self.isLoading = false
             }
         }

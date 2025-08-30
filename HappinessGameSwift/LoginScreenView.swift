@@ -179,57 +179,24 @@ struct LoginScreenView: View {
             return
         }
         
-        FirebaseManager.shared.verifyUser(username: username, userId: userId) { result in
-            DispatchQueue.main.async {
-                isLoading = false
-                switch result {
-                case .success(let isValid):
-                    if isValid {
-                        saveUserData(username: username, userId: userId)
-                        
-                        // Firebase同期無効化 - Privacy policy updated
-                        print("ℹ️ User content sync disabled - processing plans and premium status only")
-                        
-                        // 購入済みプランのみ同期（プライバシーポリシーには含まれない）
-                        FirebaseManager.shared.syncPurchasedPlans(userId: userId) { planSyncResult in
-                            DispatchQueue.main.async {
-                                switch planSyncResult {
-                                case .success:
-                                    print("購入済みプランの同期が完了しました")
-                                case .failure(let error):
-                                    print("購入済みプランの同期エラー: \(error)")
-                                }
-                                
-                                // プレミアムステータスをFirebaseから同期
-                                FirebaseManager.shared.loadPremiumUserStatus(userId: userId) { result in
-                                    DispatchQueue.main.async {
-                                        switch result {
-                                        case .success(let (isPremium, purchaseDate)):
-                                            if isPremium, let purchaseDate = purchaseDate {
-                                                UserDefaults.standard.set(purchaseDate, forKey: "premiumPurchaseDate")
-                                                UserDefaults.standard.set(true, forKey: "isPremiumUser")
-                                            }
-                                            PaymentGatekeeper.shared.checkPaymentStatus()
-                                        case .failure:
-                                            PaymentGatekeeper.shared.checkPaymentStatus()
-                                        }
-                                    }
-                                }
-                                
-                                authManager.login()
-                                dismiss()
-                            }
-                        }
-                    } else {
-                        alertTitle = NSLocalizedString("login_failed", comment: "")
-                        alertMessage = NSLocalizedString("invalid_credentials", comment: "")
-                        showingAlert = true
-                    }
-                case .failure(let error):
-                    alertTitle = NSLocalizedString("error", comment: "")
-                    alertMessage = error.localizedDescription
-                    showingAlert = true
-                }
+        // Firebase削除済み - ローカル認証に変更
+        DispatchQueue.main.async {
+            self.isLoading = false
+            // ローカルでユーザーIDが存在するかチェック
+            let savedUserId = UserDefaults.standard.string(forKey: "userId")
+            let savedUsername = UserDefaults.standard.string(forKey: "username")
+            
+            if savedUserId == userId && savedUsername == username {
+                self.saveUserData(username: username, userId: userId)
+                print("ℹ️ ローカル認証成功")
+                // ローカル認証なのでPaymentGatekeeperのチェックのみ実行
+                PaymentGatekeeper.shared.checkPaymentStatus()
+                authManager.login()
+                dismiss()
+            } else {
+                self.alertTitle = NSLocalizedString("login_failed", comment: "")
+                self.alertMessage = NSLocalizedString("invalid_credentials", comment: "")
+                self.showingAlert = true
             }
         }
     }

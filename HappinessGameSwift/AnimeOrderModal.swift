@@ -122,14 +122,6 @@ struct AnimeOrderModal: View {
         switch tab {
         case .all:
             return NSLocalizedString("all", comment: "")
-        case .watching:
-            return NSLocalizedString("watching_status", comment: "")
-        case .thisTerm:
-            return NSLocalizedString("this_term_status", comment: "")
-        case .willWatch:
-            return NSLocalizedString("will_watch_status", comment: "")
-        case .watchAgain:
-            return NSLocalizedString("watch_again_status", comment: "")
         case .romcom:
             return NSLocalizedString("romcom", comment: "")
         case .isekai:
@@ -155,14 +147,6 @@ struct AnimeOrderModal: View {
         switch tab {
         case .all:
             result = animesWithTitles
-        case .watching:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
-        case .willWatch:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
-        case .watchAgain:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
-        case .thisTerm:
-            result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
         // Genre filters
         case .romcom:
             result = animesWithTitles.filter { $0.genres.contains(.romcom) }

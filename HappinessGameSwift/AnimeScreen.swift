@@ -6,7 +6,7 @@ import Foundation
 import Photos
 import AVFoundation
 import AVKit
-import FirebaseFirestore
+// Firebase removed
 
 // Removed duplicate typealias - now defined in ArtworkScreen.swift
 
@@ -227,28 +227,6 @@ struct AnimeCustomField: Hashable, Codable {
     var value: String
 }
 
-enum WatchStatus: String, Codable, CaseIterable {
-    case none = "none"
-    case watching = "watching"
-    case willWatch = "willWatch"
-    case watchAgain = "watchAgain"
-    case thisTerm = "thisTerm"
-    
-    var displayName: String {
-        switch self {
-        case .none:
-            return NSLocalizedString("none", comment: "None")
-        case .watching:
-            return NSLocalizedString("watching_status", comment: "Watching")
-        case .willWatch:
-            return NSLocalizedString("will_watch_status", comment: "Will Watch")
-        case .watchAgain:
-            return NSLocalizedString("watch_again_status", comment: "Watch Again")
-        case .thisTerm:
-            return NSLocalizedString("this_term_status", comment: "This Term")
-        }
-    }
-}
 
 enum AnimeGenre: String, Codable, CaseIterable {
     case romcom = "romcom"
@@ -281,8 +259,6 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
     var hashtag: String
     var releaseDate: Date
     var customFields: [AnimeCustomField]?
-    var watchStatus: WatchStatus = .none  // 後方互換性のため残す
-    var watchStatuses: [WatchStatus] = []  // 複数選択用の新しいフィールド
     var order: Int = 0  // 表示順序用フィールド
     var rating: Double = 0.0  // レーティング（0.0〜5.0）
     var voiceActors: [String] = []  // 声優リスト
@@ -302,7 +278,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         lhs.id == rhs.id
     }
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, watchStatus, watchStatuses, order, rating, voiceActors, characters, characterIds, watchLink, genres, customGenres, iconScale, iconOffsetX, iconOffsetY
+        case id, imageIdentifier, backgroundImagePath, title, hashtag, releaseDate, customFields, order, rating, voiceActors, characters, characterIds, watchLink, genres, customGenres, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -313,8 +289,6 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         try container.encodeIfPresent(imageIdentifier, forKey: .imageIdentifier)
         try container.encodeIfPresent(backgroundImagePath, forKey: .backgroundImagePath)
         try container.encodeIfPresent(customFields, forKey: .customFields)
-        try container.encode(watchStatus, forKey: .watchStatus)
-        try container.encode(watchStatuses, forKey: .watchStatuses)
         try container.encode(order, forKey: .order)
         try container.encode(rating, forKey: .rating)
         try container.encode(voiceActors, forKey: .voiceActors)
@@ -336,33 +310,6 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         imageIdentifier = try? container.decodeIfPresent(String.self, forKey: .imageIdentifier)
         backgroundImagePath = try? container.decodeIfPresent(String.self, forKey: .backgroundImagePath)
         customFields = try? container.decodeIfPresent([AnimeCustomField].self, forKey: .customFields)
-        // watchStatusの読み込みと移行
-        if let statusString = try? container.decode(String.self, forKey: .watchStatus) {
-            // completedやdroppedの場合はnoneに変換
-            if statusString == "completed" || statusString == "dropped" {
-                watchStatus = .none
-            } else {
-                watchStatus = WatchStatus(rawValue: statusString) ?? .none
-            }
-        } else {
-            watchStatus = .none
-        }
-        
-        // watchStatusesを読み込む。古いデータの場合は、watchStatusから移行
-        if let statusStrings = try? container.decode([String].self, forKey: .watchStatuses) {
-            // completedやdroppedを除外して変換
-            watchStatuses = statusStrings.compactMap { statusString in
-                if statusString == "completed" || statusString == "dropped" {
-                    return nil
-                }
-                return WatchStatus(rawValue: statusString)
-            }
-        } else if watchStatus != .none {
-            // 後方互換性: 古いデータの場合、watchStatusから配列を作成
-            watchStatuses = [watchStatus]
-        } else {
-            watchStatuses = []
-        }
         
         // orderを読み込む。古いデータの場合はデフォルト値を使用
         order = (try? container.decode(Int.self, forKey: .order)) ?? 0
@@ -381,7 +328,7 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
         iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, watchStatus: WatchStatus = .none, watchStatuses: [WatchStatus] = [], order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], characterIds: [UUID] = [], watchLink: String = "", genres: [AnimeGenre] = [], customGenres: [String] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, title: String, hashtag: String, releaseDate: Date, customFields: [AnimeCustomField]? = nil, order: Int = 0, rating: Double = 0.0, voiceActors: [String] = [], characters: [String] = [], characterIds: [UUID] = [], watchLink: String = "", genres: [AnimeGenre] = [], customGenres: [String] = [], iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
@@ -389,8 +336,6 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
         self.hashtag = hashtag
         self.releaseDate = releaseDate
         self.customFields = customFields
-        self.watchStatus = watchStatus
-        self.watchStatuses = watchStatuses.isEmpty && watchStatus != .none ? [watchStatus] : watchStatuses
         self.order = order
         self.rating = rating
         self.voiceActors = voiceActors
@@ -408,10 +353,6 @@ struct Anime: Identifiable, Hashable, Equatable, Codable {
 // AnimeTab enum moved outside of struct for global access
 enum AnimeTab: String, CaseIterable {
     case all = "all"
-    case watching = "watching"
-    case thisTerm = "thisTerm"
-    case willWatch = "willWatch"
-    case watchAgain = "watchAgain"
     // ジャンル
     case romcom = "romcom"
     case isekai = "isekai"
@@ -437,14 +378,6 @@ struct CustomTab: Identifiable, Hashable {
             switch animeTab {
             case .all:
                 return NSLocalizedString("all", comment: "")
-            case .watching:
-                return NSLocalizedString("watching_status", comment: "")
-            case .thisTerm:
-                return NSLocalizedString("this_term_status", comment: "")
-            case .willWatch:
-                return NSLocalizedString("will_watch_status", comment: "")
-            case .watchAgain:
-                return NSLocalizedString("watch_again_status", comment: "")
             case .romcom:
                 return NSLocalizedString("romcom", comment: "")
             case .isekai:
@@ -521,14 +454,6 @@ struct AnimeScreen: View {
         switch tab {
         case .all:
             return NSLocalizedString("all", comment: "")
-        case .watching:
-            return NSLocalizedString("watching_status", comment: "")
-        case .thisTerm:
-            return NSLocalizedString("this_term_status", comment: "")
-        case .willWatch:
-            return NSLocalizedString("will_watch_status", comment: "")
-        case .watchAgain:
-            return NSLocalizedString("watch_again_status", comment: "")
         case .romcom:
             return NSLocalizedString("romcom", comment: "")
         case .isekai:
@@ -552,14 +477,6 @@ struct AnimeScreen: View {
             switch animeTab {
             case .all:
                 result = animesWithTitles
-            case .watching:
-                result = animesWithTitles.filter { $0.watchStatuses.contains(.watching) }
-            case .willWatch:
-                result = animesWithTitles.filter { $0.watchStatuses.contains(.willWatch) }
-            case .watchAgain:
-                result = animesWithTitles.filter { $0.watchStatuses.contains(.watchAgain) }
-            case .thisTerm:
-                result = animesWithTitles.filter { $0.watchStatuses.contains(.thisTerm) }
             // ジャンルフィルタ
             case .romcom:
                 result = animesWithTitles.filter { $0.genres.contains(.romcom) }
@@ -3861,7 +3778,6 @@ struct AnimeAboutView: View {
     @State private var editedTitle: String = ""
     @State private var editedHashtag: String = ""
     @State private var editedReleaseDate: Date = Date()
-    @State private var editedWatchStatuses: Set<WatchStatus> = []
     @State private var editedRating: Double = 0.0
     @State private var editedVoiceActors: String = ""
     @State private var editedCharacters: String = ""
@@ -4007,8 +3923,6 @@ struct AnimeAboutView: View {
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("hashtag", comment: "Hashtag"), text: $editedHashtag)
                                 Divider().padding(.leading, 20)
-                                statusSelectionRow(label: NSLocalizedString("status", comment: "Status"), statuses: $editedWatchStatuses)
-                                Divider().padding(.leading, 20)
                                 ratingSelectionRow(label: NSLocalizedString("rating", comment: "Rating"), rating: $editedRating)
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("voice_actors", comment: "Voice Actors"), text: $editedVoiceActors, placeholder: NSLocalizedString("max_5_people", comment: "Max 5 people (comma separated)"))
@@ -4020,9 +3934,6 @@ struct AnimeAboutView: View {
                                 profileRow(label: NSLocalizedString("title", comment: "Title"), value: currentAnime.title)
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("hashtag", comment: "Hashtag"), value: currentAnime.hashtag.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : currentAnime.hashtag)
-                                Divider().padding(.leading, 20)
-                                let statusText = currentAnime.watchStatuses.filter { $0 != .none }.map { $0.displayName }.joined(separator: NSLocalizedString("comma_separator", comment: ", "))
-                                profileRow(label: NSLocalizedString("status", comment: "Status"), value: statusText.isEmpty ? NSLocalizedString("not_set", comment: "Not set") : statusText)
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("rating", comment: "Rating"), value: currentAnime.rating > 0 ? String(format: "%.1f / 5.0", currentAnime.rating) : NSLocalizedString("not_set", comment: "Not set"))
                                 Divider().padding(.leading, 20)
@@ -4167,7 +4078,6 @@ struct AnimeAboutView: View {
             editedTitle = latestAnime.title
             editedHashtag = latestAnime.hashtag
             editedReleaseDate = latestAnime.releaseDate
-            editedWatchStatuses = Set(latestAnime.watchStatuses)
             editedRating = latestAnime.rating
             editedVoiceActors = latestAnime.voiceActors.joined(separator: ", ")
             editedCharacters = latestAnime.characters.joined(separator: ", ")
@@ -4450,38 +4360,6 @@ struct AnimeAboutView: View {
         .padding(.vertical, 8)
     }
     
-    private func statusSelectionRow(label: String, statuses: Binding<Set<WatchStatus>>) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 16))
-                .foregroundColor(.secondary)
-                .frame(width: 120, alignment: .leading)
-            
-            HStack(spacing: 8) {
-                ForEach([WatchStatus.watching, .willWatch, .watchAgain, .thisTerm], id: \.self) { status in
-                    Button(action: {
-                        if statuses.wrappedValue.contains(status) {
-                            statuses.wrappedValue.remove(status)
-                        } else {
-                            statuses.wrappedValue.insert(status)
-                        }
-                    }) {
-                        Text(status.displayName)
-                            .font(.system(size: 14))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(statuses.wrappedValue.contains(status) ? Color.blue : Color.gray.opacity(0.2))
-                            .foregroundColor(statuses.wrappedValue.contains(status) ? .white : .primary)
-                            .cornerRadius(8)
-                    }
-                }
-            }
-            
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 8)
-    }
     
     private func ratingSelectionRow(label: String, rating: Binding<Double>) -> some View {
         HStack {
@@ -4536,7 +4414,6 @@ struct AnimeAboutView: View {
         // プロフィール編集内容を常に保存
         updatedAnime.title = editedTitle
         updatedAnime.hashtag = editedHashtag
-        updatedAnime.watchStatuses = Array(editedWatchStatuses)
         updatedAnime.rating = editedRating
         
         // 声優リストを処理（カンマ区切りを配列に変換、最大5人まで）
@@ -4650,7 +4527,6 @@ struct AddAnimeSheet: View {
     @State private var savedImagePath: String? = nil
     // 事前にアニメIDを生成
     @State private var animeId: String = UUID().uuidString
-    @State private var selectedWatchStatuses: Set<WatchStatus> = []
     var body: some View {
         NavigationView {
             VStack(spacing: 0) {
@@ -4679,7 +4555,7 @@ struct AddAnimeSheet: View {
                         Spacer()
                         
                         Button(action: {
-                            let newAnime = Anime(id: UUID(uuidString: animeId) ?? UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: Date(), watchStatus: .none, watchStatuses: Array(selectedWatchStatuses))
+                            let newAnime = Anime(id: UUID(uuidString: animeId) ?? UUID(), imageIdentifier: savedImagePath, backgroundImagePath: nil, title: title, hashtag: hashtag, releaseDate: Date())
                             animeManager.addAnimeAtTop(newAnime)
                             dismiss()
                         }) {
@@ -4778,43 +4654,6 @@ struct AddAnimeSheet: View {
                         }
                         .padding(.horizontal)
                         
-                        // 視聴ステータス
-                        VStack(spacing: 8) {
-                            VStack(spacing: 0) {
-                                ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
-                                    HStack {
-                                        Text(status.displayName)
-                                            .font(.system(size: 15))
-                                        Spacer()
-                                        if selectedWatchStatuses.contains(status) {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.blue)
-                                        } else {
-                                            Image(systemName: "circle")
-                                                .foregroundColor(.gray.opacity(0.4))
-                                        }
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .background(Color.gray.opacity(0.05))
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        if selectedWatchStatuses.contains(status) {
-                                            selectedWatchStatuses.remove(status)
-                                        } else {
-                                            selectedWatchStatuses.insert(status)
-                                        }
-                                    }
-                                    
-                                    if status != WatchStatus.allCases.filter({ $0 != .none }).last {
-                                        Divider()
-                                    }
-                                }
-                            }
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                        .padding(.horizontal)
                         
                         Spacer(minLength: 40)
                     }
@@ -4850,8 +4689,6 @@ struct AnimeDetailView: View {
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
     @State private var tempIconImage: UIImage? = nil
-    @State private var showEditWatchStatusModal = false
-    @State private var editWatchStatuses: Set<WatchStatus> = []
     @State private var editGenres: Set<AnimeGenre> = []
     @State private var editCustomGenres: Set<String> = []
     @State private var customGenreName = ""
@@ -5087,34 +4924,6 @@ struct AnimeDetailView: View {
                     .padding(.top, 30)
                     
                     // 視聴ステータス
-                    VStack(spacing: 4) {
-                        Text(NSLocalizedString("status", comment: "Status"))
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                        if currentAnime.watchStatuses.isEmpty {
-                            Text(NSLocalizedString("none_option", comment: "None"))
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.gray)
-                        } else {
-                            HStack(spacing: 8) {
-                                ForEach(currentAnime.watchStatuses.filter { $0 != .none }, id: \.self) { status in
-                                    Text(status.displayName)
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 8)
-                                        .padding(.vertical, 4)
-                                        .background(Color.blue)
-                                        .cornerRadius(12)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.top, 20)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .onTapGesture {
-                        editWatchStatuses = Set(currentAnime.watchStatuses)
-                        showEditWatchStatusModal = true
-                    }
                     
                     // ジャンル
                     VStack(spacing: 8) {
@@ -5365,63 +5174,6 @@ struct AnimeDetailView: View {
             }
         }
         // 公開日編集モーダル（無効化）
-        // 視聴ステータス編集モーダル
-        .sheet(isPresented: $showEditWatchStatusModal) {
-            VStack(spacing: 20) {
-                Text(NSLocalizedString("select_status", comment: "Select status"))
-                    .font(.headline)
-                VStack(spacing: 12) {
-                    ForEach(WatchStatus.allCases.filter { $0 != .none }, id: \.self) { status in
-                        Button(action: {
-                            if editWatchStatuses.contains(status) {
-                                editWatchStatuses.remove(status)
-                            } else {
-                                editWatchStatuses.insert(status)
-                            }
-                        }) {
-                            HStack {
-                                Text(status.displayName)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.black)
-                                Spacer()
-                                if editWatchStatuses.contains(status) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.blue)
-                                } else {
-                                    Image(systemName: "circle")
-                                        .foregroundColor(.gray)
-                                }
-                            }
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(editWatchStatuses.contains(status) ? Color.blue.opacity(0.1) : Color(.systemGray6))
-                            )
-                        }
-                    }
-                }
-                HStack(spacing: 20) {
-                    Button(NSLocalizedString("cancel", comment: "Cancel")) {
-                        showEditWatchStatusModal = false
-                    }
-                    .foregroundColor(.red)
-                    
-                    Button(NSLocalizedString("save", comment: "Save")) {
-                        guard let idx = animes.firstIndex(where: { $0.id == anime.id }) else { return }
-                        var updatedAnime = animes[idx]
-                        updatedAnime.watchStatuses = Array(editWatchStatuses)
-                        animes[idx] = updatedAnime
-                        animeManager.updateAnime(updatedAnime)
-                        showEditWatchStatusModal = false
-                    }
-                    .foregroundColor(.blue)
-                }
-            }
-            .padding()
-            .background(Color(.systemBackground))
-            .cornerRadius(16)
-            .padding(40)
-        }
         // 統一されたジャンルモーダル
         .sheet(item: $genreModalType) { modalType in
             switch modalType {
@@ -6097,9 +5849,6 @@ struct CharacterSelectionSheet: View {
                                     Text(character.name)
                                         .font(.system(size: 17, weight: .medium))
                                         .foregroundColor(.primary)
-                                    Text("#\(character.tag)")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.gray)
                                 }
                                 
                                 Spacer()
@@ -6303,12 +6052,6 @@ struct AnimeMemberListView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.primary)
             
-            if !character.tag.isEmpty {
-                Text(character.tag)
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-            }
             
             characterDetailsRow(character: character)
         }
@@ -6317,14 +6060,6 @@ struct AnimeMemberListView: View {
     // キャラクター詳細情報行
     func characterDetailsRow(character: Character) -> some View {
         HStack(spacing: 8) {
-            // 誕生日
-            HStack(spacing: 2) {
-                Image(systemName: "gift")
-                    .font(.system(size: 10))
-                Text(DateFormatter.monthDayEnglish.string(from: character.birthday))
-                    .font(.system(size: 11))
-            }
-            .foregroundColor(.gray)
             
             // 年齢
             if !character.age.isEmpty {
@@ -6333,16 +6068,6 @@ struct AnimeMemberListView: View {
                     .foregroundColor(.gray)
             }
             
-            // 声優
-            if !character.voiceActor.isEmpty {
-                HStack(spacing: 2) {
-                    Image(systemName: "mic")
-                        .font(.system(size: 10))
-                    Text(character.voiceActor)
-                        .font(.system(size: 11))
-                }
-                .foregroundColor(.gray)
-            }
         }
     }
     

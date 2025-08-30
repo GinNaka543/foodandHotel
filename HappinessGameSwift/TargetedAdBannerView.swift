@@ -102,20 +102,12 @@ class AdManager: ObservableObject {
     @Published var isLoading = false
     
     func loadAds() {
-        let profileManager = UserProfileManager()
-        let currentUser = profileManager.currentUser
-        
+        // Firebase削除済み - 広告機能を無効化
         isLoading = true
-        FirebaseManager.shared.fetchAds(for: currentUser) { [weak self] result in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-                switch result {
-                case .success(let ads):
-                    self?.currentAds = ads
-                case .failure(_):
-                    break
-                }
-            }
+        DispatchQueue.main.async {
+            self.isLoading = false
+            // 広告は表示しない
+            self.currentAds = []
         }
     }
 }

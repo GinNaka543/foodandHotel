@@ -1,7 +1,4 @@
 import SwiftUI
-import FirebaseCore
-import FirebaseAuth
-import FirebaseFirestore
 import UIKit
 import BackgroundTasks
 
@@ -100,35 +97,21 @@ class AuthenticationManager: ObservableObject {
     }
     
     private func saveInitialSubscriptionTracking(userId: String) {
-        let db = Firestore.firestore()
+        // Save subscription tracking data to local storage
         let firstInstallDate = getFirstInstallDateFromKeychain() ?? Date()
         
-        // Save by device ID instead of user ID
-        db.collection("device_subscriptions").document(deviceId).getDocument { document, error in
-            if let document = document, document.exists {
-                // Update with latest user info if device already exists
-                db.collection("device_subscriptions").document(self.deviceId).updateData([
-                    "currentUserId": userId,
-                    "lastSeenAt": Date().timeIntervalSince1970
-                ])
-                return
-            }
-            
-            // Create initial tracking document by device ID
-            let trackingData: [String: Any] = [
-                "deviceId": self.deviceId,
-                "currentUserId": userId,
-                "firstInstallDate": firstInstallDate.timeIntervalSince1970,
-                "daysUntilPayment": 40, // 40 days until payment required
-                "hasPaid": self.hasPaid,
-                "createdAt": Date().timeIntervalSince1970,
-                "lastSeenAt": Date().timeIntervalSince1970
-            ]
-            
-            db.collection("device_subscriptions").document(self.deviceId).setData(trackingData) { _ in
-                // Successfully saved tracking data
-            }
-        }
+        let trackingData: [String: Any] = [
+            "deviceId": self.deviceId,
+            "currentUserId": userId,
+            "firstInstallDate": firstInstallDate.timeIntervalSince1970,
+            "daysUntilPayment": 40, // 40 days until payment required
+            "hasPaid": self.hasPaid,
+            "createdAt": Date().timeIntervalSince1970,
+            "lastSeenAt": Date().timeIntervalSince1970
+        ]
+        
+        // Save to UserDefaults instead of Firebase
+        UserDefaults.standard.set(trackingData, forKey: "subscriptionTracking_\(deviceId)")
     }
     
     func logout() {
@@ -153,65 +136,47 @@ class AuthenticationManager: ObservableObject {
         // Save payment status to keychain with device ID
         savePaymentStatusToKeychain(deviceId: deviceId, hasPaid: true)
         
-        // Update Firebase device subscription
-        let db = Firestore.firestore()
-        db.collection("device_subscriptions").document(deviceId).updateData([
-            "hasPaid": true,
-            "paymentDate": Date().timeIntervalSince1970,
-            "amount": 600,
-            "lastSeenAt": Date().timeIntervalSince1970
-        ]) { _ in
-            // Successfully updated device subscription
-        }
+        // Update local subscription tracking instead of Firebase
+        var trackingData = UserDefaults.standard.dictionary(forKey: "subscriptionTracking_\(deviceId)") ?? [:]
+        trackingData["hasPaid"] = true
+        trackingData["paymentDate"] = Date().timeIntervalSince1970
+        trackingData["amount"] = 600
+        trackingData["lastSeenAt"] = Date().timeIntervalSince1970
+        UserDefaults.standard.set(trackingData, forKey: "subscriptionTracking_\(deviceId)")
         
-        // Also update user document if logged in
+        // Also update user subscription data locally if logged in
         if let userId = UserDefaults.standard.string(forKey: "userId") {
-            db.collection("users").document(userId).updateData([
-                "hasPaidSubscription": true,
-                "subscriptionDate": Timestamp(date: Date()),
-                "subscriptionUpdatedAt": Timestamp(date: Date())
-            ]) { _ in
-                // Successfully updated user subscription
-            }
+            UserDefaults.standard.set(true, forKey: "userSubscription_\(userId)_hasPaid")
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "userSubscription_\(userId)_subscriptionDate")
         }
     }
     
     func syncSubscriptionStatus() {
-        // Check subscription status by device ID
-        let db = Firestore.firestore()
-        db.collection("device_subscriptions").document(deviceId).getDocument { [weak self] (document, error) in
-            if let document = document, document.exists {
-                let serverHasPaid = document.data()?["hasPaid"] as? Bool ?? false
+        // Check subscription status from local storage instead of Firebase
+        if let trackingData = UserDefaults.standard.dictionary(forKey: "subscriptionTracking_\(deviceId)"),
+           let localHasPaid = trackingData["hasPaid"] as? Bool {
+            
+            // Update status based on local tracking data
+            if localHasPaid && !hasPaid {
+                // Local says paid but instance is unpaid, update instance status
+                hasPaid = true
+                requiresPayment = false
+                UserDefaults.standard.set(true, forKey: "hasPaidSubscription")
                 
-                DispatchQueue.main.async {
-                    // Sync local status with server status
-                    if serverHasPaid && self?.hasPaid == false {
-                        // Server says paid but locally is unpaid, update local status
-                        self?.hasPaid = true
-                        self?.requiresPayment = false
-                        UserDefaults.standard.set(true, forKey: "hasPaidSubscription")
-                        
-                        // Save payment status to keychain
-                        if let deviceId = self?.deviceId {
-                            self?.savePaymentStatusToKeychain(deviceId: deviceId, hasPaid: true)
-                        }
-                    } else if !serverHasPaid && self?.hasPaid == true {
-                        // Server says unpaid but locally is paid, reset local status
-                        self?.hasPaid = false
-                        self?.requiresPayment = true
-                        UserDefaults.standard.set(false, forKey: "hasPaidSubscription")
-                        
-                        // Clear payment status from keychain
-                        if let deviceId = self?.deviceId {
-                            self?.clearPaymentStatusFromKeychain(deviceId: deviceId)
-                        }
-                    }
-                    
-                    // Always check payment requirement after sync
-                    self?.checkPaymentRequirement()
-                }
-            } else {
+                // Save payment status to keychain
+                savePaymentStatusToKeychain(deviceId: deviceId, hasPaid: true)
+            } else if !localHasPaid && hasPaid {
+                // Local says unpaid but instance is paid, reset instance status
+                hasPaid = false
+                requiresPayment = true
+                UserDefaults.standard.set(false, forKey: "hasPaidSubscription")
+                
+                // Clear payment status from keychain
+                clearPaymentStatusFromKeychain(deviceId: deviceId)
             }
+            
+            // Always check payment requirement after sync
+            checkPaymentRequirement()
         }
     }
     
@@ -284,14 +249,11 @@ struct HappinessGameSwiftApp: App {
     @StateObject private var mainTab = MainTabSelection()
     @StateObject private var characterManager = CharacterManager()
     @StateObject private var animeManager = AnimeManager()
-    @StateObject private var productManager = ProductManager()
     @StateObject private var authManager = AuthenticationManager()
     @StateObject private var paymentGatekeeper = PaymentGatekeeper.shared
     @StateObject private var localizationManager = LocalizationManager.shared
     @State private var showSplash = true
     @Environment(\.scenePhase) private var scenePhase
-    @State private var hasSeenFirstLaunch = UserDefaults.standard.bool(forKey: "hasSeenFirstLaunch")
-    @State private var hasSelectedLanguage = UserDefaults.standard.bool(forKey: "hasSelectedLanguage")
     
     init() {
         // Initialize localization manager first to ensure proper language loading
@@ -308,10 +270,9 @@ struct HappinessGameSwiftApp: App {
         let launchTracker = PerformanceMonitor.shared.startTracking(.appLaunch)
         #endif
         
-        // Configure Firebase
-        FirebaseApp.configure()
+        // Firebase削除済み
         #if DEBUG
-        print("Firebase configured successfully")
+        print("App configured successfully")
         print("Bundle ID: \(Bundle.main.bundleIdentifier ?? "Unknown")")
         
         // Start network monitoring and diagnostics
@@ -397,69 +358,36 @@ struct HappinessGameSwiftApp: App {
         WindowGroup {
             ZStack {
                 // Main content
-                if !hasSelectedLanguage {
-                    // 言語選択画面（最初に表示）
-                    FirstTimeLanguageSelectionView(hasSelectedLanguage: $hasSelectedLanguage)
+                if paymentGatekeeper.isAppLocked {
+                    PaymentBlockerView()
+                        .environmentObject(paymentGatekeeper)
                         .environmentObject(localizationManager)
-                } else if !hasSeenFirstLaunch {
-                    // 初回起動時の説明画面
-                    FirstLaunchView(hasSeenFirstLaunch: $hasSeenFirstLaunch)
-                        .environmentObject(localizationManager)
-                } else if authManager.isLoggedIn {
-                    if paymentGatekeeper.isAppLocked {
-                        PaymentBlockerView()
-                            .environmentObject(paymentGatekeeper)
-                            .environmentObject(localizationManager)
-                    } else {
-                        MainContainerView()
-                            .environmentObject(mainTab)
-                            .environmentObject(characterManager)
-                            .environmentObject(animeManager)
-                            .environmentObject(productManager)
-                            .environmentObject(authManager)
-                            .environmentObject(paymentGatekeeper)
-                            .environmentObject(localizationManager)
-                            .onAppear {
-                                // 開発用: サンプル画像を自動生成
-                                createSampleImagesIfNeeded()
-                                // ユーザーIDを確認
-                                if let userId = UserDefaults.standard.string(forKey: "userId") {
-                                    print("🔐 User logged in with ID: \(userId)")
-                                    // 既存データの移行を実行
-                                    UserDefaultsHelper.shared.migrateDataIfNeeded()
-                                    
-                                    // Firebase同期無効化 - Privacy policy updated
-                                    print("ℹ️ Firebase sync disabled - loading local data only")
-                                    // ローカルデータを直接読み込み
-                                    characterManager.loadCharacters()
-                                    animeManager.loadAnimes()
-                                    
-                                    // 購入済みプランも同期
-                                    FirebaseManager.shared.syncPurchasedPlans(userId: userId) { _ in
-                                        // print("✅ Purchased plans sync completed")
-                                    }
-                                } else {
-                                    // print("⚠️ No user logged in")
-                                    // ログインしていなくてもローカルデータを読み込む
-                                    characterManager.loadCharacters()
-                                    animeManager.loadAnimes()
-                                }
-                                
-                                // DISABLED: Media cleanup causing video deletion issues
-                                // Clean up orphaned media files after app startup
-                                // DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                                //     print("🧹 [App] Triggering media cleanup...")
-                                //     MediaCleanupManager.shared.cleanupOrphanedMediaFiles()
-                                // }
-                            }
-                    }
                 } else {
-                    AuthSelectionView(authManager: authManager)
+                    MainContainerView()
+                        .environmentObject(mainTab)
+                        .environmentObject(characterManager)
+                        .environmentObject(animeManager)
+                        .environmentObject(authManager)
+                        .environmentObject(paymentGatekeeper)
                         .environmentObject(localizationManager)
+                        .onAppear {
+                            // 開発用: サンプル画像を自動生成
+                            createSampleImagesIfNeeded()
+                            // ローカルデータを直接読み込み
+                            characterManager.loadCharacters()
+                            animeManager.loadAnimes()
+                            
+                            // DISABLED: Media cleanup causing video deletion issues
+                            // Clean up orphaned media files after app startup
+                            // DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                            //     print("🧹 [App] Triggering media cleanup...")
+                            //     MediaCleanupManager.shared.cleanupOrphanedMediaFiles()
+                            // }
+                        }
                 }
                 
                 // Splash screen overlay
-                if showSplash && hasSelectedLanguage && hasSeenFirstLaunch {
+                if showSplash {
                     SplashScreenView()
                         .transition(.opacity)
                         .zIndex(1)
@@ -480,43 +408,14 @@ struct HappinessGameSwiftApp: App {
                     // print("📱 App moving to background - synchronizing UserDefaults")
                     UserDefaults.standard.synchronize()
                     
-                    // Visit plansの保存を確実にする
-                    NotificationCenter.default.post(
-                        name: Notification.Name("SaveAllDrafts"),
-                        object: nil
-                    )
                 case .inactive:
                     // アプリが非アクティブになった時も同期
                     UserDefaults.standard.synchronize()
                 case .active:
                     // アプリがアクティブになった時はデータを再読み込み
-                    NotificationCenter.default.post(
-                        name: Notification.Name("ReloadVisitPlans"),
-                        object: nil
-                    )
+                    break
                 @unknown default:
                     break
-                }
-            }
-            .onAppear {
-                // アプリ起動時に一度だけマイグレーションを実行
-                if !UserDefaults.standard.bool(forKey: "hasPerformedVisitPlanMigration") {
-                    // print("📱 Performing one-time visit plan migration...")
-                    VisitPlanDataStorage.shared.migrateOldSavedPlans()
-                    UserDefaults.standard.set(true, forKey: "hasPerformedVisitPlanMigration")
-                }
-                
-                // データクリーンアップを実行（重複を削除）
-                let stats = VisitPlanDataStorage.shared.getStorageStatistics()
-                // print("📊 Visit Plan Storage Stats - Plans: \(stats.totalPlans), Drafts: \(stats.totalDrafts), Duplicate Plans: \(stats.duplicatePlans), Duplicate Drafts: \(stats.duplicateDrafts)")
-                
-                if stats.duplicatePlans > 0 || stats.duplicateDrafts > 0 {
-                    // print("🧹 Cleaning up duplicate visit plans...")
-                    VisitPlanDataStorage.shared.cleanupDuplicatePlans()
-                    
-                    // Verify cleanup
-                    let newStats = VisitPlanDataStorage.shared.getStorageStatistics()
-                    // print("✅ Cleanup complete - Plans: \(newStats.totalPlans), Drafts: \(newStats.totalDrafts)")
                 }
             }
         }
@@ -545,29 +444,20 @@ struct MainContainerView: View {
     @State private var showingPaymentPopup = false
     
     enum Tab: Int, CaseIterable {
-        case home = 0
-        case chara = 1
-        case anime = 2
-        case visit = 3
-        case card = 4
+        case chara = 0
+        case anime = 1
         
         var icon: String {
             switch self {
-            case .home: return "house"
-            case .chara: return "person.2"
-            case .anime: return "tv"
-            case .visit: return "link"
-            case .card: return "shippingbox"
+            case .chara: return "fork.knife"
+            case .anime: return "building.2"
             }
         }
         
         var title: String {
             switch self {
-            case .home: return NSLocalizedString("home", comment: "Home tab")
-            case .chara: return NSLocalizedString("character", comment: "Character tab")
-            case .anime: return NSLocalizedString("anime", comment: "Anime tab")
-            case .visit: return NSLocalizedString("visit", comment: "Visit tab")
-            case .card: return NSLocalizedString("product", comment: "Product tab")
+            case .chara: return "グルメ"
+            case .anime: return "旅館/ホテル"
             }
         }
     }
@@ -579,13 +469,7 @@ struct MainContainerView: View {
                 // 選択されたタブに応じてコンテンツを表示
                 VStack {
                     Group {
-                        if mainTab.selectedTab == .home {
-                            HomeScreen()
-                                .environmentObject(mainTab)
-                                .environmentObject(authManager)
-                                .environmentObject(characterManager)
-                                .environmentObject(animeManager)
-                        } else if mainTab.selectedTab == .chara {
+                        if mainTab.selectedTab == .chara {
                             CharaScreen()
                                 .environmentObject(mainTab)
                                 .environmentObject(characterManager)
@@ -594,14 +478,6 @@ struct MainContainerView: View {
                                 .environmentObject(mainTab)
                                 .environmentObject(animeManager)
                                 .environmentObject(characterManager)
-                        } else if mainTab.selectedTab == .visit {
-                            if UIDevice.current.userInterfaceIdiom == .pad {
-                                VisitScreen_iPad()
-                            } else {
-                                VisitScreen()
-                            }
-                        } else if mainTab.selectedTab == .card {
-                            ProductScreen()
                         }
                     }
                     .animation(nil, value: mainTab.selectedTab)
@@ -799,9 +675,7 @@ struct CharaContentView: View {
     var filteredCharacters: [Character] {
         if searchText.isEmpty { return characterManager.characters }
         return characterManager.characters.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText) ||
-            $0.tag.localizedCaseInsensitiveContains(searchText) ||
-            $0.birthday.formatted(.dateTime.year().month().day()).contains(searchText)
+            $0.name.localizedCaseInsensitiveContains(searchText)
         }
     }
     
@@ -1239,32 +1113,13 @@ struct PaymentPopupView: View {
     }
     
     private func loadUserPoints() {
-        // Load user points from Firebase
+        // Load user points from local storage only
         if let userId = UserDefaults.standard.string(forKey: "userId") {
-            // Use FirebaseManager to get user points
-            FirebaseManager.shared.getUserPoints(userId: userId) { result in
-                DispatchQueue.main.async {
-                    switch result {
-                    case .success(let pointsModel):
-                        self.userPoints = pointsModel.points
-                    case .failure(_):
-                        // Try fallback to userPoints collection directly
-                        let db = Firestore.firestore()
-                        db.collection("userPoints").document(userId).getDocument { document, _ in
-                            if let document = document, document.exists {
-                                DispatchQueue.main.async {
-                                    self.userPoints = document.data()?["points"] as? Int ?? 0
-                                }
-                            } else {
-                                // Final fallback to UserDefaults
-                                DispatchQueue.main.async {
-                                    self.userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            // Load from UserDefaults directly
+            userPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+        } else {
+            // Default to 0 if no user is logged in
+            userPoints = 0
         }
     }
     
@@ -1338,48 +1193,39 @@ struct PaymentPopupView: View {
     }
     
     private func processPointPayment(userId: String) {
-        // Use FirebaseManager to deduct points
-        FirebaseManager.shared.usePoints(userId: userId, points: 500, reason: "アプリ利用料支払い") { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    // Update local points display
-                    self.userPoints = max(0, self.userPoints - 500)
-                    UserDefaults.standard.set(self.userPoints, forKey: "userPoints_\(userId)")
-                    
-                    // Payment successful
-                    self.authManager.completePayment()
-                    self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "points")
-                    self.isProcessing = false
-                    self.dismiss()
-                    
-                case .failure(let error):
-                    self.isProcessing = false
-                    self.errorMessage = "ポイント支払いに失敗しました: \(error.localizedDescription)"
-                    self.showError = true
-                    // Reload points in case of error
-                    self.loadUserPoints()
-                }
-            }
+        // Process point payment locally
+        if userPoints >= 500 {
+            // Deduct points from local storage
+            userPoints = max(0, userPoints - 500)
+            UserDefaults.standard.set(userPoints, forKey: "userPoints_\(userId)")
+            
+            // Payment successful
+            authManager.completePayment()
+            saveSubscriptionLocally(userId: userId, paymentMethod: "points")
+            isProcessing = false
+            dismiss()
+        } else {
+            // Not enough points
+            isProcessing = false
+            errorMessage = "ポイントが不足しています。必要: 500pt, 現在: \(userPoints)pt"
+            showError = true
         }
     }
     
     private func processCardPayment(userId: String) {
-        // Stripeを使用しないため、直接支払い完了処理を実行
+        // Process card payment locally (for testing purposes)
+        // Note: In a real app, this would integrate with App Store In-App Purchases or another payment provider
         DispatchQueue.main.async {
-            // 支払い成功として処理
+            // Payment successful
             self.authManager.completePayment()
-            self.saveSubscriptionToFirebase(userId: userId, paymentMethod: "card")
+            self.saveSubscriptionLocally(userId: userId, paymentMethod: "card")
             self.isProcessing = false
             self.dismiss()
-            
-            // 注意: 実際のアプリでは、ここでApp内課金または他の決済方法を実装する必要があります
         }
     }
     
-    private func saveSubscriptionToFirebase(userId: String, paymentMethod: String) {
-        // Save subscription status to Firebase by device ID
-        let db = Firestore.firestore()
+    private func saveSubscriptionLocally(userId: String, paymentMethod: String) {
+        // Save subscription status to local storage instead of Firebase
         let subscriptionData: [String: Any] = [
             "deviceId": authManager.deviceId,
             "currentUserId": userId,
@@ -1393,19 +1239,13 @@ struct PaymentPopupView: View {
             "lastSeenAt": Date().timeIntervalSince1970
         ]
         
-        // Save to device_subscriptions collection
-        db.collection("device_subscriptions").document(authManager.deviceId).setData(subscriptionData, merge: true) { _ in
-            // Successfully saved device subscription
-        }
+        // Save to UserDefaults instead of Firebase
+        UserDefaults.standard.set(subscriptionData, forKey: "subscriptionTracking_\(authManager.deviceId)")
         
-        // Also update user document with subscription status
-        db.collection("users").document(userId).updateData([
-            "hasSubscription": true,
-            "subscriptionDate": Date().timeIntervalSince1970,
-            "subscriptionPaymentMethod": paymentMethod
-        ]) { _ in
-            // Successfully updated user subscription status
-        }
+        // Also update user subscription status locally
+        UserDefaults.standard.set(true, forKey: "userSubscription_\(userId)_hasSubscription")
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "userSubscription_\(userId)_subscriptionDate")
+        UserDefaults.standard.set(paymentMethod, forKey: "userSubscription_\(userId)_paymentMethod")
     }
 }
 

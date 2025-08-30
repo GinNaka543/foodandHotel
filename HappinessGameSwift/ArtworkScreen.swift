@@ -679,7 +679,7 @@ struct ArtworkScreen: View {
                                 Image(systemName: "person.circle")
                                     .font(.system(size: 24))
                             }
-                            Text(NSLocalizedString("about", comment: "About"))
+                            Text("リスト")
                                 .font(.system(size: 10))
                         }
                         .foregroundColor(.black)
@@ -725,7 +725,7 @@ struct ArtworkScreen: View {
             }
         }
         .fullScreenCover(isPresented: $showAbout) {
-            AboutView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
+            RestaurantListView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
                 .environmentObject(characterManager)
         }
         .sheet(item: Binding<ArtworkScreen.SheetType?>(
@@ -1021,8 +1021,8 @@ struct ArtworkScreen: View {
                 return ArtworkAlbum(tag: album.tag, videos: currentArtworks, characterImageName: album.characterImageName)
             }
             // print("📖 [ArtworkScreen] Loaded and rebuilt \(albums.count) albums from UserDefaults")
-            for album in albums {
-                // print("  - Album '\(album.tag)' with \(album.videos.count) artworks")
+            for _ in albums {
+                // print("  - Album with artworks")
             }
         } else {
             albums = []

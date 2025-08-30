@@ -12,6 +12,7 @@
 "save" = "保存";
 "delete" = "削除";
 "edit" = "編集";
+"edit_name" = "名前を編集";
 "close" = "閉じる";
 "loading" = "読み込み中...";
 "error" = "エラー";
@@ -166,7 +167,7 @@
 "soundtrack_not_set" = "サントラが未設定です";
 "select_icon" = "アイコンを選択";
 "select_image" = "画像を選択";
-"character_name" = "グルメ名";
+"character_name" = "例:東京ラーメン";
 "select_icon_image" = "アイコン画像を選択";
 "add_anime" = "旅館/ホテル追加";
 "anime_info_edit" = "旅館/ホテル情報を編集";

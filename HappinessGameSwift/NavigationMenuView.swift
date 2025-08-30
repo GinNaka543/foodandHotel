@@ -52,66 +52,24 @@ struct NavigationMenuView: View {
                     
                     // メニューアイテム
                     VStack(alignment: .leading, spacing: 0) {
-                        // キャラクター（ホーム代替）
+                        // グルメ
                         NavigationMenuItem(
-                            title: NSLocalizedString("home", comment: "Home menu item")
+                            title: "グルメ"
                         ) {
                             mainTab.selectedTab = .chara
-                            isPresented = false
-                        }
-                        
-                        // キャラクター
-                        NavigationMenuItem(
-                            title: NSLocalizedString("character", comment: "Character menu item")
-                        ) {
-                            mainTab.selectedTab = .chara
-                            isPresented = false
-                        }
-                        
-                        // アニメ
-                        NavigationMenuItem(
-                            title: NSLocalizedString("anime", comment: "Anime menu item")
-                        ) {
-                            mainTab.selectedTab = .anime
-                            isPresented = false
-                        }
-                        
-                        // ビジット
-                        NavigationMenuItem(
-                            title: NSLocalizedString("visit", comment: "Visit menu item")
-                        ) {
-                            mainTab.selectedTab = .chara  // Visit功能暂时映射到Character
-                            isPresented = false
-                        }
-                        
-                        // プロダクト
-                        NavigationMenuItem(
-                            title: NSLocalizedString("product", comment: "Product menu item")
-                        ) {
-                            mainTab.selectedTab = .anime  // Product功能暂时映射到Anime
                             isPresented = false
                         }
                         
                         Divider()
                             .padding(.vertical, 8)
                         
-                        // キャラの順番変更
+                        // グルメの順番変更
                         NavigationMenuItem(
-                            title: NSLocalizedString("character_order_menu", comment: "Character order menu item")
+                            title: "グルメの順番変更"
                         ) {
                             isPresented = false
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 mainTab.showCharacterOrderModal = true
-                            }
-                        }
-                        
-                        // アニメの順番変更
-                        NavigationMenuItem(
-                            title: NSLocalizedString("anime_order_menu", comment: "Anime order menu item")
-                        ) {
-                            isPresented = false
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                mainTab.showAnimeOrderModal = true
                             }
                         }
                         

@@ -4,110 +4,87 @@ struct PrivacyPolicyView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var hasAgreed: Bool
     let isInitialAgreement: Bool
-    @StateObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text(NSLocalizedString("privacy_policy_title", comment: ""))
+                    Text("プライバシーポリシー")
                         .font(.largeTitle)
                         .fontWeight(.bold)
                         .padding(.bottom, 10)
                     
                     Group {
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_info_we_collect_title", comment: ""),
-                            content: NSLocalizedString("privacy_info_we_collect_content", comment: "")
+                            title: "1. 収集する情報",
+                            content: "ぐるほては、以下の情報を収集する場合があります：\n• ユーザーが登録するグルメ情報（店名、写真、メモ）\n• アプリの利用状況に関する情報\n• デバイス情報（機種、OSバージョン等）"
                         )
                         
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_purpose_title", comment: ""),
-                            content: NSLocalizedString("privacy_purpose_content", comment: "")
+                            title: "2. 情報の利用目的",
+                            content: "収集した情報は以下の目的で利用します：\n• アプリの機能提供とサービスの改善\n• ユーザーサポートの提供\n• アプリの不具合の修正\n• 新機能の開発"
                         )
                         
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_data_storage_title", comment: ""),
-                            content: NSLocalizedString("privacy_data_storage_content", comment: "")
+                            title: "3. データの保存",
+                            content: "ユーザーが登録したグルメ情報、写真、メモなどのデータは、主にユーザーの端末内にローカル保存されます。クラウド同期機能を利用する場合は、暗号化された状態でサーバーに保存される場合があります。"
                         )
                         
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_disclosure_title", comment: ""),
-                            content: NSLocalizedString("privacy_disclosure_content", comment: "")
+                            title: "4. 第三者への開示",
+                            content: "当アプリは、法令に基づく場合を除き、ユーザーの同意なく第三者に個人情報を提供することはありません。"
                         )
                         
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_security_title", comment: ""),
-                            content: NSLocalizedString("privacy_security_content", comment: "")
+                            title: "5. セキュリティ",
+                            content: "当アプリは、ユーザー情報の安全性を確保するため、適切なセキュリティ対策を実施しています。ただし、インターネット上の通信やデータ保存において、完全なセキュリティを保証することはできません。"
                         )
                         
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_cookies_title", comment: ""),
-                            content: NSLocalizedString("privacy_cookies_content", comment: "")
+                            title: "6. 子供のプライバシー",
+                            content: "当アプリは13歳未満の子供から意図的に個人情報を収集することはありません。13歳未満の方は保護者の同意を得てご利用ください。"
                         )
                         
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_backup_title", comment: ""),
-                            content: NSLocalizedString("privacy_backup_content", comment: "")
+                            title: "7. プライバシーポリシーの変更",
+                            content: "当プライバシーポリシーは、必要に応じて変更されることがあります。重要な変更がある場合は、アプリ内でお知らせします。"
                         )
                         
                         PrivacySectionView(
-                            title: NSLocalizedString("privacy_children_title", comment: ""),
-                            content: NSLocalizedString("privacy_children_content", comment: "")
-                        )
-                        
-                        PrivacySectionView(
-                            title: NSLocalizedString("privacy_changes_title", comment: ""),
-                            content: NSLocalizedString("privacy_changes_content", comment: "")
-                        )
-                        
-                        PrivacySectionView(
-                            title: NSLocalizedString("privacy_contact_title", comment: ""),
-                            content: NSLocalizedString("privacy_contact_content", comment: "")
+                            title: "8. お問い合わせ",
+                            content: "プライバシーポリシーに関するご質問がある場合は、アプリ内のお問い合わせフォームまたはサポートメールアドレスまでご連絡ください。"
                         )
                     }
                     
-                    Text(NSLocalizedString("privacy_last_updated", comment: ""))
+                    Text("最終更新日: 2025年8月30日")
                         .font(.caption)
                         .foregroundColor(.gray)
-                        .padding(.top, 20)
+                        .padding(.top)
                 }
                 .padding()
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if !isInitialAgreement {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(NSLocalizedString("close", comment: "")) {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if isInitialAgreement {
+                        Button("同意する") {
+                            hasAgreed = true
+                            dismiss()
+                        }
+                    } else {
+                        Button("閉じる") {
                             dismiss()
                         }
                     }
                 }
-            }
-            .safeAreaInset(edge: .bottom) {
+                
                 if isInitialAgreement {
-                    VStack(spacing: 16) {
-                        Button(action: {
-                            hasAgreed = true
-                            UserDefaults.standard.set(true, forKey: "hasAgreedToPrivacyPolicy")
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("拒否") {
+                            hasAgreed = false
                             dismiss()
-                        }) {
-                            Text(NSLocalizedString("privacy_agree_and_start", comment: ""))
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.blue)
-                                .cornerRadius(12)
                         }
-                        
-                        Text(NSLocalizedString("privacy_agree_description", comment: ""))
-                            .font(.caption)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
                     }
-                    .padding()
-                    .background(Color(UIColor.systemBackground))
                 }
             }
         }
@@ -123,17 +100,13 @@ struct PrivacySectionView: View {
             Text(title)
                 .font(.headline)
                 .fontWeight(.semibold)
-            
             Text(content)
                 .font(.body)
                 .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
 
-struct PrivacyPolicyView_Previews: PreviewProvider {
-    static var previews: some View {
-        PrivacyPolicyView(hasAgreed: .constant(false), isInitialAgreement: true)
-    }
+#Preview {
+    PrivacyPolicyView(hasAgreed: .constant(false), isInitialAgreement: false)
 }

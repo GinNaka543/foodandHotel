@@ -434,6 +434,28 @@ struct HappinessGameSwiftApp: App {
     }
 }
 
+// ナビゲーションバーアイテムコンポーネント
+struct NavigationBarItem: View {
+    let icon: String
+    let title: String
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 24))
+                    .foregroundColor(isSelected ? .blue : .gray)
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(isSelected ? .blue : .gray)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
 // メインコンテナビュー - ナビゲーションバーを固定し、上部コンテンツのみを切り替え
 struct MainContainerView: View {
     @EnvironmentObject var mainTab: MainTabSelection
@@ -445,75 +467,38 @@ struct MainContainerView: View {
     
     enum Tab: Int, CaseIterable {
         case chara = 0
-        case anime = 1
         
         var icon: String {
             switch self {
             case .chara: return "fork.knife"
-            case .anime: return "building.2"
             }
         }
         
         var title: String {
             switch self {
             case .chara: return "グルメ"
-            case .anime: return "旅館/ホテル"
             }
         }
     }
     
+    @ViewBuilder
+    private var mainContent: some View {
+        VStack {
+            CharaScreen()
+                .environmentObject(mainTab)
+                .environmentObject(characterManager)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    @ViewBuilder
+    private var bottomNavigationBar: some View {
+        EmptyView() // Navigation bar removed since there's only one tab
+    }
+    
     var body: some View {
-        ZStack(alignment: .bottom) {
-            // 上部コンテンツエリア
-            VStack(spacing: 0) {
-                // 選択されたタブに応じてコンテンツを表示
-                VStack {
-                    Group {
-                        if mainTab.selectedTab == .chara {
-                            CharaScreen()
-                                .environmentObject(mainTab)
-                                .environmentObject(characterManager)
-                        } else if mainTab.selectedTab == .anime {
-                            AnimeScreen()
-                                .environmentObject(mainTab)
-                                .environmentObject(animeManager)
-                                .environmentObject(characterManager)
-                        }
-                    }
-                    .animation(nil, value: mainTab.selectedTab)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                
-                // ナビゲーションバーの高さ分のスペース
-                Spacer().frame(height: 75)
-            }
-            
-            // 固定の下部ナビゲーションバー
-            VStack(spacing: 0) {
-                Divider()
-                HStack(spacing: 0) {
-                    ForEach(Tab.allCases, id: \.rawValue) { tab in
-                        NavigationBarItem(
-                            icon: tab.icon,
-                            title: tab.title,
-                            isSelected: mainTab.selectedTab == tab,
-                            onTap: {
-                                // 即座にタブを切り替える（アニメーション削除）
-                                mainTab.selectedTab = tab
-                            }
-                        )
-                    }
-                }
-                .frame(height: 75)
-                .background(Color.white)
-                .overlay(
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(Color(.systemGray4)),
-                    alignment: .top
-                )
-            }
-            .edgesIgnoringSafeArea(.bottom)
+        VStack(spacing: 0) {
+            mainContent
         }
         .background(Color.white)
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("ShowTermsOfService"))) { _ in
@@ -867,30 +852,6 @@ struct AnimeContentView: View {
         }
     }
 
-}
-
-struct VisitContentView: View {
-    @Binding var selectedTab: MainContainerView.Tab
-    var body: some View {
-        VStack {
-            Text("Visit Screen")
-                .font(.title)
-            Text("Coming Soon...")
-                .foregroundColor(.gray)
-        }
-    }
-}
-
-struct CardContentView: View {
-    @Binding var selectedTab: MainContainerView.Tab
-    var body: some View {
-        VStack {
-            Text("Card Screen")
-                .font(.title)
-            Text("Coming Soon...")
-                .foregroundColor(.gray)
-        }
-    }
 }
 
 // MARK: - SplashScreenView

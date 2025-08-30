@@ -416,9 +416,10 @@ struct CharaScreen: View {
             AddCharacterSheet(characters: $characterManager.characters)
                 .environmentObject(characterManager)
         }
-        .sheet(isPresented: $showRankingAdmin) {
-            CharacterRankingAdminView()
-        }
+        // Ranking admin view removed
+        //.sheet(isPresented: $showRankingAdmin) {
+        //    CharacterRankingAdminView()
+        //}
         .sheet(isPresented: $mainTab.showCharacterOrderModal, onDismiss: {
             // モーダルを閉じたときにデータを再読み込み
             characterManager.loadCharacters()
@@ -599,9 +600,13 @@ struct CharaScreen: View {
             } else {
                 // YouTube動画が登録されていない場合の表示
                 ZStack {
-                    AnimatedGradientView()
-                        .frame(width: UIScreen.main.bounds.width - 32, height: 180)
-                        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 180)
+                    .clipShape(UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 0, bottomTrailingRadius: 0, topTrailingRadius: 12))
                     
                     VStack {
                         Spacer()
@@ -978,10 +983,10 @@ struct CharacterDetailView: View {
     @EnvironmentObject private var characterManager: CharacterManager
     @State private var showArtwork = false
     @State private var showVideo = false
-    @State private var showAbout = false
+    @State private var showList = false
     @State private var showEditBackgroundModal = false
     @State private var showEditIconModal = false // ← 追加
-    @State private var showEditTitleTagModal = false
+    @State private var showEditNameModal = false
     @State private var showIconAdjustment = false // アイコン位置調整モーダル
     @State private var iconPickerItem: PhotosPickerItem? = nil
     @State private var iconImage: UIImage? = nil
@@ -1088,12 +1093,12 @@ struct CharacterDetailView: View {
             }
             .buttonStyle(PlainButtonStyle())
             Spacer()
-            Button(action: { showAbout = true }) {
+            Button(action: { showList = true }) {
                 VStack(spacing: 4) {
-                    Image(systemName: "info.circle")
+                    Image(systemName: "list.bullet")
                         .foregroundColor(.white)
                         .font(.system(size: 24))
-                    Text(NSLocalizedString("about", comment: "About")).font(.caption2).foregroundColor(.white)
+                    Text("リスト").font(.caption2).foregroundColor(.white)
                 }
                 .frame(width: 90, height: 70)
                 .contentShape(Rectangle())
@@ -1151,7 +1156,7 @@ struct CharacterDetailView: View {
                         .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         .padding(.top, 20)
                         .onTapGesture {
-                            showEditTitleTagModal = true
+                            showEditNameModal = true
                         }
                         .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         .padding(.top, 4)
@@ -1279,7 +1284,8 @@ struct CharacterDetailView: View {
                     }
                 }
             }) {
-                EditBackgroundView(character: $character, characterManager: characterManager)
+                // EditBackgroundView removed - functionality not needed
+                EmptyView()
             }
             .fullScreenCover(isPresented: $showArtwork) {
                 // 最新のキャラクター情報を渡す
@@ -1301,24 +1307,13 @@ struct CharacterDetailView: View {
                 // タイマーを停止
                 bannerTimer?.invalidate()
             }
-            .fullScreenCover(isPresented: $showAbout, onDismiss: {
-                // アバウトページから戻った時に最新のデータを反映
+            .fullScreenCover(isPresented: $showList, onDismiss: {
+                // リストページから戻った時に最新のデータを反映
                 characterManager.loadCharacters()
                 
                 // 最新のキャラクター情報を取得して更新
                 if let updatedCharacter = characterManager.characters.first(where: { $0.id == character.id }) {
                     character = updatedCharacter
-                    
-                    // サウンドトラックが追加されている場合は再生を開始
-                    if !updatedCharacter.soundtracks.isEmpty {
-                        SoundtrackManager.shared.collectAllSoundtracks(
-                            characters: [updatedCharacter],
-                            animes: []
-                        )
-                        if !SoundtrackManager.shared.isPlaying {
-                            SoundtrackManager.shared.startRandomPlayback()
-                        }
-                    }
                     
                     // UIを強制的に更新
                     DispatchQueue.main.async {
@@ -1327,13 +1322,14 @@ struct CharacterDetailView: View {
                     }
                 }
             }) {
-                AboutView(characters: $characters, characterId: character.id, onClose: { 
-                    showAbout = false
+                RestaurantListView(characters: $characters, characterId: character.id, onClose: { 
+                    showList = false
                 })
                     .environmentObject(characterManager)
             }
-            .sheet(isPresented: $showEditTitleTagModal) {
-                EditTitleTagBackgroundView(
+            // Name edit modal
+            .sheet(isPresented: $showEditNameModal) {
+                EditCharacterNameView(
                     character: $character,
                     characterManager: characterManager
                 )
@@ -1391,15 +1387,6 @@ struct CharacterDetailView: View {
                     .padding(.bottom, 40)
             }
         )
-        // 音楽再生ボタン（プレイヤーが非表示の時のみ表示）
-        .overlay(
-            PlayMusicButtonViewForCharacter(character: currentCharacter)
-        )
-        .onDisappear {
-            // ページから離れる時に音楽を完全に停止してリセット
-            SoundtrackManager.shared.stopPlayback()
-            SoundtrackManager.shared.isPlayerVisible = false
-        }
     }
     
     // MARK: - Banner Management Functions
@@ -1485,39 +1472,27 @@ extension DateFormatter {
     
 }
 
-struct AboutView: View {
+// Restaurant item model
+struct RestaurantItem: Identifiable, Codable {
+    let id = UUID()
+    var name: String
+    var imagePath: String?
+    var memo: String = ""
+    var createdAt = Date()
+}
+
+struct RestaurantListView: View {
     @Binding var characters: [Character]
     let characterId: UUID
     var onClose: () -> Void
-    @State private var profileDescription: String = ""
-    @State private var editedName: String = ""
-    @State private var editedAge: String = ""
-    @State private var editedFavoriteFood: String = ""
-    // @State private var editedCupSize: String = "" // removed
-    @State private var isEditingProfile: Bool = false
-    @State private var isEditingDescription: Bool = false
-    @State private var iconPickerItem: PhotosPickerItem? = nil
-    @State private var newIconImage: UIImage?
-    @State private var showIconAdjustment: Bool = false
+    @State private var restaurants: [RestaurantItem] = []
+    @State private var showAddRestaurant = false
+    @State private var newRestaurantName = ""
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
+    @State private var selectedImage: UIImage? = nil
+    @State private var editingRestaurant: RestaurantItem? = nil
+    @State private var selectedRestaurantForDetail: RestaurantItem? = nil
     
-    // Debouncing用のタイマー
-    @State private var saveDebounceTimer: Timer?
-    
-    // シート管理用のenum
-    enum ActiveSheet: Identifiable {
-        case soundtrackEdit
-        case iconPicker
-        case editSelection
-        
-        var id: Int {
-            switch self {
-            case .soundtrackEdit: return 0
-            case .iconPicker: return 1
-            case .editSelection: return 2
-            }
-        }
-    }
-    @State private var activeSheet: ActiveSheet?
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var characterManager: CharacterManager
 
@@ -1534,7 +1509,7 @@ struct AboutView: View {
         if let character = character {
             VStack(spacing: 0) {
                 Button(action: {
-                    showIconAdjustment = true
+                    // Do nothing for now - icon adjustment removed
                 }) {
                     if let imageIdentifier = character.imageIdentifier, let image = loadImageFromPath(imageIdentifier) {
                         Image(uiImage: image)
@@ -1578,7 +1553,7 @@ struct AboutView: View {
             Spacer()
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(isEditingProfile ? editedName : character?.name ?? "")
+                    Text(character?.name ?? "")
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
                     
@@ -1592,143 +1567,87 @@ struct AboutView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // キャラクターバナー画像
-                    bannerView
-                    
-                    // プロフィールセクション
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text(NSLocalizedString("profile", comment: ""))
-                                .font(.system(size: 20, weight: .bold))
-                            Spacer()
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
-                        .padding(.bottom, 16)
-                        
-                        // プロフィール項目
-                        VStack(spacing: 0) {
-                            if isEditingProfile {
-                                editableProfileRow(label: NSLocalizedString("name", comment: ""), text: $editedName)
-                                    .onChange(of: editedName) { debouncedSaveCharacter() }
-                                Divider().padding(.leading, 20)
-                                editableProfileRow(label: NSLocalizedString("age", comment: ""), text: $editedAge)
-                                    .onChange(of: editedAge) { debouncedSaveCharacter() }
-                                Divider().padding(.leading, 20)
-                                editableProfileRow(label: NSLocalizedString("favorite_food", comment: ""), text: $editedFavoriteFood)
-                                    .onChange(of: editedFavoriteFood) { debouncedSaveCharacter() }
-                                Divider().padding(.leading, 20)
-                                // Cup size removed
-                            } else {
-                                profileRow(label: NSLocalizedString("name", comment: ""), value: character?.name ?? "")
-                                Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("age", comment: ""), value: character?.age ?? NSLocalizedString("not_set", comment: ""))
-                                Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("favorite_food", comment: ""), value: character?.favoriteFood ?? NSLocalizedString("not_set", comment: ""))
-                                Divider().padding(.leading, 20)
-                                // Cup size display removed
-                            }
-                        }
-                        .background(Color.white)
+            VStack(spacing: 0) {
+                // レストランリスト
+                if restaurants.isEmpty {
+                    VStack(spacing: 20) {
+                        Spacer()
+                        Image(systemName: "fork.knife.circle")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                        Text("登録されていません")
+                            .font(.title3)
+                            .foregroundColor(.gray)
+                        Text("右上の追加ボタンからお店や商品を登録してください")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                        Spacer()
                     }
-                    
-                    // 概要セクション
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text(NSLocalizedString("description", comment: ""))
-                                .font(.system(size: 20, weight: .bold))
-                            Spacer()
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 32)
-                        .padding(.bottom, 16)
-                        
-                        // 概要テキスト
-                        if isEditingDescription {
-                            ZStack(alignment: .topLeading) {
-                                if profileDescription.isEmpty {
-                                    Text(NSLocalizedString("enter_description", comment: ""))
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.gray)
-                                        .padding(.horizontal, 20)
-                                        .padding(.vertical, 16)
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
+                            ForEach(restaurants) { restaurant in
+                                VStack(spacing: 8) {
+                                    if let imagePath = restaurant.imagePath,
+                                       let image = loadImageFromPath(imagePath) {
+                                        Image(uiImage: image)
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: (UIScreen.main.bounds.width - 48) / 2, height: 150)
+                                            .clipped()
+                                            .cornerRadius(12)
+                                    } else {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: (UIScreen.main.bounds.width - 48) / 2, height: 150)
+                                            .overlay(
+                                                Image(systemName: "photo")
+                                                    .font(.system(size: 40))
+                                                    .foregroundColor(.gray)
+                                            )
+                                    }
+                                    
+                                    Text(restaurant.name)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 4)
                                 }
-                                
-                                TextEditor(text: $profileDescription)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.primary)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 12)
-                                    .frame(minHeight: 200)
-                                    .onChange(of: profileDescription) { debouncedSaveCharacter() }
-                                    .scrollContentBackground(.hidden)
-                                    .background(Color.clear)
-                                    .autocorrectionDisabled(true)
-                            }
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .padding(.horizontal, 20)
-                        } else {
-                            if profileDescription.isEmpty {
-                                Text(NSLocalizedString("description_not_set", comment: ""))
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                            } else {
-                                Text(profileDescription)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.primary)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 16)
-                            }
-                        }
-                    }
-                    
-                    // サントラセクション
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack {
-                            Text(NSLocalizedString("soundtrack", comment: ""))
-                                .font(.system(size: 20, weight: .bold))
-                            Spacer()
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 32)
-                        .padding(.bottom, 16)
-                        
-                        // サントラリスト
-                        if character?.soundtracks.isEmpty ?? true {
-                            Text(NSLocalizedString("soundtrack_not_set", comment: ""))
-                                .font(.system(size: 16))
-                                .foregroundColor(.gray)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
-                        } else {
-                            VStack(spacing: 12) {
-                                ForEach(character?.soundtracks ?? [], id: \.id) { soundtrack in
-                                    SoundtrackRow(soundtrack: soundtrack) {
-                                        // 削除処理
-                                        deleteSoundtrack(soundtrack)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    selectedRestaurantForDetail = restaurant
+                                }
+                                .contextMenu {
+                                    Button(action: {
+                                        editingRestaurant = restaurant
+                                        newRestaurantName = restaurant.name
+                                        if let imagePath = restaurant.imagePath,
+                                           let image = loadImageFromPath(imagePath) {
+                                            selectedImage = image
+                                        }
+                                        showAddRestaurant = true
+                                    }) {
+                                        Label("編集", systemImage: "pencil")
+                                    }
+                                    
+                                    Button(role: .destructive, action: {
+                                        deleteRestaurant(restaurant)
+                                    }) {
+                                        Label("削除", systemImage: "trash")
                                     }
                                 }
                             }
-                            .padding(.horizontal, 20)
                         }
+                        .padding()
                     }
-                    
-                    Spacer(minLength: 50)
                 }
             }
-            .background(Color.white)
-            .navigationBarTitle(NSLocalizedString("about", comment: ""), displayMode: .inline)
+            .navigationBarTitle("リスト", displayMode: .inline)
             .navigationBarItems(
                 leading: Button(action: {
-                    saveCharacter()
+                    saveRestaurants()
                     onClose()
                 }) {
                     Image(systemName: "chevron.left")
@@ -1736,16 +1655,13 @@ struct AboutView: View {
                         .font(.system(size: 20, weight: .bold))
                 },
                 trailing: Button(action: {
-                    if isEditingProfile || isEditingDescription {
-                        // 編集モードを終了（自動保存されているので保存処理は不要）
-                        isEditingProfile = false
-                        isEditingDescription = false
-                    } else {
-                        // 編集選択モーダルを表示
-                        activeSheet = .editSelection
-                    }
+                    editingRestaurant = nil
+                    newRestaurantName = ""
+                    selectedImage = nil
+                    selectedPhotoItem = nil
+                    showAddRestaurant = true
                 }) {
-                    Text(isEditingProfile || isEditingDescription ? NSLocalizedString("complete", comment: "") : NSLocalizedString("edit", comment: ""))
+                    Text("追加")
                         .font(.headline)
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
@@ -1754,22 +1670,76 @@ struct AboutView: View {
                         .cornerRadius(8)
                 }
             )
-        }
-        .onAppear {
-            loadCharacterDescription()
-            if let character = character {
-                editedName = character.name
-                editedAge = character.age
-                editedFavoriteFood = character.favoriteFood
-                // editedCupSize = character.cupSize // removed
-                
+            .sheet(isPresented: $showAddRestaurant) {
+                NavigationView {
+                    VStack(spacing: 20) {
+                        // 写真選択
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                            if let selectedImage = selectedImage {
+                                Image(uiImage: selectedImage)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 200, height: 200)
+                                    .clipped()
+                                    .cornerRadius(12)
+                            } else {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 200, height: 200)
+                                    .overlay(
+                                        VStack(spacing: 8) {
+                                            Image(systemName: "camera.fill")
+                                                .font(.system(size: 40))
+                                            Text("写真を選択")
+                                                .font(.caption)
+                                        }
+                                        .foregroundColor(.gray)
+                                    )
+                            }
+                        }
+                        .onChange(of: selectedPhotoItem) { _, newItem in
+                            Task {
+                                if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                   let image = UIImage(data: data) {
+                                    selectedImage = image
+                                }
+                            }
+                        }
+                        
+                        // 店名入力
+                        TextField("例: 東京ラーメン", text: $newRestaurantName)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.horizontal)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, 20)
+                    .navigationBarTitle(editingRestaurant != nil ? "お店を編集" : "お店を追加", displayMode: .inline)
+                    .navigationBarItems(
+                        leading: Button("キャンセル") {
+                            showAddRestaurant = false
+                            editingRestaurant = nil
+                            newRestaurantName = ""
+                            selectedImage = nil
+                            selectedPhotoItem = nil
+                        },
+                        trailing: Button("保存") {
+                            saveRestaurant()
+                        }
+                        .disabled(newRestaurantName.isEmpty)
+                    )
+                }
+            }
+            .sheet(item: $selectedRestaurantForDetail) { restaurant in
+                RestaurantDetailView(
+                    restaurant: restaurant,
+                    restaurants: $restaurants,
+                    saveRestaurants: saveRestaurants
+                )
             }
         }
-        .onDisappear {
-            // Cancel any pending save timer
-            saveDebounceTimer?.invalidate()
-            // Save immediately when leaving the view
-            saveCharacter()
+        .onAppear {
+            loadRestaurants()
         }
         /* .sheet(isPresented: $showIconPicker) {
             PhotosPicker(selection: $iconPickerItem, matching: .images) {
@@ -1823,1266 +1793,76 @@ struct AboutView: View {
                     }
                 }
             } */
-            .sheet(item: $activeSheet) { item in
-                switch item {
-                case .soundtrackEdit:
-                    SoundtrackEditView { soundtrack in
-                        // サントラを保存
-                        guard let idx = characterIndex else { return }
-                        var updatedCharacter = characters[idx]
-                        var soundtracks = updatedCharacter.soundtracks
-                        soundtracks.append(soundtrack)
-                        updatedCharacter.soundtracks = soundtracks
-                        characters[idx] = updatedCharacter
-                        characterManager.updateCharacter(updatedCharacter)
-                        
-                        // SoundtrackManagerのリストを更新
-                        SoundtrackManager.shared.collectAllSoundtracks(
-                            characters: characterManager.characters,
-                            animes: AnimeManager().animes
-                        )
-                    }
-                    .onAppear {
-                    }
-                case .iconPicker:
-                    NavigationView {
-                        VStack(spacing: 20) {
-                            Text(NSLocalizedString("select_icon", comment: ""))
-                                .font(.headline)
-                            
-                            if let newIconImage = newIconImage {
-                                Image(uiImage: newIconImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(width: 150, height: 150)
-                                    .clipShape(Circle())
-                            }
-                            
-                            PhotosPicker(selection: $iconPickerItem, matching: .images) {
-                                Text(NSLocalizedString("select_image", comment: ""))
-                                    .padding()
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(10)
-                            }
-                            
-                            if newIconImage != nil {
-                                Button(NSLocalizedString("save", comment: "")) {
-                                    saveNewIcon()
-                                    activeSheet = nil
-                                }
-                                .padding()
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
-                            }
-                            
-                            Button(NSLocalizedString("cancel", comment: "")) {
-                                activeSheet = nil
-                                newIconImage = nil
-                                iconPickerItem = nil
-                            }
-                            .foregroundColor(.red)
-                        }
-                        .padding()
-                    }
-                    .onChange(of: iconPickerItem) {
-                        if let newValue = iconPickerItem {
-                            Task {
-                                if let data = try? await newValue.loadTransferable(type: Data.self),
-                                   let image = UIImage(data: data) {
-                                    // 画像を保存
-                                    let fileName = "character_icon_\(Date().timeIntervalSince1970).jpg"
-                                    if let savedPath = saveImageToCharacterFolderAsJPEG(image, characterId: characters[characterIndex ?? 0].id.uuidString, fileName: fileName),
-                                       let idx = characterIndex {
-                                        var updatedCharacter = characters[idx]
-                                        // print("🔄 [CharaScreen-IconSheet] Icon will be updated from \(updatedCharacter.imageIdentifier ?? "nil") to \(savedPath)")
-                                        updatedCharacter.imageIdentifier = savedPath
-                                        characters[idx] = updatedCharacter
-                                        characterManager.updateCharacter(updatedCharacter)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                case .editSelection:
-                    CharaEditSelectionSheet(
-                        isEditingProfile: $isEditingProfile,
-                        isEditingDescription: $isEditingDescription,
-                        activeSheet: $activeSheet
-                    )
-                }
-            }
-            // アイコン位置調整モーダル
-            .sheet(isPresented: $showIconAdjustment, onDismiss: {
-                // アイコン調整後にUIを更新
-                characterManager.refreshUI()
-            }) {
-                if let character = character {
-                    CharacterIconAdjustmentView(
-                        character: Binding(
-                            get: { character },
-                            set: { newCharacter in
-                                if let idx = characterIndex {
-                                    characters[idx] = newCharacter
-                                    characterManager.updateCharacter(newCharacter)
-                                }
-                            }
-                        ),
-                        characterManager: characterManager
-                    )
-                }
-            }
-        }
-    
-    // MARK: - Helper Views
-    private func profileRow(label: String, value: String) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 16))
-                .foregroundColor(.secondary)
-                .frame(width: 120, alignment: .leading)
-            Text(value)
-                .font(.system(size: 16))
-                .foregroundColor(.primary)
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
     }
     
-    private func editableProfileRow(label: String, text: Binding<String>) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 16))
-                .foregroundColor(.secondary)
-                .frame(width: 120, alignment: .leading)
-            TextField("未設定", text: text)
-                .font(.system(size: 16))
-                .foregroundColor(.primary)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            Spacer()
+    // MARK: - Helper Functions
+    
+    private func loadRestaurants() {
+        if let data = UserDefaults.standard.data(forKey: "restaurants_\(characterId.uuidString)"),
+           let decoded = try? JSONDecoder().decode([RestaurantItem].self, from: data) {
+            restaurants = decoded
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 8)
     }
     
-    private func dateProfileRow(label: String, date: Binding<Date>) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 16))
-                .foregroundColor(.secondary)
-                .frame(width: 120, alignment: .leading)
-            
-            // 月と日のみ選択できるPicker
-            HStack {
-                Picker("月", selection: Binding(
-                    get: { Calendar.current.component(.month, from: date.wrappedValue) },
-                    set: { newMonth in
-                        let components = Calendar.current.dateComponents([.year, .month, .day], from: date.wrappedValue)
-                        if let newDate = Calendar.current.date(from: DateComponents(year: components.year, month: newMonth, day: components.day)) {
-                            date.wrappedValue = newDate
-                        }
-                    }
-                )) {
-                    ForEach(1...12, id: \.self) { month in
-                        Text("\(month)月").tag(month)
-                    }
-                }
-                .pickerStyle(MenuPickerStyle())
+    private func saveRestaurants() {
+        if let encoded = try? JSONEncoder().encode(restaurants) {
+            UserDefaults.standard.set(encoded, forKey: "restaurants_\(characterId.uuidString)")
+        }
+    }
+    
+    private func saveRestaurant() {
+        if let editingRestaurant = editingRestaurant {
+            // 編集モード
+            if let index = restaurants.firstIndex(where: { $0.id == editingRestaurant.id }) {
+                restaurants[index].name = newRestaurantName
                 
-                Picker("日", selection: Binding(
-                    get: { Calendar.current.component(.day, from: date.wrappedValue) },
-                    set: { newDay in
-                        let components = Calendar.current.dateComponents([.year, .month, .day], from: date.wrappedValue)
-                        if let newDate = Calendar.current.date(from: DateComponents(year: components.year, month: components.month, day: newDay)) {
-                            date.wrappedValue = newDate
+                // 画像を保存
+                if let image = selectedImage {
+                    let fileName = "restaurant_\(UUID().uuidString).png"
+                    if let imagePath = saveImageToCharacterFolder(image, characterId: characterId.uuidString, fileName: fileName) {
+                        // 古い画像を削除
+                        if let oldPath = restaurants[index].imagePath {
+                            try? FileManager.default.removeItem(atPath: oldPath)
                         }
-                    }
-                )) {
-                    let _ = Calendar.current.component(.month, from: date.wrappedValue)
-                    let daysInMonth = Calendar.current.range(of: .day, in: .month, for: date.wrappedValue)?.count ?? 30
-                    ForEach(1...daysInMonth, id: \.self) { day in
-                        Text("\(day)日").tag(day)
+                        restaurants[index].imagePath = imagePath
                     }
                 }
-                .pickerStyle(MenuPickerStyle())
             }
-            
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 8)
-    }
-    
-    // MARK: - Helper Methods
-    private func loadCharacterDescription() {
-        guard let character = character else { return }
-        // カスタムフィールドから"概要"フィールドを探す
-        if let customFields = character.customFields,
-           let descriptionField = customFields.first(where: { $0.name == "概要" }) {
-            profileDescription = descriptionField.value
-        }
-    }
-    
-    // Debounced save function
-    private func debouncedSaveCharacter() {
-        // Cancel previous timer
-        saveDebounceTimer?.invalidate()
-        
-        // Start new timer with 0.5 second delay
-        saveDebounceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
-            saveCharacter()
-        }
-    }
-    
-    private func saveCharacter() {
-        guard let idx = characters.firstIndex(where: { $0.id == characterId }) else { return }
-        
-        // 編集中の場合は編集内容を保存
-        var updatedCharacter = characters[idx]
-        
-        // プロフィール編集内容を常に保存
-        updatedCharacter.name = editedName
-        updatedCharacter.age = editedAge
-        updatedCharacter.favoriteFood = editedFavoriteFood
-        // updatedCharacter.cupSize = editedCupSize // removed
-        
-        // 概要をカスタムフィールドに保存
-        if updatedCharacter.customFields == nil {
-            updatedCharacter.customFields = []
-        }
-        
-        // 既存の"概要"フィールドを更新または新規作成
-        if let index = updatedCharacter.customFields?.firstIndex(where: { $0.name == "概要" }) {
-            updatedCharacter.customFields?[index].value = profileDescription
         } else {
-            updatedCharacter.customFields?.append(CustomField(name: "概要", value: profileDescription))
+            // 新規追加
+            var newRestaurant = RestaurantItem(name: newRestaurantName)
+            
+            // 画像を保存
+            if let image = selectedImage {
+                let fileName = "restaurant_\(UUID().uuidString).png"
+                if let imagePath = saveImageToCharacterFolder(image, characterId: characterId.uuidString, fileName: fileName) {
+                    newRestaurant.imagePath = imagePath
+                }
+            }
+            
+            restaurants.append(newRestaurant)
         }
         
-        // 先にcharacterManagerを更新してから、バインディング配列を更新
-        characterManager.updateCharacter(updatedCharacter)
-        
-        // メインスレッドで確実に更新
-        DispatchQueue.main.async {
-            self.characters[idx] = updatedCharacter
-            // UIを強制的にリフレッシュ
-            self.characterManager.refreshUI()
-        }
+        saveRestaurants()
+        showAddRestaurant = false
+        editingRestaurant = nil
+        newRestaurantName = ""
+        selectedImage = nil
+        selectedPhotoItem = nil
     }
     
-    // アイコン保存機能
-    private func saveNewIcon() {
-        guard let iconImage = newIconImage,
-              let idx = characters.firstIndex(where: { $0.id == characterId }) else { return }
-        
-        // 画像をDocumentsディレクトリに保存
-        let fileName = "character_icon_\(UUID().uuidString).png"
-        if let savedPath = saveImageToCharacterFolder(iconImage, characterId: characters[idx].id.uuidString, fileName: fileName) {
-            var updatedCharacter = characters[idx]
-            
-            // 古いアイコンの削除はupdateCharacterに任せる
-            // （ここで削除すると、updateCharacter内の処理が動かない）
-            
-            // 新しいアイコンパスを設定
-            updatedCharacter.imageIdentifier = savedPath
-            
-            // print("🔄 [CharaScreen] Updating character icon from \(characters[idx].imageIdentifier ?? "nil") to \(savedPath)")
-            
-            characters[idx] = updatedCharacter
-            characterManager.updateCharacter(updatedCharacter)
+    private func deleteRestaurant(_ restaurant: RestaurantItem) {
+        // 画像を削除
+        if let imagePath = restaurant.imagePath {
+            try? FileManager.default.removeItem(atPath: imagePath)
         }
         
-        newIconImage = nil
-        iconPickerItem = nil
-    }
-    
-    // 注: saveImageToDocuments関数はImageUtils.swiftのものを使用します
-    
-    private func deleteSoundtrack(_ soundtrack: Soundtrack) {
-        guard let idx = characterIndex else { return }
-        var updatedCharacter = characters[idx]
-        var soundtracks = updatedCharacter.soundtracks
-        soundtracks.removeAll { $0.id == soundtrack.id }
-        updatedCharacter.soundtracks = soundtracks
-        characters[idx] = updatedCharacter
-        characterManager.updateCharacter(updatedCharacter)
-        
-        // Delete the actual soundtrack files from disk
-        SoundtrackStorage.shared.deleteSoundtrack(id: soundtrack.id.uuidString)
+        restaurants.removeAll { $0.id == restaurant.id }
+        saveRestaurants()
     }
 }
 
-// --- 追加: 高さ自動調整＆空行削除付きTextEditor ---
-struct AutoSizingTextEditor: UIViewRepresentable {
-    @Binding var text: String
-    var minHeight: CGFloat = 36
-    var font: UIFont = .systemFont(ofSize: 17)
-    var onEndEditing: (() -> Void)? = nil
-
-    func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView()
-        textView.isScrollEnabled = false
-        textView.font = font
-        textView.delegate = context.coordinator
-        textView.backgroundColor = .clear
-        textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
-        return textView
-    }
-    func updateUIView(_ uiView: UITextView, context: Context) {
-        if uiView.text != text {
-            uiView.text = text
-        }
-        // 行数分だけ高さを強制（空行は含めない）
-        let lines = text.components(separatedBy: "\n").filter { !$0.isEmpty }
-        let lineCount = max(1, lines.count)
-        let lineHeight = font.lineHeight
-        let padding: CGFloat = 16 // 上下8ずつ
-        let totalHeight = CGFloat(lineCount) * lineHeight + padding
-        if uiView.constraints.first(where: { $0.identifier == "height" }) == nil {
-            let heightConstraint = uiView.heightAnchor.constraint(equalToConstant: minHeight)
-            heightConstraint.identifier = "height"
-            heightConstraint.isActive = true
-        }
-        uiView.constraints.first(where: { $0.identifier == "height" })?.constant = max(minHeight, totalHeight)
-        uiView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
-    }
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    class Coordinator: NSObject, UITextViewDelegate {
-        var parent: AutoSizingTextEditor
-        init(_ parent: AutoSizingTextEditor) { self.parent = parent }
-        func textViewDidChange(_ textView: UITextView) {
-            parent.text = textView.text ?? ""
-        }
-        func textViewDidEndEditing(_ textView: UITextView) {
-            // 空行を削除
-            let lines = (textView.text ?? "").components(separatedBy: "\n").filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            parent.text = lines.joined(separator: "\n")
-            parent.onEndEditing?()
-        }
-    }
-}
-// --- ここまで追加 ---
-
-
-// キャラクターランキング行ビュー
-struct CharacterRankingRow: View {
-    let ranking: CharacterRanking
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // 順位表示
-            ZStack {
-                Circle()
-                    .fill(rankColor)
-                    .frame(width: 24, height: 24)
-                Text("\(ranking.rank)")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            
-            // キャラクターアイコン
-            if let imagePath = ranking.characterImagePath,
-               let image = loadImageFromPath(imagePath) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
-                    .clipShape(Circle())
-                    .overlay(
-                        Circle()
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    )
-            } else {
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 40, height: 40)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.gray)
-                    )
-            }
-            
-            // キャラクター名
-            VStack(alignment: .leading, spacing: 2) {
-                Text(ranking.characterName)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.black)
-                    .lineLimit(1)
-                Text(String(format: NSLocalizedString("rank_format", comment: ""), ranking.rank))
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-            }
-            
-            Spacer()
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(Color(.systemGray6))
-        .cornerRadius(8)
-    }
-    
-    private var rankColor: Color {
-        switch ranking.rank {
-        case 1:
-            return Color.yellow
-        case 2:
-            return Color.gray
-        case 3:
-            return Color.orange
-        default:
-            return Color.blue
-        }
-    }
-}
-
-// キャラクター広告行ビュー
-struct CharacterAdRow: View {
-    let ad: Advertisement
-    // Firebase removed
-    
-    var body: some View {
-        Button(action: {
-            if let url = URL(string: ad.linkURL) {
-                // Firebase ad tracking removed
-                UIApplication.shared.open(url)
-            }
-        }) {
-            HStack(spacing: 12) {
-                // 広告アイコン
-                AsyncImage(url: URL(string: ad.imageURL)) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 40, height: 40)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                } placeholder: {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 40, height: 40)
-                        .overlay(
-                            Image(systemName: "megaphone.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.gray)
-                        )
-                }
-                
-                // 広告テキスト
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(ad.title)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black)
-                        .lineLimit(1)
-                    Text(ad.description)
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                        .lineLimit(2)
-                }
-                
-                Spacer()
-                
-                // 広告マーク
-                Text("AD")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.blue)
-                    .cornerRadius(4)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .background(Color(.systemGray6))
-            .cornerRadius(8)
-        }
-        .buttonStyle(PlainButtonStyle())
-        .onAppear {
-            // Firebase ad tracking removed
-        }
-    }
-}
-
-// キャラクターランキング管理画面
-struct CharacterRankingAdminView: View {
-    @Environment(\.dismiss) var dismiss
-    @StateObject private var rankingManager = CharacterRankingManager()
-    @StateObject private var characterManager = CharacterManager()
-    @State private var selectedRank: Int = 1
-    @State private var selectedCharacter: Character? = nil
-    @State private var showingCharacterPicker = false
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // タイトル
-                HStack {
-                    Text(NSLocalizedString("character_ranking_management", comment: ""))
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.black)
-                    Spacer()
-                    Button(NSLocalizedString("close", comment: "")) {
-                        dismiss()
-                    }
-                    .foregroundColor(.blue)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 20)
-                .padding(.bottom, 20)
-                
-                // ランキング設定リスト
-                ScrollView {
-                    VStack(spacing: 16) {
-                        ForEach(1...7, id: \.self) { rank in
-                            RankingSettingRow(
-                                rank: rank,
-                                currentRanking: rankingManager.getRanking(for: rank),
-                                onTap: {
-                                    selectedRank = rank
-                                    showingCharacterPicker = true
-                                },
-                                onRemove: {
-                                    rankingManager.removeRanking(rank: rank)
-                                }
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                }
-                
-                Spacer()
-            }
-            .background(Color(.systemGray6))
-        }
-        .sheet(isPresented: $showingCharacterPicker) {
-            CharacterPickerView(
-                characters: characterManager.characters,
-                selectedRank: selectedRank,
-                onSelect: { character in
-                    rankingManager.updateRanking(
-                        characterId: character.id,
-                        rank: selectedRank,
-                        characterName: character.name,
-                        characterImagePath: character.imageIdentifier
-                    )
-                    showingCharacterPicker = false
-                }
-            )
-        }
-    }
-}
-
-// ランキング設定行ビュー
-struct RankingSettingRow: View {
-    let rank: Int
-    let currentRanking: CharacterRanking?
-    let onTap: () -> Void
-    let onRemove: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // 順位表示
-            ZStack {
-                Circle()
-                    .fill(rankColor)
-                    .frame(width: 32, height: 32)
-                Text("\(rank)")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            
-            // キャラクター情報
-            if let ranking = currentRanking {
-                HStack(spacing: 12) {
-                    // キャラクターアイコン
-                    if let imagePath = ranking.characterImagePath,
-                       let image = loadImageFromPath(imagePath) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 40, height: 40)
-                            .clipShape(Circle())
-                    } else {
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 40, height: 40)
-                            .overlay(
-                                Image(systemName: "person.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.gray)
-                            )
-                    }
-                    
-                    // キャラクター名
-                    Text(ranking.characterName)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.black)
-                    
-                    Spacer()
-                    
-                    // 削除ボタン
-                    Button(action: onRemove) {
-                        Image(systemName: "trash.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(.red)
-                    }
-                }
-            } else {
-                Text(NSLocalizedString("select_character_message", comment: ""))
-                    .font(.system(size: 16))
-                    .foregroundColor(.gray)
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 1)
-        .onTapGesture {
-            onTap()
-        }
-    }
-    
-    private var rankColor: Color {
-        switch rank {
-        case 1:
-            return Color.yellow
-        case 2:
-            return Color.gray
-        case 3:
-            return Color.orange
-        default:
-            return Color.blue
-        }
-    }
-}
-
-// キャラクター選択ビュー
-struct CharacterPickerView: View {
-    @Environment(\.dismiss) var dismiss
-    let characters: [Character]
-    let selectedRank: Int
-    let onSelect: (Character) -> Void
-    @State private var searchText = ""
-    
-    var filteredCharacters: [Character] {
-        let result: [Character]
-        if searchText.isEmpty {
-            result = characters.filter { !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        } else {
-            result = characters.filter {
-                !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-                $0.name.localizedCaseInsensitiveContains(searchText)
-            }
-        }
-        
-        // Sort by order
-        return result.sorted(by: { $0.order < $1.order })
-    }
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // タイトル
-                HStack {
-                    Text(String(format: NSLocalizedString("select_rank_character", comment: ""), selectedRank))
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.black)
-                    Spacer()
-                    Button(NSLocalizedString("cancel", comment: "")) {
-                        dismiss()
-                    }
-                    .foregroundColor(.blue)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 20)
-                .padding(.bottom, 10)
-                
-                // 検索バー
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
-                    TextField(NSLocalizedString("search_character", comment: ""), text: $searchText)
-                        .textFieldStyle(PlainTextFieldStyle())
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 10)
-                
-                // キャラクターリスト
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(filteredCharacters) { character in
-                            CharacterPickerRow(
-                                character: character,
-                                onSelect: {
-                                    onSelect(character)
-                                }
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                }
-                
-                Spacer()
-            }
-            .background(Color(.systemGray6))
-        }
-    }
-}
-
-// キャラクター選択行ビュー
-struct CharacterPickerRow: View {
-    let character: Character
-    let onSelect: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // キャラクターアイコン
-            if let imageIdentifier = character.imageIdentifier,
-               let image = loadImageFromPath(imageIdentifier) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-            } else {
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 50, height: 50)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 25))
-                            .foregroundColor(.gray)
-                    )
-            }
-            
-            // キャラクター情報
-            VStack(alignment: .leading, spacing: 4) {
-                Text(character.name)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.black)
-            }
-            
-            Spacer()
-            
-            // 選択ボタン
-            Button(NSLocalizedString("select", comment: "")) {
-                onSelect()
-            }
-            .font(.system(size: 14, weight: .medium))
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.blue)
-            .cornerRadius(6)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color.white)
-        .cornerRadius(12)
-        .shadow(color: .gray.opacity(0.2), radius: 2, x: 0, y: 1)
-    }
-}
-
-struct NavigationBarItem: View {
-    let icon: String
-    let title: String
-    let isSelected: Bool
-    let onTap: () -> Void
-    @State private var isPressed: Bool = false
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            if icon == "visit_event_icon" {
-                Image(icon)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 22, height: 22)
-                    .foregroundColor(isSelected ? .blue : .gray)
-            } else {
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(isSelected ? .blue : .gray)
-            }
-            Text(title)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(isSelected ? .blue : .gray)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 75)
-        .background(isPressed ? Color.gray.opacity(0.2) : Color.clear)
-        .scaleEffect(isPressed ? 0.95 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: isPressed)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            // 即座にタップアクションを実行
-            onTap()
-            
-            // シンプルなフィードバック
-            isPressed = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                isPressed = false
-            }
-        }
-    }
-}
-
-struct EditBackgroundView: View {
-    @Binding var character: Character
-    @ObservedObject var characterManager: CharacterManager
-    @State private var backgroundPickerItem: PhotosPickerItem? = nil
-    @State private var backgroundImage: UIImage? = nil
-    @Environment(\.dismiss) var dismiss
-    
-    // 最新のキャラクター情報を取得
-    private var currentCharacter: Character {
-        characterManager.characters.first(where: { $0.id == character.id }) ?? character
-    }
-
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                Text(NSLocalizedString("select_background_image", comment: ""))
-                    .font(.headline)
-                
-                PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
-                    VStack {
-                        if let backgroundImage = backgroundImage {
-                            Image(uiImage: backgroundImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(height: 200)
-                                .clipped()
-                                .cornerRadius(12)
-                        } else if let imagePath = currentCharacter.backgroundImagePath,
-                                  let uiImage = loadImageFromPath(imagePath) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(height: 200)
-                                .clipped()
-                                .cornerRadius(12)
-                        } else {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(height: 200)
-                                .overlay(
-                                    VStack {
-                                        Image(systemName: "photo.fill")
-                                            .font(.system(size: 50))
-                                            .foregroundColor(.gray)
-                                        Text(NSLocalizedString("select_background_image", comment: ""))
-                                            .foregroundColor(.gray)
-                                    }
-                                )
-                        }
-                    }
-                }
-                .onChange(of: backgroundPickerItem) { _, newValue in
-                    if let newItem = newValue {
-                        Task {
-                            if let data = try? await newItem.loadTransferable(type: Data.self),
-                               let uiImage = UIImage(data: data) {
-                                await MainActor.run {
-                                    backgroundImage = uiImage
-                                    
-                                    // 即座に背景を更新
-                                    let fileName = "character_bg_\(UUID().uuidString).png"
-                                    if let imagePath = saveImageToCharacterFolder(uiImage, characterId: character.id.uuidString, fileName: fileName) {
-                                        // 古い画像を削除
-                                        if let oldPath = character.backgroundImagePath {
-                                            try? FileManager.default.removeItem(atPath: oldPath)
-                                        }
-                                        
-                                        // 新しいCharacterオブジェクトを作成して更新
-                                        var updatedCharacter = character
-                                        updatedCharacter.backgroundImagePath = imagePath
-                                        
-                                        // CharacterManagerを通じて更新
-                                        characterManager.updateCharacter(updatedCharacter)
-                                        
-                                        // Bindingも更新
-                                        character = updatedCharacter
-                                        
-                                        // モーダルを自動的に閉じる
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                            dismiss()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                Text(NSLocalizedString("image_auto_change_notice", comment: ""))
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                    .padding(.top, 10)
-                
-                Spacer()
-            }
-            .padding()
-            .navigationBarTitle(NSLocalizedString("change_background_image", comment: ""), displayMode: .inline)
-            .navigationBarItems(
-                trailing: Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .foregroundColor(.gray)
-                }
-            )
-        }
-        .onDisappear {
-            // モーダルが閉じたときに状態をリセット
-            backgroundImage = nil
-            backgroundPickerItem = nil
-        }
-    }
-}
-
-// アニメーション付きグラデーションビュー
-struct AnimatedGradientView: View {
-    @State private var animateGradient = false
-    
-    var body: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                Color(red: 0.6, green: 0.4, blue: 0.9),
-                Color(red: 0.8, green: 0.5, blue: 0.9),
-                Color(red: 0.6, green: 0.4, blue: 0.9)
-            ]),
-            startPoint: animateGradient ? .topLeading : .bottomTrailing,
-            endPoint: animateGradient ? .bottomTrailing : .topLeading
-        )
-        .onAppear {
-            withAnimation(
-                Animation.easeInOut(duration: 3.0)
-                    .repeatForever(autoreverses: true)
-            ) {
-                animateGradient.toggle()
-            }
-        }
-    }
-}
-
-#Preview {
-    CharaScreen()
-}
-
-// キャラクター編集選択シート（アニメページと同じスタイル）
-struct CharaEditSelectionSheet: View {
-    @Environment(\.dismiss) var dismiss
-    @Binding var isEditingProfile: Bool
-    @Binding var isEditingDescription: Bool
-    @Binding var activeSheet: AboutView.ActiveSheet?
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                VStack(spacing: 15) {
-                    Button(action: {
-                        isEditingProfile = true
-                        dismiss()
-                    }) {
-                        HStack {
-                            Image(systemName: "person.crop.circle")
-                                .foregroundColor(.blue)
-                            Text(NSLocalizedString("edit_profile", comment: ""))
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(10)
-                    }
-                    
-                    Button(action: {
-                        isEditingDescription = true
-                        dismiss()
-                    }) {
-                        HStack {
-                            Image(systemName: "text.alignleft")
-                                .foregroundColor(.blue)
-                            Text(NSLocalizedString("edit_description", comment: ""))
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(10)
-                    }
-                    
-                    Button(action: {
-                        dismiss()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            activeSheet = .soundtrackEdit
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "music.note")
-                                .foregroundColor(.blue)
-                            Text(NSLocalizedString("add_soundtrack", comment: ""))
-                                .foregroundColor(.primary)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(10)
-                    }
-                }
-                .padding()
-                
-                Spacer()
-            }
-            .navigationTitle(NSLocalizedString("select_edit_item_title", comment: ""))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(NSLocalizedString("cancel", comment: "")) {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-}
-
-// タイトル、タグ、背景編集ビュー
-struct EditTitleTagBackgroundView: View {
-    @Binding var character: Character
-    @ObservedObject var characterManager: CharacterManager
-    @Environment(\.dismiss) var dismiss
-    @State private var editedName: String = ""
-    @State private var backgroundPickerItem: PhotosPickerItem? = nil
-    @State private var tempBackgroundImage: UIImage? = nil
-    @State private var showDeleteConfirmation = false
-    
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-                // タイトル編集
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("name", comment: ""))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                    TextField(NSLocalizedString("character_name", comment: ""), text: $editedName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocorrectionDisabled(true)
-                        .textInputAutocapitalization(.never)
-                }
-                .padding(.horizontal)
-                
-                // 背景画像編集
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("background_image", comment: ""))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                        .padding(.horizontal)
-                    
-                    PhotosPicker(selection: $backgroundPickerItem, matching: .images) {
-                        ZStack {
-                            if let tempBackgroundImage = tempBackgroundImage {
-                                Image(uiImage: tempBackgroundImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 150)
-                                    .clipped()
-                                    .cornerRadius(10)
-                            } else if let backgroundPath = character.backgroundImagePath,
-                                      let backgroundImage = loadImageFromPath(backgroundPath) {
-                                Image(uiImage: backgroundImage)
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 150)
-                                    .clipped()
-                                    .cornerRadius(10)
-                            } else {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.gray.opacity(0.2))
-                                    .frame(height: 150)
-                                    .overlay(
-                                        VStack(spacing: 8) {
-                                            Image(systemName: "photo")
-                                                .font(.system(size: 40))
-                                                .foregroundColor(.gray)
-                                            Text(NSLocalizedString("tap_to_select_background", comment: ""))
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.gray)
-                                        }
-                                    )
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                    
-                    // 背景削除ボタン
-                    if character.backgroundImagePath != nil || tempBackgroundImage != nil {
-                        Button(action: {
-                            showDeleteConfirmation = true
-                        }) {
-                            HStack {
-                                Image(systemName: "trash")
-                                    .foregroundColor(.red)
-                                Text(NSLocalizedString("delete_background", comment: ""))
-                                    .foregroundColor(.red)
-                            }
-                            .padding(.horizontal)
-                        }
-                    }
-                }
-                
-                Spacer()
-            }
-            .padding(.top)
-            .navigationTitle(NSLocalizedString("edit", comment: ""))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(NSLocalizedString("cancel", comment: "")) {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("保存") {
-                        saveChanges()
-                    }
-                    .fontWeight(.bold)
-                }
-            }
-            .onAppear {
-                editedName = character.name
-            }
-            .onChange(of: backgroundPickerItem) { _, newValue in
-                if let newItem = newValue {
-                    Task {
-                        if let data = try? await newItem.loadTransferable(type: Data.self),
-                           let uiImage = UIImage(data: data) {
-                            tempBackgroundImage = uiImage
-                        }
-                    }
-                }
-            }
-            .alert(NSLocalizedString("delete_background_confirm", comment: ""), isPresented: $showDeleteConfirmation) {
-                Button(NSLocalizedString("delete", comment: ""), role: .destructive) {
-                    deleteBackground()
-                }
-                Button("キャンセル", role: .cancel) {}
-            } message: {
-                Text(NSLocalizedString("delete_background_message", comment: ""))
-            }
-        }
-    }
-    
-    private func saveChanges() {
-        var updatedCharacter = character
-        updatedCharacter.name = editedName
-        
-        // 背景画像の保存
-        if let tempBackgroundImage = tempBackgroundImage {
-            let fileName = "character_background_\(UUID().uuidString).png"
-            let imagePath = saveImageToCharacterFolder(tempBackgroundImage, characterId: character.id.uuidString, fileName: fileName)
-            
-            // 古い背景画像を削除
-            if let oldPath = character.backgroundImagePath {
-                try? FileManager.default.removeItem(atPath: oldPath)
-            }
-            
-            updatedCharacter.backgroundImagePath = imagePath
-        }
-        
-        // 更新を反映
-        character = updatedCharacter
-        characterManager.updateCharacter(updatedCharacter)
-        characterManager.refreshUI()
-        
-        dismiss()
-    }
-    
-    private func deleteBackground() {
-        var updatedCharacter = character
-        
-        // 背景画像ファイルを削除
-        if let backgroundPath = character.backgroundImagePath {
-            try? FileManager.default.removeItem(atPath: backgroundPath)
-        }
-        
-        updatedCharacter.backgroundImagePath = nil
-        tempBackgroundImage = nil
-        
-        // 更新を反映
-        character = updatedCharacter
-        characterManager.updateCharacter(updatedCharacter)
-        characterManager.refreshUI()
-    }
-    
-    // MARK: - YouTube Thumbnail Helper
-    private func getYouTubeThumbnailURLForBanner(from youtubeURL: String) -> String {
-        print("🎥 [DEBUG] YouTube URL input: \(youtubeURL)")
-        
-        // YouTube URLからvideo IDを抽出
-        let videoId = extractVideoId(from: youtubeURL)
-        print("🎥 [DEBUG] Extracted video ID: \(videoId)")
-        
-        if videoId.isEmpty {
-            // print("❌ [ERROR] Failed to extract video ID from URL: \(youtubeURL)")
-            return ""
-        }
-        
-        // 高解像度サムネイルURLを生成（複数の候補を試す）
-        let thumbnailUrls = [
-            "https://img.youtube.com/vi/\(videoId)/maxresdefault.jpg",  // 最高解像度
-            "https://img.youtube.com/vi/\(videoId)/hqdefault.jpg",     // 高解像度
-            "https://img.youtube.com/vi/\(videoId)/mqdefault.jpg",     // 中解像度
-            "https://img.youtube.com/vi/\(videoId)/default.jpg"        // デフォルト解像度
-        ]
-        
-        let selectedUrl = thumbnailUrls[0] // まずは最高解像度を試す
-        print("🎥 [DEBUG] Generated thumbnail URL: \(selectedUrl)")
-        
-        return selectedUrl
-    }
-    
-    private func extractVideoId(from url: String) -> String {
-        // print("🔍 [DEBUG] Extracting video ID from: \(url)")
-        
-        // 各種YouTube URLフォーマットに対応
-        let patterns = [
-            "(?:youtube\\.com/watch\\?v=|youtu\\.be/|youtube\\.com/embed/)([a-zA-Z0-9_-]{11})",
-            "(?:youtube\\.com/watch\\?.*&v=)([a-zA-Z0-9_-]{11})",
-            "(?:youtube\\.com/v/)([a-zA-Z0-9_-]{11})"
-        ]
-        
-        for pattern in patterns {
-            do {
-                let regex = try NSRegularExpression(pattern: pattern, options: .caseInsensitive)
-                let range = NSRange(location: 0, length: url.utf16.count)
-                
-                if let match = regex.firstMatch(in: url, options: [], range: range) {
-                    let videoIdRange = match.range(at: 1)
-                    if let swiftRange = Range(videoIdRange, in: url) {
-                        let videoId = String(url[swiftRange])
-                        // print("✅ [DEBUG] Successfully extracted video ID: \(videoId)")
-                        return videoId
-                    }
-                }
-            } catch {
-                // print("❌ [ERROR] Regex error for pattern \(pattern): \(error)")
-            }
-        }
-        
-        // print("❌ [ERROR] No video ID found in URL: \(url)")
-        return ""
-    }
-}
-
-
-// アイコン位置調整ビュー（キャラクター用）
+// Old AboutView code has been removed
 struct CharacterIconAdjustmentView: View {
     @Environment(\.dismiss) var dismiss
     @Binding var character: Character
@@ -3225,55 +2005,219 @@ struct CharacterIconAdjustmentView: View {
     }
 }
 
-// キャラクター用の音楽再生ボタンビュー
-struct PlayMusicButtonViewForCharacter: View {
-    let character: Character
-    @ObservedObject private var soundtrackManager = SoundtrackManager.shared
-    @State private var showSoundtrackAlert = false
+// Restaurant Detail View
+struct RestaurantDetailView: View {
+    let restaurant: RestaurantItem
+    @Binding var restaurants: [RestaurantItem]
+    let saveRestaurants: () -> Void
+    
+    @State private var tempName: String = ""
+    @State private var tempMemo: String = ""
+    @State private var isEditingName: Bool = false
+    @Environment(\.dismiss) var dismiss
     
     var body: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                if !soundtrackManager.isPlayerVisible {
-                    Button(action: {
-                        if character.soundtracks.isEmpty {
-                            // サントラがない場合はアラートを表示
-                            showSoundtrackAlert = true
-                        } else {
-                            // サントラがある場合は再生
-                            soundtrackManager.collectAllSoundtracks(
-                                characters: [character],
-                                animes: []
-                            )
-                            soundtrackManager.startRandomPlayback()
+        NavigationView {
+            VStack(spacing: 20) {
+                // 写真表示
+                if let imagePath = restaurant.imagePath,
+                   let image = loadImageFromPath(imagePath) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxHeight: 300)
+                        .clipped()
+                        .cornerRadius(12)
+                        .padding(.horizontal)
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(height: 300)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 60))
+                                .foregroundColor(.gray)
+                        )
+                        .padding(.horizontal)
+                }
+                
+                // 店名
+                if isEditingName {
+                    TextField("店名", text: $tempName)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                        .onSubmit {
+                            isEditingName = false
                         }
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "music.note")
-                                .font(.system(size: 16))
-                            Text(NSLocalizedString("play_music", comment: "音楽を再生"))
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Color.purple)
-                        .cornerRadius(20)
-                        .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 2)
+                } else {
+                    HStack {
+                        Text(tempName)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundColor(.primary)
+                        Image(systemName: "pencil")
+                            .font(.system(size: 16))
+                            .foregroundColor(.blue)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 50)
-                    .alert(NSLocalizedString("no_soundtrack_title", comment: "サントラが登録されていません"), isPresented: $showSoundtrackAlert) {
-                        Button(NSLocalizedString("ok", comment: "OK")) {
-                            showSoundtrackAlert = false
-                        }
-                    } message: {
-                        Text(NSLocalizedString("add_soundtrack_from_about", comment: "アバウトページからサントラを追加してください"))
+                    .padding(.horizontal)
+                    .onTapGesture {
+                        isEditingName = true
                     }
                 }
+                
+                // メモ欄
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("メモ")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    
+                    TextEditor(text: $tempMemo)
+                        .padding(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .frame(minHeight: 120)
+                        .padding(.horizontal)
+                }
+                
+                Spacer()
+            }
+            .padding(.top)
+            .navigationBarTitle("詳細", displayMode: .inline)
+            .navigationBarItems(
+                leading: Button("キャンセル") {
+                    dismiss()
+                },
+                trailing: Button("保存") {
+                    if let index = restaurants.firstIndex(where: { $0.id == restaurant.id }) {
+                        if !tempName.isEmpty && tempName != restaurant.name {
+                            restaurants[index].name = tempName
+                        }
+                        restaurants[index].memo = tempMemo
+                        saveRestaurants()
+                        dismiss()
+                    }
+                }
+            )
+        }
+        .onAppear {
+            tempName = restaurant.name
+            tempMemo = restaurant.memo
+        }
+    }
+    
+    private func loadImageFromPath(_ path: String) -> UIImage? {
+        return UIImage(contentsOfFile: path)
+    }
+}
+
+// Character Name Edit Modal
+struct EditCharacterNameView: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var character: Character
+    @ObservedObject var characterManager: CharacterManager
+    @State private var tempName: String = ""
+    @FocusState private var isTextFieldFocused: Bool
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Spacer()
+                
+                // Character Icon
+                if let imageIdentifier = character.imageIdentifier, 
+                   let image = loadImageFromPath(imageIdentifier) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 100, height: 100)
+                        .clipShape(Circle())
+                        .shadow(radius: 5)
+                } else {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 100, height: 100)
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(.gray)
+                        )
+                }
+                
+                // Name input field
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(NSLocalizedString("character_name", comment: "Character Name"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    TextField(NSLocalizedString("character_name", comment: "Character Name"), text: $tempName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.title2)
+                        .multilineTextAlignment(.center)
+                        .focused($isTextFieldFocused)
+                        .onSubmit {
+                            saveAndDismiss()
+                        }
+                }
+                .padding(.horizontal, 40)
+                
+                Spacer()
+                
+                // Save button
+                Button(action: {
+                    saveAndDismiss()
+                }) {
+                    Text(NSLocalizedString("save", comment: "Save"))
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    tempName.isEmpty ? Color.gray : Color(red: 0.6, green: 0.4, blue: 0.9),
+                                    tempName.isEmpty ? Color.gray : Color(red: 0.8, green: 0.5, blue: 0.9)
+                                ]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(12)
+                }
+                .disabled(tempName.isEmpty)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 20)
+            }
+            .navigationBarTitle(NSLocalizedString("edit_name", comment: "Edit Name"), displayMode: .inline)
+            .navigationBarItems(
+                leading: Button(NSLocalizedString("cancel", comment: "Cancel")) {
+                    dismiss()
+                }
+            )
+        }
+        .onAppear {
+            tempName = character.name
+            // Auto-focus the text field
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                isTextFieldFocused = true
             }
         }
+    }
+    
+    private func saveAndDismiss() {
+        guard !tempName.isEmpty else { return }
+        
+        // Update character name
+        character.name = tempName
+        
+        // Save through CharacterManager
+        characterManager.updateCharacter(character)
+        characterManager.refreshUI()
+        
+        dismiss()
     }
 }

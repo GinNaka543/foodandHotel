@@ -818,7 +818,7 @@ struct VideoGalleryScreen: View {
                             Image(systemName: "person.circle")
                                 .font(.system(size: 24))
                         }
-                        Text(NSLocalizedString("about", comment: "About"))
+                        Text("リスト")
                             .font(.system(size: 10))
                     }
                     .foregroundColor(.black)
@@ -937,7 +937,7 @@ struct VideoGalleryScreen: View {
             removeBackgroundObserver()
         }
         .fullScreenCover(isPresented: $showAbout) {
-            AboutView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
+            RestaurantListView(characters: $characterManager.characters, characterId: character.id, onClose: { showAbout = false })
                 .environmentObject(characterManager)
         }
         .sheet(isPresented: $showAddSheet) {
@@ -1620,8 +1620,8 @@ struct VideoGalleryScreen: View {
         // print("📱 [VideoGallery] Saving \(albums.count) albums for character: \(character.name) (ID: \(character.id.uuidString))")
         
         // Log album details before saving
-        for album in albums {
-            // print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
+        for _ in albums {
+            // print("📱 [VideoGallery]   - Album with videos")
         }
         
         VideoStorage.shared.saveAlbums(for: character.id.uuidString, albums: albums)
@@ -1639,8 +1639,8 @@ struct VideoGalleryScreen: View {
         // print("📱 [VideoGallery] Loaded \(albums.count) albums")
         
         // Debug print loaded albums
-        for album in albums {
-            // print("📱 [VideoGallery]   - Album '\(album.tag)' with \(album.videos.count) videos")
+        for _ in albums {
+            // print("📱 [VideoGallery]   - Album with videos")
         }
     }
     

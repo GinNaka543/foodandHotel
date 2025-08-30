@@ -618,9 +618,13 @@ struct AnimeScreen: View {
             } else {
                 // YouTube動画が登録されていない場合の表示
                 ZStack {
-                    AnimatedGradientView()
-                        .frame(width: UIScreen.main.bounds.width - 32, height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.blue.opacity(0.3), Color.purple.opacity(0.3)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .frame(width: UIScreen.main.bounds.width - 32, height: 180)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     
                     VStack {
                         Spacer()

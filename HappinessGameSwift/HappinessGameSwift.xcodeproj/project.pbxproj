@@ -137,7 +137,7 @@
 
 /* Begin PBXFileReference section */
 		003E46D9DD6DA416956D5424 /* Pods_HappinessGameSwift.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_HappinessGameSwift.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		155E2959F7CC5CB4E35C32F8 /* Pods-HappinessGameSwift.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappinessGameSwift.debug.xcconfig"; path = "Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift.debug.xcconfig"; sourceTree = "<group>"; };
+		155E2959F7CC5CB4E35C32F8 /* Pods-HappinessGameSwift.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappinessGameSwift.debug.xcconfig"; path = "../HappinessGameSwift/Pods/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift.debug.xcconfig"; sourceTree = "<group>"; };
 		3FF11275CC8B8F57F4F5EF3F /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		46AD77661DDAC2340DE908D7 /* HappinessGameSwiftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HappinessGameSwiftApp.swift; sourceTree = "<group>"; };
 		53859EBFC425A28FA0E91F1D /* ProfileScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileScreen.swift; sourceTree = "<group>"; };
@@ -147,7 +147,7 @@
 		9BBC865F71B5748DCB560583 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9C27E3F30AF355A359930A81 /* ANICOLLE!.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ANICOLLE!.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A118CFE1D99ED98F543A05CE /* AddPhotoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPhotoView.swift; sourceTree = "<group>"; };
-		B0DAC2E1371DEC57CB8ED484 /* Pods-HappinessGameSwift.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappinessGameSwift.release.xcconfig"; path = "Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift.release.xcconfig"; sourceTree = "<group>"; };
+		B0DAC2E1371DEC57CB8ED484 /* Pods-HappinessGameSwift.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HappinessGameSwift.release.xcconfig"; path = "../HappinessGameSwift/Pods/Target Support Files/Pods-HappinessGameSwift/Pods-HappinessGameSwift.release.xcconfig"; sourceTree = "<group>"; };
 		B732830779C8E07C6EF47EDB /* VideoGalleryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoGalleryScreen.swift; sourceTree = "<group>"; };
 		BF6BD18F23F8A6F79B12B00E /* MemoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MemoryScreen.swift; sourceTree = "<group>"; };
 		CC1BB37D2E279DBD006EE695 /* SpotEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotEditView.swift; sourceTree = "<group>"; };
@@ -794,7 +794,6 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した画像や動画を保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像を選択・保存するためにフォトライブラリへのアクセスが必要です。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
@@ -802,6 +801,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -907,7 +907,6 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "撮影した画像や動画を保存するために使用します。";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "画像を選択・保存するためにフォトライブラリへのアクセスが必要です。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
@@ -915,12 +914,13 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 3.0.5;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.HappinessGameSwift;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nakajima.foodandhotelSwift;
 				PRODUCT_NAME = "ANICOLLE!";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

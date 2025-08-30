@@ -140,10 +140,6 @@
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
-	<key>UIUserInterfaceStyle</key>
-	<string>Light</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
@@ -158,5 +154,7 @@
 			<string>AppIcon</string>
 		</dict>
 	</dict>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
 </dict>
 </plist>

@@ -85,19 +85,12 @@ class CustomRankingManager: ObservableObject {
     
     // アクティブなランキングを読み込み
     func loadActiveRankings() {
-        FirebaseManager.shared.fetchActiveCustomRankings { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let rankings):
-                    for ranking in rankings {
-                    }
-                    self.activeRankings = rankings
-                    self.selectRandomRanking()
-                case .failure(let error):
-                    self.activeRankings = []
-                    self.selectedRanking = nil
-                }
-            }
+        // Firebase削除済み - ローカルランキングのみ使用
+        DispatchQueue.main.async {
+            // ローカルに保存されたカスタムランキングがあれば読み込み
+            // 現在は空の配列を設定
+            self.activeRankings = []
+            self.selectRandomRanking()
         }
     }
 }

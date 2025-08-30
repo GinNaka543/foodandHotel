@@ -40,7 +40,7 @@ struct CharacterOrderModal: View {
                             VStack(alignment: .leading) {
                                 Text(character.name)
                                     .font(.headline)
-                                Text(character.tag)
+                                Text(character.favoriteFood)
                                     .font(.subheadline)
                                     .foregroundColor(.gray)
                             }

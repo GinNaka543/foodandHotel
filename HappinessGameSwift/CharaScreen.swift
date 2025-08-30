@@ -3,7 +3,7 @@ import PhotosUI
 import UIKit
 import Foundation
 import Photos
-import FirebaseFirestore
+// Firebase removed
 
 // キャラクターデータ管理用のObservableObject
 class CharacterManager: ObservableObject {
@@ -39,32 +39,10 @@ class CharacterManager: ObservableObject {
             // Force synchronization to ensure data is persisted immediately
             UserDefaults.standard.synchronize()
             
-            // Firebaseに直接キャラクターデータを保存
-            if let profileData = UserDefaultsHelper.shared.getData(forKey: "currentUserProfile"),
-               let userProfile = try? JSONDecoder().decode(UserProfile.self, from: profileData) {
-                // ユーザープロファイルの更新
-                FirebaseManager.shared.saveUserProfile(userProfile) { result in
-                    switch result {
-                    case .success():
-                        break // print("✅ User profile saved to Firebase")
-                    case .failure(_):
-                        break // print("❌ Failed to save user profile: \(error)")
-                    }
-                }
-            } else {
-                // currentUserProfileが存在しない場合でも、ユーザーIDがあればキャラクターを保存
-                // DISABLED: Privacy policy updated - user content no longer saved to Firebase
-                // if let userId = UserDefaults.standard.string(forKey: "userId") {
-                //     print("🔥 Saving characters directly with userId: \(userId)")
-                //     FirebaseManager.shared.saveUserContentData_DISABLED(userId: userId)
-                // } else {
-                //     print("⚠️ No user ID found - characters saved locally only")
-                // }
-                // print("✅ Characters saved locally only (Firebase sync disabled)")
-                print("📝 Characters saved: \(characters.count) items")
-                for (index, character) in characters.enumerated() {
-                    print("  \(index + 1). \(character.name) (ID: \(character.id))")
-                }
+            // Save characters locally only - Firebase removed
+            print("📝 Characters saved: \(characters.count) items")
+            for (index, character) in characters.enumerated() {
+                print("  \(index + 1). \(character.name) (ID: \(character.id))")
             }
         } else {
             // print("❌ Failed to encode characters")
@@ -169,7 +147,7 @@ struct CharacterRanking: Identifiable, Codable {
     var rank: Int // 1-7位
     var characterName: String // 表示用
     var characterImagePath: String? // 表示用
-    var externalLink: String? // 外部リンク（Firebaseから取得）
+    var externalLink: String? // 外部リンク（Firebase削除済み）
     
     init(characterId: UUID, rank: Int, characterName: String, characterImagePath: String? = nil, externalLink: String? = nil) {
         self.characterId = characterId
@@ -235,11 +213,8 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     var imageIdentifier: String? // PhotoライブラリのassetIdentifier
     var backgroundImagePath: String? // 背景画像のパス
     var name: String
-    var tag: String
-    var birthday: Date
     var favoriteFood: String
     var age: String // 年齢
-    var voiceActor: String // 声優
     // var cupSize: String // カップ数 (removed)
     var seichi: String // 聖地
     var height: String // 身長
@@ -254,17 +229,14 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
     }
     // Codable対応
     enum CodingKeys: String, CodingKey {
-        case id, imageIdentifier, backgroundImagePath, name, tag, birthday, favoriteFood, age, voiceActor, seichi, height, customFields, order, iconScale, iconOffsetX, iconOffsetY
+        case id, imageIdentifier, backgroundImagePath, name, favoriteFood, age, seichi, height, customFields, order, iconScale, iconOffsetX, iconOffsetY
     }
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
-        try container.encode(tag, forKey: .tag)
-        try container.encode(birthday, forKey: .birthday)
         try container.encode(favoriteFood, forKey: .favoriteFood)
         try container.encode(age, forKey: .age)
-        try container.encode(voiceActor, forKey: .voiceActor)
         // try container.encode(cupSize, forKey: .cupSize) // removed
         try container.encode(seichi, forKey: .seichi)
         try container.encode(height, forKey: .height)
@@ -280,11 +252,8 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
-        tag = try container.decode(String.self, forKey: .tag)
-        birthday = try container.decode(Date.self, forKey: .birthday)
         favoriteFood = (try? container.decode(String.self, forKey: .favoriteFood)) ?? ""
         age = (try? container.decode(String.self, forKey: .age)) ?? ""
-        voiceActor = (try? container.decode(String.self, forKey: .voiceActor)) ?? ""
         // cupSize = (try? container.decode(String.self, forKey: .cupSize)) ?? "" // removed
         seichi = (try? container.decode(String.self, forKey: .seichi)) ?? ""
         height = (try? container.decode(String.self, forKey: .height)) ?? ""
@@ -296,16 +265,13 @@ struct Character: Identifiable, Hashable, Equatable, Codable {
         iconOffsetX = (try? container.decode(Double.self, forKey: .iconOffsetX)) ?? 0.0
         iconOffsetY = (try? container.decode(Double.self, forKey: .iconOffsetY)) ?? 0.0
     }
-    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, tag: String, birthday: Date, favoriteFood: String = "", age: String, voiceActor: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0, iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
+    init(id: UUID, imageIdentifier: String?, backgroundImagePath: String? = nil, name: String, favoriteFood: String = "", age: String, seichi: String, height: String, customFields: [CustomField]? = nil, order: Int = 0, iconScale: Double = 1.0, iconOffsetX: Double = 0.0, iconOffsetY: Double = 0.0) {
         self.id = id
         self.imageIdentifier = imageIdentifier
         self.backgroundImagePath = backgroundImagePath
         self.name = name
-        self.tag = tag
-        self.birthday = birthday
         self.favoriteFood = favoriteFood
         self.age = age
-        self.voiceActor = voiceActor
         // self.cupSize = cupSize // removed
         self.seichi = seichi
         self.height = height
@@ -687,7 +653,7 @@ struct CharaScreen: View {
         
         // UserDefaultsの全キーを確認
         let allKeys = UserDefaults.standard.dictionaryRepresentation().keys
-        let videoKeys = allKeys.filter { $0.contains("video") }
+        let _ = allKeys.filter { $0.contains("video") }
         // print("🔍 [CharaScreen] All video-related keys in UserDefaults: \(videoKeys)")
         
         allYouTubeVideos = []
@@ -857,15 +823,8 @@ struct CharacterRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(currentCharacter.name)
                     .font(.system(size: 17, weight: .semibold))
-                Text("#" + currentCharacter.tag)
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-                    .frame(maxWidth: 200, alignment: .leading)
             }
             Spacer()
-            Text(DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday))
-                .font(.system(size: 14))
                 .foregroundColor(.gray)
                 .padding(.top, 4)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -883,17 +842,11 @@ struct AddCharacterSheet: View {
     @Binding var characters: [Character]
     @EnvironmentObject private var characterManager: CharacterManager
     @State private var name = ""
-    @State private var tag = ""
-    @State private var voiceActor = ""
-    @State private var birthday = Date()
     @State private var selectedItem: PhotosPickerItem? = nil
     @State private var image: UIImage? = nil
     @State private var savedImagePath: String? = nil
     // 事前にキャラクターIDを生成
     @State private var characterId: String = UUID().uuidString
-    // 月日Picker用
-    @State private var selectedMonth: Int = Calendar.current.component(.month, from: Date())
-    @State private var selectedDay: Int = Calendar.current.component(.day, from: Date())
 
     var body: some View {
         NavigationView {
@@ -923,10 +876,7 @@ struct AddCharacterSheet: View {
                         Spacer()
                         
                         Button(action: {
-                            let components = DateComponents(year: 2000, month: selectedMonth, day: selectedDay)
-                            let calendar = Calendar.current
-                            let date = calendar.date(from: components) ?? Date()
-                            let newChar = Character(id: UUID(uuidString: characterId) ?? UUID(), imageIdentifier: savedImagePath, name: name, tag: tag, birthday: date, favoriteFood: "", age: "", voiceActor: voiceActor, seichi: "", height: "", customFields: nil)
+                            let newChar = Character(id: UUID(uuidString: characterId) ?? UUID(), imageIdentifier: savedImagePath, name: name, favoriteFood: "", age: "", seichi: "", height: "", customFields: nil)
                             characterManager.addCharacterAtTop(newChar)
                             dismiss()
                         }) {
@@ -938,8 +888,8 @@ struct AddCharacterSheet: View {
                                 .background(
                                     LinearGradient(
                                         gradient: Gradient(colors: [
-                                            (name.isEmpty || tag.isEmpty) ? Color.gray.opacity(0.3) : Color(red: 0.6, green: 0.4, blue: 0.9),
-                                            (name.isEmpty || tag.isEmpty) ? Color.gray.opacity(0.3) : Color(red: 0.8, green: 0.5, blue: 0.9)
+                                            name.isEmpty ? Color.gray.opacity(0.3) : Color(red: 0.6, green: 0.4, blue: 0.9),
+                                            name.isEmpty ? Color.gray.opacity(0.3) : Color(red: 0.8, green: 0.5, blue: 0.9)
                                         ]),
                                         startPoint: .leading,
                                         endPoint: .trailing
@@ -947,7 +897,7 @@ struct AddCharacterSheet: View {
                                 )
                                 .cornerRadius(20)
                         }
-                        .disabled(name.isEmpty || tag.isEmpty)
+                        .disabled(name.isEmpty)
                     }
                 }
                 .padding()
@@ -1007,65 +957,6 @@ struct AddCharacterSheet: View {
                             }
                         }
                         
-                        // タグ入力
-                        TextField(NSLocalizedString("tag", comment: ""), text: $tag)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .padding(.vertical, 8)
-                            .overlay(
-                                VStack {
-                                    Spacer()
-                                    Divider()
-                                        .background(Color.gray.opacity(0.5))
-                                }
-                            )
-                            .padding(.horizontal)
-                        
-                        // 声優入力
-                        TextField(NSLocalizedString("voice_actor", comment: ""), text: $voiceActor)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .padding(.vertical, 8)
-                            .overlay(
-                                VStack {
-                                    Spacer()
-                                    Divider()
-                                        .background(Color.gray.opacity(0.5))
-                                }
-                            )
-                            .padding(.horizontal)
-                        
-                        // 誕生日
-                        VStack(spacing: 12) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "gift.fill")
-                                    .foregroundColor(.gray.opacity(0.6))
-                                    .font(.system(size: 20))
-                                Text(NSLocalizedString("birthday", comment: ""))
-                                    .foregroundColor(.gray.opacity(0.8))
-                                    .font(.system(size: 16))
-                                Spacer()
-                                
-                                HStack(spacing: 4) {
-                                    Picker(selection: $selectedMonth, label: Text("")) {
-                                        ForEach(1...12, id: \.self) { month in
-                                            Text(monthName(month)).tag(month)
-                                        }
-                                    }
-                                    .pickerStyle(MenuPickerStyle())
-                                    
-                                    Picker(selection: $selectedDay, label: Text("")) {
-                                        ForEach(1...daysInMonth(selectedMonth), id: \.self) { day in
-                                            Text("\(day)").tag(day)
-                                        }
-                                    }
-                                    .pickerStyle(MenuPickerStyle())
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(8)
-                        }
-                        .padding(.horizontal)
                         
                         Spacer(minLength: 40)
                     }
@@ -1075,24 +966,6 @@ struct AddCharacterSheet: View {
             .background(Color.white)
             .navigationBarHidden(true)
         }
-    }
-    // 月ごとの日数を返す
-    private func daysInMonth(_ month: Int) -> Int {
-        let calendar = Calendar.current
-        let dateComponents = DateComponents(year: 2000, month: month)
-        let date = calendar.date(from: dateComponents) ?? Date()
-        return calendar.range(of: .day, in: .month, for: date)?.count ?? 30
-    }
-    
-    // 月名を返す
-    private func monthName(_ month: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        let monthNames = formatter.monthSymbols ?? []
-        if month > 0 && month <= monthNames.count {
-            return monthNames[month - 1]
-        }
-        return "\(month)"
     }
 }
 
@@ -1280,10 +1153,6 @@ struct CharacterDetailView: View {
                         .onTapGesture {
                             showEditTitleTagModal = true
                         }
-                    // 誕生日
-                    Text(DateFormatter.monthDayEnglish.string(from: currentCharacter.birthday).uppercased())
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                         .padding(.top, 4)
                     // ボタン群
@@ -1624,10 +1493,7 @@ struct AboutView: View {
     @State private var editedName: String = ""
     @State private var editedAge: String = ""
     @State private var editedFavoriteFood: String = ""
-    @State private var editedVoiceActor: String = ""
     // @State private var editedCupSize: String = "" // removed
-    @State private var editedBirthday: Date = Date()
-    @State private var editedTag: String = ""
     @State private var isEditingProfile: Bool = false
     @State private var isEditingDescription: Bool = false
     @State private var iconPickerItem: PhotosPickerItem? = nil
@@ -1716,19 +1582,6 @@ struct AboutView: View {
                         .font(.system(size: 24, weight: .bold))
                         .foregroundColor(.white)
                     
-                    let tagText = isEditingProfile ? editedTag : (character?.tag ?? "")
-                    if !tagText.isEmpty {
-                        Text(tagText)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                    
-                    let voiceActorText = isEditingProfile ? editedVoiceActor : (character?.voiceActor ?? "")
-                    if !voiceActorText.isEmpty {
-                        Text(voiceActorText)
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.white.opacity(0.8))
-                    }
                 }
                 Spacer()
             }
@@ -1761,34 +1614,20 @@ struct AboutView: View {
                                 editableProfileRow(label: NSLocalizedString("name", comment: ""), text: $editedName)
                                     .onChange(of: editedName) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: NSLocalizedString("tag", comment: ""), text: $editedTag)
-                                    .onChange(of: editedTag) { debouncedSaveCharacter() }
-                                Divider().padding(.leading, 20)
-                                dateProfileRow(label: NSLocalizedString("birthday", comment: ""), date: $editedBirthday)
-                                    .onChange(of: editedBirthday) { debouncedSaveCharacter() }
-                                Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("age", comment: ""), text: $editedAge)
                                     .onChange(of: editedAge) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
                                 editableProfileRow(label: NSLocalizedString("favorite_food", comment: ""), text: $editedFavoriteFood)
                                     .onChange(of: editedFavoriteFood) { debouncedSaveCharacter() }
                                 Divider().padding(.leading, 20)
-                                editableProfileRow(label: NSLocalizedString("voice_actor", comment: ""), text: $editedVoiceActor)
-                                    .onChange(of: editedVoiceActor) { debouncedSaveCharacter() }
-                                Divider().padding(.leading, 20)
                                 // Cup size removed
                             } else {
                                 profileRow(label: NSLocalizedString("name", comment: ""), value: character?.name ?? "")
-                                Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("tag", comment: ""), value: "#\(character?.tag ?? "")")
-                                Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("birthday", comment: ""), value: DateFormatter.monthDayLocalized.string(from: character?.birthday ?? Date()))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("age", comment: ""), value: character?.age ?? NSLocalizedString("not_set", comment: ""))
                                 Divider().padding(.leading, 20)
                                 profileRow(label: NSLocalizedString("favorite_food", comment: ""), value: character?.favoriteFood ?? NSLocalizedString("not_set", comment: ""))
                                 Divider().padding(.leading, 20)
-                                profileRow(label: NSLocalizedString("voice_actor", comment: ""), value: character?.voiceActor ?? NSLocalizedString("not_set", comment: ""))
                                 // Cup size display removed
                             }
                         }
@@ -1922,10 +1761,7 @@ struct AboutView: View {
                 editedName = character.name
                 editedAge = character.age
                 editedFavoriteFood = character.favoriteFood
-                editedVoiceActor = character.voiceActor
                 // editedCupSize = character.cupSize // removed
-                editedBirthday = character.birthday
-                editedTag = character.tag
                 
             }
         }
@@ -2210,10 +2046,7 @@ struct AboutView: View {
         updatedCharacter.name = editedName
         updatedCharacter.age = editedAge
         updatedCharacter.favoriteFood = editedFavoriteFood
-        updatedCharacter.voiceActor = editedVoiceActor
         // updatedCharacter.cupSize = editedCupSize // removed
-        updatedCharacter.birthday = editedBirthday
-        updatedCharacter.tag = editedTag
         
         // 概要をカスタムフィールドに保存
         if updatedCharacter.customFields == nil {
@@ -2409,12 +2242,12 @@ struct CharacterRankingRow: View {
 // キャラクター広告行ビュー
 struct CharacterAdRow: View {
     let ad: Advertisement
-    @StateObject private var firebaseManager = FirebaseManager.shared
+    // Firebase removed
     
     var body: some View {
         Button(action: {
             if let url = URL(string: ad.linkURL) {
-                firebaseManager.recordAdClick(advertisementId: ad.id ?? "")
+                // Firebase ad tracking removed
                 UIApplication.shared.open(url)
             }
         }) {
@@ -2467,7 +2300,7 @@ struct CharacterAdRow: View {
         }
         .buttonStyle(PlainButtonStyle())
         .onAppear {
-            firebaseManager.recordAdImpression(advertisementId: ad.id ?? "")
+            // Firebase ad tracking removed
         }
     }
 }
@@ -2735,9 +2568,6 @@ struct CharacterPickerRow: View {
                 Text(character.name)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.black)
-                Text("#\(character.tag)")
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
             }
             
             Spacer()
@@ -3029,7 +2859,6 @@ struct EditTitleTagBackgroundView: View {
     @ObservedObject var characterManager: CharacterManager
     @Environment(\.dismiss) var dismiss
     @State private var editedName: String = ""
-    @State private var editedTag: String = ""
     @State private var backgroundPickerItem: PhotosPickerItem? = nil
     @State private var tempBackgroundImage: UIImage? = nil
     @State private var showDeleteConfirmation = false
@@ -3043,18 +2872,6 @@ struct EditTitleTagBackgroundView: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.gray)
                     TextField(NSLocalizedString("character_name", comment: ""), text: $editedName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .autocorrectionDisabled(true)
-                        .textInputAutocapitalization(.never)
-                }
-                .padding(.horizontal)
-                
-                // タグ編集
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(NSLocalizedString("tag", comment: ""))
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.gray)
-                    TextField("#" + NSLocalizedString("tag", comment: ""), text: $editedTag)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .autocorrectionDisabled(true)
                         .textInputAutocapitalization(.never)
@@ -3140,7 +2957,6 @@ struct EditTitleTagBackgroundView: View {
             }
             .onAppear {
                 editedName = character.name
-                editedTag = character.tag
             }
             .onChange(of: backgroundPickerItem) { _, newValue in
                 if let newItem = newValue {
@@ -3166,7 +2982,6 @@ struct EditTitleTagBackgroundView: View {
     private func saveChanges() {
         var updatedCharacter = character
         updatedCharacter.name = editedName
-        updatedCharacter.tag = editedTag
         
         // 背景画像の保存
         if let tempBackgroundImage = tempBackgroundImage {

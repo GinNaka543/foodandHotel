@@ -484,31 +484,16 @@ struct SettingsView: View {
     }
     
     private func checkForDuplicates() {
-        let stats = VisitPlanDataStorage.shared.getStorageStatistics()
-        cleanupStats = stats
-        
-        if stats.duplicatePlans > 0 || stats.duplicateDrafts > 0 {
-            showingCleanupAlert = true
-        }
+        // Visit機能は削除済み
+        // 重複チェック機能を無効化
     }
     
     private func performCleanup() {
+        // Visit機能は削除済み
         isCleaningUp = true
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            VisitPlanDataStorage.shared.cleanupDuplicatePlans()
-            
-            DispatchQueue.main.async {
-                isCleaningUp = false
-                cleanupStats = VisitPlanDataStorage.shared.getStorageStatistics()
-                showingCleanupSuccess = true
-                
-                // Notify VisitScreen to reload
-                NotificationCenter.default.post(
-                    name: Notification.Name("ReloadVisitPlans"),
-                    object: nil
-                )
-            }
+        DispatchQueue.main.async {
+            self.isCleaningUp = false
+            self.showingCleanupSuccess = true
         }
     }
     

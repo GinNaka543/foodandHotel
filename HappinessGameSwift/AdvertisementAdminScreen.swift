@@ -1,5 +1,6 @@
 import SwiftUI
-import FirebaseFirestore
+import Foundation
+// Firebase removed - import FirebaseFirestore
 
 struct AdvertisementAdminScreen: View {
     @State private var advertisements: [Advertisement] = []
@@ -40,7 +41,7 @@ struct AdvertisementAdminScreen: View {
             }
             .navigationTitle("広告管理")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button {
                         showingAddAdvertisement = true
                     } label: {
@@ -65,95 +66,30 @@ struct AdvertisementAdminScreen: View {
     }
     
     private func loadAdvertisements() {
+        // Firebase削除済み - 広告機能を無効化
         isLoading = true
-        let db = Firestore.firestore()
-        
-        db.collection("advertisements")
-            .order(by: "createdAt", descending: true)
-            .getDocuments { snapshot, error in
-                isLoading = false
-                
-                if let error = error {
-                    errorMessage = "エラー: \(error.localizedDescription)"
-                    return
-                }
-                
-                advertisements = snapshot?.documents.compactMap { doc in
-                    let data = doc.data()
-                    return Advertisement(
-                        id: doc.documentID,
-                        title: data["title"] as? String ?? "",
-                        description: data["description"] as? String ?? "",
-                        imageURL: data["imageURL"] as? String ?? "",
-                        linkURL: data["linkURL"] as? String ?? "",
-                        targetAnimes: data["targetAnimes"] as? [String] ?? [],
-                        targetCharacters: data["targetCharacters"] as? [String] ?? [],
-                        targetVoiceActors: data["targetVoiceActors"] as? [String] ?? [],
-                        targetHashtags: data["targetHashtags"] as? [String] ?? [],
-                        placements: data["placements"] as? [String] ?? [],
-                        impressions: data["impressions"] as? Int ?? 0,
-                        clicks: data["clicks"] as? Int ?? 0,
-                        isActive: data["isActive"] as? Bool ?? true,
-                        createdAt: (data["createdAt"] as? Timestamp)?.dateValue(),
-                        expiresAt: (data["expiresAt"] as? Timestamp)?.dateValue()
-                    )
-                } ?? []
-            }
+        DispatchQueue.main.async {
+            self.isLoading = false
+            // 広告は表示しない
+            self.advertisements = []
+        }
     }
     
     private func saveAdvertisement(_ advertisement: Advertisement) {
-        let db = Firestore.firestore()
-        var data: [String: Any] = [
-            "title": advertisement.title,
-            "description": advertisement.description,
-            "imageURL": advertisement.imageURL,
-            "linkURL": advertisement.linkURL,
-            "targetAnimes": advertisement.targetAnimes,
-            "targetCharacters": advertisement.targetCharacters,
-            "targetHashtags": advertisement.targetHashtags,
-            "placements": advertisement.placements,
-            "isActive": advertisement.isActive,
-            "impressions": advertisement.impressions,
-            "clicks": advertisement.clicks
-        ]
-        
-        if advertisement.createdAt == nil {
-            data["createdAt"] = FieldValue.serverTimestamp()
-        }
-        
-        if let expiresAt = advertisement.expiresAt {
-            data["expiresAt"] = Timestamp(date: expiresAt)
-        }
-        
-        if let id = advertisement.id {
-            db.collection("advertisements").document(id).setData(data) { error in
-                if let error = error {
-                    errorMessage = "保存エラー: \(error.localizedDescription)"
-                } else {
-                    loadAdvertisements()
-                }
-            }
-        } else {
-            db.collection("advertisements").addDocument(data: data) { error in
-                if let error = error {
-                    errorMessage = "作成エラー: \(error.localizedDescription)"
-                } else {
-                    loadAdvertisements()
-                }
-            }
+        // Firebase削除済み - 広告保存機能を無効化
+        // 実際の保存処理は行わない
+        DispatchQueue.main.async {
+            // UI更新のみ実行
+            self.loadAdvertisements()
         }
     }
     
     private func deleteAdvertisement(_ advertisement: Advertisement) {
-        guard let id = advertisement.id else { return }
-        
-        let db = Firestore.firestore()
-        db.collection("advertisements").document(id).delete { error in
-            if let error = error {
-                errorMessage = "削除エラー: \(error.localizedDescription)"
-            } else {
-                loadAdvertisements()
-            }
+        // Firebase削除済み - 広告削除機能を無効化
+        // 実際の削除処理は行わない
+        DispatchQueue.main.async {
+            // UI更新のみ実行
+            self.loadAdvertisements()
         }
     }
 }
@@ -269,14 +205,14 @@ struct AdvertisementEditView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section("基本情報") {
+                Section(header: Text("基本情報")) {
                     TextField("タイトル", text: $title)
                     TextField("説明", text: $description, axis: .vertical)
                         .lineLimit(3...6)
                     
                     VStack(alignment: .leading) {
                         TextField("リンクURL", text: $linkURL)
-                            .onChange(of: linkURL) { newValue in
+                            .onChange(of: linkURL) { _, newValue in
                                 imageLoadError = nil
                                 // GitHub URLの場合は自動で画像を取得
                                 if newValue.contains("github.com") && newValue.contains("/blob/") && 
@@ -352,7 +288,7 @@ struct AdvertisementEditView: View {
                     }
                 }
                 
-                Section("表示設定") {
+                Section(header: Text("表示設定")) {
                     VStack(alignment: .leading) {
                         Text("表示場所")
                             .font(.headline)
@@ -425,14 +361,14 @@ struct AdvertisementEditView: View {
                 }
             }
             .navigationTitle(advertisement == nil ? "新規広告" : "広告を編集")
-            .navigationBarTitleDisplayMode(.inline)
+            // .navigationBarTitleDisplayMode(.inline) // Removed for macOS compatibility
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .automatic) {
                     Button("キャンセル") {
                         dismiss()
                     }
                 }
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .automatic) {
                     Button("保存") {
                         saveAdvertisement()
                     }
@@ -471,16 +407,16 @@ struct AdvertisementEditView: View {
             description: description,
             imageURL: finalImageURL,
             linkURL: linkURL,
+            priority: priority,
+            placements: Array(selectedPlacements),
+            isActive: isActive,
+            displayRate: displayRate,
             targetAnimes: advertisement?.targetAnimes ?? [],
             targetCharacters: advertisement?.targetCharacters ?? [],
             targetVoiceActors: advertisement?.targetVoiceActors ?? [],
             targetHashtags: advertisement?.targetHashtags ?? [],
-            placements: Array(selectedPlacements),
-            displayRate: displayRate,
-            priority: priority,
             impressions: advertisement?.impressions ?? 0,
             clicks: advertisement?.clicks ?? 0,
-            isActive: isActive,
             createdAt: advertisement?.createdAt,
             expiresAt: hasExpiration ? expiresAt : nil
         )
@@ -515,7 +451,7 @@ struct AdvertisementEditView: View {
             case .success(let extractedImageURL):
                 imageURL = extractedImageURL
                 imageLoadError = nil
-            case .failure(let error):
+            case .failure(_):
                 imageLoadError = "画像を取得できませんでした"
             }
         }

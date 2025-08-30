@@ -35,14 +35,6 @@
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>ja</string>
-		<string>en</string>
-		<string>zh-Hans</string>
-		<string>ko</string>
-		<string>es</string>
-		<string>fr</string>
-		<string>de</string>
-		<string>it</string>
-		<string>pt</string>
 	</array>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
@@ -55,15 +47,6 @@
 		<key>NSExceptionDomains</key>
 		<dict>
 			<key>firebaseapp.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<false/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.2</string>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-			<key>firebasestorage.app</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<false/>

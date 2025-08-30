@@ -130,15 +130,12 @@ struct CharacterRankingScrollView: View {
     }
     
     private func loadDefaultRankings() {
-        firebaseManager.fetchCharacterRankings { result in
-            switch result {
-            case .success(let fetchedRankings):
-                self.rankings = fetchedRankings
-                self.rankingTitle = "Popular Character Ranking"
-                self.isLoading = false
-            case .failure(_):
-                self.isLoading = false
-            }
+        // Firebase削除済み - デフォルトランキングを設定
+        DispatchQueue.main.async {
+            // デフォルトのランキングまたは空の配列を設定
+            self.rankings = []
+            self.rankingTitle = "Character Ranking"
+            self.isLoading = false
         }
     }
     

@@ -117,42 +117,32 @@ class StoreKitManager: NSObject, ObservableObject {
         let product = products.first { $0.productIdentifier == productId }
         let displayName = product?.localizedTitle ?? String(format: NSLocalizedString("points_format", comment: "%d Points"), points)
         
-        // Firebaseにポイントを追加
+        // ローカルにポイントを追加
         let purchaseDescription = String(format: NSLocalizedString("points_purchase_description", comment: "%@ purchase"), displayName)
-        FirebaseManager.shared.addPointsToUser(
-            userId: userId,
-            points: points,
-            description: purchaseDescription
-        ) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    #if DEBUG
-                    print("Successfully added \(points) points to user")
-                    #endif
-                    
-                    // 購入明細書を保存
-                    let price = product?.price ?? NSDecimalNumber(value: points)
-                    let receipt = PurchaseReceipt(
-                        transactionType: .pointPurchase,
-                        amount: Int(truncating: price),
-                        points: points,
-                        paymentMethod: .applePay,
-                        description: displayName
-                    )
-                    PurchaseReceiptManager.shared.addReceipt(receipt)
-                    
-                    self.purchaseCompletionHandler?(.success(productId))
-                    self.purchaseCompletionHandler = nil
-                    
-                case .failure(let error):
-                    #if DEBUG
-                    print("Failed to add points: \(error)")
-                    #endif
-                    self.purchaseCompletionHandler?(.failure(error))
-                    self.purchaseCompletionHandler = nil
-                }
-            }
+        
+        // UserDefaultsでローカルポイントを管理
+        let currentPoints = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+        let newPoints = currentPoints + points
+        UserDefaults.standard.set(newPoints, forKey: "userPoints_\(userId)")
+        
+        DispatchQueue.main.async {
+            #if DEBUG
+            print("Successfully added \(points) points to user")
+            #endif
+            
+            // 購入明細書を保存
+            let price = product?.price ?? NSDecimalNumber(value: points)
+            let receipt = PurchaseReceipt(
+                transactionType: .pointPurchase,
+                amount: Int(truncating: price),
+                points: points,
+                paymentMethod: .applePay,
+                description: displayName
+            )
+            PurchaseReceiptManager.shared.addReceipt(receipt)
+            
+            self.purchaseCompletionHandler?(.success(productId))
+            self.purchaseCompletionHandler = nil
         }
     }
     
@@ -184,14 +174,9 @@ class StoreKitManager: NSObject, ObservableObject {
                 }
             }
             
-            // 購入記録を保存
-            FirebaseManager.shared.savePremiumPurchaseRecord(
-                userId: userId,
-                productId: "com.nakajima.HappinessGameSwift.premium.2months",
-                transactionId: nil // StoreKitから取得できる場合は追加
-            ) { _ in
-                // Purchase record saved
-            }
+            // ローカルに購入記録を保存
+            UserDefaults.standard.set(true, forKey: "isPremiumUser")
+            UserDefaults.standard.set(Date(), forKey: "premiumPurchaseDate")
         }
         
         // 購入明細書を保存

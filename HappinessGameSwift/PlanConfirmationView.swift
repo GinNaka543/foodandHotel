@@ -184,16 +184,11 @@ struct PlanConfirmationView: View {
     private func loadUserPoints() {
         let userId = UserDefaults.standard.string(forKey: "userId") ?? ""
         
-        firebaseManager.fetchUserPoints(userId: userId) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let points):
-                    self.userPoints = points
-                case .failure(let error):
-                    self.userPoints = 0
-                }
-                self.isLoading = false
-            }
+        // ローカルからポイントを取得
+        DispatchQueue.main.async {
+            let points = UserDefaults.standard.integer(forKey: "userPoints_\(userId)")
+            self.userPoints = points
+            self.isLoading = false
         }
     }
 }

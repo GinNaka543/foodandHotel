@@ -55,8 +55,9 @@ class MediaCleanupManager {
         
         // print("📊 [MediaCleanup] Orphaned files: \(orphanedFiles.count)")
         
-        // Only delete files in safe directories
+        // Only delete files in safe directories (Visit plan directories removed)
         let safeDirectoryPrefixes = ["VideoThumbnails/", "ArtworkThumbnails/", "Soundtracks/", "VideoAlbums/"]
+        // Note: "VisitPlanData/" directory removed from safe cleanup list - Visit functionality disabled
         
         // Delete orphaned files (with safety checks)
         for filePath in orphanedFiles {
@@ -152,6 +153,7 @@ class MediaCleanupManager {
             // IMPORTANT: Only scan specific safe subdirectories, not root directory
             // This prevents accidental deletion of files in root directory
             let safeSubdirectories = ["VideoThumbnails", "ArtworkThumbnails", "Soundtracks", "VideoAlbums"]
+            // Note: "VisitPlanData" directory removed from scanning - Visit functionality disabled
             
             for subdirectory in safeSubdirectories {
                 let subdirURL = documentsDirectory.appendingPathComponent(subdirectory)
@@ -304,55 +306,14 @@ class MediaCleanupManager {
             }
         }
         
-        // Add visit plan images
-        let visitPlans = VisitPlanDataStorage.shared.loadAllSavedPlans()
-        for plan in visitPlans {
-            let planId = plan.id.uuidString
-            
-            // Add spots images
-            for spot in plan.spots {
-                // Add main image reference
-                let mainImagePath = "VisitPlanData/\(planId)/\(spot.id.uuidString)_main.jpg"
-                referencedFiles.insert(mainImagePath)
-                
-                // Add detail images if they exist
-                if let detailImagesData = spot.detailImagesData {
-                    for index in 0..<detailImagesData.count {
-                        let detailImagePath = "VisitPlanData/\(planId)/\(spot.id.uuidString)_detail_\(index).jpg"
-                        referencedFiles.insert(detailImagePath)
-                    }
-                }
-            }
-            
-            // Add plan thumbnail
-            let thumbnailPath = "VisitPlanData/\(planId)/plan_thumbnail.jpg"
-            referencedFiles.insert(thumbnailPath)
-        }
-        
-        // Also check draft plans
-        let draftPlans = VisitPlanDataStorage.shared.loadAllDraftPlans()
-        for plan in draftPlans {
-            let planId = plan.id.uuidString
-            
-            // Add spots images
-            for spot in plan.spots {
-                // Add main image reference
-                let mainImagePath = "VisitPlanData/\(planId)/\(spot.id.uuidString)_main.jpg"
-                referencedFiles.insert(mainImagePath)
-                
-                // Add detail images if they exist
-                if let detailImagesData = spot.detailImagesData {
-                    for index in 0..<detailImagesData.count {
-                        let detailImagePath = "VisitPlanData/\(planId)/\(spot.id.uuidString)_detail_\(index).jpg"
-                        referencedFiles.insert(detailImagePath)
-                    }
-                }
-            }
-            
-            // Add plan thumbnail
-            let thumbnailPath = "VisitPlanData/\(planId)/plan_thumbnail.jpg"
-            referencedFiles.insert(thumbnailPath)
-        }
+        // VISIT FUNCTIONALITY REMOVED: Visit plan image processing has been disabled
+        // The following Visit plan related code has been removed:
+        // - VisitPlanDataStorage references
+        // - Visit plan image directory processing (VisitPlanData/)
+        // - Draft plans processing
+        // - Spot image references (main and detail images)
+        // - Plan thumbnail references
+        // All Visit plan media files are no longer tracked by the cleanup system
         
         // Add soundtrack files
         let soundtracks = loadAllSoundtracks()
@@ -634,8 +595,9 @@ class MediaCleanupManager {
         print("  - Referenced files: \(referencedFiles.count)")
         print("  - Orphaned files to delete: \(orphanedFiles.count)")
         
-        // Only delete files in safe directories
+        // Only delete files in safe directories (Visit plan directories removed)
         let safeDirectoryPrefixes = ["VideoThumbnails/", "ArtworkThumbnails/", "Soundtracks/", "VideoAlbums/"]
+        // Note: "VisitPlanData/" directory removed from safe cleanup list - Visit functionality disabled
         
         var deletedCount = 0
         var freedSpace: Int64 = 0

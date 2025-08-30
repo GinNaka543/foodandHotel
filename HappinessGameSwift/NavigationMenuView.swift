@@ -3,7 +3,6 @@ import SwiftUI
 struct NavigationMenuView: View {
     @Binding var isPresented: Bool
     @EnvironmentObject var mainTab: MainTabSelection
-    @State private var showingLanguageSelection = false
     var onShowCharacterOrder: (() -> Void)?
     var onShowAnimeOrder: (() -> Void)?
     var onShowTermsOfService: (() -> Void)?
@@ -53,11 +52,11 @@ struct NavigationMenuView: View {
                     
                     // メニューアイテム
                     VStack(alignment: .leading, spacing: 0) {
-                        // ホーム
+                        // キャラクター（ホーム代替）
                         NavigationMenuItem(
                             title: NSLocalizedString("home", comment: "Home menu item")
                         ) {
-                            mainTab.selectedTab = .home
+                            mainTab.selectedTab = .chara
                             isPresented = false
                         }
                         
@@ -81,7 +80,7 @@ struct NavigationMenuView: View {
                         NavigationMenuItem(
                             title: NSLocalizedString("visit", comment: "Visit menu item")
                         ) {
-                            mainTab.selectedTab = .visit
+                            mainTab.selectedTab = .chara  // Visit功能暂时映射到Character
                             isPresented = false
                         }
                         
@@ -89,7 +88,7 @@ struct NavigationMenuView: View {
                         NavigationMenuItem(
                             title: NSLocalizedString("product", comment: "Product menu item")
                         ) {
-                            mainTab.selectedTab = .card
+                            mainTab.selectedTab = .anime  // Product功能暂时映射到Anime
                             isPresented = false
                         }
                         
@@ -119,12 +118,6 @@ struct NavigationMenuView: View {
                         Divider()
                             .padding(.vertical, 8)
                         
-                        // 言語
-                        NavigationMenuItem(
-                            title: NSLocalizedString("language", comment: "Language menu item")
-                        ) {
-                            showingLanguageSelection = true
-                        }
                         
                     }
                     .padding(.top, 8)
@@ -179,9 +172,6 @@ struct NavigationMenuView: View {
             }
             .offset(x: isPresented ? 0 : -280)
             .animation(.easeOut(duration: 0.25), value: isPresented)
-        }
-        .sheet(isPresented: $showingLanguageSelection) {
-            LanguageSelectionView()
         }
     }
 }

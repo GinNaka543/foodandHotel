@@ -2638,11 +2638,8 @@ struct VideoNavigationButtonStyle: ButtonStyle {
         id: UUID(),
         imageIdentifier: nil,
         name: "キャラクター名",
-        tag: "タグ",
-        birthday: Date(),
         favoriteFood: "",
         age: "",
-        voiceActor: "",
         seichi: "",
         height: ""
     ))

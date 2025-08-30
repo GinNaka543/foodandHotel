@@ -36,11 +36,8 @@ class DataMigrationManager {
     }
     
     private func migrateVisitPlans() {
-        print("Migrating visit plans...")
-        VisitPlanStorage.shared.migrateExistingPlans()
-        
-        print("Migrating saved visit plan data...")
-        VisitPlanDataStorage.shared.migrateOldSavedPlans()
+        // Visit機能は削除されました
+        print("Visit plans migration skipped - feature removed")
     }
     
     private func migrateSoundtracks() {
